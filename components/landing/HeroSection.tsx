@@ -10,7 +10,9 @@ export function HeroSection() {
 
   function handleExploreClick(e: React.MouseEvent) {
     e.preventDefault();
-    const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
+    const isMobile =
+      typeof window !== "undefined" &&
+      window.matchMedia("(max-width: 767px)").matches;
     if (isMobile) {
       router.push("/feed");
     } else {
@@ -20,7 +22,9 @@ export function HeroSection() {
 
   function handleHowItWorksClick(e: React.MouseEvent) {
     e.preventDefault();
-    document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" });
+    document
+      .getElementById("how-it-works")
+      ?.scrollIntoView({ behavior: "smooth" });
   }
 
   return (
@@ -103,8 +107,7 @@ export function HeroSection() {
           letterSpacing: "0.02em",
         }}
       >
-        <span>✦</span>
-        Kenya&apos;s Social Discovery Marketplace
+        <span>✦</span>✦ Kenya&apos;s Social Discovery Marketplace
       </div>
 
       {/* Headline */}
@@ -120,7 +123,7 @@ export function HeroSection() {
           marginBottom: "1.5rem",
         }}
       >
-        Discover what people
+        What you’re looking for
         <br />
         <span
           style={{
@@ -131,7 +134,7 @@ export function HeroSection() {
             backgroundClip: "text",
           }}
         >
-          near you are selling.
+          is already here.
         </span>
       </h1>
 
@@ -140,15 +143,14 @@ export function HeroSection() {
         style={{
           fontSize: "clamp(1rem, 1.8vw, 1.25rem)",
           color: "rgb(var(--color-text-muted))",
-          maxWidth: "580px",
+          maxWidth: "560px",
           lineHeight: 1.65,
           marginBottom: "2.5rem",
         }}
       >
-        Shopi is where local sellers post videos, photos, and demos — and buyers
-        discover them by scrolling, not searching. See something you want?
-        Message the seller directly. No middleman. No checkout. Just real
-        people, real products, real conversation.
+        Local sellers. Real videos. Zero middlemen. Shopi lets you discover
+        products from people near you — then talk to them directly. No checkout
+        flow. No waiting. Just find it, message, done.
       </p>
 
       {/* CTAs */}
@@ -175,7 +177,7 @@ export function HeroSection() {
             cursor: "pointer",
           }}
         >
-          <span>▶</span> Explore what&apos;s near you
+          <span>▶</span> See what&apos;s near you — it&apos;s free
         </button>
         <button
           onClick={handleHowItWorksClick}
@@ -246,7 +248,10 @@ export function HeroSection() {
         </div>
 
         {/* RIGHT PHONE — Seller profile — desktop only */}
-        <div className="hero-phone-right" style={{ transform: "rotate(10deg) translateY(40px)" }}>
+        <div
+          className="hero-phone-right"
+          style={{ transform: "rotate(10deg) translateY(40px)" }}
+        >
           <ProfileScreen />
         </div>
       </div>
