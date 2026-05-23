@@ -9,7 +9,7 @@ import { LandingNav } from "@/components/landing/LandingNav";
 import { SupportChat } from "@/components/landing/SupportChat";
 import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
 import { getDictionary } from "@/i18n/getDictionary";
-import { isValidLocale, defaultLocale } from "@/i18n/config";
+import { isValidLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 
 export default async function Rootpage({ params }: PageProps<"/[lang]">) {

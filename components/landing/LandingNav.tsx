@@ -7,13 +7,13 @@ import { siteConfig } from "@/config/site";
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+//import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import type { Dictionary } from "@/i18n/getDictionary";
 import type { Locale } from "@/i18n/config";
 
 const NAV_HREFS = ["#features", "#how-it-works", "#creators"] as const;
 
-export function LandingNav({ dict, lang }: { dict: Dictionary; lang: Locale }) {
+export function LandingNav({ dict }: { dict: Dictionary; lang: Locale }) {
   const NAV_LINKS = [
     { label: dict.nav.features, href: "#features" },
     { label: dict.nav.howItWorks, href: "#how-it-works" },
@@ -232,7 +232,7 @@ export function LandingNav({ dict, lang }: { dict: Dictionary; lang: Locale }) {
           </a>
 
           {/* Language switcher */}
-          <LanguageSwitcher current={lang} />
+          {/* <LanguageSwitcher current={lang} /> */}
 
           {/* Hamburger — mobile only */}
           <button
