@@ -1,23 +1,40 @@
-const testimonials = [
+import React from "react";
+
+const EL = ({ href, children }: { href: string; children: React.ReactNode }) => (
+  <a
+    href={href}
+    target="_blank"
+    rel="noopener noreferrer"
+    style={{ color: "inherit", textDecoration: "underline", textDecorationStyle: "dotted", textUnderlineOffset: "3px" }}
+  >
+    {children}
+  </a>
+);
+
+const testimonials: { node: React.ReactNode; name: string; role: string; avatar: string; accent: string }[] = [
   {
-    quote: "I made my first sale 3 hours after posting my first video. Shopi just works for creators.",
-    name: "Amara K.",
-    role: "Fashion Creator, Nairobi",
-    avatar: "AK",
+    node: (
+      <>
+        I used to post on <EL href="https://jiji.co.ke">Jiji</EL> and wait days for a reply. On Shopi, someone messaged me 20 minutes after I posted a video of my phones. We met, they bought two.
+      </>
+    ),
+    name: "Brian M.",
+    role: "Electronics Seller, Nairobi",
+    avatar: "BM",
     accent: "var(--brand-primary)",
   },
   {
-    quote: "I discovered so many local brands I never knew existed. It feels like shopping with your friends.",
-    name: "James O.",
-    role: "Shopper, Mombasa",
-    avatar: "JO",
+    node: "I was just scrolling and saw a video of this lady selling handmade bags from her house in Westlands. I DM'd her. Now I have three of them.",
+    name: "Wanjiku A.",
+    role: "Buyer, Nairobi",
+    avatar: "WA",
     accent: "var(--brand-accent)",
   },
   {
-    quote: "Our sales tripled in two months. The live drop feature is genuinely powerful for small sellers.",
-    name: "Zara Beauty",
-    role: "Seller, Kampala",
-    avatar: "ZB",
+    node: "Shopi feels like Facebook Groups but actually useful. I joined the Farm Produce Nairobi community and I get fresh orders every week now.",
+    name: "Peter K.",
+    role: "Farmer & Seller, Kiambu",
+    avatar: "PK",
     accent: "var(--brand-secondary)",
   },
 ];
@@ -26,7 +43,7 @@ export function TestimonialsSection() {
   return (
     <section
       style={{
-        padding: "6rem 2rem",
+        padding: "4rem 1.25rem",
         background: "rgb(var(--color-bg-subtle))",
         borderTop: "1px solid rgb(var(--color-border))",
         borderBottom: "1px solid rgb(var(--color-border))",
@@ -44,7 +61,7 @@ export function TestimonialsSection() {
               marginBottom: "0.75rem",
             }}
           >
-            Real people, real results
+            Don&apos;t take our word for it
           </p>
           <h2
             style={{
@@ -55,12 +72,12 @@ export function TestimonialsSection() {
               color: "rgb(var(--color-text))",
             }}
           >
-            Loved by creators, sellers & shoppers
+            Real people. Real conversations. Real deals.
           </h2>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1.5rem" }}>
-          {testimonials.map(({ quote, name, role, avatar, accent }) => (
+        <div className="testimonials-grid">
+          {testimonials.map(({ node, name, role, avatar, accent }) => (
             <div
               key={name}
               className="card"
@@ -88,7 +105,7 @@ export function TestimonialsSection() {
                   fontStyle: "italic",
                 }}
               >
-                &ldquo;{quote}&rdquo;
+                &ldquo;{node}&rdquo;
               </p>
 
               {/* Author */}
@@ -133,6 +150,20 @@ export function TestimonialsSection() {
             </div>
           ))}
         </div>
+
+        <style>{`
+          .testimonials-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.25rem;
+          }
+          @media (min-width: 640px) {
+            .testimonials-grid { grid-template-columns: repeat(2, 1fr); }
+          }
+          @media (min-width: 1024px) {
+            .testimonials-grid { grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+          }
+        `}</style>
       </div>
     </section>
   );

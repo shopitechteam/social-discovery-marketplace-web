@@ -140,7 +140,9 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-app text-default">
         <ThemeProvider>
-          <ApolloWrapper>{children}</ApolloWrapper>
+          <ApolloWrapper>
+            <main>{children}</main>
+          </ApolloWrapper>
         </ThemeProvider>
       </body>
     </html>

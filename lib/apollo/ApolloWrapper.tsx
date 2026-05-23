@@ -9,7 +9,17 @@ import {
   InMemoryCache,
 } from "@apollo/client-integration-nextjs";
 
+let clientSingleton: ReturnType<typeof createClient> | undefined;
+
 function makeClient() {
+  if (typeof window !== "undefined") {
+    if (!clientSingleton) clientSingleton = createClient();
+    return clientSingleton;
+  }
+  return createClient();
+}
+
+function createClient() {
   const httpLink = new HttpLink({
     uri: `${process.env.NEXT_PUBLIC_API_URL}/graphql`,
     // Browser-side: skip Next.js fetch cache — Apollo InMemoryCache is

@@ -1,27 +1,41 @@
-const steps = [
+import React from "react";
+
+const EL = ({ href, children }: { href: string; children: React.ReactNode }) => (
+  <a
+    href={href}
+    target="_blank"
+    rel="noopener noreferrer"
+    style={{ color: "inherit", textDecoration: "underline", textDecorationStyle: "dotted", textUnderlineOffset: "3px" }}
+  >
+    {children}
+  </a>
+);
+
+const steps: { number: string; title: string; node: React.ReactNode }[] = [
   {
     number: "01",
-    title: "Download Shopi",
-    description:
-      "Get the app on iOS or Android. Set up your profile in under a minute — no credit card required.",
+    title: "Sign up in 30 seconds",
+    node: "No credit card. No long forms. Pick your interests — phones, fashion, food, whatever — and your local feed is ready.",
   },
   {
     number: "02",
-    title: "Follow Creators & Sellers",
-    description:
-      "Pick interests and follow creators whose style you love. Your feed is built around real people, not algorithms alone.",
+    title: "Scroll your local feed",
+    node: (
+      <>
+        Watch videos and photos posted by real sellers near you. Think{" "}
+        <EL href="https://www.tiktok.com">TikTok</EL>, but every post is something actually for sale — with a seller you can message directly.
+      </>
+    ),
   },
   {
     number: "03",
-    title: "Discover & Shop",
-    description:
-      "Swipe through videos, explore live drops, and tap any product to buy it instantly — all without leaving the app.",
+    title: "Like it? Message the seller.",
+    node: "Tap to open a direct chat with any seller. Negotiate, ask questions, arrange pickup or delivery — completely on your terms.",
   },
   {
     number: "04",
-    title: "Share & Earn",
-    description:
-      "Post your hauls, review products, or become a creator yourself. Build your audience and earn commissions.",
+    title: "Sell. Post. Build your audience.",
+    node: "Sellers post content, grow followers, and build trust over time. The more you post, the more people discover what you're selling.",
   },
 ];
 
@@ -30,7 +44,7 @@ export function HowItWorksSection() {
     <section
       id="how-it-works"
       style={{
-        padding: "6rem 2rem",
+        padding: "4rem 1.25rem",
         background: "rgb(var(--color-bg-subtle))",
         borderTop: "1px solid rgb(var(--color-border))",
         borderBottom: "1px solid rgb(var(--color-border))",
@@ -61,34 +75,13 @@ export function HowItWorksSection() {
               color: "rgb(var(--color-text))",
             }}
           >
-            From scroll to checkout in seconds
+            Discover locally. Connect directly. No checkout needed.
           </h2>
         </div>
 
         {/* Steps */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            gap: "2rem",
-            position: "relative",
-          }}
-        >
-          {/* Connector line */}
-          <div
-            aria-hidden
-            style={{
-              position: "absolute",
-              top: "2rem",
-              left: "12.5%",
-              right: "12.5%",
-              height: "1px",
-              background:
-                "linear-gradient(90deg, transparent, rgb(var(--color-border-strong)), rgb(var(--color-border-strong)), transparent)",
-            }}
-          />
-
-          {steps.map(({ number, title, description }) => (
+        <div className="hiw-steps">
+          {steps.map(({ number, title, node }) => (
             <div key={number} style={{ textAlign: "center", padding: "0 0.5rem" }}>
               {/* Step circle */}
               <div
@@ -131,11 +124,26 @@ export function HowItWorksSection() {
                   lineHeight: "var(--leading-normal)",
                 }}
               >
-                {description}
+                {node}
               </p>
             </div>
           ))}
         </div>
+
+        <style>{`
+          .hiw-steps {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            position: relative;
+          }
+          @media (min-width: 640px) {
+            .hiw-steps { grid-template-columns: repeat(2, 1fr); }
+          }
+          @media (min-width: 1024px) {
+            .hiw-steps { grid-template-columns: repeat(4, 1fr); }
+          }
+        `}</style>
       </div>
     </section>
   );

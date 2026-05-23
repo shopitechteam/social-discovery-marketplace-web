@@ -7,29 +7,28 @@ export function LandingFooter() {
     <footer
       style={{
         borderTop: "1px solid rgb(var(--color-border))",
-        padding: "3rem 2.5rem 2rem",
+        padding: "3rem 1.25rem 2rem",
         background: "rgb(var(--color-bg-subtle))",
       }}
     >
-      <div
-        style={{
-          maxWidth: "1200px",
-          margin: "0 auto",
-          display: "grid",
-          gridTemplateColumns: "2fr 1fr 1fr 1fr",
-          gap: "3rem",
-          marginBottom: "3rem",
-        }}
-      >
+      <div className="footer-grid">
         {/* Brand */}
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              marginBottom: "1rem",
+            }}
+          >
             <div
               style={{
                 width: 30,
                 height: 30,
                 borderRadius: "var(--radius-sm)",
-                background: "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-accent)))",
+                background:
+                  "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-accent)))",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -60,9 +59,12 @@ export function LandingFooter() {
               maxWidth: "260px",
             }}
           >
-            {siteConfig.tagline} — The social commerce app for the next generation of shoppers.
+            Kenya&apos;s social discovery marketplace. Scroll local products.
+            Connect with sellers directly. No checkout needed.
           </p>
-          <div style={{ display: "flex", gap: "0.75rem", marginTop: "1.25rem" }}>
+          <div
+            style={{ display: "flex", gap: "0.75rem", marginTop: "1.25rem" }}
+          >
             {["𝕏", "ig", "tk", "yt"].map((s) => (
               <a
                 key={s}
@@ -84,11 +86,13 @@ export function LandingFooter() {
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.color = "rgb(var(--color-text))";
-                  e.currentTarget.style.borderColor = "rgb(var(--color-border-strong))";
+                  e.currentTarget.style.borderColor =
+                    "rgb(var(--color-border-strong))";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.color = "rgb(var(--color-text-muted))";
-                  e.currentTarget.style.borderColor = "rgb(var(--color-border))";
+                  e.currentTarget.style.borderColor =
+                    "rgb(var(--color-border))";
                 }}
               >
                 {s}
@@ -109,7 +113,12 @@ export function LandingFooter() {
           },
           {
             heading: "Legal",
-            links: ["Privacy Policy", "Terms of Service", "Cookie Policy", "Contact"],
+            links: [
+              "Privacy Policy",
+              "Terms of Service",
+              "Cookie Policy",
+              "Contact",
+            ],
           },
         ].map(({ heading, links }) => (
           <div key={heading}>
@@ -176,8 +185,24 @@ export function LandingFooter() {
         }}
       >
         <span>© {new Date().getFullYear()} Shopi. All rights reserved.</span>
-        <span>Made with ❤️ in Nairobi, Kenya</span>
+        <span>Made in Kenya</span>
       </div>
+
+      <style>{`
+        .footer-grid {
+          max-width: 1200px;
+          margin: 0 auto 3rem;
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 2rem;
+        }
+        @media (min-width: 640px) {
+          .footer-grid { grid-template-columns: 1fr 1fr; gap: 2rem; }
+        }
+        @media (min-width: 1024px) {
+          .footer-grid { grid-template-columns: 2fr 1fr 1fr 1fr; gap: 3rem; }
+        }
+      `}</style>
     </footer>
   );
 }

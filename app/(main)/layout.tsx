@@ -13,11 +13,12 @@ export default function MainLayout({
       {/* Scrollable content — padded so nothing hides behind the nav */}
       <main
         className="flex-1 overflow-y-auto"
-        style={{ paddingBottom: "calc(var(--nav-height) + var(--safe-bottom))" }}
+        style={{
+          paddingBottom: "calc(var(--nav-height) + var(--safe-bottom))",
+        }}
       >
         {children}
       </main>
-
       <BottomNav />
     </div>
   );

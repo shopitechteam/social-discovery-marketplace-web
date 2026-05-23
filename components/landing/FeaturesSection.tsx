@@ -1,46 +1,88 @@
 "use client";
 
-const features = [
+import React from "react";
+
+const EL = ({
+  href,
+  children,
+}: {
+  href: string;
+  children: React.ReactNode;
+}) => (
+  <a
+    href={href}
+    target="_blank"
+    rel="noopener noreferrer"
+    style={{
+      color: "inherit",
+      textDecoration: "underline",
+      textDecorationStyle: "dotted",
+      textUnderlineOffset: "3px",
+    }}
+  >
+    {children}
+  </a>
+);
+
+const features: {
+  icon: string;
+  title: string;
+  description?: string;
+  node?: React.ReactNode;
+  color: string;
+}[] = [
   {
     icon: "🎬",
-    title: "Short Video Shopping",
+    title: "Scroll to discover, not search",
     description:
-      "Scroll through shoppable videos from creators you love. Tap a product, see the price, add to cart — never leave the feed.",
+      "Forget boring classified listings. Sellers post short videos, product demos, and photos. You discover them the same way you'd discover content — by scrolling.",
     color: "var(--brand-primary)",
   },
   {
-    icon: "⚡",
-    title: "Live Drop Events",
+    icon: "💬",
+    title: "Interested? Just message.",
     description:
-      "Sellers and creators host live shopping drops with exclusive deals. Watch, engage, and grab limited items in real time.",
+      "No carts. No checkout. No payment forms. When you find something you want, tap to chat with the seller directly and agree on your own terms.",
+    color: "var(--brand-accent)",
+  },
+  {
+    icon: "📍",
+    title: "Local products, finally discoverable",
+    description:
+      "That farmer selling tomatoes in Kiambu. The sneaker dealer in Eastleigh. The tailor in Kisumu. They're all on Shopi — and now you can actually find them.",
     color: "var(--brand-secondary)",
   },
   {
-    icon: "🧠",
-    title: "Personalised Feed",
+    icon: "🏘️",
+    title: "Join communities that match you",
     description:
-      "Your feed learns what you love — products, styles, and creators that match your taste, not just what's trending.",
-    color: "var(--brand-accent)",
-  },
-  {
-    icon: "🛍️",
-    title: "Creator Storefronts",
-    description:
-      "Every creator has a shop. Browse curated picks, follow your favourite sellers, and buy directly from people you trust.",
+      '"iPhones in Embakasi." "Sneakers Kenya." "Farm Produce Nairobi." Join niche local communities where buyers and sellers already know each other.',
     color: "var(--brand-primary)",
   },
   {
-    icon: "🔍",
-    title: "Visual Search & Explore",
-    description:
-      "Find products by style, category, or vibe. Search visually or browse curated collections across thousands of sellers.",
+    icon: "📲",
+    title: "Post once. Reach thousands.",
+    node: (
+      <>
+        Sellers post a video or photo — and it reaches people scrolling nearby.
+        More visibility than a WhatsApp status. More trust than a{" "}
+        <EL href="https://jiji.co.ke">Jiji</EL> listing — because buyers see the
+        real product, not just a photo and a price.
+      </>
+    ),
     color: "var(--brand-accent)",
   },
   {
-    icon: "🤝",
-    title: "Community & Reviews",
-    description:
-      "Real reviews from real buyers. See what your network bought and loved. Shopping is better when it's social.",
+    icon: "🔗",
+    title: "Already on TikTok? Just import it.",
+    node: (
+      <>
+        Already posted a product video on{" "}
+        <EL href="https://www.tiktok.com">TikTok</EL>? Import it to Shopi in one
+        tap — with your consent. No re-filming. No re-editing. Your content, now
+        working twice as hard.
+      </>
+    ),
     color: "var(--brand-secondary)",
   },
 ];
@@ -50,7 +92,7 @@ export function FeaturesSection() {
     <section
       id="features"
       style={{
-        padding: "6rem 2rem",
+        padding: "4rem 1.25rem",
         maxWidth: "1200px",
         margin: "0 auto",
       }}
@@ -67,7 +109,32 @@ export function FeaturesSection() {
             marginBottom: "0.75rem",
           }}
         >
-          Everything you need
+          <a
+            href="https://www.tiktok.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              color: "inherit",
+              textDecoration: "none",
+              borderBottom: "1px solid currentColor",
+            }}
+          >
+            TikTok
+          </a>{" "}
+          had discovery.{" "}
+          <a
+            href="https://jiji.co.ke"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              color: "inherit",
+              textDecoration: "none",
+              borderBottom: "1px solid currentColor",
+            }}
+          >
+            Jiji
+          </a>{" "}
+          had intent. We built both.
         </p>
         <h2
           style={{
@@ -81,19 +148,13 @@ export function FeaturesSection() {
             margin: "0 auto",
           }}
         >
-          Shopping meets social, in one place
+          Built so local sellers waste zero time getting started.
         </h2>
       </div>
 
       {/* Feature grid */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          gap: "1.5rem",
-        }}
-      >
-        {features.map(({ icon, title, description, color }) => (
+      <div className="features-grid">
+        {features.map(({ icon, title, description, node, color }) => (
           <div
             key={title}
             className="card"
@@ -144,11 +205,25 @@ export function FeaturesSection() {
                 lineHeight: "var(--leading-normal)",
               }}
             >
-              {description}
+              {node ?? description}
             </p>
           </div>
         ))}
       </div>
+
+      <style>{`
+        .features-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 1rem;
+        }
+        @media (min-width: 640px) {
+          .features-grid { grid-template-columns: repeat(2, 1fr); gap: 1.25rem; }
+        }
+        @media (min-width: 1024px) {
+          .features-grid { grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+        }
+      `}</style>
     </section>
   );
 }

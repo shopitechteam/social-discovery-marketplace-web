@@ -1,6 +1,28 @@
-import { redirect } from "next/navigation";
+import { AudienceSection } from "@/components/landing/AudienceSection";
+import { BlogSection } from "@/components/landing/BlogSection";
+import { DownloadSection } from "@/components/landing/DownloadSection";
+import { FeaturesSection } from "@/components/landing/FeaturesSection";
+import { HeroSection } from "@/components/landing/HeroSection";
+import { HowItWorksSection } from "@/components/landing/HowItWorksSection";
+import { LandingFooter } from "@/components/landing/LandingFooter";
+import { LandingNav } from "@/components/landing/LandingNav";
+import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
+import React from "react";
 
-// Fallback — proxy.ts handles / before this runs in production.
-export default function RootPage() {
-  redirect("/home");
+function Rootpage() {
+  return (
+    <div>
+      <LandingNav />
+      <HeroSection />
+      <FeaturesSection />
+      <HowItWorksSection />
+      <AudienceSection />
+      <TestimonialsSection />
+      <BlogSection />
+      <DownloadSection />
+      <LandingFooter />
+    </div>
+  );
 }
+
+export default Rootpage;
