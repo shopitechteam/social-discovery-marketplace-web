@@ -18,17 +18,12 @@ function now() {
   });
 }
 
-const GREETING: Message = {
-  id: 0,
-  from: "support",
-  text: "Hi there 👋 I'm Amina from the Shopi support team. How can I help you today?",
-  time: now(),
-};
-
-export function SupportChat() {
+export function SupportChat({ dict }: { dict: import("@/i18n/getDictionary").Dictionary }) {
+  const s = dict.support;
+  const greeting: Message = { id: 0, from: "support", text: s.greeting, time: now() };
   const [open, setOpen] = useState(false);
   const [dismissed, setDismissed] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([GREETING]);
+  const [messages, setMessages] = useState<Message[]>([greeting]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -71,7 +66,7 @@ export function SupportChat() {
       const reply: Message = {
         id: Date.now() + 1,
         from: "support",
-        text: "Thanks for reaching out! Our team has received your message and will reply shortly.",
+        text: s.autoReply,
         time: now(),
       };
       setMessages((prev) => [...prev, reply]);
@@ -106,15 +101,15 @@ export function SupportChat() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-white font-semibold text-(length:--text-sm) leading-tight">
-                Amina · Shopi Support
+                {s.agentName}
               </p>
               <p className="text-white/70 text-(length:--text-xs)">
-                Usually replies in a few minutes
+                {s.agentSubtitle}
               </p>
             </div>
             <button
               onClick={handleDismiss}
-              aria-label="Close chat"
+              aria-label={s.close}
               className="text-white/70 hover:text-white transition-colors p-1 rounded"
             >
               ✕
@@ -191,13 +186,13 @@ export function SupportChat() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSend()}
-              placeholder="Type a message…"
+              placeholder={s.placeholder}
               className="flex-1 bg-surface rounded-full px-4 py-2 text-(length:--text-sm) text-foreground placeholder:text-muted outline-none border border-default focus:border-accent transition-colors"
             />
             <button
               onClick={handleSend}
               disabled={!input.trim()}
-              aria-label="Send message"
+              aria-label={s.send}
               className="w-9 h-9 rounded-full flex items-center justify-center text-white disabled:opacity-40 transition-opacity shrink-0"
               style={{ background: "rgb(var(--brand-primary))" }}
             >
@@ -222,7 +217,7 @@ export function SupportChat() {
       {/* Bubble — always visible */}
       <button
         onClick={open ? () => setOpen(false) : handleOpen}
-        aria-label={open ? "Minimize chat" : "Chat with support"}
+        aria-label={open ? s.minimize : s.open}
         className="fixed bottom-6 right-4 sm:right-6 z-50 w-14 h-14 rounded-full flex items-center justify-center text-white transition-transform hover:scale-110 active:scale-95"
         style={{
           background:

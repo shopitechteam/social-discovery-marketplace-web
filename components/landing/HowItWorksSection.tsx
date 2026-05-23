@@ -1,45 +1,13 @@
-import React from "react";
+import type { Dictionary } from "@/i18n/getDictionary";
 
-const EL = ({ href, children }: { href: string; children: React.ReactNode }) => (
-  <a
-    href={href}
-    target="_blank"
-    rel="noopener noreferrer"
-    className="underline decoration-dotted underline-offset-[3px] text-inherit"
-  >
-    {children}
-  </a>
-);
-
-const steps: { number: string; title: string; node: React.ReactNode }[] = [
-  {
-    number: "01",
-    title: "Sign up in 30 seconds",
-    node: "No credit card. No long forms. Pick your interests — phones, fashion, food, whatever — and your local feed is ready.",
-  },
-  {
-    number: "02",
-    title: "Scroll your local feed",
-    node: (
-      <>
-        Watch videos and photos posted by real sellers near you. Think{" "}
-        <EL href="https://www.tiktok.com">TikTok</EL>, but every post is something actually for sale — with a seller you can message directly.
-      </>
-    ),
-  },
-  {
-    number: "03",
-    title: "Like it? Message the seller.",
-    node: "Tap to open a direct chat with any seller. Negotiate, ask questions, arrange pickup or delivery — completely on your terms.",
-  },
-  {
-    number: "04",
-    title: "Sell. Post. Build your audience.",
-    node: "Sellers post content, grow followers, and build trust over time. The more you post, the more people discover what you're selling.",
-  },
-];
-
-export function HowItWorksSection() {
+export function HowItWorksSection({ dict }: { dict: Dictionary }) {
+  const s = dict.howItWorks.steps;
+  const steps: { number: string; title: string; body: string }[] = [
+    { number: "01", title: s["1"].title, body: s["1"].body },
+    { number: "02", title: s["2"].title, body: s["2"].body },
+    { number: "03", title: s["3"].title, body: s["3"].body },
+    { number: "04", title: s["4"].title, body: s["4"].body },
+  ];
   return (
     <section
       id="how-it-works"
@@ -49,16 +17,16 @@ export function HowItWorksSection() {
         {/* Header */}
         <div className="text-center mb-16">
           <p className="text-(length:--text-sm) font-bold tracking-widest uppercase text-accent mb-3">
-            How it works
+            {dict.howItWorks.sectionLabel}
           </p>
           <h2 className="font-display font-bold text-[clamp(1.75rem,3.5vw,3rem)] tracking-tight leading-[1.15] text-foreground">
-            Discover locally. Connect directly. No checkout needed.
+            {dict.howItWorks.headline}
           </h2>
         </div>
 
         {/* Steps */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 relative">
-          {steps.map(({ number, title, node }) => (
+          {steps.map(({ number, title, body }) => (
             <div key={number} className="text-center px-2">
               {/* Step circle */}
               <div
@@ -74,7 +42,7 @@ export function HowItWorksSection() {
                 {title}
               </h3>
               <p className="text-(length:--text-base) text-muted leading-normal">
-                {node}
+                {body}
               </p>
             </div>
           ))}

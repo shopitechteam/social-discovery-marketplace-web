@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { blogPosts } from "@/lib/blog";
+import type { Dictionary } from "@/i18n/getDictionary";
 
 const categoryColors: Record<string, string> = {
   Trends: "rgb(var(--brand-primary))",
@@ -10,7 +11,7 @@ const categoryColors: Record<string, string> = {
 
 const cardEmojis = ["🔍", "📱", "🎬", "🏙️"];
 
-export function BlogSection() {
+export function BlogSection({ dict: _dict }: { dict: Dictionary }) {
   return (
     <section
       id="blog"

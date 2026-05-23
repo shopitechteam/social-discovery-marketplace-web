@@ -1,0 +1,176 @@
+{
+  "common": {
+    "appName": "Shopi",
+    "tagline": "Discover. Shop. Share.",
+    "loading": "Loading…",
+    "error": "Something went wrong",
+    "continueWeb": "Continue in web →",
+    "downloadApp": "Download App",
+    "downloadAppStore": "Download on the App Store",
+    "downloadGooglePlay": "Get it on Google Play"
+  },
+
+  "nav": {
+    "features": "Features",
+    "howItWorks": "How it Works",
+    "creators": "Creators",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "toggleTheme": "Toggle theme",
+    "language": "Language"
+  },
+
+  "hero": {
+    "badge": "Kenya's Social Discovery Marketplace",
+    "headline": "Discover local products through short videos.",
+    "subheadline": "Shopi is the social commerce feed where sellers post videos and photos of what they're selling — and you scroll, discover, and message them directly.",
+    "ctaExplore": "Explore the feed",
+    "ctaHowItWorks": "See how it works",
+    "socialProof": "Join {count}+ sellers already on Shopi"
+  },
+
+  "features": {
+    "sectionLabel": "Why Shopi",
+    "headline": "Built so local sellers waste zero time getting started.",
+    "items": {
+      "scroll": {
+        "title": "Scroll to discover, not search",
+        "body": "Forget boring classified listings. Sellers post short videos, product demos, and photos. You discover them the same way you'd discover content — by scrolling."
+      },
+      "message": {
+        "title": "Interested? Just message.",
+        "body": "No carts. No checkout. No payment forms. When you find something you want, tap to chat with the seller directly and agree on your own terms."
+      },
+      "local": {
+        "title": "Local products, finally discoverable",
+        "body": "That farmer selling tomatoes in Kiambu. The sneaker dealer in Eastleigh. The tailor in Kisumu. They're all on Shopi — and now you can actually find them."
+      },
+      "communities": {
+        "title": "Join communities that match you",
+        "body": "\"iPhones in Embakasi.\" \"Sneakers Kenya.\" \"Farm Produce Nairobi.\" Join niche local communities where buyers and sellers already know each other."
+      },
+      "postOnce": {
+        "title": "Post once. Reach thousands.",
+        "body": "One video can reach thousands of potential buyers in your city. No ad budget needed — just good content and the right community."
+      },
+      "import": {
+        "title": "Already on TikTok? Just import it.",
+        "body": "If you already post on TikTok or Instagram, bring your content straight to Shopi where it actually converts into sales."
+      }
+    }
+  },
+
+  "howItWorks": {
+    "sectionLabel": "How it works",
+    "headline": "Discover locally. Connect directly. No checkout needed.",
+    "steps": {
+      "1": {
+        "title": "Sign up in 30 seconds",
+        "body": "No credit card. No long forms. Pick your interests — phones, fashion, food, whatever — and your local feed is ready."
+      },
+      "2": {
+        "title": "Scroll your local feed",
+        "body": "Watch videos and photos posted by real sellers near you. Think TikTok, but every post is something actually for sale — with a seller you can message directly."
+      },
+      "3": {
+        "title": "Like it? Message the seller.",
+        "body": "Tap to open a direct chat with any seller. Negotiate, ask questions, arrange pickup or delivery — completely on your terms."
+      },
+      "4": {
+        "title": "Sell. Post. Build your audience.",
+        "body": "Sellers post content, grow followers, and build trust over time. The more you post, the more people discover what you're selling."
+      }
+    }
+  },
+
+  "audience": {
+    "sectionLabel": "Who is Shopi for?",
+    "headline": "Everyone in Kenya buying and selling locally.",
+    "buyers": {
+      "tag": "Buyers",
+      "title": "Stop searching. Start discovering.",
+      "body": "Forget typing into a search bar hoping to find the right seller. On Shopi, your feed surfaces local products you'd actually want — based on your interests, your area, and what's trending near you.",
+      "cta": "Explore the feed"
+    },
+    "sellers": {
+      "tag": "Sellers",
+      "title": "Your phone is your storefront.",
+      "body": "Post a 30-second video. Reach buyers in your city without spending on ads. Build a following that comes back every time you post something new. No website needed. No delivery company required.",
+      "cta": "Start selling"
+    }
+  },
+
+  "testimonials": {
+    "sectionLabel": "Real people. Real sales.",
+    "headline": "Sellers across Kenya are already making it work."
+  },
+
+  "download": {
+    "sectionLabel": "Get the app",
+    "headline": "Your local market just got a social feed.",
+    "body": "Shopi is available on iOS and Android. Download the app and join thousands of sellers and buyers already on the platform.",
+    "appStore": "Download on the App Store",
+    "googlePlay": "Get it on Google Play",
+    "webCta": "Or continue in your browser →"
+  },
+
+  "footer": {
+    "tagline": "The social commerce feed for Kenya.",
+    "links": {
+      "product": "Product",
+      "company": "Company",
+      "legal": "Legal"
+    },
+    "copyright": "© {year} Shopi. All rights reserved."
+  },
+
+  "support": {
+    "agentName": "Amina · Shopi Support",
+    "agentSubtitle": "Usually replies in a few minutes",
+    "greeting": "Hi there 👋 I'm Amina from the Shopi support team. How can I help you today?",
+    "autoReply": "Thanks for reaching out! Our team has received your message and will reply shortly.",
+    "placeholder": "Type a message…",
+    "close": "Close chat",
+    "open": "Chat with support",
+    "minimize": "Minimize chat",
+    "send": "Send message"
+  },
+
+  "auth": {
+    "login": {
+      "title": "Welcome back",
+      "subtitle": "Sign in to your Shopi account",
+      "email": "Email address",
+      "password": "Password",
+      "forgotPassword": "Forgot password?",
+      "submit": "Sign in",
+      "noAccount": "Don't have an account?",
+      "register": "Sign up"
+    },
+    "register": {
+      "title": "Join Shopi",
+      "subtitle": "Create your account and start discovering",
+      "name": "Full name",
+      "email": "Email address",
+      "password": "Password",
+      "submit": "Create account",
+      "hasAccount": "Already have an account?",
+      "login": "Sign in"
+    },
+    "forgotPassword": {
+      "title": "Reset your password",
+      "subtitle": "Enter your email and we'll send you a reset link",
+      "email": "Email address",
+      "submit": "Send reset link",
+      "backToLogin": "Back to sign in"
+    }
+  },
+
+  "routes": {
+    "feed": "Home",
+    "explore": "Explore",
+    "notifications": "Inbox",
+    "profile": "My Profile",
+    "upload": "Create a Post"
+  }
+}

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import type { Dictionary } from "@/i18n/getDictionary";
 
 const EL = ({
   href,
@@ -87,7 +88,7 @@ const features: {
   },
 ];
 
-export function FeaturesSection() {
+export function FeaturesSection({ dict }: { dict: Dictionary }) {
   return (
     <section
       id="features"
@@ -148,7 +149,7 @@ export function FeaturesSection() {
             margin: "0 auto",
           }}
         >
-          Built so local sellers waste zero time getting started.
+          {dict.features.headline}
         </h2>
       </div>
 

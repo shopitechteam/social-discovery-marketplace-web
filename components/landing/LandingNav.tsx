@@ -7,14 +7,18 @@ import { siteConfig } from "@/config/site";
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import type { Dictionary } from "@/i18n/getDictionary";
+import type { Locale } from "@/i18n/config";
 
-const NAV_LINKS = [
-  { label: "Features", href: "#features" },
-  { label: "How it Works", href: "#how-it-works" },
-  { label: "Creators", href: "#creators" },
-];
+const NAV_HREFS = ["#features", "#how-it-works", "#creators"] as const;
 
-export function LandingNav() {
+export function LandingNav({ dict, lang }: { dict: Dictionary; lang: Locale }) {
+  const NAV_LINKS = [
+    { label: dict.nav.features, href: "#features" },
+    { label: dict.nav.howItWorks, href: "#how-it-works" },
+    { label: dict.nav.creators, href: "#creators" },
+  ];
   const { resolvedTheme, toggleTheme } = useThemeStore();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -37,7 +41,7 @@ export function LandingNav() {
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", onScroll, { passive: true });
 
-    const sectionIds = NAV_LINKS.map((l) => l.href.replace("#", ""));
+    const sectionIds = NAV_HREFS.map((h) => h.replace("#", ""));
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
@@ -224,8 +228,11 @@ export function LandingNav() {
               whiteSpace: "nowrap",
             }}
           >
-            Download App
+            {dict.common.downloadApp}
           </a>
+
+          {/* Language switcher */}
+          <LanguageSwitcher current={lang} />
 
           {/* Hamburger — mobile only */}
           <button

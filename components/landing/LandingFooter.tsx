@@ -1,8 +1,9 @@
 "use client";
 
 import { siteConfig } from "@/config/site";
+import type { Dictionary } from "@/i18n/getDictionary";
 
-export function LandingFooter() {
+export function LandingFooter({ dict }: { dict: Dictionary }) {
   return (
     <footer
       style={{
@@ -184,7 +185,7 @@ export function LandingFooter() {
           color: "rgb(var(--color-text-muted))",
         }}
       >
-        <span>© {new Date().getFullYear()} Shopi. All rights reserved.</span>
+        <span>{dict.footer.copyright.replace("{year}", String(new Date().getFullYear()))}</span>
         <span>Made in Kenya</span>
       </div>
 

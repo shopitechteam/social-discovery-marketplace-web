@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Manrope, Bricolage_Grotesque, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import { siteConfig } from "@/config/site";
+import { defaultLocale, isValidLocale } from "@/i18n/config";
+import { cookies } from "next/headers";
 import "./globals.css";
 import { ApolloWrapper } from "@/lib/apollo/ApolloWrapper";
 
@@ -126,12 +128,16 @@ const themeScript = `
 })();
 `;
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const cookieStore = await cookies();
+  const cookieLang = cookieStore.get("shopi_locale")?.value ?? "";
+  const lang = isValidLocale(cookieLang) ? cookieLang : defaultLocale;
+
   return (
     <html
-      lang={siteConfig.locale}
+      lang={lang}
       suppressHydrationWarning
       className={`${manrope.variable} ${bricolage.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >

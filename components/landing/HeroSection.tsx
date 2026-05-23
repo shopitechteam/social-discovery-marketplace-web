@@ -3,8 +3,9 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ExploreDialog } from "./ExploreDialog";
+import type { Dictionary } from "@/i18n/getDictionary";
 
-export function HeroSection() {
+export function HeroSection({ dict }: { dict: Dictionary }) {
   const [showExplore, setShowExplore] = useState(false);
   const router = useRouter();
 
@@ -107,7 +108,7 @@ export function HeroSection() {
           letterSpacing: "0.02em",
         }}
       >
-        <span>✦</span>✦ Kenya&apos;s Social Discovery Marketplace
+        <span>✦</span>✦ {dict.hero.badge}
       </div>
 
       {/* Headline */}
@@ -193,7 +194,7 @@ export function HeroSection() {
             cursor: "pointer",
           }}
         >
-          How it works →
+          {dict.hero.ctaHowItWorks}
         </button>
       </div>
 

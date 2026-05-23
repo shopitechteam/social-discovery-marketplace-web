@@ -1,5 +1,7 @@
 "use client";
 
+import type { Dictionary } from "@/i18n/getDictionary";
+
 const audiences = [
   {
     id: "sellers",
@@ -31,7 +33,7 @@ const audiences = [
   },
 ];
 
-export function AudienceSection() {
+export function AudienceSection({ dict }: { dict: Dictionary }) {
   return (
     <section
       id="creators"
@@ -53,7 +55,7 @@ export function AudienceSection() {
             marginBottom: "0.75rem",
           }}
         >
-          Who is Shopi for?
+          {dict.audience.sectionLabel}
         </p>
         <h2
           style={{
@@ -65,7 +67,7 @@ export function AudienceSection() {
             color: "rgb(var(--color-text))",
           }}
         >
-          Everyone in Kenya buying and selling locally.
+          {dict.audience.headline}
         </h2>
       </div>
 

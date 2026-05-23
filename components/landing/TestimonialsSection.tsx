@@ -1,4 +1,5 @@
 import React from "react";
+import type { Dictionary } from "@/i18n/getDictionary";
 
 const EL = ({ href, children }: { href: string; children: React.ReactNode }) => (
   <a
@@ -39,7 +40,7 @@ const testimonials: { node: React.ReactNode; name: string; role: string; avatar:
   },
 ];
 
-export function TestimonialsSection() {
+export function TestimonialsSection({ dict }: { dict: Dictionary }) {
   return (
     <section
       style={{
@@ -61,7 +62,7 @@ export function TestimonialsSection() {
               marginBottom: "0.75rem",
             }}
           >
-            Don&apos;t take our word for it
+            {dict.testimonials.sectionLabel}
           </p>
           <h2
             style={{
@@ -72,7 +73,7 @@ export function TestimonialsSection() {
               color: "rgb(var(--color-text))",
             }}
           >
-            Real people. Real conversations. Real deals.
+            {dict.testimonials.headline}
           </h2>
         </div>
 
