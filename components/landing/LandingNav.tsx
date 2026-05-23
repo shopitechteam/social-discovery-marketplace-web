@@ -13,11 +13,11 @@ import type { Locale } from "@/i18n/config";
 
 const NAV_HREFS = ["#features", "#how-it-works", "#creators"] as const;
 
-export function LandingNav({ dict }: { dict: Dictionary; lang: Locale }) {
+export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
   const NAV_LINKS = [
-    { label: dict.nav.features, href: "#features" },
-    { label: dict.nav.howItWorks, href: "#how-it-works" },
-    { label: dict.nav.creators, href: "#creators" },
+    { label: dict?.nav.features ?? "Features", href: "#features" },
+    { label: dict?.nav.howItWorks ?? "How It Works", href: "#how-it-works" },
+    { label: dict?.nav.creators ?? "Creators", href: "#creators" },
   ];
   const { resolvedTheme, toggleTheme } = useThemeStore();
   const [scrolled, setScrolled] = useState(false);
@@ -228,7 +228,7 @@ export function LandingNav({ dict }: { dict: Dictionary; lang: Locale }) {
               whiteSpace: "nowrap",
             }}
           >
-            {dict.common.downloadApp}
+            {dict?.common.downloadApp ?? "Download App"}
           </a>
 
           {/* Language switcher */}

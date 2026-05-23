@@ -4,14 +4,16 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 type Tab = {
-  href: string;
+  key: string;
+  path: string; // without leading slash, e.g. "feed"
   label: string;
   icon: (active: boolean) => React.ReactNode;
 };
 
 const tabs: Tab[] = [
   {
-    href: "/feed",
+    key: "feed",
+    path: "feed",
     label: "Home",
     icon: (active) => (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -33,7 +35,8 @@ const tabs: Tab[] = [
     ),
   },
   {
-    href: "/explore",
+    key: "explore",
+    path: "explore",
     label: "Explore",
     icon: (active) => (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -56,12 +59,14 @@ const tabs: Tab[] = [
     ),
   },
   {
-    href: "/upload",
+    key: "upload",
+    path: "upload",
     label: "Post",
-    icon: () => null, // rendered separately as the center action button
+    icon: () => null,
   },
   {
-    href: "/notifications",
+    key: "notifications",
+    path: "notifications",
     label: "Inbox",
     icon: (active) => (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -77,7 +82,8 @@ const tabs: Tab[] = [
     ),
   },
   {
-    href: "/profile",
+    key: "profile",
+    path: "profile",
     label: "Me",
     icon: (active) => (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -101,15 +107,14 @@ const tabs: Tab[] = [
   },
 ];
 
-export function BottomNav() {
+export function BottomNav({ lang = "en" }: { lang: string }) {
   const pathname = usePathname();
 
   return (
     <nav
-      className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50"
+      className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-107.5 z-50"
       style={{ paddingBottom: "var(--safe-bottom)" }}
     >
-      {/* Frosted glass surface */}
       <div
         className="relative flex items-center justify-between px-2"
         style={{
@@ -121,12 +126,14 @@ export function BottomNav() {
         }}
       >
         {tabs.map((tab) => {
-          // Center Post button — special pill treatment
-          if (tab.label === "Post") {
+          const href = `/${lang}/${tab.path}`;
+
+          // Center Post button — gradient pill
+          if (tab.key === "upload") {
             return (
               <Link
-                key={tab.href}
-                href={tab.href}
+                key={tab.key}
+                href={href}
                 className="flex items-center justify-center rounded-2xl"
                 style={{
                   width: 52,
@@ -148,15 +155,16 @@ export function BottomNav() {
             );
           }
 
+          // Active if the pathname segment after lang matches this tab's path
           const isActive =
-            tab.href === "/feed"
-              ? pathname === "/" || pathname.startsWith("/feed")
-              : pathname.startsWith(tab.href);
+            tab.key === "feed"
+              ? pathname === `/${lang}` || pathname.startsWith(`/${lang}/feed`)
+              : pathname.startsWith(`/${lang}/${tab.path}`);
 
           return (
             <Link
-              key={tab.href}
-              href={tab.href}
+              key={tab.key}
+              href={href}
               className="flex flex-col items-center justify-center gap-0.5 flex-1 py-1 select-none"
               style={{
                 color: isActive
@@ -164,7 +172,7 @@ export function BottomNav() {
                   : `rgb(var(--color-text-muted))`,
                 transition: "color 0.15s ease",
                 WebkitTapHighlightColor: "transparent",
-                minHeight: 44, // WCAG minimum tap target
+                minHeight: 44,
               }}
               aria-current={isActive ? "page" : undefined}
             >

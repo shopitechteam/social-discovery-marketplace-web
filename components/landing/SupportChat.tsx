@@ -18,9 +18,18 @@ function now() {
   });
 }
 
-export function SupportChat({ dict }: { dict: import("@/i18n/getDictionary").Dictionary }) {
+export function SupportChat({
+  dict,
+}: {
+  dict: import("@/i18n/getDictionary").Dictionary;
+}) {
   const s = dict.support;
-  const greeting: Message = { id: 0, from: "support", text: s.greeting, time: now() };
+  const greeting: Message = {
+    id: 0,
+    from: "support",
+    text: s.greeting,
+    time: now(),
+  };
   const [open, setOpen] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [messages, setMessages] = useState<Message[]>([greeting]);
@@ -78,7 +87,7 @@ export function SupportChat({ dict }: { dict: import("@/i18n/getDictionary").Dic
       {/* Chat panel */}
       {open && (
         <div
-          className="fixed bottom-24 right-4 sm:right-6 w-[calc(100vw-2rem)] max-w-sm z-50 flex flex-col rounded-2xl overflow-hidden"
+          className="fixed  bottom-24 right-4 sm:right-6 w-[calc(100vw-2rem)] max-w-sm z-50 flex flex-col rounded-2xl overflow-hidden"
           style={{
             boxShadow: "var(--shadow-lg)",
             border: "1px solid rgb(var(--color-border))",

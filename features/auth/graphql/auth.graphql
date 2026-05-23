@@ -1,0 +1,72 @@
+fragment AuthUserFields on User {
+  id
+  email
+  role
+  isVerified
+  profile {
+    firstName
+    lastName
+    avatar
+  }
+}
+
+fragment AuthPayloadFields on AuthPayload {
+  accessToken
+  refreshToken
+  user {
+    ...AuthUserFields
+  }
+}
+
+mutation RegisterWithEmail($input: RegisterEmailInput!) {
+  registerWithEmail(input: $input) {
+    ... on AuthPayload {
+      ...AuthPayloadFields
+    }
+    ... on PendingAccountLink {
+      status
+      email
+      existingProviders
+    }
+  }
+}
+
+mutation VerifyEmailAndLinkPassword($input: VerifyAndLinkInput!) {
+  verifyEmailAndLinkPassword(input: $input) {
+    ...AuthPayloadFields
+  }
+}
+
+mutation LoginWithEmail($input: LoginEmailInput!) {
+  loginWithEmail(input: $input) {
+    ...AuthPayloadFields
+  }
+}
+
+mutation RefreshToken($input: RefreshTokenInput!) {
+  refreshToken(input: $input) {
+    ...AuthPayloadFields
+  }
+}
+
+mutation LoginWithGoogle($input: OAuthInput!) {
+  loginWithGoogle(input: $input) {
+    ...AuthPayloadFields
+  }
+}
+
+mutation LoginWithApple($input: OAuthInput!) {
+  loginWithApple(input: $input) {
+    ...AuthPayloadFields
+  }
+}
+
+mutation LoginWithFacebook($input: OAuthInput!) {
+  loginWithFacebook(input: $input) {
+    ...AuthPayloadFields
+  }
+}
+
+mutation Logout($refreshToken: String!) {
+  logout(refreshToken: $refreshToken)
+}

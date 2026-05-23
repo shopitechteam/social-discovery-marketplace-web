@@ -6,7 +6,7 @@ import { HeroSection } from "@/components/landing/HeroSection";
 import { HowItWorksSection } from "@/components/landing/HowItWorksSection";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { LandingNav } from "@/components/landing/LandingNav";
-import { SupportChat } from "@/components/landing/SupportChat";
+//import { SupportChat } from "@/components/landing/SupportChat";
 import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
 import { getDictionary } from "@/i18n/getDictionary";
 import { isValidLocale } from "@/i18n/config";
@@ -29,7 +29,7 @@ export default async function Rootpage({ params }: PageProps<"/[lang]">) {
       <BlogSection dict={dict} />
       <DownloadSection dict={dict} />
       <LandingFooter dict={dict} />
-      <SupportChat dict={dict} />
+      {/* <SupportChat dict={dict} /> */}
     </div>
   );
 }

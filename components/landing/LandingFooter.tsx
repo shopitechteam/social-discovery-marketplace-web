@@ -1,9 +1,13 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { siteConfig } from "@/config/site";
 import type { Dictionary } from "@/i18n/getDictionary";
 
-export function LandingFooter({ dict }: { dict: Dictionary }) {
+export function LandingFooter({ dict }: { dict?: Dictionary }) {
+  const pathname = usePathname();
+  const lang = pathname.split("/")[1] || "en";
   return (
     <footer
       style={{
@@ -106,19 +110,28 @@ export function LandingFooter({ dict }: { dict: Dictionary }) {
         {[
           {
             heading: "Product",
-            links: ["Features", "How It Works", "For Creators", "For Sellers"],
+            links: [
+              { label: "Features", href: "#features" },
+              { label: "How It Works", href: "#how-it-works" },
+              { label: "For Creators", href: "#creators" },
+              { label: "For Sellers", href: "#sellers" },
+            ],
           },
           {
             heading: "Company",
-            links: ["About", "Blog", "Careers", "Press"],
+            links: [
+              { label: "About", href: `/${lang}/about` },
+              { label: "Blog", href: `/${lang}/blog` },
+              { label: "Careers", href: `/${lang}/careers` },
+            ],
           },
           {
             heading: "Legal",
             links: [
-              "Privacy Policy",
-              "Terms of Service",
-              "Cookie Policy",
-              "Contact",
+              { label: "Privacy Policy", href: `/${lang}/privacy` },
+              { label: "Terms of Service", href: `/${lang}/terms` },
+              { label: "Cookie Policy", href: `/${lang}/cookies` },
+              { label: "Contact", href: "mailto:hello@shopi.app" },
             ],
           },
         ].map(({ heading, links }) => (
@@ -144,10 +157,10 @@ export function LandingFooter({ dict }: { dict: Dictionary }) {
                 gap: "0.625rem",
               }}
             >
-              {links.map((link) => (
-                <li key={link}>
-                  <a
-                    href="#"
+              {links.map(({ label, href }) => (
+                <li key={label}>
+                  <Link
+                    href={href}
                     style={{
                       fontSize: "var(--text-sm)",
                       color: "rgb(var(--color-text-muted))",
@@ -162,8 +175,8 @@ export function LandingFooter({ dict }: { dict: Dictionary }) {
                         "rgb(var(--color-text-muted))")
                     }
                   >
-                    {link}
-                  </a>
+                    {label}
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -185,7 +198,7 @@ export function LandingFooter({ dict }: { dict: Dictionary }) {
           color: "rgb(var(--color-text-muted))",
         }}
       >
-        <span>{dict.footer.copyright.replace("{year}", String(new Date().getFullYear()))}</span>
+        <span>{dict?.footer.copyright.replace("{year}", String(new Date().getFullYear())) ?? `© ${new Date().getFullYear()} Shopi Limited. All rights reserved.`}</span>
         <span>Made in Kenya</span>
       </div>
 

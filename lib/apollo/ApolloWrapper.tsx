@@ -1,13 +1,16 @@
 "use client";
 
-import { ApolloLink, HttpLink } from "@apollo/client";
+import { ApolloLink, HttpLink, Observable } from "@apollo/client";
 import { CombinedGraphQLErrors } from "@apollo/client/errors";
 import { ErrorLink } from "@apollo/client/link/error";
+import { setContext } from "@apollo/client/link/context";
 import {
   ApolloClient,
   ApolloNextAppProvider,
   InMemoryCache,
 } from "@apollo/client-integration-nextjs";
+import type { RefreshTokenMutation } from "@/types/__generated__/graphql";
+import { useAuthStore } from "@/stores/auth";
 
 let clientSingleton: ReturnType<typeof createClient> | undefined;
 
@@ -19,36 +22,134 @@ function makeClient() {
   return createClient();
 }
 
+// Tracks an in-flight refresh so concurrent requests don't trigger multiple refreshes
+let refreshPromise: Promise<string | null> | null = null;
+
+async function doRefresh(
+  httpLink: HttpLink,
+  refreshToken: string,
+): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/graphql`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: `
+            mutation RefreshToken($input: RefreshTokenInput!) {
+              refreshToken(input: $input) {
+                accessToken
+                refreshToken
+                user {
+                  id
+                  email
+                  role
+                  isVerified
+                  profile { firstName lastName avatar }
+                }
+              }
+            }
+          `,
+          variables: { input: { refreshToken } },
+        }),
+      },
+    );
+
+    const json = (await res.json()) as {
+      data?: RefreshTokenMutation;
+      errors?: unknown[];
+    };
+
+    if (json.errors || !json.data?.refreshToken) return null;
+
+    const { accessToken, refreshToken: newRefreshToken, user } = json.data.refreshToken;
+    useAuthStore.getState().setAuth({ accessToken, refreshToken: newRefreshToken, user });
+    return accessToken;
+  } catch {
+    return null;
+  }
+}
+
 function createClient() {
   const httpLink = new HttpLink({
     uri: `${process.env.NEXT_PUBLIC_API_URL}/graphql`,
-    // Browser-side: skip Next.js fetch cache — Apollo InMemoryCache is
-    // the only cache layer on the client
     fetchOptions: { cache: "no-store" },
   });
 
-  // Apollo 4: ErrorLink class replaces the deprecated onError function.
-  // { error } is CombinedGraphQLErrors for GQL errors, plain Error for network.
-  const errorLink = new ErrorLink(({ error, operation }) => {
-    if (CombinedGraphQLErrors.is(error)) {
-      error.errors.forEach(({ message, path }) =>
-        console.error(
-          `[GraphQL] ${operation.operationName} → ${String(path)}: ${message}`,
-        ),
-      );
-    } else {
-      console.error(`[Network] ${operation.operationName}:`, error);
+  // Attach Authorization header from store on every request
+  const authLink = setContext((_, { headers }) => {
+    const token = useAuthStore.getState().accessToken;
+    return {
+      headers: {
+        ...headers,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    };
+  });
+
+  // Intercept UNAUTHENTICATED errors → refresh → retry once, invisibly
+  const refreshLink = new ErrorLink(({ error, operation, forward }) => {
+    if (!CombinedGraphQLErrors.is(error)) return;
+
+    const isUnauth = error.errors.some(
+      (e) =>
+        e.extensions?.["code"] === "UNAUTHENTICATED" ||
+        e.message?.toLowerCase().includes("unauthorized") ||
+        e.message?.toLowerCase().includes("unauthenticated"),
+    );
+
+    if (!isUnauth) return;
+
+    const { refreshToken, clearAuth } = useAuthStore.getState();
+    if (!refreshToken) {
+      clearAuth();
+      return;
     }
+
+    return new Observable((observer) => {
+      // Deduplicate: all concurrent expired requests share one refresh call
+      if (!refreshPromise) {
+        refreshPromise = doRefresh(httpLink, refreshToken).finally(() => {
+          refreshPromise = null;
+        });
+      }
+
+      refreshPromise
+        .then((newToken) => {
+          if (!newToken) {
+            useAuthStore.getState().clearAuth();
+            observer.error(error);
+            return;
+          }
+
+          // Retry original operation with new token in context
+          operation.setContext(({ headers = {} }: Record<string, unknown>) => ({
+            headers: {
+              ...(headers as Record<string, string>),
+              Authorization: `Bearer ${newToken}`,
+            },
+          }));
+
+          const sub = forward(operation).subscribe({
+            next: observer.next.bind(observer),
+            error: observer.error.bind(observer),
+            complete: observer.complete.bind(observer),
+          });
+
+          return () => sub.unsubscribe();
+        })
+        .catch((err) => observer.error(err));
+    });
   });
 
   return new ApolloClient({
-    link: ApolloLink.from([errorLink, httpLink]),
+    link: ApolloLink.from([refreshLink, authLink, httpLink]),
 
     cache: new InMemoryCache({
       typePolicies: {
         Query: {
           fields: {
-            // Feed: separate cache per filter/sort, append on cursor
             feed: {
               keyArgs: ["filter", "sortBy"],
               merge(existing, incoming, { args }) {
@@ -119,7 +220,6 @@ function createClient() {
 
     defaultOptions: {
       watchQuery: {
-        // Instant UI from cache, refresh in background
         fetchPolicy: "cache-and-network",
         nextFetchPolicy: "cache-first",
       },
