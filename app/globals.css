@@ -1,0 +1,232 @@
+@import "tailwindcss";
+
+/* ─── Brand palette ───────────────────────────────────────────────
+   Primary:   rgb(255, 59, 92)   — Shopi Red (energy, discovery)
+   Secondary: rgb(255, 159, 64)  — Warm Amber (warmth, commerce)
+   Accent:    rgb(99, 91, 255)   — Electric Violet (social/creative)
+   Success:   rgb(34, 197, 94)   — Emerald
+   Warning:   rgb(251, 191, 36)  — Amber
+   Error:     rgb(239, 68, 68)   — Rose Red
+──────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Brand */
+  --brand-primary: 255 59 92;
+  --brand-secondary: 255 159 64;
+  --brand-accent: 99 91 255;
+
+  /* Surfaces */
+  --color-bg: 255 255 255;
+  --color-bg-subtle: 248 248 250;
+  --color-bg-elevated: 255 255 255;
+  --color-overlay: 0 0 0;
+
+  /* Borders */
+  --color-border: 226 226 232;
+  --color-border-strong: 180 180 192;
+
+  /* Text */
+  --color-text: 15 15 20;
+  --color-text-muted: 100 100 115;
+  --color-text-placeholder: 160 160 175;
+  --color-text-on-brand: 255 255 255;
+
+  /* State */
+  --color-success: 34 197 94;
+  --color-warning: 251 191 36;
+  --color-error: 239 68 68;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.06);
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-full: 9999px;
+}
+
+/* ─── Dark mode — toggled by .dark on <html> ───────────────────── */
+.dark {
+  --color-bg: 10 10 14;
+  --color-bg-subtle: 18 18 24;
+  --color-bg-elevated: 26 26 34;
+  --color-overlay: 255 255 255;
+
+  --color-border: 38 38 50;
+  --color-border-strong: 60 60 78;
+
+  --color-text: 240 240 245;
+  --color-text-muted: 148 148 165;
+  --color-text-placeholder: 90 90 105;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* ─── Tailwind v4 theme tokens ─────────────────────────────────── */
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-display, var(--font-geist-sans));
+
+  /* Expose brand as Tailwind colors */
+  --color-primary: rgb(var(--brand-primary));
+  --color-primary-soft: rgb(var(--brand-primary) / 0.12);
+  --color-secondary: rgb(var(--brand-secondary));
+  --color-secondary-soft: rgb(var(--brand-secondary) / 0.12);
+  --color-accent: rgb(var(--brand-accent));
+  --color-accent-soft: rgb(var(--brand-accent) / 0.12);
+
+  --color-background: rgb(var(--color-bg));
+  --color-surface: rgb(var(--color-bg-subtle));
+  --color-elevated: rgb(var(--color-bg-elevated));
+
+  --color-border: rgb(var(--color-border));
+  --color-foreground: rgb(var(--color-text));
+  --color-muted: rgb(var(--color-text-muted));
+
+  --color-success: rgb(var(--color-success));
+  --color-warning: rgb(var(--color-warning));
+  --color-error: rgb(var(--color-error));
+
+  /* Type scale available as Tailwind text-* utilities */
+  --text-xs: var(--text-xs);
+  --text-sm: var(--text-sm);
+  --text-base: var(--text-base);
+  --text-md: var(--text-md);
+  --text-lg: var(--text-lg);
+  --text-xl: var(--text-xl);
+  --text-2xl: var(--text-2xl);
+}
+
+/* ─── Mobile-first type scale ──────────────────────────────────────
+   Use these everywhere — never raw px or Tailwind's text-* directly.
+   All sizes tuned for ~390px viewport (iPhone 14 reference).
+
+   --text-xs    10px  captions, timestamps, badges
+   --text-sm    12px  secondary labels, helper text
+   --text-base  14px  body copy, list items             ← default
+   --text-md    16px  primary labels, input text
+   --text-lg    18px  section headings, card titles
+   --text-xl    22px  screen titles, hero text
+   --text-2xl   28px  display / splash numbers
+──────────────────────────────────────────────────────────────────── */
+:root {
+  --text-xs: 0.625rem; /* 10px */
+  --text-sm: 0.75rem; /* 12px */
+  --text-base: 0.875rem; /* 14px */
+  --text-md: 1rem; /* 16px */
+  --text-lg: 1.125rem; /* 18px */
+  --text-xl: 1.375rem; /* 22px */
+  --text-2xl: 1.75rem; /* 28px */
+
+  /* Leading (line-height) companions */
+  --leading-tight: 1.25;
+  --leading-snug: 1.4;
+  --leading-normal: 1.6;
+
+  /* Safe area inset for iOS home indicator */
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* Bottom nav height — used to pad scrollable content */
+  --nav-height: 60px;
+}
+
+/* ─── Desktop type scale override (≥1024px) ────────────────────── */
+@media (min-width: 1024px) {
+  :root {
+    --text-xs: 0.6875rem;  /* 11px */
+    --text-sm: 0.8125rem;  /* 13px */
+    --text-base: 0.9375rem; /* 15px */
+    --text-md: 1.0625rem;  /* 17px */
+    --text-lg: 1.1875rem;  /* 19px */
+    --text-xl: 1.5rem;     /* 24px */
+    --text-2xl: 2rem;      /* 32px */
+  }
+}
+
+/* ─── Base ─────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  /* Smooth theme transitions on every element simultaneously —
+     linear so there's no ease-in lag, short so it feels instant */
+  transition:
+    background-color 0.18s linear,
+    border-color 0.18s linear,
+    color 0.18s linear,
+    box-shadow 0.18s linear,
+    fill 0.18s linear,
+    stroke 0.18s linear;
+}
+
+/* Kill the transition on elements where it would cause visible jank */
+*:where(img, video, svg image) {
+  transition: none;
+}
+
+html {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  background-color: rgb(var(--color-bg));
+  color: rgb(var(--color-text));
+  font-family: var(--font-sans, Arial, Helvetica, sans-serif);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Utility classes (use these directly in JSX) ──────────────── */
+.bg-app {
+  background-color: rgb(var(--color-bg));
+}
+.bg-surface {
+  background-color: rgb(var(--color-bg-subtle));
+}
+.bg-elevated {
+  background-color: rgb(var(--color-bg-elevated));
+}
+.border-default {
+  border-color: rgb(var(--color-border));
+}
+.text-default {
+  color: rgb(var(--color-text));
+}
+.text-muted {
+  color: rgb(var(--color-text-muted));
+}
+
+.btn-primary {
+  background-color: rgb(var(--brand-primary));
+  color: rgb(var(--color-text-on-brand));
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  transition:
+    opacity 0.15s ease,
+    transform 0.1s ease;
+}
+.btn-primary:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+.btn-primary:active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.card {
+  background-color: rgb(var(--color-bg-elevated));
+  border: 1px solid rgb(var(--color-border));
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}

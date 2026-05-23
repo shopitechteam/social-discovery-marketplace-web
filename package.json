@@ -1,0 +1,47 @@
+{
+  "name": "shopi-web-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "codegen": "graphql-codegen --config codegen.ts",
+    "codegen:watch": "graphql-codegen --config codegen.ts --watch"
+  },
+  "dependencies": {
+    "@apollo/client": "^4.2.0",
+    "@apollo/client-integration-nextjs": "^0.14.5",
+    "@hookform/resolvers": "^5.4.0",
+    "@t3-oss/env-nextjs": "^0.13.11",
+    "graphql": "^16.14.0",
+    "next": "16.2.6",
+    "next-devtools-mcp": "^0.3.10",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "react-hook-form": "^7.76.0",
+    "rxjs": "^7.8.2",
+    "server-only": "^0.0.1",
+    "zod": "^4.4.3",
+    "zustand": "^5.0.13"
+  },
+  "devDependencies": {
+    "@graphql-codegen/cli": "^7.0.0",
+    "@graphql-codegen/client-preset": "^6.0.0",
+    "@graphql-codegen/import-types-preset": "^4.0.1",
+    "@graphql-codegen/typescript": "^6.0.1",
+    "@graphql-codegen/typescript-operations": "^6.0.2",
+    "@graphql-codegen/typescript-react-apollo": "^4.4.2",
+    "@parcel/watcher": "^2.5.6",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.6",
+    "shadcn": "^4.8.0",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
