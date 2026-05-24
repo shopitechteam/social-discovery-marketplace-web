@@ -8,6 +8,7 @@ export function ThemeToggle() {
   const [mounted, setMounted] = useState(false);
 
   // Only render after mount — prevents SSR/client mismatch
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
 
   if (!mounted) return null;
@@ -16,7 +17,12 @@ export function ThemeToggle() {
 
   return (
     <>
-      <p style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text-muted))" }}>
+      <p
+        style={{
+          fontSize: "var(--text-sm)",
+          color: "rgb(var(--color-text-muted))",
+        }}
+      >
         Current theme: <strong>{resolvedTheme}</strong>
       </p>
 

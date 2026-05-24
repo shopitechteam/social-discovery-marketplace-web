@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { LandingNav } from "@/components/landing/LandingNav";
+import { LegalNav } from "@/components/legal/LegalNav";
 
 export const metadata: Metadata = {
   title: "Privacy Policy — Shopi",
@@ -16,7 +16,7 @@ export default async function PrivacyPage({ params }: Props) {
   const base = `/${lang}`;
   return (
     <>
-      <LandingNav />
+      <LegalNav lang={lang} />
       <main style={{ maxWidth: 780, margin: "0 auto", padding: "5rem 1.25rem 6rem" }}>
         <div style={{ marginBottom: "2.5rem" }}>
           <p style={{ fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgb(var(--brand-primary))", marginBottom: "0.75rem" }}>

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { blogPosts } from "@/lib/blog";
 import { siteConfig } from "@/config/site";
-import { LandingNav } from "@/components/landing/LandingNav";
+import { LegalNav } from "@/components/legal/LegalNav";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 
 export const metadata: Metadata = {
@@ -35,10 +35,11 @@ const categoryColors: Record<string, string> = {
 
 export default function BlogIndexPage() {
   const [featured, ...rest] = blogPosts;
+  const lang = "en"; // static fallback — blog has no dynamic lang param here
 
   return (
     <>
-      <LandingNav />
+      <LegalNav lang={lang} />
       <main className="blog-main-wrap">
         {/* Header */}
         <div style={{ marginBottom: "2rem", textAlign: "center" }}>

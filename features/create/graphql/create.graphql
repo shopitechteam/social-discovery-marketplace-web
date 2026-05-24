@@ -1,0 +1,140 @@
+fragment DraftFields on DraftContent {
+  id
+  currentStep
+  status
+  type
+  title
+  caption
+  hashtags
+  mediaAssetIds
+  visibilityMode
+  allowDownload
+  hdEnabled
+  contentDeclarations
+  scheduledPublishAt
+  version
+  sourceImportId
+  importProvider
+  price {
+    amount
+    currency
+    negotiable
+  }
+  createdAt
+  updatedAt
+}
+
+fragment MediaAssetFields on MediaAsset {
+  id
+  type
+  status
+  sortOrder
+  thumbnailUrl
+  displayWidth
+  displayHeight
+  r2Variants {
+    variant
+    url
+    width
+    height
+    sizeBytes
+  }
+  muxMeta {
+    playbackId
+    duration
+    thumbnailUrl
+    animatedThumbnailUrl
+    aspectRatio
+  }
+  errorMessage
+}
+
+mutation CreateDraft($input: CreateDraftInput) {
+  createDraft(input: $input) {
+    ...DraftFields
+  }
+}
+
+mutation AutosaveDraft($id: String!, $input: AutosaveDraftInput!) {
+  autosaveDraft(id: $id, input: $input) {
+    ...DraftFields
+  }
+}
+
+mutation AdvanceDraftStep($id: String!) {
+  advanceDraftStep(id: $id) {
+    ...DraftFields
+  }
+}
+
+mutation AttachMediaAsset($draftId: String!, $mediaAssetId: String!, $sortOrder: Int) {
+  attachMediaAsset(draftId: $draftId, mediaAssetId: $mediaAssetId, sortOrder: $sortOrder) {
+    ...DraftFields
+  }
+}
+
+mutation DetachMediaAsset($draftId: String!, $mediaAssetId: String!) {
+  detachMediaAsset(draftId: $draftId, mediaAssetId: $mediaAssetId) {
+    ...DraftFields
+  }
+}
+
+mutation ReorderDraftMedia($draftId: String!, $orderedAssetIds: [String!]!) {
+  reorderDraftMedia(draftId: $draftId, orderedAssetIds: $orderedAssetIds) {
+    ...DraftFields
+  }
+}
+
+mutation PublishDraft($id: String!) {
+  publishDraft(id: $id) {
+    id
+    type
+    title
+  }
+}
+
+mutation DiscardDraft($id: String!) {
+  discardDraft(id: $id)
+}
+
+mutation RequestVideoUpload($draftId: String) {
+  requestVideoUpload(draftId: $draftId) {
+    uploadUrl
+    muxUploadId
+    mediaAssetId
+    uploadSessionId
+  }
+}
+
+mutation RequestImageUpload($draftId: String, $mimeType: String) {
+  requestImageUpload(draftId: $draftId, mimeType: $mimeType) {
+    uploadUrl
+    tempKey
+    mediaAssetId
+    uploadSessionId
+  }
+}
+
+mutation NotifyImageUploaded($mediaAssetId: String!) {
+  notifyImageUploaded(mediaAssetId: $mediaAssetId) {
+    ...MediaAssetFields
+  }
+}
+
+mutation NotifyVideoUploaded($mediaAssetId: String!) {
+  notifyVideoUploaded(mediaAssetId: $mediaAssetId) {
+    ...MediaAssetFields
+  }
+}
+
+query GetMediaAsset($id: String!) {
+  mediaAsset(id: $id) {
+    ...MediaAssetFields
+  }
+}
+
+query MyDrafts($limit: Int, $afterId: String) {
+  myDrafts(limit: $limit, afterId: $afterId) {
+    ...DraftFields
+  }
+}

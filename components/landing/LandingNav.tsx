@@ -108,8 +108,8 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
           transition: "background-color 0.25s ease, border-color 0.25s ease",
         }}
       >
-        {/* Logo */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+        {/* Logo → home */}
+        <Link href="/" style={{ display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none" }}>
           <div
             style={{
               width: 32,
@@ -140,7 +140,7 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
           >
             {siteConfig.name}
           </span>
-        </div>
+        </Link>
 
         {/* Desktop nav links */}
         <div

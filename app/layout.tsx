@@ -141,10 +141,8 @@ export default async function RootLayout({
       suppressHydrationWarning
       className={`${manrope.variable} ${bricolage.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      </head>
       <body className="min-h-full flex flex-col bg-app text-default">
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <ThemeProvider>
           <ApolloWrapper>
             <main>{children}</main>

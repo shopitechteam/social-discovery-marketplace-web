@@ -1,0 +1,59 @@
+fragment TiktokDownloadFields on TiktokDownload {
+  id
+  url
+  status
+  title
+  authorUsername
+  authorNickname
+  duration
+  muxPlaybackId
+  muxAssetId
+  thumbnailUrl
+  hlsUrl
+  errorMessage
+  createdAt
+}
+
+fragment TiktokVideoItemFields on TiktokVideoItem {
+  id
+  title
+  coverImageUrl
+  shareUrl
+  duration
+  createTime
+}
+
+query MyTiktokImports {
+  myTiktokImports {
+    ...TiktokDownloadFields
+  }
+}
+
+query MyTiktokVideos($cursor: String) {
+  myTiktokVideos(cursor: $cursor) {
+    videos {
+      ...TiktokVideoItemFields
+    }
+    nextCursor
+    hasMore
+  }
+}
+
+mutation TiktokConnectUrl($returnUrl: String) {
+  tiktokConnectUrl(returnUrl: $returnUrl)
+}
+
+mutation ImportTiktokVideo($shareUrl: String!) {
+  importTiktokVideo(shareUrl: $shareUrl) {
+    ...TiktokDownloadFields
+  }
+}
+
+query Me {
+  me {
+    id
+    authProviders {
+      tiktok
+    }
+  }
+}

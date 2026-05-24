@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { LandingNav } from "@/components/landing/LandingNav";
+import { LegalNav } from "@/components/legal/LegalNav";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 
 export const metadata: Metadata = {
@@ -10,11 +10,11 @@ export const metadata: Metadata = {
 type Props = { params: Promise<{ lang: string }> };
 
 export default async function CareersPage({ params }: Props) {
-  await params;
+  const { lang } = await params;
 
   return (
     <>
-      <LandingNav />
+      <LegalNav lang={lang} />
       <main>
         {/* Hero */}
         <section

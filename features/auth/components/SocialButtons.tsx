@@ -2,24 +2,19 @@
 
 import { useState } from "react";
 import { useOAuthMutation } from "@/features/auth/hooks/useOAuthMutation";
-import { AppleIcon, GoogleIcon, FacebookIcon } from "./AuthIcons";
-
-/** True only on iOS / macOS — the platforms where Apple Sign In makes sense */
-function isApplePlatform(): boolean {
-  if (typeof navigator === "undefined") return false;
-  return /iPhone|iPad|iPod|Macintosh/i.test(navigator.userAgent);
-}
+import { AppleIcon, GoogleIcon } from "./AuthIcons";
 
 interface Props {
   lang: string;
   from?: string;
+  /** Label prefix: "Continue" (default) or "Sign in" or "Sign up" */
+  verb?: string;
 }
 
-export function SocialButtons({ lang, from }: Props) {
-  const { triggerGoogle, triggerApple, triggerFacebook, loading, setLoading } =
+export function SocialButtons({ lang, from, verb = "Continue" }: Props) {
+  const { triggerGoogle, triggerApple, loading, setLoading } =
     useOAuthMutation(lang, from);
   const [error, setError] = useState<string | null>(null);
-  const showApple = isApplePlatform();
 
   async function handleGoogle() {
     setError(null);
@@ -37,48 +32,33 @@ export function SocialButtons({ lang, from }: Props) {
     if (err) setError(err);
   }
 
-  async function handleFacebook() {
-    setError(null);
-    setLoading(true);
-    const err = await triggerFacebook();
-    setLoading(false);
-    if (err) setError(err);
-  }
-
   return (
     <div className="flex flex-col gap-3">
       {error && <p className="text-xs text-center text-error">{error}</p>}
-      <div className="flex gap-3">
-        {showApple && (
-          <button
-            type="button"
-            disabled={loading}
-            onClick={handleApple}
-            aria-label="Continue with Apple"
-            className="flex-1 flex items-center justify-center h-12 rounded-2xl bg-black text-white active:opacity-75 transition-opacity disabled:opacity-50"
-          >
-            <AppleIcon />
-          </button>
-        )}
-        <button
-          type="button"
-          disabled={loading}
-          onClick={handleGoogle}
-          aria-label="Continue with Google"
-          className="flex-1 flex items-center justify-center h-12 rounded-2xl border border-border bg-elevated active:opacity-75 transition-opacity disabled:opacity-50"
-        >
-          <GoogleIcon />
-        </button>
-        <button
-          type="button"
-          disabled={loading}
-          onClick={handleFacebook}
-          aria-label="Continue with Facebook"
-          className="flex-1 flex items-center justify-center h-12 rounded-2xl bg-[#1877F2] text-white active:opacity-75 transition-opacity disabled:opacity-50"
-        >
-          <FacebookIcon />
-        </button>
-      </div>
+
+      {/* Apple — white pill */}
+      <button
+        type="button"
+        disabled={loading}
+        onClick={handleApple}
+        aria-label={`${verb} with Apple`}
+        className="w-full flex items-center justify-center gap-3 h-13 rounded-2xl bg-white text-black font-semibold text-[15px] active:opacity-80 transition-opacity disabled:opacity-50 shadow-sm"
+      >
+        <AppleIcon />
+        <span>{verb} with Apple</span>
+      </button>
+
+      {/* Google — dark pill */}
+      <button
+        type="button"
+        disabled={loading}
+        onClick={handleGoogle}
+        aria-label={`${verb} with Google`}
+        className="w-full flex items-center justify-center gap-3 h-13 rounded-2xl bg-elevated border border-border text-default font-semibold text-[15px] active:opacity-80 transition-opacity disabled:opacity-50"
+      >
+        <GoogleIcon />
+        <span>{verb} with Google</span>
+      </button>
     </div>
   );
 }

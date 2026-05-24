@@ -3,10 +3,10 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getBlogPost, getAllSlugs, blogPosts } from "@/lib/blog";
 import { siteConfig } from "@/config/site";
-import { LandingNav } from "@/components/landing/LandingNav";
+import { LegalNav } from "@/components/legal/LegalNav";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 
-type Props = { params: Promise<{ slug: string }> };
+type Props = { params: Promise<{ lang: string; slug: string }> };
 
 /* ── Static params for build-time generation ─────────────────────── */
 export function generateStaticParams() {
@@ -15,7 +15,7 @@ export function generateStaticParams() {
 
 /* ── Per-page metadata ───────────────────────────────────────────── */
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
+  const { slug } = await params; // lang unused in metadata
   const post = getBlogPost(slug);
   if (!post) return {};
 
@@ -56,7 +56,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 /* ── Page component ─────────────────────────────────────────────── */
 export default async function BlogPostPage({ params }: Props) {
-  const { slug } = await params;
+  const { lang, slug } = await params;
   const post = getBlogPost(slug);
   if (!post) notFound();
 
@@ -113,7 +113,7 @@ export default async function BlogPostPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
 
-      <LandingNav />
+      <LegalNav lang={lang} />
 
       <main className="blog-post-main">
         <div className="blog-post-layout">

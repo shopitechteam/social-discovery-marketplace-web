@@ -26,14 +26,18 @@ export default async function LoginPage({
     ? `/${lang}/auth/register?from=${encodeURIComponent(from)}`
     : `/${lang}/auth/register`;
 
-  /** Bottom social + switch link — shared */
+  const SocialTop = (
+    <div className="flex flex-col gap-3 mb-5">
+      <SocialButtons lang={lang} from={from} verb="Sign in" />
+      <Divider label="or use email" />
+    </div>
+  );
+
   const Footer = (
-    <div className="flex flex-col gap-4">
-      <Divider />
-      <SocialButtons lang={lang} from={from} />
+    <div className="mt-5">
       <p className="text-center text-sm text-muted">
         New to Shopi?{" "}
-        <Link href={registerHref} className="text-primary font-semibold">
+        <Link href={registerHref} className="font-semibold text-primary">
           Create an account
         </Link>
       </p>
@@ -44,15 +48,21 @@ export default async function LoginPage({
     <AuthDesktopShell lang={lang}>
       {/* ── Mobile layout ─────────────────────────────────────── */}
       <div
-        className="relative flex flex-col min-h-svh bg-app lg:hidden"
+        className="relative flex flex-col h-svh overflow-hidden bg-app lg:hidden"
         style={{ maxWidth: 430, margin: "0 auto" }}
       >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-20 -right-20 w-64 h-64 rounded-full blur-3xl"
+          style={{ background: "rgb(var(--brand-primary) / 0.07)" }}
+        />
+
         {/* Top bar */}
-        <div className="flex items-center justify-between px-5 pt-14 pb-2">
+        <div className="flex items-center justify-between px-5 pt-12 pb-1 shrink-0">
           <Link
             href={`/${lang}/auth/auth-welcome`}
             aria-label="Back"
-            className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-subtle text-muted active:opacity-70 transition-opacity"
+            className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-surface text-muted active:opacity-70 transition-opacity"
           >
             <ChevronLeftIcon />
           </Link>
@@ -60,20 +70,21 @@ export default async function LoginPage({
         </div>
 
         {/* Heading */}
-        <div className="px-6 pt-8 pb-6">
-          <h1 className="text-[30px] font-bold leading-tight text-default font-display tracking-tight">
+        <div className="px-6 pt-4 pb-3 shrink-0">
+          <h1 className="text-[26px] font-bold leading-tight text-default font-display tracking-tight">
             Welcome back
           </h1>
-          <p className="mt-2 text-[15px] text-muted leading-relaxed">
+          <p className="mt-1 text-[14px] text-muted">
             Sign in to keep your feed personalized.
           </p>
         </div>
 
-        <div className="px-6 flex-1">
+        {/* Scrollable area */}
+        <div className="flex-1 overflow-y-auto px-6 pb-6">
+          {SocialTop}
           <LoginForm from={from} lang={lang} />
+          {Footer}
         </div>
-
-        <div className="px-6 pb-12 mt-8">{Footer}</div>
       </div>
 
       {/* ── Desktop right-panel content ───────────────────────── */}
@@ -86,6 +97,7 @@ export default async function LoginPage({
             Sign in to keep your feed personalized.
           </p>
         </div>
+        {SocialTop}
         <LoginForm from={from} lang={lang} />
         {Footer}
       </div>

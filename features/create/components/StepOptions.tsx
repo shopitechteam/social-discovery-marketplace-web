@@ -1,0 +1,340 @@
+"use client";
+
+import { useState } from "react";
+import { useMutation } from "@apollo/client/react";
+import { useCreateStore } from "@/stores/create";
+import {
+  AutosaveDraftDocument,
+  AdvanceDraftStepDocument,
+  VisibilityMode,
+} from "@/types/__generated__/graphql";
+
+type Visibility = "public" | "friends_only" | "private";
+
+const VISIBILITY_OPTIONS: {
+  value: Visibility;
+  label: string;
+  icon: string;
+  desc: string;
+}[] = [
+  {
+    value: "public",
+    label: "Everyone",
+    icon: "🌍",
+    desc: "Anyone can see this post",
+  },
+  {
+    value: "friends_only",
+    label: "Friends only",
+    icon: "👥",
+    desc: "Only people you follow",
+  },
+  {
+    value: "private",
+    label: "Only me",
+    icon: "🔒",
+    desc: "Only visible to you",
+  },
+];
+
+export function StepOptions() {
+  const {
+    draftId,
+    price,
+    currency,
+    visibilityMode,
+    allowDownload,
+    hdEnabled,
+    setVisibilityMode,
+    setAllowDownload,
+    setHdEnabled,
+    setStep,
+    setError,
+    error,
+  } = useCreateStore();
+
+  const [advancing, setAdvancing] = useState(false);
+
+  const [autosave] = useMutation(AutosaveDraftDocument);
+  const [advanceStep] = useMutation(AdvanceDraftStepDocument);
+
+  async function handleNext() {
+    if (!draftId) return;
+    setError(null);
+    setAdvancing(true);
+
+    // Price was already saved in StepEdit — just save visibility/toggles here
+    const parsedPrice = price ?? 0;
+
+    try {
+      const { error: saveError } = await autosave({
+        variables: {
+          id: draftId,
+          input: {
+            price: { amount: parsedPrice, currency, negotiable: false },
+            visibilityMode: visibilityMode.toUpperCase() as VisibilityMode,
+            allowDownload,
+            hdEnabled,
+          },
+        },
+      });
+
+      if (saveError) {
+        setError(saveError.message ?? "Failed to save settings");
+        return;
+      }
+
+      const { error: stepError } = await advanceStep({
+        variables: { id: draftId },
+      });
+      if (stepError) {
+        setError(stepError.message ?? "Could not advance step");
+        return;
+      }
+
+      setStep("ready");
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setAdvancing(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 pt-4 pb-3 shrink-0">
+        <button
+          onClick={() => setStep("edit")}
+          className="flex items-center gap-1"
+          style={{
+            color: "rgb(var(--color-text-muted))",
+            fontSize: "var(--text-sm)",
+          }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M15 18l-6-6 6-6"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          Back
+        </button>
+        <h2
+          className="font-semibold"
+          style={{
+            fontSize: "var(--text-lg)",
+            color: "rgb(var(--color-text))",
+          }}
+        >
+          Settings
+        </h2>
+        <button
+          onClick={handleNext}
+          disabled={advancing}
+          className="font-semibold px-4 py-1.5 rounded-full"
+          style={{
+            backgroundColor: "rgb(var(--brand-primary))",
+            color: "white",
+            fontSize: "var(--text-sm)",
+            opacity: advancing ? 0.6 : 1,
+          }}
+        >
+          {advancing ? "…" : "Review"}
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-4 pb-8 flex flex-col gap-5">
+        {/* Visibility */}
+        <Section title="Audience">
+          <div className="flex flex-col gap-2">
+            {VISIBILITY_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setVisibilityMode(opt.value)}
+                className="flex items-center gap-3 rounded-xl px-3 py-3 transition-all"
+                style={{
+                  backgroundColor:
+                    visibilityMode === opt.value
+                      ? "rgb(var(--brand-primary) / 0.08)"
+                      : "rgb(var(--color-bg-subtle))",
+                  border:
+                    visibilityMode === opt.value
+                      ? "1.5px solid rgb(var(--brand-primary) / 0.4)"
+                      : "1.5px solid transparent",
+                }}
+              >
+                <span style={{ fontSize: 20 }}>{opt.icon}</span>
+                <div className="flex-1 text-left">
+                  <p
+                    style={{
+                      fontSize: "var(--text-base)",
+                      fontWeight: 500,
+                      color: "rgb(var(--color-text))",
+                    }}
+                  >
+                    {opt.label}
+                  </p>
+                  <p
+                    style={{
+                      fontSize: "var(--text-xs)",
+                      color: "rgb(var(--color-text-muted))",
+                    }}
+                  >
+                    {opt.desc}
+                  </p>
+                </div>
+                <RadioDot active={visibilityMode === opt.value} />
+              </button>
+            ))}
+          </div>
+        </Section>
+
+        {/* Toggles */}
+        <Section title="More options">
+          <div className="flex flex-col">
+            <ToggleRow
+              label="Allow downloads"
+              description="Let others save your content"
+              value={allowDownload}
+              onChange={setAllowDownload}
+            />
+            <div
+              style={{
+                height: 1,
+                backgroundColor: "rgb(var(--color-border))",
+                margin: "2px 0",
+              }}
+            />
+            <ToggleRow
+              label="HD quality"
+              description="Upload and serve in high definition"
+              value={hdEnabled}
+              onChange={setHdEnabled}
+            />
+          </div>
+        </Section>
+
+        {/* Error */}
+        {error && (
+          <div
+            className="rounded-xl px-4 py-3"
+            style={{
+              backgroundColor: "rgb(var(--color-error) / 0.08)",
+              border: "1px solid rgb(var(--color-error) / 0.2)",
+              color: "rgb(var(--color-error))",
+              fontSize: "var(--text-sm)",
+            }}
+          >
+            {error}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <p
+        className="mb-2 font-semibold uppercase tracking-wide"
+        style={{
+          fontSize: "var(--text-xs)",
+          color: "rgb(var(--color-text-muted))",
+        }}
+      >
+        {title}
+      </p>
+      {children}
+    </div>
+  );
+}
+
+function RadioDot({ active }: { active: boolean }) {
+  return (
+    <div
+      className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+      style={{
+        border: active
+          ? "2px solid rgb(var(--brand-primary))"
+          : "2px solid rgb(var(--color-border-strong))",
+      }}
+    >
+      {active && (
+        <div
+          className="w-2.5 h-2.5 rounded-full"
+          style={{ backgroundColor: "rgb(var(--brand-primary))" }}
+        />
+      )}
+    </div>
+  );
+}
+
+function ToggleRow({
+  label,
+  description,
+  value,
+  onChange,
+}: {
+  label: string;
+  description: string;
+  value: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center gap-3 py-3">
+      <div className="flex-1 min-w-0">
+        <p
+          style={{
+            fontSize: "var(--text-base)",
+            fontWeight: 500,
+            color: "rgb(var(--color-text))",
+          }}
+        >
+          {label}
+        </p>
+        <p
+          style={{
+            fontSize: "var(--text-xs)",
+            color: "rgb(var(--color-text-muted))",
+          }}
+        >
+          {description}
+        </p>
+      </div>
+      <button
+        role="switch"
+        aria-checked={value}
+        onClick={() => onChange(!value)}
+        className="relative flex-shrink-0 rounded-full transition-colors"
+        style={{
+          width: 44,
+          height: 26,
+          backgroundColor: value
+            ? "rgb(var(--brand-primary))"
+            : "rgb(var(--color-border-strong))",
+        }}
+      >
+        <span
+          className="absolute top-0.5 rounded-full bg-white transition-transform shadow-sm"
+          style={{
+            width: 22,
+            height: 22,
+            left: 2,
+            transform: value ? "translateX(18px)" : "translateX(0px)",
+          }}
+        />
+      </button>
+    </div>
+  );
+}

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { LandingNav } from "@/components/landing/LandingNav";
+import { LegalNav } from "@/components/legal/LegalNav";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 
 export const metadata: Metadata = {
@@ -15,7 +15,7 @@ export default async function AboutPage({ params }: Props) {
 
   return (
     <>
-      <LandingNav />
+      <LegalNav lang={lang} />
       <main>
         {/* Hero */}
         <section style={{ background: "linear-gradient(135deg, rgb(var(--brand-primary) / 0.08) 0%, rgb(var(--brand-accent) / 0.06) 100%)", padding: "6rem 1.25rem 5rem", textAlign: "center" }}>

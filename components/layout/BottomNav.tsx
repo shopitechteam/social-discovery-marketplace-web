@@ -110,13 +110,20 @@ const tabs: Tab[] = [
 export function BottomNav({ lang = "en" }: { lang: string }) {
   const pathname = usePathname();
 
+  // Hide on the full create flow (not the drawer intercept)
+  if (
+    pathname.includes("/upload/create") ||
+    pathname.includes("/upload/tiktok")
+  )
+    return null;
+
   return (
     <nav
-      className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-107.5 z-50"
+      className="fixed bottom-0  left-1/2 -translate-x-1/2 w-full  z-50"
       style={{ paddingBottom: "var(--safe-bottom)" }}
     >
       <div
-        className="relative flex items-center justify-between px-2"
+        className="relative flex items-center justify-between "
         style={{
           height: "var(--nav-height)",
           backgroundColor: "rgb(var(--color-bg-elevated) / 0.92)",
