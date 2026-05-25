@@ -139,6 +139,12 @@ mutation CreateDraftFromTiktokImport($downloadId: String!) {
   }
 }
 
+query GetDraft($id: String!) {
+  draft(id: $id) {
+    ...DraftFields
+  }
+}
+
 query MyDrafts($limit: Int, $afterId: String) {
   myDrafts(limit: $limit, afterId: $afterId) {
     ...DraftFields

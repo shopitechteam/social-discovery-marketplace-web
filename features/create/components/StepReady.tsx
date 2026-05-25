@@ -130,9 +130,10 @@ export function StepReady({ lang }: StepReadyProps) {
         return;
       }
       if (data?.publishDraft) {
+        // Clear store + sessionStorage immediately so the next "New post" starts clean
+        reset();
         setPublished(true);
         setTimeout(() => {
-          reset();
           router.push(`/${lang}/feed`);
         }, 1800);
       }

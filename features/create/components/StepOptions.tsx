@@ -54,6 +54,7 @@ export function StepOptions() {
     const parsedPrice = price ?? 0;
 
     try {
+      // 1. Autosave options
       const { error: saveError } = await autosave({
         variables: {
           id: draftId,
@@ -65,13 +66,13 @@ export function StepOptions() {
           },
         },
       });
-
       if (saveError) {
         setError(saveError.message ?? "Failed to save settings");
         return;
       }
 
-      const { error: stepError } = await advanceStep({
+      // 2. Advance step — trust what the server returns
+      const { data: stepData, error: stepError } = await advanceStep({
         variables: { id: draftId },
       });
       if (stepError) {
@@ -79,7 +80,20 @@ export function StepOptions() {
         return;
       }
 
-      setStep("ready");
+      // Cast to string so we're not tied to the codegen-narrowed union
+      const serverStep = stepData?.advanceDraftStep?.currentStep as string | undefined;
+      const stepMap: Record<string, "edit" | "options" | "ready" | "media" | "pick"> = {
+        EDITING: "edit",
+        MEDIA_UPLOAD: "media",
+        PUBLISHING_OPTIONS: "options",
+        READY: "ready",
+      };
+      if (serverStep && stepMap[serverStep]) {
+        setStep(stepMap[serverStep]);
+        if (serverStep !== "READY") {
+          setError("Please complete all required fields before proceeding.");
+        }
+      }
     } catch (err) {
       setError(String(err));
     } finally {

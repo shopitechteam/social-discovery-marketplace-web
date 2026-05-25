@@ -1,0 +1,47 @@
+"use client";
+
+import { useState } from "react";
+import { FeedHeader } from "./FeedHeader";
+import { FeedGrid } from "./FeedGrid";
+
+interface Props {
+  lang: string;
+}
+
+export function FeedPage({ lang }: Props) {
+  const [tab, setTab] = useState<"for-you" | "following" | "nearby">("for-you");
+
+  return (
+    <div className="min-h-svh">
+      <FeedHeader lang={lang} activeTab={tab} onTabChange={setTab} />
+
+      <div className="relative">
+        {tab === "for-you" && <FeedGrid lang={lang} />}
+
+        {tab === "following" && (
+          <div className="flex flex-col items-center justify-center py-24 px-6 text-center">
+            <div className="text-5xl mb-4">👥</div>
+            <h3 className="font-bold text-default text-base mb-2">
+              Follow sellers you love
+            </h3>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              Their latest listings will appear here.
+            </p>
+          </div>
+        )}
+
+        {tab === "nearby" && (
+          <div className="flex flex-col items-center justify-center py-24 px-6 text-center">
+            <div className="text-5xl mb-4">📍</div>
+            <h3 className="font-bold text-default text-base mb-2">
+              Discover local sellers
+            </h3>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              Enable location to find the best deals near you.
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

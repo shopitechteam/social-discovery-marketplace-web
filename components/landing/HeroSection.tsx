@@ -1,24 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { useRouter } from "next/navigation";
-import { ExploreDialog } from "./ExploreDialog";
 import type { Dictionary } from "@/i18n/getDictionary";
 
 export function HeroSection({ dict }: { dict: Dictionary }) {
-  const [showExplore, setShowExplore] = useState(false);
   const router = useRouter();
 
   function handleExploreClick(e: React.MouseEvent) {
     e.preventDefault();
-    const isMobile =
-      typeof window !== "undefined" &&
-      window.matchMedia("(max-width: 767px)").matches;
-    if (isMobile) {
-      router.push("/feed");
-    } else {
-      setShowExplore(true);
-    }
+    router.push("/feed");
   }
 
   function handleHowItWorksClick(e: React.MouseEvent) {
@@ -198,7 +189,6 @@ export function HeroSection({ dict }: { dict: Dictionary }) {
         </button>
       </div>
 
-      {showExplore && <ExploreDialog onClose={() => setShowExplore(false)} />}
 
       {/* Social proof */}
       <div

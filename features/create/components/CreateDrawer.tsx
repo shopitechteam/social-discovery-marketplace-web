@@ -14,7 +14,7 @@ export function CreateDrawer({ lang }: { lang: string }) {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
-  const { setDraftId, setContentType, setError, draftId } = useCreateStore();
+  const { setDraftId, setContentType, setError, reset } = useCreateStore();
   const [createDraft] = useMutation(CreateDraftDocument);
   const { startImageUpload, startVideoUpload } = useMediaUpload();
 
@@ -22,24 +22,25 @@ export function CreateDrawer({ lang }: { lang: string }) {
     window.location.href = `/${lang}/feed`;
   }
 
-  async function ensureDraft(type: "image" | "video"): Promise<string> {
-    if (draftId) return draftId;
-    const { data, error } = await createDraft({
-      variables: { input: { type: type === "video" ? "VIDEO" : "IMAGE" } },
-    });
-    if (error || !data?.createDraft)
-      throw new Error(error?.message ?? "Failed to create draft");
-    const id = data.createDraft.id;
-    setDraftId(id);
-    return id;
-  }
-
   async function handleFiles(files: FileList, kind: "image" | "video") {
     if (!files.length) return;
     setError(null);
+
+    // Always start fresh — wipes any previous draft from store + sessionStorage
+    // so we never accidentally reuse a stale draftId from the last session.
+    reset();
+
     try {
-      const did = await ensureDraft(kind);
+      const { data, error } = await createDraft({
+        variables: { input: { type: kind === "video" ? "VIDEO" : "IMAGE" } },
+      });
+      if (error || !data?.createDraft)
+        throw new Error(error?.message ?? "Failed to create draft");
+
+      const did = data.createDraft.id;
+      setDraftId(did);
       setContentType(kind);
+
       const list = Array.from(files).slice(0, kind === "video" ? 1 : 10);
       for (const file of list) {
         if (kind === "image") startImageUpload(file, did);

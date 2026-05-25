@@ -1,0 +1,88 @@
+fragment MuxMetaFields on MuxVideoMeta {
+  playbackId
+  duration
+  aspectRatio
+  thumbnailUrl
+  animatedThumbnailUrl
+}
+
+fragment R2VariantFields on R2ImageVariant {
+  url
+  variant
+  width
+  height
+}
+
+fragment MediaItemFields on MediaItem {
+  mediaType
+  url
+  imageUrl
+  thumbnailUrl
+  sortOrder
+  displayWidth
+  displayHeight
+  muxMeta {
+    ...MuxMetaFields
+  }
+  r2Variants {
+    ...R2VariantFields
+  }
+}
+
+fragment ContentCardFields on Content {
+  id
+  type
+  title
+  caption
+  hashtags
+  creatorId
+  createdAt
+  media {
+    ...MediaItemFields
+  }
+  price {
+    amount
+    currency
+    negotiable
+  }
+  stats {
+    views
+    likes
+    comments
+    shares
+    saves
+  }
+  location {
+    county
+    subregion
+    placeName
+  }
+  ranking {
+    rankScore
+    trendingScore
+  }
+}
+
+query ForYouFeed($limit: Int, $after: String) {
+  forYouFeed(limit: $limit, after: $after) {
+    items {
+      ...ContentCardFields
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+
+query TrendingContent($county: String) {
+  trendingContent(county: $county) {
+    ...ContentCardFields
+  }
+}
+
+query GetContent($id: String!) {
+  content(id: $id) {
+    ...ContentCardFields
+  }
+}
