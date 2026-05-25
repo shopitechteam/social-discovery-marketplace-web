@@ -17,24 +17,9 @@ const VISIBILITY_OPTIONS: {
   icon: string;
   desc: string;
 }[] = [
-  {
-    value: "public",
-    label: "Everyone",
-    icon: "🌍",
-    desc: "Anyone can see this post",
-  },
-  {
-    value: "friends_only",
-    label: "Friends only",
-    icon: "👥",
-    desc: "Only people you follow",
-  },
-  {
-    value: "private",
-    label: "Only me",
-    icon: "🔒",
-    desc: "Only visible to you",
-  },
+  { value: "public",       label: "Everyone",     icon: "🌍", desc: "Anyone can see this post" },
+  { value: "friends_only", label: "Friends only",  icon: "👥", desc: "Only people you follow" },
+  { value: "private",      label: "Only me",       icon: "🔒", desc: "Only visible to you" },
 ];
 
 export function StepOptions() {
@@ -42,6 +27,9 @@ export function StepOptions() {
     draftId,
     price,
     currency,
+    title,
+    isFree,
+    mediaItems,
     visibilityMode,
     allowDownload,
     hdEnabled,
@@ -63,7 +51,6 @@ export function StepOptions() {
     setError(null);
     setAdvancing(true);
 
-    // Price was already saved in StepEdit — just save visibility/toggles here
     const parsedPrice = price ?? 0;
 
     try {
@@ -100,162 +87,204 @@ export function StepOptions() {
     }
   }
 
-  return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-4 pb-3 shrink-0">
-        <button
-          onClick={() => setStep("edit")}
-          className="flex items-center gap-1"
-          style={{
-            color: "rgb(var(--color-text-muted))",
-            fontSize: "var(--text-sm)",
-          }}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M15 18l-6-6 6-6"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          Back
-        </button>
-        <h2
-          className="font-semibold"
-          style={{
-            fontSize: "var(--text-lg)",
-            color: "rgb(var(--color-text))",
-          }}
-        >
-          Settings
-        </h2>
-        <button
-          onClick={handleNext}
-          disabled={advancing}
-          className="font-semibold px-4 py-1.5 rounded-full"
-          style={{
-            backgroundColor: "rgb(var(--brand-primary))",
-            color: "white",
-            fontSize: "var(--text-sm)",
-            opacity: advancing ? 0.6 : 1,
-          }}
-        >
-          {advancing ? "…" : "Review"}
-        </button>
-      </div>
+  const cover = mediaItems[0];
 
-      <div className="flex-1 overflow-y-auto px-4 pb-8 flex flex-col gap-5">
-        {/* Visibility */}
-        <Section title="Audience">
-          <div className="flex flex-col gap-2">
-            {VISIBILITY_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => setVisibilityMode(opt.value)}
-                className="flex items-center gap-3 rounded-xl px-3 py-3 transition-all"
-                style={{
-                  backgroundColor:
-                    visibilityMode === opt.value
-                      ? "rgb(var(--brand-primary) / 0.08)"
-                      : "rgb(var(--color-bg-subtle))",
-                  border:
-                    visibilityMode === opt.value
-                      ? "1.5px solid rgb(var(--brand-primary) / 0.4)"
-                      : "1.5px solid transparent",
-                }}
-              >
-                <span style={{ fontSize: 20 }}>{opt.icon}</span>
-                <div className="flex-1 text-left">
-                  <p
-                    style={{
-                      fontSize: "var(--text-base)",
-                      fontWeight: 500,
-                      color: "rgb(var(--color-text))",
-                    }}
-                  >
-                    {opt.label}
-                  </p>
-                  <p
-                    style={{
-                      fontSize: "var(--text-xs)",
-                      color: "rgb(var(--color-text-muted))",
-                    }}
-                  >
-                    {opt.desc}
-                  </p>
-                </div>
-                <RadioDot active={visibilityMode === opt.value} />
-              </button>
-            ))}
-          </div>
-        </Section>
+  // ── Shared form sections ──────────────────────────────────────────────────
 
-        {/* Toggles */}
-        <Section title="More options">
-          <div className="flex flex-col">
-            <ToggleRow
-              label="Allow downloads"
-              description="Let others save your content"
-              value={allowDownload}
-              onChange={setAllowDownload}
-            />
-            <div
-              style={{
-                height: 1,
-                backgroundColor: "rgb(var(--color-border))",
-                margin: "2px 0",
-              }}
-            />
-            <ToggleRow
-              label="HD quality"
-              description="Upload and serve in high definition"
-              value={hdEnabled}
-              onChange={setHdEnabled}
-            />
-          </div>
-        </Section>
-
-        {/* Error */}
-        {error && (
-          <div
-            className="rounded-xl px-4 py-3"
+  const visibilitySection = (
+    <Section title="Audience">
+      <div className="flex flex-col gap-2">
+        {VISIBILITY_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => setVisibilityMode(opt.value)}
+            className="flex items-center gap-3 rounded-xl px-3 py-3 transition-all"
             style={{
-              backgroundColor: "rgb(var(--color-error) / 0.08)",
-              border: "1px solid rgb(var(--color-error) / 0.2)",
-              color: "rgb(var(--color-error))",
-              fontSize: "var(--text-sm)",
+              backgroundColor:
+                visibilityMode === opt.value
+                  ? "rgb(var(--brand-primary) / 0.08)"
+                  : "rgb(var(--color-bg-subtle))",
+              border:
+                visibilityMode === opt.value
+                  ? "1.5px solid rgb(var(--brand-primary) / 0.4)"
+                  : "1.5px solid transparent",
             }}
           >
-            {error}
+            <span style={{ fontSize: 20 }}>{opt.icon}</span>
+            <div className="flex-1 text-left">
+              <p style={{ fontSize: "var(--text-base)", fontWeight: 500, color: "rgb(var(--color-text))" }}>
+                {opt.label}
+              </p>
+              <p style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}>
+                {opt.desc}
+              </p>
+            </div>
+            <RadioDot active={visibilityMode === opt.value} />
+          </button>
+        ))}
+      </div>
+    </Section>
+  );
+
+  const togglesSection = (
+    <Section title="More options">
+      <div className="flex flex-col">
+        <ToggleRow
+          label="Allow downloads"
+          description="Let others save your content"
+          value={allowDownload}
+          onChange={setAllowDownload}
+        />
+        <div style={{ height: 1, backgroundColor: "rgb(var(--color-border))", margin: "2px 0" }} />
+        <ToggleRow
+          label="HD quality"
+          description="Upload and serve in high definition"
+          value={hdEnabled}
+          onChange={setHdEnabled}
+        />
+      </div>
+    </Section>
+  );
+
+  return (
+    <div className="flex flex-col md:flex-row h-full flex-1">
+
+      {/* ── Desktop left — summary card ── */}
+      <div
+        className="hidden md:flex md:flex-col md:justify-center md:items-center md:gap-5 md:p-8"
+        style={{
+          width: 320,
+          flexShrink: 0,
+          borderRight: "1px solid rgb(var(--color-border))",
+          backgroundColor: "rgb(var(--color-bg-subtle))",
+        }}
+      >
+        {/* Cover thumbnail */}
+        {cover && (
+          <div
+            className="rounded-2xl overflow-hidden relative"
+            style={{
+              width: 160,
+              height: 213,
+              backgroundColor: "rgb(var(--color-bg))",
+              border: "1px solid rgb(var(--color-border))",
+            }}
+          >
+            {cover.type === "video" ? (
+              <video
+                src={cover.localUri}
+                className="absolute inset-0 w-full h-full object-cover"
+                muted
+                playsInline
+                preload="metadata"
+              />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={cover.thumbnailUrl ?? cover.localUri}
+                alt=""
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            )}
           </div>
         )}
+
+        {/* Summary rows */}
+        <div className="w-full max-w-[240px] flex flex-col gap-2">
+          <SummaryRow label="Title" value={title || "—"} />
+          <SummaryRow
+            label="Price"
+            value={isFree || !price ? "Free" : `${currency} ${price}`}
+          />
+          <SummaryRow
+            label="Files"
+            value={`${mediaItems.length} ${mediaItems.length === 1 ? "file" : "files"}`}
+          />
+        </div>
+      </div>
+
+      {/* ── Right / mobile — settings form ── */}
+      <div className="flex flex-col flex-1 h-full min-h-0">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 pt-4 pb-3 shrink-0">
+          <button
+            onClick={() => setStep("edit")}
+            className="flex items-center gap-1"
+            style={{ color: "rgb(var(--color-text-muted))", fontSize: "var(--text-sm)" }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Back
+          </button>
+          <h2
+            className="font-semibold"
+            style={{ fontSize: "var(--text-lg)", color: "rgb(var(--color-text))" }}
+          >
+            Settings
+          </h2>
+          <button
+            onClick={handleNext}
+            disabled={advancing}
+            className="font-semibold px-4 py-1.5 rounded-full"
+            style={{
+              backgroundColor: "rgb(var(--brand-primary))",
+              color: "white",
+              fontSize: "var(--text-sm)",
+              opacity: advancing ? 0.6 : 1,
+            }}
+          >
+            {advancing ? "…" : "Review"}
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-4 pb-8 flex flex-col gap-5">
+          {visibilitySection}
+          {togglesSection}
+
+          {error && (
+            <div
+              className="rounded-xl px-4 py-3"
+              style={{
+                backgroundColor: "rgb(var(--color-error) / 0.08)",
+                border: "1px solid rgb(var(--color-error) / 0.2)",
+                color: "rgb(var(--color-error))",
+                fontSize: "var(--text-sm)",
+              }}
+            >
+              {error}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
       <p
         className="mb-2 font-semibold uppercase tracking-wide"
-        style={{
-          fontSize: "var(--text-xs)",
-          color: "rgb(var(--color-text-muted))",
-        }}
+        style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}
       >
         {title}
       </p>
       {children}
+    </div>
+  );
+}
+
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div
+      className="flex items-center justify-between rounded-xl px-3 py-2.5"
+      style={{ backgroundColor: "rgb(var(--color-bg-elevated))", border: "1px solid rgb(var(--color-border))" }}
+    >
+      <span style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}>{label}</span>
+      <span style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "rgb(var(--color-text))" }} className="line-clamp-1 max-w-[140px] text-right">{value}</span>
     </div>
   );
 }
@@ -271,10 +300,7 @@ function RadioDot({ active }: { active: boolean }) {
       }}
     >
       {active && (
-        <div
-          className="w-2.5 h-2.5 rounded-full"
-          style={{ backgroundColor: "rgb(var(--brand-primary))" }}
-        />
+        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "rgb(var(--brand-primary))" }} />
       )}
     </div>
   );
@@ -294,21 +320,10 @@ function ToggleRow({
   return (
     <div className="flex items-center gap-3 py-3">
       <div className="flex-1 min-w-0">
-        <p
-          style={{
-            fontSize: "var(--text-base)",
-            fontWeight: 500,
-            color: "rgb(var(--color-text))",
-          }}
-        >
+        <p style={{ fontSize: "var(--text-base)", fontWeight: 500, color: "rgb(var(--color-text))" }}>
           {label}
         </p>
-        <p
-          style={{
-            fontSize: "var(--text-xs)",
-            color: "rgb(var(--color-text-muted))",
-          }}
-        >
+        <p style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}>
           {description}
         </p>
       </div>
@@ -320,9 +335,7 @@ function ToggleRow({
         style={{
           width: 44,
           height: 26,
-          backgroundColor: value
-            ? "rgb(var(--brand-primary))"
-            : "rgb(var(--color-border-strong))",
+          backgroundColor: value ? "rgb(var(--brand-primary))" : "rgb(var(--color-border-strong))",
         }}
       >
         <span

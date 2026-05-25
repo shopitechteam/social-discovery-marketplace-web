@@ -133,6 +133,12 @@ query GetMediaAsset($id: String!) {
   }
 }
 
+mutation CreateDraftFromTiktokImport($downloadId: String!) {
+  createDraftFromTiktokImport(downloadId: $downloadId) {
+    ...DraftFields
+  }
+}
+
 query MyDrafts($limit: Int, $afterId: String) {
   myDrafts(limit: $limit, afterId: $afterId) {
     ...DraftFields

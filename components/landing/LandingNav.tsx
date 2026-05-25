@@ -3,13 +3,14 @@
 "use client";
 
 import { useThemeStore } from "@/stores/theme";
-import { siteConfig } from "@/config/site";
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 //import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import type { Dictionary } from "@/i18n/getDictionary";
 import type { Locale } from "@/i18n/config";
+import { ShopiLogo } from "@/features/auth/components/AuthIcons";
 
 const NAV_HREFS = ["#features", "#how-it-works", "#creators"] as const;
 
@@ -95,7 +96,7 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
           right: 0,
           zIndex: 50,
           padding: "0 1.25rem",
-          height: "60px",
+          height: "70px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -109,37 +110,18 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
         }}
       >
         {/* Logo → home */}
-        <Link href="/" style={{ display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none" }}>
-          <div
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: "var(--radius-sm)",
-              background:
-                "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-accent)))",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#fff",
-              fontWeight: 800,
-              fontSize: "1rem",
-              fontFamily: "var(--font-display)",
-              flexShrink: 0,
-            }}
-          >
-            S
+        <Link
+          href="/"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            textDecoration: "none",
+          }}
+        >
+          <div className="h-18 w-18 relative">
+            <ShopiLogo height={72} width={72} />
           </div>
-          <span
-            style={{
-              fontFamily: "var(--font-display)",
-              fontWeight: 700,
-              fontSize: "1.125rem",
-              color: "rgb(var(--color-text))",
-              letterSpacing: "-0.01em",
-            }}
-          >
-            {siteConfig.name}
-          </span>
         </Link>
 
         {/* Desktop nav links */}

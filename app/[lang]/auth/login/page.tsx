@@ -2,13 +2,11 @@ import { LoginForm } from "@/features/auth/components/LoginForm";
 import { isValidLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import {
-  ShopiLogo,
-  ChevronLeftIcon,
-  Divider,
-} from "@/features/auth/components/AuthIcons";
+
 import { SocialButtons } from "@/features/auth/components/SocialButtons";
 import { AuthDesktopShell } from "@/features/auth/components/AuthDesktopShell";
+import { ChevronLeftIcon } from "lucide-react";
+import { Divider, ShopiLogo } from "@/features/auth/components/AuthIcons";
 
 export const metadata = { title: "Sign in · Shopi" };
 
@@ -51,6 +49,13 @@ export default async function LoginPage({
         className="relative flex flex-col h-svh overflow-hidden bg-app lg:hidden"
         style={{ maxWidth: 430, margin: "0 auto" }}
       >
+        <Link
+          href={`/${lang}/auth/auth-welcome`}
+          aria-label="Back"
+          className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-surface text-muted active:opacity-70 transition-opacity"
+        >
+          <ChevronLeftIcon />
+        </Link>
         <div
           aria-hidden
           className="pointer-events-none absolute -top-20 -right-20 w-64 h-64 rounded-full blur-3xl"
@@ -58,15 +63,8 @@ export default async function LoginPage({
         />
 
         {/* Top bar */}
-        <div className="flex items-center justify-between px-5 pt-12 pb-1 shrink-0">
-          <Link
-            href={`/${lang}/auth/auth-welcome`}
-            aria-label="Back"
-            className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-surface text-muted active:opacity-70 transition-opacity"
-          >
-            <ChevronLeftIcon />
-          </Link>
-          <ShopiLogo className="h-7 w-auto" />
+        <div className="flex w-full justify-center items-center  px-5 pt-5 pb-1 shrink-0">
+          <ShopiLogo height={150} width={150} />
         </div>
 
         {/* Heading */}

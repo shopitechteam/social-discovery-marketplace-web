@@ -90,75 +90,98 @@ export function UploadPickerPage({ lang }: { lang: string }) {
       label: "TikTok Import",
       description: "Bring your TikTok content",
       icon: ICON_TIKTOK,
-      onClick: () => {
-        window.location.href = `/${lang}/upload/tiktok`;
-      },
+      onClick: () => { window.location.href = `/${lang}/upload/tiktok`; },
     },
   ];
 
   return (
-    <div
-      className="flex flex-col min-h-svh bg-app"
-      style={{ maxWidth: 430, margin: "0 auto" }}
-    >
-      {/* Header */}
+    /*
+     * Mobile  (< md): full-height page, 430 px wide, stacked cards.
+     * Desktop (≥ md): fixed backdrop + centred dialog, options laid out
+     *                 horizontally in a 3-column grid.
+     */
+    <div className="md:fixed md:inset-0 md:z-50 md:flex md:items-center md:justify-center md:bg-black/50 md:backdrop-blur-sm">
       <div
-        className="flex items-center gap-3 px-4 shrink-0"
-        style={{ height: 56, borderBottom: "1px solid rgb(var(--color-border))" }}
+        className="create-flow-card flex flex-col bg-app md:rounded-2xl md:shadow-2xl md:overflow-hidden md:max-w-2xl md:min-h-0"
       >
-        <button
-          onClick={() => router.back()}
-          className="flex items-center justify-center rounded-full active:opacity-60 transition-opacity"
-          style={{ width: 36, height: 36, color: "rgb(var(--color-text))" }}
-          aria-label="Back"
+        {/* Header */}
+        <div
+          className="flex items-center gap-3 px-4 shrink-0"
+          style={{ height: 56, borderBottom: "1px solid rgb(var(--color-border))" }}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-        <h1
-          className="font-semibold"
-          style={{ fontSize: "var(--text-lg)", color: "rgb(var(--color-text))" }}
-        >
-          Create
-        </h1>
-      </div>
-
-      {/* Picker options */}
-      <div className="flex flex-col gap-3 px-4 pt-6">
-        {options.map((opt) => (
           <button
-            key={opt.label}
-            onClick={opt.onClick}
-            className="flex items-center gap-4 w-full rounded-2xl active:scale-[0.98] transition-transform text-left"
-            style={{
-              padding: "18px 20px",
-              backgroundColor: "rgb(var(--color-bg-elevated))",
-              border: "1px solid rgb(var(--color-border))",
-              color: "rgb(var(--color-text))",
-            }}
+            onClick={() => router.back()}
+            className="flex items-center justify-center rounded-full active:opacity-60 transition-opacity"
+            style={{ width: 36, height: 36, color: "rgb(var(--color-text))" }}
+            aria-label="Back"
           >
-            <span style={{ color: "rgb(var(--brand-primary))" }}>{opt.icon}</span>
-            <div className="flex flex-col gap-0.5">
-              <span className="font-semibold" style={{ fontSize: "var(--text-base)" }}>
-                {opt.label}
-              </span>
-              <span style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text-muted))" }}>
-                {opt.description}
-              </span>
-            </div>
-            <svg
-              className="ml-auto shrink-0"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              style={{ color: "rgb(var(--color-text-muted))" }}
-            >
-              <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
-        ))}
+          <h1 className="font-semibold" style={{ fontSize: "var(--text-lg)", color: "rgb(var(--color-text))" }}>
+            Create
+          </h1>
+        </div>
+
+        {/* Picker options
+            Mobile : vertical stack (flex-col gap-3)
+            Desktop: horizontal 3-col grid                */}
+        <div className="flex flex-col gap-3 px-4 pt-6 pb-8 md:grid md:grid-cols-3 md:gap-4 md:px-8 md:pt-8 md:pb-10">
+          {options.map((opt) => (
+            <button
+              key={opt.label}
+              onClick={opt.onClick}
+              className="flex items-center gap-4 w-full rounded-2xl active:scale-[0.98] transition-transform text-left
+                         md:flex-col md:items-center md:text-center md:gap-3 md:py-8 md:px-4"
+              style={{
+                padding: "18px 20px",
+                backgroundColor: "rgb(var(--color-bg-elevated))",
+                border: "1px solid rgb(var(--color-border))",
+                color: "rgb(var(--color-text))",
+              }}
+            >
+              <span
+                className="md:flex md:items-center md:justify-center md:rounded-2xl md:w-14 md:h-14"
+                style={{
+                  color: "rgb(var(--brand-primary))",
+                  backgroundColor: "transparent",
+                }}
+              >
+                {/* On desktop: icon inside a tinted circle */}
+                <span
+                  className="hidden md:flex items-center justify-center rounded-2xl w-14 h-14"
+                  style={{ backgroundColor: "rgb(var(--brand-primary) / 0.1)" }}
+                >
+                  {opt.icon}
+                </span>
+                {/* On mobile: raw icon */}
+                <span className="md:hidden">{opt.icon}</span>
+              </span>
+
+              <div className="flex flex-col gap-0.5 flex-1 md:flex-none md:items-center">
+                <span className="font-semibold" style={{ fontSize: "var(--text-base)" }}>
+                  {opt.label}
+                </span>
+                <span style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text-muted))" }}>
+                  {opt.description}
+                </span>
+              </div>
+
+              {/* Chevron — mobile only */}
+              <svg
+                className="ml-auto shrink-0 md:hidden"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                style={{ color: "rgb(var(--color-text-muted))" }}
+              >
+                <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Hidden file inputs */}

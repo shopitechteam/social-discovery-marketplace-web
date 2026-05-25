@@ -108,10 +108,14 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
       }).catch(() => undefined);
     }, 800);
     return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [titleValue, watchCaption, tags]);
 
   async function onNext(values: EditFormValues) {
-    if (!draftId) return;
+    if (!draftId) {
+      setError("Draft not ready yet — please wait a moment and try again.");
+      return;
+    }
     setError(null);
 
     const parsedPrice = priceInput.trim() ? parseFloat(priceInput) : 0;
@@ -148,368 +152,449 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
   // Show first media item immediately (blob) regardless of upload status
   const cover = mediaItems[0];
 
-  return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-4 pb-3 shrink-0">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1"
-          style={{
-            color: "rgb(var(--color-text-muted))",
-            fontSize: "var(--text-sm)",
-          }}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M15 18l-6-6 6-6"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          Back
-        </button>
-        <h2
-          className="font-semibold"
-          style={{
-            fontSize: "var(--text-lg)",
-            color: "rgb(var(--color-text))",
-          }}
-        >
-          Details
-        </h2>
-        <button
-          onClick={handleSubmit(onNext)}
-          disabled={advancing}
-          className="font-semibold px-4 py-1.5 rounded-full"
-          style={{
-            backgroundColor: "rgb(var(--brand-primary))",
-            color: "white",
-            fontSize: "var(--text-sm)",
-            opacity: advancing ? 0.6 : 1,
-          }}
-        >
-          {advancing ? "…" : "Next"}
-        </button>
-      </div>
+  // ─────────────────────────────────────────────────────────────────────────
+  // Shared sub-components (form fields) extracted so we can render them in
+  // both the mobile column layout and the desktop two-column layout.
+  // ─────────────────────────────────────────────────────────────────────────
 
-      <div className="flex-1 overflow-y-auto px-4 pb-8">
-        {/* Thumbnail + title */}
-        <div className="flex gap-3 mb-5">
-          <div
-            className="rounded-xl overflow-hidden flex-shrink-0 relative"
+  const titleBlock = (
+    <div className="flex-1 flex flex-col justify-start pt-1">
+      <textarea
+        ref={titleRef}
+        value={titleValue}
+        onChange={(e) => {
+          if (e.target.value.length <= MAX_TITLE)
+            setTitleValue(e.target.value);
+        }}
+        placeholder="Add a title…"
+        rows={1}
+        className="w-full bg-transparent outline-none resize-none placeholder:text-base font-semibold leading-snug"
+        style={{
+          fontSize: "var(--text-md)",
+          color: "rgb(var(--color-text))",
+          caretColor: "rgb(var(--brand-primary))",
+          overflow: "hidden",
+        }}
+      />
+      <span
+        className="mt-1"
+        style={{
+          fontSize: "var(--text-xs)",
+          color: "rgb(var(--color-text-muted))",
+        }}
+      >
+        {titleValue.length}/{MAX_TITLE}
+      </span>
+    </div>
+  );
+
+  const captionBlock = (
+    <div>
+      <label
+        className="block mb-1.5 font-medium"
+        style={{
+          fontSize: "var(--text-sm)",
+          color: "rgb(var(--color-text-muted))",
+        }}
+      >
+        Detailed description (optional)
+      </label>
+      <textarea
+        {...register("caption", {
+          maxLength: {
+            value: MAX_CAPTION,
+            message: `Max ${MAX_CAPTION} chars`,
+          },
+        })}
+        placeholder="Share what's on your mind…"
+        rows={4}
+        className="w-full resize-none rounded-xl px-3 py-2.5 outline-none transition-all"
+        style={{
+          fontSize: "var(--text-base)",
+          color: "rgb(var(--color-text))",
+          backgroundColor: "rgb(var(--color-bg-subtle))",
+          border: "1px solid rgb(var(--color-border))",
+          caretColor: "rgb(var(--brand-primary))",
+        }}
+        maxLength={MAX_CAPTION}
+      />
+      <p
+        className="text-right mt-1"
+        style={{
+          fontSize: "var(--text-xs)",
+          color: "rgb(var(--color-text-muted))",
+        }}
+      >
+        {watchCaption?.length ?? 0}/{MAX_CAPTION}
+      </p>
+    </div>
+  );
+
+  const tagsBlock = (
+    <div>
+      <label
+        className="block mb-1.5 font-medium"
+        style={{
+          fontSize: "var(--text-sm)",
+          color: "rgb(var(--color-text-muted))",
+        }}
+      >
+        Tags
+      </label>
+      <div
+        className="flex flex-wrap gap-1.5 rounded-xl px-3 py-2.5 min-h-[44px]"
+        style={{
+          backgroundColor: "rgb(var(--color-bg-subtle))",
+          border: "1px solid rgb(var(--color-border))",
+        }}
+        onClick={() => document.getElementById("tag-input")?.focus()}
+      >
+        {tags.map((tag) => (
+          <span
+            key={tag}
+            className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5"
             style={{
-              width: 72,
-              height: 96,
-              backgroundColor: "rgb(var(--color-bg-subtle))",
+              backgroundColor: "rgb(var(--brand-primary) / 0.12)",
+              color: "rgb(var(--brand-primary))",
+              fontSize: "var(--text-xs)",
+              fontWeight: 500,
             }}
           >
-            {cover &&
-              (cover.type === "video" ? (
-                <video
-                  src={cover.localUri}
-                  className="absolute inset-0 w-full h-full object-cover"
-                  muted
-                  playsInline
-                  preload="metadata"
-                />
-              ) : (
+            #{tag}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                removeTag(tag);
+              }}
+              className="leading-none"
+              style={{ color: "rgb(var(--brand-primary))", opacity: 0.7 }}
+              aria-label={`Remove ${tag}`}
+            >
+              ×
+            </button>
+          </span>
+        ))}
+        <input
+          id="tag-input"
+          value={tagInput}
+          onChange={(e) => setTagInput(e.target.value.replace(/\s/g, ""))}
+          onKeyDown={handleTagKeyDown}
+          onBlur={() => {
+            if (tagInput) addTag(tagInput);
+          }}
+          placeholder={
+            tags.length === 0 ? "fashion, style… (Enter to add)" : ""
+          }
+          className="flex-1 min-w-[120px] bg-transparent outline-none"
+          style={{
+            fontSize: "var(--text-base)",
+            color: "rgb(var(--color-text))",
+            caretColor: "rgb(var(--brand-primary))",
+          }}
+        />
+      </div>
+      <p
+        style={{
+          fontSize: "var(--text-xs)",
+          color: "rgb(var(--color-text-muted))",
+          marginTop: 4,
+        }}
+      >
+        Press Enter or comma to add a tag
+      </p>
+    </div>
+  );
+
+  const priceBlock = (
+    <div>
+      <label
+        className="block mb-1.5 font-medium"
+        style={{
+          fontSize: "var(--text-sm)",
+          color: "rgb(var(--color-text-muted))",
+        }}
+      >
+        Price
+      </label>
+      <div className="flex items-center gap-3">
+        <div
+          className="flex items-center gap-2 flex-1 rounded-xl px-3"
+          style={{
+            height: 48,
+            backgroundColor: "rgb(var(--color-bg-subtle))",
+            border: "1px solid rgb(var(--color-border))",
+          }}
+        >
+          <span
+            style={{
+              color: "rgb(var(--color-text-muted))",
+              fontSize: "var(--text-sm)",
+              fontWeight: 500,
+            }}
+          >
+            {currency}
+          </span>
+          <input
+            type="number"
+            min="0"
+            step="1"
+            placeholder="0"
+            value={priceInput}
+            onChange={(e) => setPriceInput(e.target.value)}
+            className="flex-1 bg-transparent outline-none"
+            style={{
+              fontSize: "var(--text-md)",
+              color: "rgb(var(--color-text))",
+            }}
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            setPriceInput("");
+            setPrice(0, true);
+          }}
+          className="rounded-xl px-3 py-2 font-medium"
+          style={{
+            backgroundColor:
+              !priceInput || priceInput === "0"
+                ? "rgb(var(--brand-primary) / 0.12)"
+                : "rgb(var(--color-bg-subtle))",
+            color:
+              !priceInput || priceInput === "0"
+                ? "rgb(var(--brand-primary))"
+                : "rgb(var(--color-text-muted))",
+            fontSize: "var(--text-sm)",
+          }}
+        >
+          Free
+        </button>
+      </div>
+      <p
+        style={{
+          fontSize: "var(--text-xs)",
+          color: "rgb(var(--color-text-muted))",
+          marginTop: 6,
+        }}
+      >
+        Set a price in {currency} or leave at 0 for free
+      </p>
+    </div>
+  );
+
+  const errorBlock = error ? (
+    <div
+      className="rounded-xl px-4 py-3"
+      style={{
+        backgroundColor: "rgb(var(--color-error) / 0.08)",
+        border: "1px solid rgb(var(--color-error) / 0.2)",
+        color: "rgb(var(--color-error))",
+        fontSize: "var(--text-sm)",
+      }}
+    >
+      {error}
+    </div>
+  ) : null;
+
+  // ── Desktop media preview panel (left column) ──────────────────────────────
+  const desktopPreview = (
+    <div
+      className="hidden md:flex md:flex-col md:justify-center md:items-center md:gap-4 md:p-8"
+      style={{
+        width: 340,
+        flexShrink: 0,
+        borderRight: "1px solid rgb(var(--color-border))",
+        backgroundColor: "rgb(var(--color-bg-subtle))",
+      }}
+    >
+      {/* Large media preview */}
+      <div
+        className="rounded-2xl overflow-hidden relative w-full"
+        style={{
+          aspectRatio: "3/4",
+          maxWidth: 240,
+          backgroundColor: "rgb(var(--color-bg))",
+          border: "1px solid rgb(var(--color-border))",
+        }}
+      >
+        {cover ? (
+          // Show thumbnail/cover image for all media in edit step —
+          // video preview plays on the final Review (StepReady) screen.
+          <Image
+            src={cover.thumbnailUrl ?? cover.localUri}
+            alt=""
+            fill
+            className="object-cover"
+            unoptimized={cover.localUri.startsWith("blob:") || cover.localUri.startsWith("http")}
+          />
+        ) : (
+          <div
+            className="absolute inset-0 flex items-center justify-center"
+            style={{ color: "rgb(var(--color-text-muted))" }}
+          >
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+              <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.5" />
+              <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" />
+              <path d="M3 15l5-5 4 4 3-3 6 6" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+            </svg>
+          </div>
+        )}
+
+        {/* Processing overlay */}
+        {cover && cover.status !== "ready" && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-10">
+            <div className="flex flex-col items-center gap-1.5">
+              <svg className="animate-spin" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="white" strokeOpacity="0.3" strokeWidth="3" />
+                <path d="M12 2a10 10 0 0 1 10 10" stroke="white" strokeWidth="3" strokeLinecap="round" />
+              </svg>
+              <span style={{ fontSize: 10, color: "white", fontWeight: 600, letterSpacing: "0.05em" }}>
+                {cover.status === "uploading" ? "UPLOADING" : "PROCESSING"}
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Media count badge */}
+      {mediaItems.length > 1 && (
+        <p style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text-muted))" }}>
+          +{mediaItems.length - 1} more {mediaItems.length - 1 === 1 ? "file" : "files"}
+        </p>
+      )}
+
+      {/* Title preview */}
+      {titleValue && (
+        <p
+          className="text-center font-semibold line-clamp-2"
+          style={{
+            fontSize: "var(--text-base)",
+            color: "rgb(var(--color-text))",
+            maxWidth: 240,
+          }}
+        >
+          {titleValue}
+        </p>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col md:flex-row h-full flex-1">
+      {/* ── Desktop left panel — media preview ── */}
+      {desktopPreview}
+
+      {/* ── Right / mobile column — header + form ── */}
+      <div className="flex flex-col flex-1 h-full min-h-0">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 pt-4 pb-3 shrink-0">
+          <button
+            onClick={onBack}
+            className="flex items-center gap-1"
+            style={{
+              color: "rgb(var(--color-text-muted))",
+              fontSize: "var(--text-sm)",
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M15 18l-6-6 6-6"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            Back
+          </button>
+          <h2
+            className="font-semibold"
+            style={{
+              fontSize: "var(--text-lg)",
+              color: "rgb(var(--color-text))",
+            }}
+          >
+            Details
+          </h2>
+          <button
+            onClick={handleSubmit(onNext)}
+            disabled={advancing}
+            className="font-semibold px-4 py-1.5 rounded-full"
+            style={{
+              backgroundColor: "rgb(var(--brand-primary))",
+              color: "white",
+              fontSize: "var(--text-sm)",
+              opacity: advancing ? 0.6 : 1,
+            }}
+          >
+            {advancing ? "…" : "Next"}
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-4 pb-8">
+          {/* Mobile-only: thumbnail + title row */}
+          <div className="flex gap-3 mb-5 md:hidden">
+            <div
+              className="rounded-xl overflow-hidden flex-shrink-0 relative"
+              style={{
+                width: 72,
+                height: 96,
+                backgroundColor: "rgb(var(--color-bg-subtle))",
+              }}
+            >
+              {cover && (
                 <Image
                   src={cover.thumbnailUrl ?? cover.localUri}
                   alt=""
                   fill
                   className="object-cover"
-                  unoptimized={cover.localUri.startsWith("blob:")}
+                  unoptimized={cover.localUri.startsWith("blob:") || cover.localUri.startsWith("http")}
                 />
-              ))}
+              )}
 
-            {/* Processing overlay — scoped to the thumbnail only */}
-            {cover && cover.status !== "ready" && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-10">
-                <div className="flex flex-col items-center gap-1">
-                  <svg
-                    className="animate-spin"
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                  >
-                    <circle
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="white"
-                      strokeOpacity="0.3"
-                      strokeWidth="3"
-                    />
-                    <path
-                      d="M12 2a10 10 0 0 1 10 10"
-                      stroke="white"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                  <span
-                    style={{
-                      fontSize: 9,
-                      color: "white",
-                      fontWeight: 600,
-                      letterSpacing: "0.05em",
-                    }}
-                  >
-                    {cover.status === "uploading" ? "UPLOADING" : "PROCESSING"}
-                  </span>
+              {/* Processing overlay — scoped to thumbnail */}
+              {cover && cover.status !== "ready" && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-10">
+                  <div className="flex flex-col items-center gap-1">
+                    <svg className="animate-spin" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="10" stroke="white" strokeOpacity="0.3" strokeWidth="3" />
+                      <path d="M12 2a10 10 0 0 1 10 10" stroke="white" strokeWidth="3" strokeLinecap="round" />
+                    </svg>
+                    <span style={{ fontSize: 9, color: "white", fontWeight: 600, letterSpacing: "0.05em" }}>
+                      {cover.status === "uploading" ? "UPLOADING" : "PROCESSING"}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-
-          {/* Auto-growing title textarea */}
-          <div className="flex-1 flex flex-col justify-start pt-1">
-            <textarea
-              ref={titleRef}
-              value={titleValue}
-              onChange={(e) => {
-                if (e.target.value.length <= MAX_TITLE)
-                  setTitleValue(e.target.value);
-              }}
-              placeholder="Add a caption…"
-              rows={1}
-              className="w-full bg-transparent outline-none resize-none placeholder:text-base font-semibold leading-snug"
-              style={{
-                fontSize: "var(--text-md)",
-                color: "rgb(var(--color-text))",
-                caretColor: "rgb(var(--brand-primary))",
-                overflow: "hidden",
-              }}
-            />
-            <span
-              className="mt-1"
-              style={{
-                fontSize: "var(--text-xs)",
-                color: "rgb(var(--color-text-muted))",
-              }}
-            >
-              {titleValue.length}/{MAX_TITLE}
-            </span>
-          </div>
-        </div>
-
-        <Divider />
-
-        {/* Caption */}
-        <div className="mt-4">
-          <label
-            className="block mb-1.5 font-medium"
-            style={{
-              fontSize: "var(--text-sm)",
-              color: "rgb(var(--color-text-muted))",
-            }}
-          >
-            Detailed description (optional)
-          </label>
-          <textarea
-            {...register("caption", {
-              maxLength: {
-                value: MAX_CAPTION,
-                message: `Max ${MAX_CAPTION} chars`,
-              },
-            })}
-            placeholder="Share what's on your mind…"
-            rows={4}
-            className="w-full resize-none rounded-xl px-3 py-2.5 outline-none transition-all"
-            style={{
-              fontSize: "var(--text-base)",
-              color: "rgb(var(--color-text))",
-              backgroundColor: "rgb(var(--color-bg-subtle))",
-              border: "1px solid rgb(var(--color-border))",
-              caretColor: "rgb(var(--brand-primary))",
-            }}
-            maxLength={MAX_CAPTION}
-          />
-          <p
-            className="text-right mt-1"
-            style={{
-              fontSize: "var(--text-xs)",
-              color: "rgb(var(--color-text-muted))",
-            }}
-          >
-            {watchCaption?.length ?? 0}/{MAX_CAPTION}
-          </p>
-        </div>
-
-        <Divider className="mt-4" />
-
-        {/* Tags chip input */}
-        <div className="mt-4">
-          <label
-            className="block mb-1.5 font-medium"
-            style={{
-              fontSize: "var(--text-sm)",
-              color: "rgb(var(--color-text-muted))",
-            }}
-          >
-            Tags
-          </label>
-          {/* Chip container */}
-          <div
-            className="flex flex-wrap gap-1.5 rounded-xl px-3 py-2.5 min-h-[44px]"
-            style={{
-              backgroundColor: "rgb(var(--color-bg-subtle))",
-              border: "1px solid rgb(var(--color-border))",
-            }}
-            onClick={() => document.getElementById("tag-input")?.focus()}
-          >
-            {tags.map((tag) => (
-              <span
-                key={tag}
-                className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5"
-                style={{
-                  backgroundColor: "rgb(var(--brand-primary) / 0.12)",
-                  color: "rgb(var(--brand-primary))",
-                  fontSize: "var(--text-xs)",
-                  fontWeight: 500,
-                }}
-              >
-                #{tag}
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    removeTag(tag);
-                  }}
-                  className="leading-none"
-                  style={{ color: "rgb(var(--brand-primary))", opacity: 0.7 }}
-                  aria-label={`Remove ${tag}`}
-                >
-                  ×
-                </button>
-              </span>
-            ))}
-            <input
-              id="tag-input"
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value.replace(/\s/g, ""))}
-              onKeyDown={handleTagKeyDown}
-              onBlur={() => {
-                if (tagInput) addTag(tagInput);
-              }}
-              placeholder={
-                tags.length === 0 ? "fashion, style… (Enter to add)" : ""
-              }
-              className="flex-1 min-w-[120px] bg-transparent outline-none"
-              style={{
-                fontSize: "var(--text-base)",
-                color: "rgb(var(--color-text))",
-                caretColor: "rgb(var(--brand-primary))",
-              }}
-            />
-          </div>
-          <p
-            style={{
-              fontSize: "var(--text-xs)",
-              color: "rgb(var(--color-text-muted))",
-              marginTop: 4,
-            }}
-          >
-            Press Enter or comma to add a tag
-          </p>
-        </div>
-
-        <Divider className="mt-4" />
-
-        {/* Price */}
-        <div className="mt-4">
-          <label
-            className="block mb-1.5 font-medium"
-            style={{
-              fontSize: "var(--text-sm)",
-              color: "rgb(var(--color-text-muted))",
-            }}
-          >
-            Price
-          </label>
-          <div className="flex items-center gap-3">
-            <div
-              className="flex items-center gap-2 flex-1 rounded-xl px-3"
-              style={{
-                height: 48,
-                backgroundColor: "rgb(var(--color-bg-subtle))",
-                border: "1px solid rgb(var(--color-border))",
-              }}
-            >
-              <span
-                style={{
-                  color: "rgb(var(--color-text-muted))",
-                  fontSize: "var(--text-sm)",
-                  fontWeight: 500,
-                }}
-              >
-                {currency}
-              </span>
-              <input
-                type="number"
-                min="0"
-                step="1"
-                placeholder="0"
-                value={priceInput}
-                onChange={(e) => setPriceInput(e.target.value)}
-                className="flex-1 bg-transparent outline-none"
-                style={{
-                  fontSize: "var(--text-md)",
-                  color: "rgb(var(--color-text))",
-                }}
-              />
+              )}
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                setPriceInput("");
-                setPrice(0, true);
-              }}
-              className="rounded-xl px-3 py-2 font-medium"
-              style={{
-                backgroundColor:
-                  !priceInput || priceInput === "0"
-                    ? "rgb(var(--brand-primary) / 0.12)"
-                    : "rgb(var(--color-bg-subtle))",
-                color:
-                  !priceInput || priceInput === "0"
-                    ? "rgb(var(--brand-primary))"
-                    : "rgb(var(--color-text-muted))",
-                fontSize: "var(--text-sm)",
-              }}
-            >
-              Free
-            </button>
-          </div>
-          <p
-            style={{
-              fontSize: "var(--text-xs)",
-              color: "rgb(var(--color-text-muted))",
-              marginTop: 6,
-            }}
-          >
-            Set a price in {currency} or leave at 0 for free
-          </p>
-        </div>
 
-        {/* Error */}
-        {error && (
-          <div
-            className="mt-4 rounded-xl px-4 py-3"
-            style={{
-              backgroundColor: "rgb(var(--color-error) / 0.08)",
-              border: "1px solid rgb(var(--color-error) / 0.2)",
-              color: "rgb(var(--color-error))",
-              fontSize: "var(--text-sm)",
-            }}
-          >
-            {error}
+            {titleBlock}
           </div>
-        )}
+
+          {/* Desktop-only: title block without thumbnail (thumbnail is in left panel) */}
+          <div className="hidden md:block mb-5">
+            {titleBlock}
+          </div>
+
+          <Divider />
+
+          {/* Caption */}
+          <div className="mt-4">{captionBlock}</div>
+
+          <Divider className="mt-4" />
+
+          {/* Tags */}
+          <div className="mt-4">{tagsBlock}</div>
+
+          <Divider className="mt-4" />
+
+          {/* Price */}
+          <div className="mt-4">{priceBlock}</div>
+
+          {/* Error */}
+          {error && <div className="mt-4">{errorBlock}</div>}
+        </div>
       </div>
     </div>
   );

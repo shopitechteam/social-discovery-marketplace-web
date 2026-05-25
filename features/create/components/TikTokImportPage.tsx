@@ -14,7 +14,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery, useLazyQuery, useMutation } from "@apollo/client/react";
+import { useQuery, useMutation } from "@apollo/client/react";
 import { useCreateStore } from "@/stores/create";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
@@ -22,9 +22,9 @@ import {
   MeDocument,
   MyTiktokImportsDocument,
   MyTiktokVideosDocument,
-  MyDraftsDocument,
   TiktokConnectUrlDocument,
   ImportTiktokVideoDocument,
+  CreateDraftFromTiktokImportDocument,
   type TiktokDownloadFieldsFragment,
   type TiktokVideoItemFieldsFragment,
 } from "@/types/__generated__/graphql";
@@ -43,8 +43,7 @@ interface Props {
 
 export function TikTokImportPage({ lang }: Props) {
   const router = useRouter();
-  const { setContentType, setStep, setDraftId, addMediaItem, reset } =
-    useCreateStore();
+  const { setContentType, setStep, setDraftId, addMediaItem, reset, setTitle, setCaption } = useCreateStore();
 
   const [tab, setTab] = useState<Tab>("tiktok");
   const [selectedShareUrl, setSelectedShareUrl] = useState<string | null>(null);
@@ -83,13 +82,9 @@ export function TikTokImportPage({ lang }: Props) {
   } = useQuery(MyTiktokVideosDocument, { skip: !isTiktokConnected });
 
   // ── Mutations ─────────────────────────────────────────────────────────────
-  const [getTiktokConnectUrl, { loading: connectLoading }] = useMutation(
-    TiktokConnectUrlDocument,
-  );
+  const [getTiktokConnectUrl, { loading: connectLoading }] = useMutation(TiktokConnectUrlDocument);
   const [importTiktokVideo] = useMutation(ImportTiktokVideoDocument);
-  const [fetchMyDrafts] = useLazyQuery(MyDraftsDocument, {
-    fetchPolicy: "network-only",
-  });
+  const [createDraftFromTiktokImport] = useMutation(CreateDraftFromTiktokImportDocument);
 
   // ── Connect TikTok ────────────────────────────────────────────────────────
   async function handleConnect() {
@@ -168,6 +163,8 @@ export function TikTokImportPage({ lang }: Props) {
     }
   }
 
+  const [usingImport, setUsingImport] = useState(false);
+
   // ── Use selected video → enter create flow ────────────────────────────────
   async function handleUseImported() {
     const item = (importedData?.myTiktokImports ?? []).find(
@@ -175,25 +172,45 @@ export function TikTokImportPage({ lang }: Props) {
     );
     if (!item || item.status !== "COMPLETED" || !item.muxPlaybackId) return;
 
-    // Find the auto-created draft for this TikTok import (created by TiktokDraftCreateWorker)
-    const { data: draftsData } = await fetchMyDrafts();
-    const linkedDraft = (draftsData?.myDrafts ?? []).find(
-      (d) => d.sourceImportId === item.id,
-    );
+    setUsingImport(true);
+    setImportError(null);
+    try {
+      // createDraftFromTiktokImport is idempotent — if the background worker
+      // already created a draft it returns that one, otherwise creates fresh.
+      const { data } = await createDraftFromTiktokImport({
+        variables: { downloadId: item.id },
+      });
+      const draft = data?.createDraftFromTiktokImport;
+      if (!draft) {
+        setImportError("Could not create draft — please try again.");
+        return;
+      }
 
-    reset();
-    setContentType("video");
-    if (linkedDraft) setDraftId(linkedDraft.id);
-    addMediaItem({
-      id: `tiktok-${item.id}`,
-      localUri: item.thumbnailUrl ?? "",
-      type: "video",
-      status: "ready",
-      thumbnailUrl: item.thumbnailUrl ?? undefined,
-      muxPlaybackId: item.muxPlaybackId,
-    });
-    setStep("edit");
-    router.push(`/${lang}/upload/create`);
+      reset();
+      setContentType("video");
+      setDraftId(draft.id);
+      if (draft.title) setTitle(draft.title);
+      if (draft.caption) setCaption(draft.caption);
+
+      // Use the real mediaAssetId from the draft so autosave references the
+      // correct backend asset; fall back to a local key only if somehow absent.
+      const realAssetId = draft.mediaAssetIds?.[0] ?? `tiktok-${item.id}`;
+      addMediaItem({
+        id: realAssetId,
+        localUri: item.thumbnailUrl ?? "",
+        type: "video",
+        status: "ready",
+        thumbnailUrl: item.thumbnailUrl ?? undefined,
+        muxPlaybackId: item.muxPlaybackId,
+      });
+
+      setStep("edit");
+      router.push(`/${lang}/upload/create`);
+    } catch (e) {
+      setImportError(String(e));
+    } finally {
+      setUsingImport(false);
+    }
   }
 
   // ── Derived ───────────────────────────────────────────────────────────────
@@ -260,7 +277,7 @@ export function TikTokImportPage({ lang }: Props) {
     <PageShell lang={lang}>
       {/* Sticky tabs */}
       <div
-        className="flex px-4 gap-1 py-3 shrink-0 bg-app"
+        className="flex px-4 md:px-6 gap-2 py-3 shrink-0 bg-app"
         style={{ borderBottom: "1px solid rgb(var(--color-border))" }}
       >
         {(["tiktok", "imported"] as Tab[]).map((t) => (
@@ -282,7 +299,7 @@ export function TikTokImportPage({ lang }: Props) {
       </div>
 
       {/* Scrollable list — this is the ONLY part that scrolls */}
-      <div ref={pageRef} className="flex-1 overflow-y-auto px-4 pt-3 pb-2">
+      <div ref={pageRef} className="flex-1 overflow-y-auto px-4 pt-3 pb-2 md:px-6">
         {importError && (
           <div
             className="mb-3 rounded-xl px-4 py-3 text-sm"
@@ -314,7 +331,7 @@ export function TikTokImportPage({ lang }: Props) {
                 <RadioGroup
                   value={selectedShareUrl ?? ""}
                   onValueChange={setSelectedShareUrl}
-                  className="space-y-3"
+                  className="grid grid-cols-1 md:grid-cols-2 gap-3"
                 >
                   {videos.map((video) => {
                     const existing = importedByUrl.get(video.shareUrl);
@@ -373,7 +390,7 @@ export function TikTokImportPage({ lang }: Props) {
                 <RadioGroup
                   value={selectedImportId ?? ""}
                   onValueChange={setSelectedImportId}
-                  className="space-y-3"
+                  className="grid grid-cols-1 md:grid-cols-2 gap-3"
                 >
                   {imports.map((item) => (
                     <ImportedVideoRow
@@ -392,21 +409,21 @@ export function TikTokImportPage({ lang }: Props) {
 
       {/* Sticky footer CTA */}
       <div
-        className="px-4 py-4 shrink-0 bg-app"
+        className="px-4 md:px-6 py-4 shrink-0 bg-app"
         style={{ borderTop: "1px solid rgb(var(--color-border))" }}
       >
         <Button
           onClick={handleUseImported}
-          disabled={!canUse}
+          disabled={!canUse || usingImport}
           className="w-full h-12 rounded-2xl font-semibold text-white"
           style={{
             backgroundColor: canUse
               ? "rgb(var(--brand-primary))"
               : "rgb(var(--color-border))",
-            opacity: canUse ? 1 : 0.4,
+            opacity: canUse && !usingImport ? 1 : 0.4,
           }}
         >
-          Use This Video
+          {usingImport ? "Loading…" : "Use This Video"}
         </Button>
       </div>
     </PageShell>
@@ -424,42 +441,46 @@ function PageShell({
 }) {
   const router = useRouter();
   return (
-    // Fixed full-height column — only the middle slot (flex-1 overflow-y-auto) scrolls
-    <div
-      className="flex overflow-y-hidden fixed top-0 bottom-0  right-0 left-0 flex-col bg-app"
-      style={{ height: "100svh", margin: "0 auto" }}
-    >
-      {/* Header — scrolls away with content */}
-      <div className="shrink-0 flex items-center gap-3 px-4 pt-4 pb-4">
-        <button
-          onClick={() => router.push(`/${lang}/upload`)}
-          className="w-9 h-9 rounded-full flex items-center justify-center"
-          style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+    /*
+     * Mobile  (< md): fixed full-viewport column, only list scrolls.
+     * Desktop (≥ md): dimmed backdrop + centred dialog card (860px wide, 90vh tall).
+     */
+    <div className="md:fixed md:inset-0 md:z-50 md:flex md:items-center md:justify-center md:bg-black/50 md:backdrop-blur-sm">
+      <div
+        className="flex flex-col bg-app overflow-hidden
+                   fixed inset-0
+                   md:static md:inset-auto md:w-[860px] md:max-w-[95vw] md:max-h-[90vh] md:min-h-[600px]
+                   md:rounded-2xl md:shadow-2xl"
+      >
+        {/* Header */}
+        <div className="shrink-0 flex items-center gap-3 px-4 pt-4 pb-4" style={{ borderBottom: "1px solid rgb(var(--color-border))" }}>
+          <button
+            onClick={() => router.push(`/${lang}/upload`)}
+            className="w-9 h-9 rounded-full flex items-center justify-center"
+            style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
           >
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </button>
-        <h1
-          className="font-semibold"
-          style={{
-            fontSize: "var(--text-xl)",
-            color: "rgb(var(--color-text))",
-          }}
-        >
-          TikTok Import
-        </h1>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
+          <h1
+            className="font-semibold"
+            style={{ fontSize: "var(--text-xl)", color: "rgb(var(--color-text))" }}
+          >
+            TikTok Import
+          </h1>
+        </div>
+        {children}
       </div>
-      {children}
     </div>
   );
 }

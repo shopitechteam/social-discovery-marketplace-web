@@ -2,13 +2,10 @@ import { RegisterForm } from "@/features/auth/components/RegisterForm";
 import { isValidLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import {
-  ShopiLogo,
-  ChevronLeftIcon,
-  Divider,
-} from "@/features/auth/components/AuthIcons";
+import { ShopiLogo, Divider } from "@/features/auth/components/AuthIcons";
 import { SocialButtons } from "@/features/auth/components/SocialButtons";
 import { AuthDesktopShell } from "@/features/auth/components/AuthDesktopShell";
+import { ChevronLeftIcon } from "lucide-react";
 
 export const metadata = { title: "Create account · Shopi" };
 
@@ -37,11 +34,17 @@ export default async function RegisterPage({
     <div className="flex flex-col gap-3 mt-5">
       <p className="text-center text-xs text-placeholder leading-relaxed">
         By creating an account you agree to our{" "}
-        <Link href={`/${lang}/terms`} className="text-muted underline underline-offset-2 font-semibold">
+        <Link
+          href={`/${lang}/terms`}
+          className="text-muted underline underline-offset-2 font-semibold"
+        >
           Terms
         </Link>{" "}
         &{" "}
-        <Link href={`/${lang}/privacy`} className="text-muted underline underline-offset-2 font-semibold">
+        <Link
+          href={`/${lang}/privacy`}
+          className="text-muted underline underline-offset-2 font-semibold"
+        >
           Privacy Policy
         </Link>
         .
@@ -62,6 +65,13 @@ export default async function RegisterPage({
         className="relative flex flex-col h-svh overflow-hidden bg-app lg:hidden"
         style={{ maxWidth: 430, margin: "0 auto" }}
       >
+        <Link
+          href={`/${lang}/auth/auth-welcome`}
+          aria-label="Back"
+          className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-surface text-muted active:opacity-70 transition-opacity"
+        >
+          <ChevronLeftIcon />
+        </Link>
         <div
           aria-hidden
           className="pointer-events-none absolute -top-20 -right-20 w-64 h-64 rounded-full blur-3xl"
@@ -69,15 +79,9 @@ export default async function RegisterPage({
         />
 
         {/* Top bar */}
-        <div className="flex items-center justify-between px-5 pt-12 pb-1 shrink-0">
-          <Link
-            href={`/${lang}/auth/auth-welcome`}
-            aria-label="Back"
-            className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-surface text-muted active:opacity-70 transition-opacity"
-          >
-            <ChevronLeftIcon />
-          </Link>
-          <ShopiLogo className="h-7 w-auto" />
+
+        <div className="flex w-full justify-center items-center  px-5  pb-1 shrink-0">
+          <ShopiLogo height={90} width={80} />
         </div>
 
         {/* Heading */}

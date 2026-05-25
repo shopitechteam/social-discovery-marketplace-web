@@ -230,3 +230,26 @@ body {
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
 }
+
+/* ── Create flow card ──────────────────────────────────────────────────────
+   Mobile  (default): full-height narrow page, centred at 430px.
+   Desktop (≥ 768px): dialog card at 860px wide, max 90vh tall.
+   The split is done here so inline styles don't override Tailwind on desktop.
+   ────────────────────────────────────────────────────────────────────────── */
+.create-flow-card {
+  max-width: 430px;
+  margin-left: auto;
+  margin-right: auto;
+  min-height: 100svh;
+}
+
+@media (min-width: 768px) {
+  .create-flow-card {
+    max-width: 900px;
+    min-height: 640px;
+    max-height: 90vh;
+    margin-left: 0;
+    margin-right: 0;
+    overflow-y: auto;
+  }
+}
