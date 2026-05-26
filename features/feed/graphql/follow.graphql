@@ -1,0 +1,10 @@
+mutation ToggleFollow($userId: String!) {
+  toggleFollow(userId: $userId) {
+    following
+    followerCount
+  }
+}
+
+query IsFollowing($userId: String!) {
+  isFollowing(userId: $userId)
+}

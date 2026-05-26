@@ -21,22 +21,32 @@ export function FeedHeader({ lang, activeTab, onTabChange }: Props) {
 
   return (
     <header className="sticky top-0 z-30 bg-app/80 backdrop-blur-md border-b border-default">
-      <div className="flex items-center justify-between px-4 h-12">
+      <div className="flex items-center justify-between px-4 h-4">
         {/* Logo */}
-        <span className="text-primary font-black text-xl tracking-tight select-none">
+        {/* <span className="text-primary font-black text-xl tracking-tight select-none">
           shopi
-        </span>
+        </span> */}
 
         {/* Search */}
-        <button
+        {/* <button
           onClick={() => router.push(`/${lang}/explore`)}
           className="w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:bg-surface transition-colors active:scale-95"
           aria-label="Search"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
           </svg>
-        </button>
+        </button> */}
       </div>
 
       {/* Tabs */}
@@ -51,6 +61,7 @@ export function FeedHeader({ lang, activeTab, onTabChange }: Props) {
                 ? "border-primary text-primary"
                 : "border-transparent text-muted-foreground hover:text-default",
             ].join(" ")}
+            style={{ fontSize: 15 }}
           >
             {tab.label}
           </button>

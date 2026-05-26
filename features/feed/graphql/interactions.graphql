@@ -1,0 +1,40 @@
+mutation ToggleLike($contentId: String!) {
+  toggleLike(contentId: $contentId) {
+    liked
+    likeCount
+  }
+}
+
+mutation AddComment($input: AddCommentInput!) {
+  addComment(input: $input) {
+    id
+    text
+    creatorId
+    createdAt
+    parentId
+    likeCount
+  }
+}
+
+mutation ViewContent($contentId: String!) {
+  viewContent(contentId: $contentId)
+}
+
+mutation ShareContent($contentId: String!) {
+  shareContent(contentId: $contentId)
+}
+
+query GetComments($contentId: String!, $limit: Int, $after: String) {
+  comments(contentId: $contentId, limit: $limit, after: $after) {
+    items {
+      id
+      text
+      creatorId
+      createdAt
+      parentId
+      likeCount
+    }
+    hasMore
+    endCursor
+  }
+}

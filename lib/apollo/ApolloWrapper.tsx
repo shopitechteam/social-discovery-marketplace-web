@@ -150,6 +150,24 @@ function createClient() {
       typePolicies: {
         Query: {
           fields: {
+            forYouFeed: {
+              keyArgs: [],
+              merge(existing, incoming, { args }) {
+                const prevItems = existing?.items ?? [];
+                const nextItems = incoming?.items ?? [];
+                if (!args?.after) return { ...incoming, items: nextItems };
+                return { ...incoming, items: [...prevItems, ...nextItems] };
+              },
+            },
+            comments: {
+              keyArgs: ["contentId"],
+              merge(existing, incoming, { args }) {
+                const prevItems = existing?.items ?? [];
+                const nextItems = incoming?.items ?? [];
+                if (!args?.after) return { ...incoming, items: nextItems };
+                return { ...incoming, items: [...prevItems, ...nextItems] };
+              },
+            },
             feed: {
               keyArgs: ["filter", "sortBy"],
               merge(existing, incoming, { args }) {

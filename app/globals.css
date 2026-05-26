@@ -253,3 +253,8 @@ body {
     overflow-y: auto;
   }
 }
+
+/* ── Hide bottom nav while comments drawer is open ──────────────── */
+body.comments-open .bottom-nav {
+  display: none !important;
+}

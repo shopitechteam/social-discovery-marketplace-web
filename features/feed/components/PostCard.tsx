@@ -20,6 +20,10 @@ import { useRef, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
+import { useInteractions } from "../hooks/useInteractions";
+import { useAuthGuard } from "../hooks/useAuthGuard";
+import { useFollow } from "../hooks/useFollow";
+import { CommentsDrawer } from "./CommentsDrawer";
 
 interface Props {
   post: ContentCardFieldsFragment;
@@ -54,9 +58,16 @@ function initials(id: string): string {
   return id.slice(-2).toUpperCase();
 }
 
-// ── Avatar placeholder ────────────────────────────────────────────────────────
+// ── Avatar ────────────────────────────────────────────────────────────────────
 
-function Avatar({ creatorId }: { creatorId: string }) {
+interface AvatarProps {
+  creatorId: string;
+  avatarUrl?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+}
+
+function Avatar({ creatorId, avatarUrl, firstName, lastName }: AvatarProps) {
   const colors = [
     "from-primary to-secondary",
     "from-violet-500 to-purple-600",
@@ -65,11 +76,20 @@ function Avatar({ creatorId }: { creatorId: string }) {
     "from-sky-400 to-blue-600",
   ];
   const color = colors[parseInt(creatorId.slice(-1), 16) % colors.length];
+  const label = firstName ? `${firstName[0]}${lastName?.[0] ?? ""}`.toUpperCase() : initials(creatorId);
+
+  if (avatarUrl) {
+    return (
+      <div className="w-10 h-10 rounded-full flex-shrink-0 overflow-hidden bg-surface">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={avatarUrl} alt={label} className="w-full h-full object-cover" />
+      </div>
+    );
+  }
+
   return (
-    <div
-      className={`w-10 h-10 rounded-full bg-gradient-to-br ${color} flex items-center justify-center flex-shrink-0`}
-    >
-      <span className="text-white text-xs font-bold">{initials(creatorId)}</span>
+    <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${color} flex items-center justify-center flex-shrink-0`}>
+      <span className="text-white text-xs font-bold">{label}</span>
     </div>
   );
 }
@@ -285,20 +305,23 @@ function ActionBtn({
   icon,
   label,
   count,
+  active,
   onClick,
 }: {
   icon: React.ReactNode;
   label: string;
   count?: number;
+  active?: boolean;
   onClick?: () => void;
 }) {
   return (
     <button
       onClick={onClick}
-      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-muted-foreground hover:bg-surface active:bg-surface transition-colors text-xs font-medium"
+      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg hover:bg-surface active:bg-surface transition-colors text-xs font-medium"
+      style={{ color: active ? "rgb(var(--brand-primary))" : "rgb(var(--color-text-muted))" }}
     >
       {icon}
-      {count !== undefined && count > 0 ? fmt(count) : label}
+      <span>{count !== undefined && count > 0 ? fmt(count) : label}</span>
     </button>
   );
 }
@@ -307,19 +330,33 @@ function ActionBtn({
 
 export function PostCard({ post, lang, priority }: Props) {
   const router = useRouter();
-  const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(post.stats?.likes ?? 0);
+  const { requireAuth, isAuthenticated } = useAuthGuard(lang);
+  const { liked, likeCount, handleLike, handleShare } = useInteractions(post, { requireAuth });
   const [expanded, setExpanded] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const [commentCount, setCommentCount] = useState(post.stats?.comments ?? 0);
+
+  const creator = post.creator;
+  const creatorName = creator?.profile?.firstName
+    ? `${creator.profile.firstName}${creator.profile.lastName ? " " + creator.profile.lastName : ""}`
+    : `Seller ${post.creatorId.slice(-6)}`;
+  const isOwnPost = isAuthenticated && creator?.id === post.creatorId;
+
+  const { following, toggle: handleFollow, loading: followLoading } = useFollow({
+    userId: creator?.id ?? post.creatorId,
+    initialFollowing: creator?.isFollowedByMe ?? false,
+    initialFollowerCount: creator?.followerCount ?? 0,
+    lang,
+  });
+
+  function handleCommentClick() {
+    if (!requireAuth({ contentId: post.id, action: "comment" })) return;
+    setShowComments(true);
+  }
 
   const caption = post.caption ?? "";
   const isLong = caption.length > 160;
   const displayCaption = isLong && !expanded ? caption.slice(0, 160) + "…" : caption;
-
-  function handleLike(e: React.MouseEvent) {
-    e.stopPropagation();
-    setLiked((l) => !l);
-    setLikeCount((c) => c + (liked ? -1 : 1));
-  }
 
   function handleOpen() {
     router.push(`/${lang}/content/${post.id}`);
@@ -331,17 +368,36 @@ export function PostCard({ post, lang, priority }: Props) {
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 px-4 pt-3.5 pb-2.5">
         <button onClick={handleOpen}>
-          <Avatar creatorId={post.creatorId} />
+          <Avatar
+            creatorId={post.creatorId}
+            avatarUrl={creator?.profile?.avatar}
+            firstName={creator?.profile?.firstName}
+            lastName={creator?.profile?.lastName}
+          />
         </button>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={handleOpen}
               className="font-semibold text-sm text-default leading-tight hover:underline"
             >
-              {/* Show truncated creator ID until user profiles are loaded */}
-              Seller {post.creatorId.slice(-6)}
+              {creatorName}
             </button>
+            {/* Follow button — hidden on own posts */}
+            {!isOwnPost && (
+              <button
+                onClick={handleFollow}
+                disabled={followLoading}
+                className={[
+                  "text-[11px] font-semibold px-2.5 py-0.5 rounded-full border transition-all disabled:opacity-60",
+                  following
+                    ? "border-border text-muted-foreground bg-surface"
+                    : "border-primary text-primary hover:bg-primary/5",
+                ].join(" ")}
+              >
+                {followLoading ? "…" : following ? "Following" : "+ Follow"}
+              </button>
+            )}
             {post.location?.county && (
               <span className="text-muted-foreground text-[11px]">
                 · 📍 {post.location.county}
@@ -443,30 +499,40 @@ export function PostCard({ post, lang, priority }: Props) {
       {/* ── Action bar ─────────────────────────────────────────────────── */}
       <div className="flex items-center px-2 pb-1">
         <ActionBtn
-          onClick={handleLike}
+          onClick={() => handleLike()}
+          active={liked}
           icon={
             <svg
-              className={`w-[18px] h-[18px] transition-colors ${liked ? "text-primary fill-primary" : "fill-none stroke-current"}`}
-              strokeWidth={liked ? 0 : 1.8}
+              className="w-[18px] h-[18px] transition-all"
               viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              <path
+                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                fill={liked ? "rgb(var(--brand-primary))" : "none"}
+                stroke={liked ? "rgb(var(--brand-primary))" : "currentColor"}
+                strokeWidth={liked ? 0 : 1.8}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
           }
           label="Like"
-          count={liked ? likeCount : undefined}
+          count={likeCount}
         />
         <ActionBtn
-          onClick={handleOpen}
+          onClick={handleCommentClick}
           icon={
             <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
           }
           label="Comment"
-          count={post.stats?.comments}
+          count={commentCount}
         />
         <ActionBtn
+          onClick={() => handleShare()}
           icon={
             <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
@@ -485,6 +551,15 @@ export function PostCard({ post, lang, priority }: Props) {
           label="View"
         />
       </div>
+
+      {/* ── Comments drawer ─────────────────────────────────────────────── */}
+      {showComments && (
+        <CommentsDrawer
+          contentId={post.id}
+          onClose={() => setShowComments(false)}
+          onCommentAdded={() => setCommentCount((c) => c + 1)}
+        />
+      )}
 
     </article>
   );

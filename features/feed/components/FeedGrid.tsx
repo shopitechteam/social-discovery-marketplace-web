@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect } from "react";
 import { PostCard } from "./PostCard";
 import { useForYouFeed } from "../hooks/useFeed";
 import { FeedSkeleton } from "./FeedSkeleton";
 import { TrendingStrip } from "./TrendingStrip";
+import { consumeAuthIntent } from "../hooks/useAuthGuard";
+import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
 
 interface Props {
   lang: string;
@@ -12,22 +14,24 @@ interface Props {
 
 export function FeedGrid({ lang }: Props) {
   const { items, loading, hasMore, loadMore } = useForYouFeed();
-  const sentinelRef = useRef<HTMLDivElement>(null);
 
-  const handleObserver = useCallback(
-    (entries: IntersectionObserverEntry[]) => {
-      if (entries[0].isIntersecting && hasMore && !loading) loadMore();
-    },
-    [hasMore, loading, loadMore],
-  );
+  const { sentinelRef } = useInfiniteScroll({
+    hasMore,
+    loading,
+    onLoadMore: loadMore,
+    rootMargin: "600px",
+  });
 
+  // Restore scroll position when returning from auth (after like/comment redirect)
   useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(handleObserver, { rootMargin: "600px" });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [handleObserver]);
+    const intent = consumeAuthIntent();
+    if (!intent || intent.scrollY === 0) return;
+    // Wait for feed items to render before scrolling
+    const raf = requestAnimationFrame(() => {
+      window.scrollTo({ top: intent.scrollY, behavior: "instant" });
+    });
+    return () => cancelAnimationFrame(raf);
+  }, []);
 
   if (loading && items.length === 0) return <FeedSkeleton />;
 

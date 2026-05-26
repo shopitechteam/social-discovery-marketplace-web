@@ -37,6 +37,16 @@ fragment ContentCardFields on Content {
   hashtags
   creatorId
   createdAt
+  creator {
+    id
+    isFollowedByMe
+    followerCount
+    profile {
+      firstName
+      lastName
+      avatar
+    }
+  }
   media {
     ...MediaItemFields
   }
@@ -61,6 +71,7 @@ fragment ContentCardFields on Content {
     rankScore
     trendingScore
   }
+  isLikedByMe
 }
 
 query ForYouFeed($limit: Int, $after: String) {

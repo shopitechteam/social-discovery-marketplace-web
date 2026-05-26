@@ -120,7 +120,7 @@ export function BottomNav({ lang = "en" }: { lang: string }) {
 
   return (
     <nav
-      className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full z-50 md:hidden"
+      className="bottom-nav fixed bottom-0 left-1/2 -translate-x-1/2 w-full z-50 md:hidden"
       style={{ paddingBottom: "var(--safe-bottom)" }}
     >
       <div

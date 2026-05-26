@@ -3,11 +3,14 @@
 /**
  * TrendingStrip — horizontal scrolling strip of 5-6 trending posts.
  * Shown at the top of the feed. Hot items get a fire badge.
+ * Videos autoplay muted via MuxPlayer when scrolled into view.
  */
 
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import MuxPlayer from "@mux/mux-player-react";
+import type { MuxCSSProperties } from "@mux/mux-player-react";
 import { useTrending } from "../hooks/useFeed";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 
@@ -26,23 +29,63 @@ function TrendingItem({
   rank: number;
 }) {
   const router = useRouter();
+  const containerRef = useRef<HTMLButtonElement>(null);
+  const [inView, setInView] = useState(false);
+
   const media = post.media?.[0];
+  const playbackId = media?.muxMeta?.playbackId ?? null;
+  const isVideo = !!playbackId;
+
   const thumb =
     media?.thumbnailUrl ??
-    (media?.muxMeta?.playbackId
-      ? `https://image.mux.com/${media.muxMeta.playbackId}/thumbnail.jpg?time=0&width=320&fit_mode=smartcrop`
-      : media?.r2Variants?.find((v) => v.variant === "thumb")?.url ?? null);
+    (playbackId
+      ? `https://image.mux.com/${playbackId}/thumbnail.jpg?time=0&width=320&fit_mode=smartcrop`
+      : (media?.r2Variants?.find((v) => v.variant === "thumb")?.url ?? null));
 
   const isHot = (post.ranking?.trendingScore ?? 0) > 5;
 
+  // Observe when the card enters / leaves the viewport
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || !isVideo) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setInView(entry.isIntersecting),
+      { threshold: 0.5 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [isVideo]);
+
   return (
     <button
+      ref={containerRef}
       onClick={() => router.push(`/${lang}/content/${post.id}`)}
       className="relative flex-none w-28 rounded-xl overflow-hidden group"
       style={{ aspectRatio: "9/14" }}
       aria-label={post.title}
     >
-      {thumb ? (
+      {/* ── Video: MuxPlayer when in view, thumbnail otherwise ── */}
+      {isVideo && inView ? (
+        <MuxPlayer
+          playbackId={playbackId!}
+          autoPlay="muted"
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          thumbnailTime={0}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            "--controls": "none",
+            "--media-object-fit": "cover",
+          } as MuxCSSProperties}
+        />
+      ) : thumb ? (
         <Image
           src={thumb}
           alt={post.title}
@@ -55,21 +98,32 @@ function TrendingItem({
         <div className="absolute inset-0 bg-surface" />
       )}
 
-      {/* Gradient */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
+      {/* Gradient overlay — always on top */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent pointer-events-none" />
 
       {/* Rank number */}
-      <div className="absolute top-1.5 left-2 text-white/90 font-black text-lg leading-none">
+      <div className="absolute top-1.5 left-2 text-white/90 font-black text-lg leading-none pointer-events-none">
         {rank}
       </div>
 
       {/* Hot badge */}
       {isHot && (
-        <div className="absolute top-1.5 right-1.5 text-base leading-none">🔥</div>
+        <div className="absolute top-1.5 right-1.5 text-base leading-none pointer-events-none">
+          🔥
+        </div>
+      )}
+
+      {/* Video indicator */}
+      {isVideo && !inView && (
+        <div className="absolute top-1.5 right-1.5 pointer-events-none">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="white" opacity={0.8}>
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        </div>
       )}
 
       {/* Title */}
-      <div className="absolute bottom-0 left-0 right-0 px-2 pb-2">
+      <div className="absolute bottom-0 left-0 right-0 px-2 pb-2 pointer-events-none">
         <p className="text-white text-[10px] font-semibold leading-tight line-clamp-2">
           {post.title}
         </p>
@@ -117,7 +171,7 @@ export function TrendingStrip({ lang, county }: Props) {
       </div>
       <div
         ref={scrollRef}
-        className="flex gap-2.5 px-4 overflow-x-auto scrollbar-none pb-0.5"
+        className="flex gap-2.5 mx-4 overflow-x-auto scrollbar-none pb-0.5"
         style={{ scrollSnapType: "x mandatory" }}
       >
         {items.slice(0, 8).map((post, i) => (
