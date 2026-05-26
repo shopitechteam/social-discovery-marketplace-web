@@ -145,7 +145,12 @@ export function ContentDetail({ id, lang }: Props) {
   const currentUser = useAuthStore((s) => s.user);
 
   // ── Content query ──────────────────────────────────────────────────────────
-  const { data, loading } = useQuery(GetContentDocument, { variables: { id } });
+  const { data, loading } = useQuery(GetContentDocument, {
+    variables: { id },
+    // Always fetch fresh data for detail view so isLikedByMe / isFollowedByMe
+    // reflect the current server state rather than a potentially stale cache.
+    fetchPolicy: "cache-and-network",
+  });
 
   // ── Comments query ─────────────────────────────────────────────────────────
   const {
@@ -354,123 +359,335 @@ export function ContentDetail({ id, lang }: Props) {
   const postCreator = (data as GetContentQuery).content?.creator;
   const creatorName = postCreator?.profile?.firstName
     ? `${postCreator.profile.firstName} ${postCreator.profile.lastName ?? ""}`.trim()
-    : `Seller ${post.creatorId.slice(-6)}`;
+    : postCreator === null
+      ? `Seller ${post.creatorId.slice(-6)}`  // resolver returned, still no profile
+      : "";                                    // resolver still in-flight — don't flash garbage
   const avatarUrl = postCreator?.profile?.avatar;
-  // Both sides are string IDs from GraphQL — safe equality check
-  const isOwnPost = !!currentUser?.id && postCreator?.id === currentUser.id;
+  // isMyContent is resolved server-side — authoritative, no client-side ID comparison
+  const isOwnPost = post.isMyContent ?? false;
+
+  // ── Reusable sub-sections (shared between mobile & desktop) ──────────────
+
+  const MediaSection = (
+    <>
+      {isVideo && hlsUrl ? (
+        <div
+          className="relative w-full bg-black"
+          style={{
+            aspectRatio: mux?.aspectRatio === "16:9" ? "16/9" : "9/16",
+            maxHeight: "60vh",
+          }}
+        >
+          <video
+            ref={videoRef}
+            src={hlsUrl}
+            autoPlay
+            loop
+            muted={muted}
+            playsInline
+            controls
+            className="w-full h-full object-contain"
+          />
+          <button
+            onClick={() => setMuted((m) => !m)}
+            className="absolute bottom-14 right-3 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white"
+          >
+            {muted ? (
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.146 5.146a5 5 0 010 9.708v-1.717a3.001 3.001 0 000-6.274V5.146zm2.829-2.83a9 9 0 010 15.37l-.708-1.225a7 7 0 000-12.92l.708-1.225z" clipRule="evenodd" />
+              </svg>
+            )}
+          </button>
+        </div>
+      ) : (
+        <div>
+          <div
+            className="relative bg-black overflow-hidden"
+            style={{ aspectRatio: "4/3", maxHeight: "62vh" }}
+          >
+            {media[imgIdx] && (
+              <Image
+                src={
+                  media[imgIdx].r2Variants?.find((v) => v.variant === "large")?.url ??
+                  media[imgIdx].r2Variants?.[0]?.url ??
+                  media[imgIdx].imageUrl ??
+                  media[imgIdx].thumbnailUrl ??
+                  ""
+                }
+                alt={post.title}
+                fill
+                className="object-contain"
+                priority
+              />
+            )}
+          </div>
+          {media.length > 1 && (
+            <div className="flex justify-center gap-1.5 py-2">
+              {media.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setImgIdx(i)}
+                  className={["rounded-full transition-all", i === imgIdx ? "w-4 h-1.5 bg-primary" : "w-1.5 h-1.5 bg-border"].join(" ")}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  );
+
+  const CreatorRow = (
+    <div className="flex items-center gap-3 px-4 pt-4 pb-3">
+      <div className={`w-10 h-10 rounded-full flex-shrink-0 overflow-hidden ${avatarUrl ? "bg-surface" : `bg-gradient-to-br ${avatarColors(post.creatorId)}`} flex items-center justify-center`}>
+        {avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={avatarUrl} alt={creatorName} className="w-full h-full object-cover" />
+        ) : (
+          <span className="text-white text-xs font-bold">{post.creatorId.slice(-2).toUpperCase()}</span>
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        {creatorName ? (
+          <p className="font-semibold text-sm text-default truncate">{creatorName}</p>
+        ) : (
+          <div className="h-3.5 w-28 rounded-full bg-surface animate-pulse" />
+        )}
+        <p className="text-[11px] text-muted-foreground mt-0.5">{timeAgo(post.createdAt)}</p>
+      </div>
+      {!isOwnPost && (
+        <button
+          onClick={handleFollow}
+          disabled={followLoading}
+          className={["text-xs font-semibold px-3.5 py-1.5 rounded-full border transition-all disabled:opacity-60", following ? "border-border text-muted-foreground bg-surface" : "border-primary text-primary hover:bg-primary/5"].join(" ")}
+        >
+          {followLoading ? "…" : following ? "Following" : "+ Follow"}
+        </button>
+      )}
+    </div>
+  );
+
+  const PostInfo = (
+    <div className="px-4 pb-4 border-b border-default">
+      {post.price && (
+        <div className="mb-2.5">
+          <span className="text-xl font-bold" style={{ color: "rgb(var(--brand-primary))" }}>
+            {post.price.amount === 0 ? "Free" : `${post.price.currency} ${post.price.amount.toLocaleString()}`}
+          </span>
+          {post.price.negotiable && <span className="text-xs text-muted-foreground font-normal ml-2">· Negotiable</span>}
+        </div>
+      )}
+      <h1 className="text-default font-bold text-base leading-snug mb-2">{post.title}</h1>
+      {caption && (
+        <p className="text-muted-foreground text-sm leading-relaxed mb-2">
+          {displayCaption}
+          {isLongCaption && (
+            <button onClick={() => setCaptionExpanded((v) => !v)} className="text-primary font-medium ml-1">
+              {captionExpanded ? " less" : " more"}
+            </button>
+          )}
+        </p>
+      )}
+      {post.hashtags && post.hashtags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {post.hashtags.map((tag) => <span key={tag} className="text-primary text-xs font-medium">#{tag}</span>)}
+        </div>
+      )}
+      {post.location?.placeName && (
+        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <svg className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+          </svg>
+          {post.location.placeName}{post.location.county && `, ${post.location.county}`}
+        </div>
+      )}
+    </div>
+  );
+
+  // Mobile-only action bar (4 tabs — hidden on desktop)
+  const ActionBar = (
+    <div className="md:hidden flex items-center border-b border-default">
+      <button onClick={handleLike} className="flex-1 flex flex-col items-center justify-center py-3 gap-0.5 transition-colors active:bg-surface">
+        <svg className="w-6 h-6 transition-all" viewBox="0 0 24 24" fill={liked ? "rgb(var(--brand-primary))" : "none"} stroke={liked ? "rgb(var(--brand-primary))" : "currentColor"} strokeWidth={liked ? 0 : 1.8}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+        </svg>
+        <span className="text-[11px] font-semibold" style={{ color: liked ? "rgb(var(--brand-primary))" : "rgb(var(--color-text-muted))" }}>
+          {likeCount > 0 ? fmt(likeCount) : "Like"}
+        </span>
+      </button>
+      <button onClick={() => { if (!requireAuth({ contentId: id, action: "comment" })) return; inputRef.current?.focus(); inputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }); }} className="flex-1 flex flex-col items-center justify-center py-3 gap-0.5 transition-colors active:bg-surface">
+        <svg className="w-6 h-6 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        </svg>
+        <span className="text-[11px] font-semibold text-muted-foreground">{commentCount > 0 ? fmt(commentCount) : "Comment"}</span>
+      </button>
+      <button onClick={handleShare} className="flex-1 flex flex-col items-center justify-center py-3 gap-0.5 transition-colors active:bg-surface">
+        <svg className="w-6 h-6 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+        </svg>
+        <span className="text-[11px] font-semibold text-muted-foreground">Share</span>
+      </button>
+      <button className="flex-1 flex flex-col items-center justify-center py-3 gap-0.5 transition-colors active:bg-surface">
+        <svg className="w-6 h-6 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+        <span className="text-[11px] font-semibold text-muted-foreground">Message</span>
+      </button>
+    </div>
+  );
+
+  // Desktop inline action row (like/comment counts + share + message buttons)
+  const DesktopActions = (
+    <div className="hidden md:flex items-center gap-3 px-4 py-3 border-b border-default">
+      {/* Like */}
+      <button
+        onClick={handleLike}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all"
+        style={{
+          borderColor: liked ? "rgb(var(--brand-primary))" : "rgb(var(--color-border))",
+          color: liked ? "rgb(var(--brand-primary))" : "rgb(var(--color-text-muted))",
+          backgroundColor: liked ? "rgb(var(--brand-primary) / 0.06)" : "transparent",
+        }}
+      >
+        <svg className="w-4 h-4" viewBox="0 0 24 24" fill={liked ? "currentColor" : "none"} stroke="currentColor" strokeWidth={liked ? 0 : 1.8}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+        </svg>
+        <span className="text-xs font-semibold">{likeCount > 0 ? `${fmt(likeCount)} Likes` : "Like"}</span>
+      </button>
+      {/* Comment count */}
+      <div className="flex items-center gap-1.5 text-muted-foreground">
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        </svg>
+        <span className="text-xs">{commentCount > 0 ? `${fmt(commentCount)} Comments` : "Comments"}</span>
+      </div>
+      {/* Spacer */}
+      <div className="flex-1" />
+      {/* Share */}
+      <button onClick={handleShare} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-default text-muted-foreground hover:border-primary hover:text-primary transition-all text-xs font-semibold">
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+        </svg>
+        Share
+      </button>
+      {/* Message */}
+      <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-white transition-all" style={{ background: "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary, var(--brand-primary))))" }}>
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+        Message Seller
+      </button>
+    </div>
+  );
+
+  const CommentsSection = (
+    <div ref={commentsRef} className="px-4 pt-4">
+      <h2 className="font-bold text-default text-sm mb-1">
+        {commentCount > 0 ? `${fmt(commentCount)} Comments` : "Comments"}
+      </h2>
+      {commentsLoading && allComments.length === 0 && (
+        <div className="flex justify-center py-8">
+          <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
+      {!commentsLoading && allComments.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-10 text-center">
+          <span className="text-3xl mb-2">💬</span>
+          <p className="text-sm text-muted-foreground">No comments yet.</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Be the first to comment!</p>
+        </div>
+      )}
+      <div className="divide-y divide-default">
+        {allComments.map((comment) => (
+          <CommentRow key={comment.id} comment={comment} currentUserId={currentUser?.id} />
+        ))}
+      </div>
+      <div ref={commentSentinelRef} className="h-1" />
+      <div className="h-6" />
+    </div>
+  );
+
+  const CommentInput = (
+    <div className="flex items-center gap-2.5 px-3 pt-2.5 pb-3" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)" }}>
+      <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white text-[10px] font-bold bg-gradient-to-br ${avatarColors(currentUser?.id ?? "00")}`}>
+        {currentUser?.id ? initials(currentUser.id) : "?"}
+      </div>
+      <input
+        ref={inputRef}
+        type="text"
+        value={commentText}
+        onChange={(e) => setCommentText(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+        onFocus={() => { if (!requireAuth({ contentId: id, action: "comment" })) inputRef.current?.blur(); }}
+        placeholder="Add a comment…"
+        maxLength={500}
+        className="flex-1 bg-surface text-default text-sm rounded-full px-4 py-2.5 outline-none placeholder:text-muted-foreground border border-default focus:border-primary transition-colors"
+      />
+      <button
+        onClick={handleSend}
+        disabled={!commentText.trim()}
+        className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center transition-opacity disabled:opacity-35"
+        style={{ background: "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary, var(--brand-primary))))" }}
+      >
+        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+        </svg>
+      </button>
+    </div>
+  );
 
   return (
     <div className="min-h-svh flex flex-col bg-app">
-      {/* ── Sticky header ──────────────────────────────────────────────────── */}
-      <div className="sticky top-0 z-20 flex items-center gap-3 px-4 h-12 bg-app/90 backdrop-blur-md border-b border-default">
-        <button
-          onClick={() => router.back()}
-          className="w-8 h-8 -ml-1 flex items-center justify-center rounded-full hover:bg-surface transition-colors"
-        >
-          <svg
-            className="w-5 h-5 text-default"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2.5}
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-        </button>
-        <span className="font-semibold text-default text-sm truncate flex-1">
-          {post.title}
-        </span>
-        <button
-          onClick={handleShare}
-          className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface transition-colors"
-        >
-          <svg
-            className="w-5 h-5 text-default"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-            />
-          </svg>
-        </button>
-      </div>
 
-      {/* ── Scrollable body ────────────────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto pb-40">
-        {/* ── Media ─────────────────────────────────────────────────────────── */}
-        {isVideo && hlsUrl ? (
-          <div
-            className="relative w-full bg-black"
-            style={{
-              aspectRatio: mux?.aspectRatio === "16:9" ? "16/9" : "9/16",
-              maxHeight: "60vh",
-            }}
-          >
-            <video
-              ref={videoRef}
-              src={hlsUrl}
-              autoPlay
-              loop
-              muted={muted}
-              playsInline
-              controls
-              className="w-full h-full object-contain"
-            />
-            <button
-              onClick={() => setMuted((m) => !m)}
-              className="absolute bottom-14 right-3 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white"
-            >
-              {muted ? (
-                <svg
-                  className="w-4 h-4"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              ) : (
-                <svg
-                  className="w-4 h-4"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.146 5.146a5 5 0 010 9.708v-1.717a3.001 3.001 0 000-6.274V5.146zm2.829-2.83a9 9 0 010 15.37l-.708-1.225a7 7 0 000-12.92l.708-1.225z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              )}
-            </button>
-          </div>
-        ) : (
-          <div>
-            <div
-              className="relative bg-black overflow-hidden"
-              style={{ aspectRatio: "4/3", maxHeight: "62vh" }}
-            >
+      {/* ════════════════════════════════════════════════════════
+          DESKTOP LAYOUT  (md+)
+          Left col: media (sticky)   Right col: info + comments
+          Inspired by Facebook/Instagram post detail
+      ════════════════════════════════════════════════════════ */}
+      <div className="hidden md:flex h-screen overflow-hidden">
+
+        {/* ── Left: media ────────────────────────────────────────────────────── */}
+        <div
+          className="flex-1 bg-black flex items-center justify-center overflow-hidden"
+          style={{ minWidth: 0 }}
+        >
+          {isVideo && hlsUrl ? (
+            <div className="relative w-full h-full flex items-center justify-center">
+              <video
+                ref={videoRef}
+                src={hlsUrl}
+                autoPlay
+                loop
+                muted={muted}
+                playsInline
+                controls
+                className="max-w-full max-h-full object-contain"
+                style={{ maxHeight: "100vh" }}
+              />
+              <button
+                onClick={() => setMuted((m) => !m)}
+                className="absolute bottom-6 right-4 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white"
+              >
+                {muted ? (
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.146 5.146a5 5 0 010 9.708v-1.717a3.001 3.001 0 000-6.274V5.146zm2.829-2.83a9 9 0 010 15.37l-.708-1.225a7 7 0 000-12.92l.708-1.225z" clipRule="evenodd" /></svg>
+                )}
+              </button>
+            </div>
+          ) : (
+            <div className="relative w-full h-full flex items-center justify-center">
               {media[imgIdx] && (
                 <Image
                   src={
-                    media[imgIdx].r2Variants?.find((v) => v.variant === "large")
-                      ?.url ??
+                    media[imgIdx].r2Variants?.find((v) => v.variant === "large")?.url ??
                     media[imgIdx].r2Variants?.[0]?.url ??
                     media[imgIdx].imageUrl ??
-                    media[imgIdx].thumbnailUrl ??
-                    ""
+                    media[imgIdx].thumbnailUrl ?? ""
                   }
                   alt={post.title}
                   fill
@@ -478,352 +695,98 @@ export function ContentDetail({ id, lang }: Props) {
                   priority
                 />
               )}
+              {/* Prev/next arrows for multi-image */}
+              {media.length > 1 && (
+                <>
+                  <button onClick={() => setImgIdx((i) => Math.max(0, i - 1))} disabled={imgIdx === 0} className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center disabled:opacity-30">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                  </button>
+                  <button onClick={() => setImgIdx((i) => Math.min(media.length - 1, i + 1))} disabled={imgIdx === media.length - 1} className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center disabled:opacity-30">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                  </button>
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
+                    {media.map((_, i) => (
+                      <button key={i} onClick={() => setImgIdx(i)} className={["rounded-full transition-all", i === imgIdx ? "w-4 h-1.5 bg-white" : "w-1.5 h-1.5 bg-white/50"].join(" ")} />
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
-            {media.length > 1 && (
-              <div className="flex justify-center gap-1.5 py-2">
-                {media.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setImgIdx(i)}
-                    className={[
-                      "rounded-full transition-all",
-                      i === imgIdx
-                        ? "w-4 h-1.5 bg-primary"
-                        : "w-1.5 h-1.5 bg-border",
-                    ].join(" ")}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── Creator row ───────────────────────────────────────────────────── */}
-        <div className="flex items-center gap-3 px-4 pt-4 pb-3">
-          <div
-            className={`w-10 h-10 rounded-full flex-shrink-0 overflow-hidden ${avatarUrl ? "bg-surface" : `bg-gradient-to-br ${avatarColors(post.creatorId)}`} flex items-center justify-center`}
-          >
-            {avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={avatarUrl}
-                alt={creatorName}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <span className="text-white text-xs font-bold">
-                {post.creatorId.slice(-2).toUpperCase()}
-              </span>
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm text-default truncate">
-              {creatorName}
-            </p>
-            <p className="text-[11px] text-muted-foreground">
-              {timeAgo(post.createdAt)}
-            </p>
-          </div>
-          {!isOwnPost && (
-            <button
-              onClick={handleFollow}
-              disabled={followLoading}
-              className={[
-                "text-xs font-semibold px-3.5 py-1.5 rounded-full border transition-all disabled:opacity-60",
-                following
-                  ? "border-border text-muted-foreground bg-surface"
-                  : "border-primary text-primary hover:bg-primary/5",
-              ].join(" ")}
-            >
-              {followLoading ? "…" : following ? "Following" : "+ Follow"}
-            </button>
           )}
         </div>
 
-        {/* ── Post info ─────────────────────────────────────────────────────── */}
-        <div className="px-4 pb-4 border-b border-default">
-          {/* Price */}
-          {post.price && (
-            <div className="mb-2.5">
-              <span
-                className="text-xl font-bold"
-                style={{ color: "rgb(var(--brand-primary))" }}
-              >
-                {post.price.amount === 0
-                  ? "Free"
-                  : `${post.price.currency} ${post.price.amount.toLocaleString()}`}
-              </span>
-              {post.price.negotiable && (
-                <span className="text-xs text-muted-foreground font-normal ml-2">
-                  · Negotiable
-                </span>
-              )}
-            </div>
-          )}
-
-          {/* Title */}
-          <h1 className="text-default font-bold text-base leading-snug mb-2">
-            {post.title}
-          </h1>
-
-          {/* Caption */}
-          {caption && (
-            <p className="text-muted-foreground text-sm leading-relaxed mb-2">
-              {displayCaption}
-              {isLongCaption && (
-                <button
-                  onClick={() => setCaptionExpanded((v) => !v)}
-                  className="text-primary font-medium ml-1"
-                >
-                  {captionExpanded ? " less" : " more"}
-                </button>
-              )}
-            </p>
-          )}
-
-          {/* Hashtags */}
-          {post.hashtags && post.hashtags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mb-3">
-              {post.hashtags.map((tag) => (
-                <span key={tag} className="text-primary text-xs font-medium">
-                  #{tag}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {/* Location */}
-          {post.location?.placeName && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <svg
-                className="w-3.5 h-3.5 flex-shrink-0"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                  clipRule="evenodd"
-                />
+        {/* ── Right: info + comments + input ─────────────────────────────────── */}
+        <div
+          className="flex flex-col border-l border-default bg-app overflow-hidden"
+          style={{ width: 380, flexShrink: 0 }}
+        >
+          {/* Header row */}
+          <div className="flex items-center gap-2 px-4 h-12 border-b border-default shrink-0">
+            <button onClick={() => router.back()} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface transition-colors">
+              <svg className="w-5 h-5 text-default" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
               </svg>
-              {post.location.placeName}
-              {post.location.county && `, ${post.location.county}`}
-            </div>
-          )}
-        </div>
-
-        {/* ── Action bar ────────────────────────────────────────────────────── */}
-        <div className="flex items-center border-b border-default">
-          {/* Like */}
-          <button
-            onClick={handleLike}
-            className="flex-1 flex flex-col items-center justify-center py-3 gap-0.5 transition-colors active:bg-surface"
-          >
-            <svg
-              className="w-6 h-6 transition-all"
-              viewBox="0 0 24 24"
-              fill={liked ? "rgb(var(--brand-primary))" : "none"}
-              stroke={liked ? "rgb(var(--brand-primary))" : "currentColor"}
-              strokeWidth={liked ? 0 : 1.8}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-              />
-            </svg>
-            <span
-              className="text-[11px] font-semibold"
-              style={{
-                color: liked
-                  ? "rgb(var(--brand-primary))"
-                  : "rgb(var(--color-text-muted))",
-              }}
-            >
-              {likeCount > 0 ? fmt(likeCount) : "Like"}
-            </span>
-          </button>
-
-          {/* Comment — scrolls to input */}
-          <button
-            onClick={() => {
-              if (!requireAuth({ contentId: id, action: "comment" })) return;
-              inputRef.current?.focus();
-              inputRef.current?.scrollIntoView({
-                behavior: "smooth",
-                block: "center",
-              });
-            }}
-            className="flex-1 flex flex-col items-center justify-center py-3 gap-0.5 transition-colors active:bg-surface"
-          >
-            <svg
-              className="w-6 h-6 text-muted-foreground"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.8}
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-              />
-            </svg>
-            <span className="text-[11px] font-semibold text-muted-foreground">
-              {commentCount > 0 ? fmt(commentCount) : "Comment"}
-            </span>
-          </button>
-
-          {/* Share */}
-          <button
-            onClick={handleShare}
-            className="flex-1 flex flex-col items-center justify-center py-3 gap-0.5 transition-colors active:bg-surface"
-          >
-            <svg
-              className="w-6 h-6 text-muted-foreground"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.8}
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-              />
-            </svg>
-            <span className="text-[11px] font-semibold text-muted-foreground">
-              Share
-            </span>
-          </button>
-
-          {/* Message seller */}
-          <button className="flex-1 flex flex-col items-center justify-center py-3 gap-0.5 transition-colors active:bg-surface">
-            <svg
-              className="w-6 h-6 text-muted-foreground"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.8}
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-              />
-            </svg>
-            <span className="text-[11px] font-semibold text-muted-foreground">
-              Message
-            </span>
-          </button>
-        </div>
-
-        {/* ── Comments section ──────────────────────────────────────────────── */}
-        <div ref={commentsRef} className="px-4 pt-4">
-          <h2 className="font-bold text-default text-sm mb-1">
-            {commentCount > 0 ? `${fmt(commentCount)} Comments` : "Comments"}
-          </h2>
-
-          {commentsLoading && allComments.length === 0 && (
-            <div className="flex justify-center py-8">
-              <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            </div>
-          )}
-
-          {!commentsLoading && allComments.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-10 text-center">
-              <span className="text-3xl mb-2">💬</span>
-              <p className="text-sm text-muted-foreground">No comments yet.</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Be the first to comment!
-              </p>
-            </div>
-          )}
-
-          <div className="divide-y divide-default">
-            {allComments.map((comment) => (
-              <CommentRow
-                key={comment.id}
-                comment={comment}
-                currentUserId={currentUser?.id}
-              />
-            ))}
+            </button>
+            <span className="font-semibold text-default text-sm truncate flex-1">{post.title}</span>
           </div>
 
-          {/* Infinite scroll sentinel — fires handleLoadMore when scrolled into view */}
-          <div ref={commentSentinelRef} className="h-1" />
+          {/* Scrollable middle: creator + info + actions + comments */}
+          <div className="flex-1 overflow-y-auto">
+            {CreatorRow}
+            {PostInfo}
+            {DesktopActions}
+            {CommentsSection}
+          </div>
 
-          {/* Spacer so last comment isn't hidden behind sticky input */}
-          <div className="h-6" />
+          {/* Sticky comment input at bottom of right panel */}
+          <div
+            className="shrink-0 border-t border-default"
+            style={{ backgroundColor: "rgb(var(--color-bg-elevated))" }}
+          >
+            {CommentInput}
+          </div>
         </div>
       </div>
 
-      {/* ── Sticky comment input ──────────────────────────────────────────────── */}
-      <div
-        className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full z-40"
-        style={{
-          maxWidth: "430px",
-          paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 8px)",
-          backgroundColor: "rgb(var(--color-bg-elevated) / 0.97)",
-          backdropFilter: "blur(20px) saturate(180%)",
-          WebkitBackdropFilter: "blur(20px) saturate(180%)",
-          borderTop: "1px solid rgb(var(--color-border))",
-        }}
-      >
-        <div className="flex items-center gap-2.5 px-3 pt-2.5 pb-1">
-          {/* Current user avatar */}
-          <div
-            className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white text-[10px] font-bold bg-gradient-to-br ${avatarColors(currentUser?.id ?? "00")}`}
-          >
-            {currentUser?.id ? initials(currentUser.id) : "?"}
-          </div>
-
-          {/* Input */}
-          <input
-            ref={inputRef}
-            type="text"
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
-            onFocus={() => {
-              if (!requireAuth({ contentId: id, action: "comment" })) {
-                inputRef.current?.blur();
-              }
-            }}
-            placeholder="Add a comment…"
-            maxLength={500}
-            className="flex-1 bg-surface text-default text-sm rounded-full px-4 py-2.5 outline-none placeholder:text-muted-foreground border border-default focus:border-primary transition-colors"
-          />
-
-          {/* Send button */}
-          <button
-            onClick={handleSend}
-            disabled={!commentText.trim()}
-            className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center transition-opacity disabled:opacity-35"
-            style={{
-              background:
-                "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary, var(--brand-primary))))",
-            }}
-          >
-            <svg
-              className="w-4 h-4 text-white"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2.5}
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"
-              />
+      {/* ════════════════════════════════════════════════════════
+          MOBILE LAYOUT  (< md) — untouched
+      ════════════════════════════════════════════════════════ */}
+      <div className="md:hidden flex flex-col min-h-svh">
+        {/* Sticky header */}
+        <div className="sticky top-0 z-20 flex items-center gap-3 px-4 h-12 bg-app/90 backdrop-blur-md border-b border-default">
+          <button onClick={() => router.back()} className="w-8 h-8 -ml-1 flex items-center justify-center rounded-full hover:bg-surface transition-colors">
+            <svg className="w-5 h-5 text-default" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
           </button>
+          <span className="font-semibold text-default text-sm truncate flex-1">{post.title}</span>
+          <button onClick={handleShare} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface transition-colors">
+            <svg className="w-5 h-5 text-default" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto pb-40">
+          {MediaSection}
+          {CreatorRow}
+          {PostInfo}
+          {ActionBar}
+          {CommentsSection}
+        </div>
+
+        {/* Sticky comment input */}
+        <div
+          className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full z-40"
+          style={{
+            maxWidth: "430px",
+            backgroundColor: "rgb(var(--color-bg-elevated) / 0.97)",
+            backdropFilter: "blur(20px) saturate(180%)",
+            WebkitBackdropFilter: "blur(20px) saturate(180%)",
+            borderTop: "1px solid rgb(var(--color-border))",
+          }}
+        >
+          {CommentInput}
         </div>
       </div>
     </div>

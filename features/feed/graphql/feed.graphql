@@ -72,6 +72,7 @@ fragment ContentCardFields on Content {
     trendingScore
   }
   isLikedByMe
+  isMyContent
 }
 
 query ForYouFeed($limit: Int, $after: String) {

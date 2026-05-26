@@ -76,19 +76,28 @@ function Avatar({ creatorId, avatarUrl, firstName, lastName }: AvatarProps) {
     "from-sky-400 to-blue-600",
   ];
   const color = colors[parseInt(creatorId.slice(-1), 16) % colors.length];
-  const label = firstName ? `${firstName[0]}${lastName?.[0] ?? ""}`.toUpperCase() : initials(creatorId);
+  const label = firstName
+    ? `${firstName[0]}${lastName?.[0] ?? ""}`.toUpperCase()
+    : initials(creatorId);
 
   if (avatarUrl) {
     return (
-      <div className="w-10 h-10 rounded-full flex-shrink-0 overflow-hidden bg-surface">
+      <div className="w-10 h-10 rounded-full relative shrink-0 overflow-hidden bg-surface">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={avatarUrl} alt={label} className="w-full h-full object-cover" />
+        <Image
+          src={avatarUrl}
+          alt={label}
+          className="w-full h-full object-cover"
+          fill
+        />
       </div>
     );
   }
 
   return (
-    <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${color} flex items-center justify-center flex-shrink-0`}>
+    <div
+      className={`w-10 h-10 rounded-full bg-linear-to-br ${color} flex items-center justify-center flex-shrink-0`}
+    >
       <span className="text-white text-xs font-bold">{label}</span>
     </div>
   );
@@ -190,8 +199,16 @@ function VideoMedia({
       {/* Sound-off indicator */}
       {visible && (
         <div className="absolute bottom-2 left-2 bg-black/60 rounded-full p-1">
-          <svg className="w-3.5 h-3.5 text-white/80" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z" clipRule="evenodd"/>
+          <svg
+            className="w-3.5 h-3.5 text-white/80"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z"
+              clipRule="evenodd"
+            />
           </svg>
         </div>
       )}
@@ -234,15 +251,28 @@ function ImageMedia({
         className="w-full bg-surface flex items-center justify-center"
         style={{ aspectRatio: "4/3" }}
       >
-        <svg className="w-12 h-12 text-muted-foreground/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        <svg
+          className="w-12 h-12 text-muted-foreground/20"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+          />
         </svg>
       </div>
     );
   }
 
   return (
-    <div className="relative w-full bg-black overflow-hidden" style={{ aspectRatio }}>
+    <div
+      className="relative w-full bg-black overflow-hidden"
+      style={{ aspectRatio }}
+    >
       <Image
         src={src}
         alt={post.title}
@@ -260,7 +290,10 @@ function ImageMedia({
             {media.map((_, i) => (
               <button
                 key={i}
-                onClick={(e) => { e.stopPropagation(); setIdx(i); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIdx(i);
+                }}
                 className={[
                   "rounded-full transition-all",
                   i === idx ? "w-4 h-1.5 bg-white" : "w-1.5 h-1.5 bg-white/50",
@@ -275,21 +308,47 @@ function ImageMedia({
           {/* Arrow buttons */}
           {idx > 0 && (
             <button
-              onClick={(e) => { e.stopPropagation(); setIdx(i => i - 1); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIdx((i) => i - 1);
+              }}
               className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center"
             >
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              <svg
+                className="w-4 h-4 text-white"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2.5}
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15 19l-7-7 7-7"
+                />
               </svg>
             </button>
           )}
           {idx < media.length - 1 && (
             <button
-              onClick={(e) => { e.stopPropagation(); setIdx(i => i + 1); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIdx((i) => i + 1);
+              }}
               className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center"
             >
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              <svg
+                className="w-4 h-4 text-white"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2.5}
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </button>
           )}
@@ -318,7 +377,11 @@ function ActionBtn({
     <button
       onClick={onClick}
       className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg hover:bg-surface active:bg-surface transition-colors text-xs font-medium"
-      style={{ color: active ? "rgb(var(--brand-primary))" : "rgb(var(--color-text-muted))" }}
+      style={{
+        color: active
+          ? "rgb(var(--brand-primary))"
+          : "rgb(var(--color-text-muted))",
+      }}
     >
       {icon}
       <span>{count !== undefined && count > 0 ? fmt(count) : label}</span>
@@ -330,19 +393,33 @@ function ActionBtn({
 
 export function PostCard({ post, lang, priority }: Props) {
   const router = useRouter();
-  const { requireAuth, isAuthenticated } = useAuthGuard(lang);
-  const { liked, likeCount, handleLike, handleShare } = useInteractions(post, { requireAuth });
+  const { requireAuth } = useAuthGuard(lang);
+  const { liked, likeCount, handleLike, handleShare } = useInteractions(post, {
+    requireAuth,
+  });
   const [expanded, setExpanded] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [commentCount, setCommentCount] = useState(post.stats?.comments ?? 0);
 
   const creator = post.creator;
+  // creator is a FieldResolver — it may arrive slightly after the content item.
+  // Only fall back to the "Seller …" placeholder when we're sure the resolver
+  // returned and still gave us nothing (i.e. creator is explicitly null/undefined
+  // but the query has finished). While creator is genuinely absent we show
+  // nothing so there's no flash of raw ObjectId tail.
   const creatorName = creator?.profile?.firstName
     ? `${creator.profile.firstName}${creator.profile.lastName ? " " + creator.profile.lastName : ""}`
-    : `Seller ${post.creatorId.slice(-6)}`;
-  const isOwnPost = isAuthenticated && creator?.id === post.creatorId;
+    : creator === null
+      ? `Seller ${post.creatorId.slice(-6)}` // resolver returned, but no profile — genuine fallback
+      : ""; // resolver hasn't arrived yet — render nothing
+  // isMyContent is resolved server-side — no client-side ID comparison needed
+  const isOwnPost = post.isMyContent ?? false;
 
-  const { following, toggle: handleFollow, loading: followLoading } = useFollow({
+  const {
+    following,
+    toggle: handleFollow,
+    loading: followLoading,
+  } = useFollow({
     userId: creator?.id ?? post.creatorId,
     initialFollowing: creator?.isFollowedByMe ?? false,
     initialFollowerCount: creator?.followerCount ?? 0,
@@ -356,7 +433,8 @@ export function PostCard({ post, lang, priority }: Props) {
 
   const caption = post.caption ?? "";
   const isLong = caption.length > 160;
-  const displayCaption = isLong && !expanded ? caption.slice(0, 160) + "…" : caption;
+  const displayCaption =
+    isLong && !expanded ? caption.slice(0, 160) + "…" : caption;
 
   function handleOpen() {
     router.push(`/${lang}/content/${post.id}`);
@@ -364,7 +442,6 @@ export function PostCard({ post, lang, priority }: Props) {
 
   return (
     <article className="bg-elevated border-b border-default">
-
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 px-4 pt-3.5 pb-2.5">
         <button onClick={handleOpen}>
@@ -377,12 +454,17 @@ export function PostCard({ post, lang, priority }: Props) {
         </button>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={handleOpen}
-              className="font-semibold text-sm text-default leading-tight hover:underline"
-            >
-              {creatorName}
-            </button>
+            {creatorName ? (
+              <button
+                onClick={handleOpen}
+                className="font-semibold text-sm text-default leading-tight hover:underline"
+              >
+                {creatorName}
+              </button>
+            ) : (
+              // creator FieldResolver hasn't arrived yet — shimmer placeholder
+              <div className="h-3.5 w-24 rounded-full bg-surface animate-pulse" />
+            )}
             {/* Follow button — hidden on own posts */}
             {!isOwnPost && (
               <button
@@ -409,7 +491,9 @@ export function PostCard({ post, lang, priority }: Props) {
             {post.location?.placeName && (
               <>
                 <span>·</span>
-                <span className="truncate max-w-[120px]">{post.location.placeName}</span>
+                <span className="truncate max-w-[120px]">
+                  {post.location.placeName}
+                </span>
               </>
             )}
           </div>
@@ -432,7 +516,10 @@ export function PostCard({ post, lang, priority }: Props) {
             {displayCaption}
             {isLong && (
               <button
-                onClick={(e) => { e.stopPropagation(); setExpanded((v) => !v); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setExpanded((v) => !v);
+                }}
                 className="text-muted-foreground font-medium ml-1"
               >
                 {expanded ? " See less" : " See more"}
@@ -453,10 +540,7 @@ export function PostCard({ post, lang, priority }: Props) {
       </div>
 
       {/* ── Media ──────────────────────────────────────────────────────── */}
-      <div
-        className="cursor-pointer"
-        onClick={handleOpen}
-      >
+      <div className="cursor-pointer" onClick={handleOpen}>
         {post.type === "VIDEO" ? (
           <VideoMedia post={post} priority={priority} />
         ) : (
@@ -487,7 +571,9 @@ export function PostCard({ post, lang, priority }: Props) {
               ? "Free"
               : `${post.price.currency} ${post.price.amount.toLocaleString()}`}
             {post.price.negotiable && (
-              <span className="text-muted-foreground font-normal text-xs ml-1">· neg</span>
+              <span className="text-muted-foreground font-normal text-xs ml-1">
+                · neg
+              </span>
             )}
           </span>
         )}
@@ -524,8 +610,18 @@ export function PostCard({ post, lang, priority }: Props) {
         <ActionBtn
           onClick={handleCommentClick}
           icon={
-            <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            <svg
+              className="w-[18px] h-[18px]"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.8}
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+              />
             </svg>
           }
           label="Comment"
@@ -534,8 +630,18 @@ export function PostCard({ post, lang, priority }: Props) {
         <ActionBtn
           onClick={() => handleShare()}
           icon={
-            <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+            <svg
+              className="w-[18px] h-[18px]"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.8}
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+              />
             </svg>
           }
           label="Share"
@@ -543,9 +649,23 @@ export function PostCard({ post, lang, priority }: Props) {
         <ActionBtn
           onClick={handleOpen}
           icon={
-            <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 5.943 7.523 3 12 3c4.478 0 8.268 2.943 9.542 9-1.274 6.057-5.064 9-9.542 9-4.477 0-8.268-2.943-9.542-9z" />
+            <svg
+              className="w-[18px] h-[18px]"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.8}
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M2.458 12C3.732 5.943 7.523 3 12 3c4.478 0 8.268 2.943 9.542 9-1.274 6.057-5.064 9-9.542 9-4.477 0-8.268-2.943-9.542-9z"
+              />
             </svg>
           }
           label="View"
@@ -560,7 +680,6 @@ export function PostCard({ post, lang, priority }: Props) {
           onCommentAdded={() => setCommentCount((c) => c + 1)}
         />
       )}
-
     </article>
   );
 }

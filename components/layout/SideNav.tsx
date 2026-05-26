@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 
 type Tab = {
   key: string;
@@ -291,13 +292,61 @@ export function SideNav({ lang = "en" }: { lang: string }) {
         })}
       </nav>
 
-      {/* Bottom branding / version */}
+      {/* Theme toggle + branding */}
       <div
-        className="px-6 py-4 shrink-0 text-xs"
-        style={{ color: "rgb(var(--color-text-muted))" }}
+        className="px-4 py-4 shrink-0 flex flex-col gap-3"
+        style={{ borderTop: "1px solid rgb(var(--color-border))" }}
       >
-        © {new Date().getFullYear()} Shopi
+        <ThemeToggle />
+        <span
+          className="text-xs px-2"
+          style={{ color: "rgb(var(--color-text-muted))" }}
+        >
+          © {new Date().getFullYear()} Shopi
+        </span>
       </div>
     </aside>
+  );
+}
+
+function ThemeToggle() {
+  const [isDark, setIsDark] = useState(() =>
+    typeof document !== "undefined"
+      ? document.documentElement.classList.contains("dark")
+      : false,
+  );
+
+  function toggle() {
+    const html = document.documentElement;
+    const next = !html.classList.contains("dark");
+    html.classList.toggle("dark", next);
+    setIsDark(next);
+    try { localStorage.setItem("theme", next ? "dark" : "light"); } catch {}
+  }
+
+  return (
+    <button
+      onClick={toggle}
+      className="flex items-center gap-3 px-3 py-3 rounded-xl w-full transition-all duration-150"
+      style={{ color: "rgb(var(--color-text))" }}
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+    >
+      {isDark ? (
+        /* Sun icon */
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="4.5" stroke="currentColor" strokeWidth="1.7" fill="currentColor" fillOpacity="0.15" />
+          <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
+            stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+        </svg>
+      ) : (
+        /* Moon icon */
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"
+            stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"
+            fill="currentColor" fillOpacity="0.12" />
+        </svg>
+      )}
+      <span className="text-sm">{isDark ? "Light mode" : "Dark mode"}</span>
+    </button>
   );
 }

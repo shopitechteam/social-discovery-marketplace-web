@@ -190,6 +190,23 @@ function createClient() {
           },
         },
 
+        // Content is the real type returned by the API (not Post).
+        // Without keyFields Apollo can't normalise content objects by ID,
+        // so a stale cache entry without `creator` (e.g. a guest fetch)
+        // won't be updated when the same item is later fetched as an
+        // authenticated user — causing the "Seller bb58bd" flash.
+        Content: {
+          keyFields: ["id"],
+          fields: {
+            // These are FieldResolver values that differ per-viewer.
+            // merge: false tells Apollo to always take the incoming value
+            // rather than trying to deep-merge, which prevents stale data.
+            isLikedByMe:  { merge: false },
+            isMyContent:  { merge: false },
+            creator:      { merge: false },
+          },
+        },
+
         Post: {
           keyFields: ["id"],
           fields: {
@@ -238,11 +255,13 @@ function createClient() {
 
     defaultOptions: {
       watchQuery: {
+        // Always hit network + show cached data while fresh arrives.
+        // No nextFetchPolicy — keep cache-and-network on every re-render
+        // so revisiting the feed never shows stale data.
         fetchPolicy: "cache-and-network",
-        nextFetchPolicy: "cache-first",
       },
       query: {
-        fetchPolicy: "cache-first",
+        fetchPolicy: "network-only",
         errorPolicy: "all",
       },
       mutate: {

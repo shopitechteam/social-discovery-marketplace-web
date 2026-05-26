@@ -75,15 +75,17 @@ function TrendingItem({
           playsInline
           preload="metadata"
           thumbnailTime={0}
-          style={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            "--controls": "none",
-            "--media-object-fit": "cover",
-          } as MuxCSSProperties}
+          style={
+            {
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              "--controls": "none",
+              "--media-object-fit": "cover",
+            } as MuxCSSProperties
+          }
         />
       ) : thumb ? (
         <Image
@@ -99,7 +101,7 @@ function TrendingItem({
       )}
 
       {/* Gradient overlay — always on top */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-linear-to-t from-black/75 via-black/10 to-transparent pointer-events-none" />
 
       {/* Rank number */}
       <div className="absolute top-1.5 left-2 text-white/90 font-black text-lg leading-none pointer-events-none">
@@ -116,14 +118,20 @@ function TrendingItem({
       {/* Video indicator */}
       {isVideo && !inView && (
         <div className="absolute top-1.5 right-1.5 pointer-events-none">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="white" opacity={0.8}>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="white"
+            opacity={0.8}
+          >
             <path d="M8 5v14l11-7z" />
           </svg>
         </div>
       )}
 
       {/* Title */}
-      <div className="absolute bottom-0 left-0 right-0 px-2 pb-2 pointer-events-none">
+      {/* <div className="absolute bottom-0 left-0 right-0 px-2 pb-2 pointer-events-none">
         <p className="text-white text-[10px] font-semibold leading-tight line-clamp-2">
           {post.title}
         </p>
@@ -134,7 +142,7 @@ function TrendingItem({
               : `${post.price.currency} ${post.price.amount.toLocaleString()}`}
           </p>
         )}
-      </div>
+      </div> */}
     </button>
   );
 }

@@ -130,10 +130,9 @@ export function StepReady({ lang }: StepReadyProps) {
         return;
       }
       if (data?.publishDraft) {
-        // Clear store + sessionStorage immediately so the next "New post" starts clean
-        reset();
         setPublished(true);
         setTimeout(() => {
+          reset();
           router.push(`/${lang}/feed`);
         }, 1800);
       }
@@ -240,7 +239,7 @@ export function StepReady({ lang }: StepReadyProps) {
               muted={muted}
               playsInline
               preload="auto"
-              className="object-contain"
+              className="object-contain?."
               poster={
                 cover.thumbnailUrl ??
                 `https://image.mux.com/${cover.muxPlaybackId}/thumbnail.webp?time=0&width=720`
