@@ -425,6 +425,7 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
             src={cover.thumbnailUrl ?? cover.localUri}
             alt=""
             fill
+            sizes="100vw"
             className="object-cover"
             unoptimized={cover.localUri.startsWith("blob:") || cover.localUri.startsWith("http")}
           />
@@ -548,6 +549,7 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
                   src={cover.thumbnailUrl ?? cover.localUri}
                   alt=""
                   fill
+                  sizes="80px"
                   className="object-cover"
                   unoptimized={cover.localUri.startsWith("blob:") || cover.localUri.startsWith("http")}
                 />

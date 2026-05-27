@@ -24,12 +24,32 @@
  *   └─────────────────────────────┘
  */
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useSyncExternalStore,
+} from "react";
+
+// Returns true when viewport is ≥ 768px (md breakpoint). SSR-safe.
+function useIsDesktop() {
+  return useSyncExternalStore(
+    (cb) => {
+      const mq = window.matchMedia("(min-width: 768px)");
+      mq.addEventListener("change", cb);
+      return () => mq.removeEventListener("change", cb);
+    },
+    () => window.matchMedia("(min-width: 768px)").matches,
+    () => false, // SSR snapshot — assume mobile
+  );
+}
 import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
 import { useFollow } from "../hooks/useFollow";
-import { useQuery, useMutation } from "@apollo/client/react";
+import { useQuery, useMutation, useApolloClient } from "@apollo/client/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { SHIMMER, SHIMMER_AVATAR, SHIMMER_PORTRAIT } from "@/lib/shimmer";
 import {
   GetContentDocument,
   GetCommentsDocument,
@@ -163,18 +183,27 @@ export function ContentDetail({ id, lang }: Props) {
   });
 
   // ── Mutations ──────────────────────────────────────────────────────────────
+  const client = useApolloClient();
   const [toggleLikeMutation] = useMutation(ToggleLikeDocument);
   const [addCommentMutation] = useMutation(AddCommentDocument);
   const [shareMutation] = useMutation(ShareContentDocument);
   const [viewMutation] = useMutation(ViewContentDocument);
 
+  // ── Viewport ───────────────────────────────────────────────────────────────
+  const isDesktop = useIsDesktop();
+
   // ── Local state ────────────────────────────────────────────────────────────
   const post = data?.content;
   const [imgIdx, setImgIdx] = useState(0);
   const [muted, setMuted] = useState(false);
-  const [liked, setLiked] = useState(post?.isLikedByMe ?? false);
-  const [likeCount, setLikeCount] = useState(post?.stats?.likes ?? 0);
-  const [commentCount, setCommentCount] = useState(post?.stats?.comments ?? 0);
+  // Read liked/count straight from the Apollo cache (post updates reactively)
+  const resolvedLiked = post?.isLikedByMe ?? false;
+  const resolvedLikeCount = post?.stats?.likes ?? 0;
+  const [commentCountOverride, setCommentCountOverride] = useState<
+    number | null
+  >(null);
+  const resolvedCommentCount =
+    commentCountOverride ?? post?.stats?.comments ?? 0;
   const [commentText, setCommentText] = useState("");
   const [optimisticComments, setOptimisticComments] = useState<CommentItem[]>(
     [],
@@ -184,37 +213,43 @@ export function ContentDetail({ id, lang }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const commentsRef = useRef<HTMLDivElement>(null);
 
-  // Sync liked/count when post loads
-  useEffect(() => {
-    if (post) {
-      setLiked(post.isLikedByMe ?? false);
-      setLikeCount(post.stats?.likes ?? 0);
-      setCommentCount(post.stats?.comments ?? 0);
-    }
-  }, [post]);
-
   // Fire view on mount
   useEffect(() => {
     viewMutation({ variables: { contentId: id } }).catch(() => {});
   }, [id, viewMutation]);
 
+  // ── Cache writer — keeps feed cards + detail in sync ──────────────────────
+  function writeLikeToCache(liked: boolean, likeCount: number) {
+    client.cache.modify({
+      id: client.cache.identify({ __typename: "Content", id }),
+      fields: {
+        isLikedByMe: () => liked,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        stats: (existing: any) => ({ ...existing, likes: likeCount }),
+      },
+    });
+  }
+
   // ── Like handler ───────────────────────────────────────────────────────────
   async function handleLike() {
     if (!requireAuth({ contentId: id, action: "like" })) return;
-    const wasLiked = liked;
-    setLiked(!wasLiked);
-    setLikeCount((c) => c + (wasLiked ? -1 : 1));
+    const wasLiked = resolvedLiked;
+    const newLiked = !wasLiked;
+    const newCount = resolvedLikeCount + (wasLiked ? -1 : 1);
+
+    // Optimistic update straight into the cache
+    writeLikeToCache(newLiked, newCount);
+
     try {
       const { data: res } = await toggleLikeMutation({
         variables: { contentId: id },
       });
       if (res?.toggleLike) {
-        setLiked(res.toggleLike.liked);
-        setLikeCount(res.toggleLike.likeCount);
+        writeLikeToCache(res.toggleLike.liked, res.toggleLike.likeCount);
       }
     } catch {
-      setLiked(wasLiked);
-      setLikeCount((c) => c + (wasLiked ? 1 : -1));
+      // Rollback
+      writeLikeToCache(wasLiked, resolvedLikeCount);
     }
   }
 
@@ -243,9 +278,12 @@ export function ContentDetail({ id, lang }: Props) {
       createdAt: new Date().toISOString() as unknown,
       parentId: null,
       likeCount: 0,
+      replyCount: 0,
+      isLikedByMe: false,
+      author: null,
     };
     setOptimisticComments((p) => [optimistic, ...p]);
-    setCommentCount((c) => c + 1);
+    setCommentCountOverride(resolvedCommentCount + 1);
 
     // Scroll to the comments heading after optimistic insert
     commentsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -265,7 +303,7 @@ export function ContentDetail({ id, lang }: Props) {
       }
     } catch {
       setOptimisticComments((p) => p.filter((c) => c.id !== tempId));
-      setCommentCount((c) => c - 1);
+      setCommentCountOverride(resolvedCommentCount - 1);
     }
   }
 
@@ -360,8 +398,8 @@ export function ContentDetail({ id, lang }: Props) {
   const creatorName = postCreator?.profile?.firstName
     ? `${postCreator.profile.firstName} ${postCreator.profile.lastName ?? ""}`.trim()
     : postCreator === null
-      ? `Seller ${post.creatorId.slice(-6)}`  // resolver returned, still no profile
-      : "";                                    // resolver still in-flight — don't flash garbage
+      ? `Seller ${post.creatorId.slice(-6)}` // resolver returned, still no profile
+      : ""; // resolver still in-flight — don't flash garbage
   const avatarUrl = postCreator?.profile?.avatar;
   // isMyContent is resolved server-side — authoritative, no client-side ID comparison
   const isOwnPost = post.isMyContent ?? false;
@@ -381,7 +419,7 @@ export function ContentDetail({ id, lang }: Props) {
           <video
             ref={videoRef}
             src={hlsUrl}
-            autoPlay
+            autoPlay={!isDesktop}
             loop
             muted={muted}
             playsInline
@@ -394,11 +432,19 @@ export function ContentDetail({ id, lang }: Props) {
           >
             {muted ? (
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                <path
+                  fillRule="evenodd"
+                  d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z"
+                  clipRule="evenodd"
+                />
               </svg>
             ) : (
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.146 5.146a5 5 0 010 9.708v-1.717a3.001 3.001 0 000-6.274V5.146zm2.829-2.83a9 9 0 010 15.37l-.708-1.225a7 7 0 000-12.92l.708-1.225z" clipRule="evenodd" />
+                <path
+                  fillRule="evenodd"
+                  d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.146 5.146a5 5 0 010 9.708v-1.717a3.001 3.001 0 000-6.274V5.146zm2.829-2.83a9 9 0 010 15.37l-.708-1.225a7 7 0 000-12.92l.708-1.225z"
+                  clipRule="evenodd"
+                />
               </svg>
             )}
           </button>
@@ -412,7 +458,8 @@ export function ContentDetail({ id, lang }: Props) {
             {media[imgIdx] && (
               <Image
                 src={
-                  media[imgIdx].r2Variants?.find((v) => v.variant === "large")?.url ??
+                  media[imgIdx].r2Variants?.find((v) => v.variant === "large")
+                    ?.url ??
                   media[imgIdx].r2Variants?.[0]?.url ??
                   media[imgIdx].imageUrl ??
                   media[imgIdx].thumbnailUrl ??
@@ -420,8 +467,11 @@ export function ContentDetail({ id, lang }: Props) {
                 }
                 alt={post.title}
                 fill
+                sizes="100vw"
                 className="object-contain"
                 priority
+                placeholder="blur"
+                blurDataURL={SHIMMER_PORTRAIT}
               />
             )}
           </div>
@@ -431,7 +481,12 @@ export function ContentDetail({ id, lang }: Props) {
                 <button
                   key={i}
                   onClick={() => setImgIdx(i)}
-                  className={["rounded-full transition-all", i === imgIdx ? "w-4 h-1.5 bg-primary" : "w-1.5 h-1.5 bg-border"].join(" ")}
+                  className={[
+                    "rounded-full transition-all",
+                    i === imgIdx
+                      ? "w-4 h-1.5 bg-primary"
+                      : "w-1.5 h-1.5 bg-border",
+                  ].join(" ")}
                 />
               ))}
             </div>
@@ -443,27 +498,47 @@ export function ContentDetail({ id, lang }: Props) {
 
   const CreatorRow = (
     <div className="flex items-center gap-3 px-4 pt-4 pb-3">
-      <div className={`w-10 h-10 rounded-full flex-shrink-0 overflow-hidden ${avatarUrl ? "bg-surface" : `bg-gradient-to-br ${avatarColors(post.creatorId)}`} flex items-center justify-center`}>
+      <div
+        className={`w-10 h-10 rounded-full shrink-0  relative overflow-hidden ${avatarUrl ? "bg-surface" : `bg-gradient-to-br ${avatarColors(post.creatorId)}`} flex items-center justify-center`}
+      >
         {avatarUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={avatarUrl} alt={creatorName} className="w-full h-full object-cover" />
+          <Image
+            src={avatarUrl}
+            alt={creatorName}
+            className="w-full h-full object-cover"
+            fill
+            sizes="40px"
+            placeholder="blur"
+            blurDataURL={SHIMMER_AVATAR}
+          />
         ) : (
-          <span className="text-white text-xs font-bold">{post.creatorId.slice(-2).toUpperCase()}</span>
+          <span className="text-white text-xs font-bold">
+            {post.creatorId.slice(-2).toUpperCase()}
+          </span>
         )}
       </div>
       <div className="flex-1 min-w-0">
         {creatorName ? (
-          <p className="font-semibold text-sm text-default truncate">{creatorName}</p>
+          <p className="font-semibold text-sm text-default truncate">
+            {creatorName}
+          </p>
         ) : (
           <div className="h-3.5 w-28 rounded-full bg-surface animate-pulse" />
         )}
-        <p className="text-[11px] text-muted-foreground mt-0.5">{timeAgo(post.createdAt)}</p>
+        <p className="text-[11px] text-muted-foreground mt-0.5">
+          {timeAgo(post.createdAt)}
+        </p>
       </div>
       {!isOwnPost && (
         <button
           onClick={handleFollow}
           disabled={followLoading}
-          className={["text-xs font-semibold px-3.5 py-1.5 rounded-full border transition-all disabled:opacity-60", following ? "border-border text-muted-foreground bg-surface" : "border-primary text-primary hover:bg-primary/5"].join(" ")}
+          className={[
+            "text-xs font-semibold px-3.5 py-1.5 rounded-full border transition-all disabled:opacity-60",
+            following
+              ? "border-border text-muted-foreground bg-surface"
+              : "border-primary text-primary hover:bg-primary/5",
+          ].join(" ")}
         >
           {followLoading ? "…" : following ? "Following" : "+ Follow"}
         </button>
@@ -475,18 +550,32 @@ export function ContentDetail({ id, lang }: Props) {
     <div className="px-4 pb-4 border-b border-default">
       {post.price && (
         <div className="mb-2.5">
-          <span className="text-xl font-bold" style={{ color: "rgb(var(--brand-primary))" }}>
-            {post.price.amount === 0 ? "Free" : `${post.price.currency} ${post.price.amount.toLocaleString()}`}
+          <span
+            className="text-xl font-bold"
+            style={{ color: "rgb(var(--brand-primary))" }}
+          >
+            {post.price.amount === 0
+              ? "Free"
+              : `${post.price.currency} ${post.price.amount.toLocaleString()}`}
           </span>
-          {post.price.negotiable && <span className="text-xs text-muted-foreground font-normal ml-2">· Negotiable</span>}
+          {post.price.negotiable && (
+            <span className="text-xs text-muted-foreground font-normal ml-2">
+              · Negotiable
+            </span>
+          )}
         </div>
       )}
-      <h1 className="text-default font-bold text-base leading-snug mb-2">{post.title}</h1>
+      <h1 className="text-default font-bold text-base leading-snug mb-2">
+        {post.title}
+      </h1>
       {caption && (
         <p className="text-muted-foreground text-sm leading-relaxed mb-2">
           {displayCaption}
           {isLongCaption && (
-            <button onClick={() => setCaptionExpanded((v) => !v)} className="text-primary font-medium ml-1">
+            <button
+              onClick={() => setCaptionExpanded((v) => !v)}
+              className="text-primary font-medium ml-1"
+            >
               {captionExpanded ? " less" : " more"}
             </button>
           )}
@@ -494,15 +583,28 @@ export function ContentDetail({ id, lang }: Props) {
       )}
       {post.hashtags && post.hashtags.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-3">
-          {post.hashtags.map((tag) => <span key={tag} className="text-primary text-xs font-medium">#{tag}</span>)}
+          {post.hashtags.map((tag) => (
+            <span key={tag} className="text-primary text-xs font-medium">
+              #{tag}
+            </span>
+          ))}
         </div>
       )}
       {post.location?.placeName && (
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
-          <svg className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+          <svg
+            className="w-3.5 h-3.5 flex-shrink-0"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path
+              fillRule="evenodd"
+              d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
+              clipRule="evenodd"
+            />
           </svg>
-          {post.location.placeName}{post.location.county && `, ${post.location.county}`}
+          {post.location.placeName}
+          {post.location.county && `, ${post.location.county}`}
         </div>
       )}
     </div>
@@ -511,31 +613,100 @@ export function ContentDetail({ id, lang }: Props) {
   // Mobile-only action bar (4 tabs — hidden on desktop)
   const ActionBar = (
     <div className="md:hidden flex items-center border-b border-default">
-      <button onClick={handleLike} className="flex-1 flex flex-col items-center justify-center py-3 gap-0.5 transition-colors active:bg-surface">
-        <svg className="w-6 h-6 transition-all" viewBox="0 0 24 24" fill={liked ? "rgb(var(--brand-primary))" : "none"} stroke={liked ? "rgb(var(--brand-primary))" : "currentColor"} strokeWidth={liked ? 0 : 1.8}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+      <button
+        onClick={handleLike}
+        className="flex-1 flex flex-col items-center justify-center py-3 gap-0.5 transition-colors active:bg-surface"
+      >
+        <svg
+          className="w-6 h-6 transition-all"
+          viewBox="0 0 24 24"
+          fill={resolvedLiked ? "rgb(var(--brand-primary))" : "none"}
+          stroke={resolvedLiked ? "rgb(var(--brand-primary))" : "currentColor"}
+          strokeWidth={resolvedLiked ? 0 : 1.8}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+          />
         </svg>
-        <span className="text-[11px] font-semibold" style={{ color: liked ? "rgb(var(--brand-primary))" : "rgb(var(--color-text-muted))" }}>
-          {likeCount > 0 ? fmt(likeCount) : "Like"}
+        <span
+          className="text-[11px] font-semibold"
+          style={{
+            color: resolvedLiked
+              ? "rgb(var(--brand-primary))"
+              : "rgb(var(--color-text-muted))",
+          }}
+        >
+          {resolvedLikeCount > 0 ? fmt(resolvedLikeCount) : "Like"}
         </span>
       </button>
-      <button onClick={() => { if (!requireAuth({ contentId: id, action: "comment" })) return; inputRef.current?.focus(); inputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }); }} className="flex-1 flex flex-col items-center justify-center py-3 gap-0.5 transition-colors active:bg-surface">
-        <svg className="w-6 h-6 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+      <button
+        onClick={() => {
+          if (!requireAuth({ contentId: id, action: "comment" })) return;
+          inputRef.current?.focus();
+          inputRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }}
+        className="flex-1 flex flex-col items-center justify-center py-3 gap-0.5 transition-colors active:bg-surface"
+      >
+        <svg
+          className="w-6 h-6 text-muted-foreground"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.8}
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+          />
         </svg>
-        <span className="text-[11px] font-semibold text-muted-foreground">{commentCount > 0 ? fmt(commentCount) : "Comment"}</span>
+        <span className="text-[11px] font-semibold text-muted-foreground">
+          {resolvedCommentCount > 0 ? fmt(resolvedCommentCount) : "Comment"}
+        </span>
       </button>
-      <button onClick={handleShare} className="flex-1 flex flex-col items-center justify-center py-3 gap-0.5 transition-colors active:bg-surface">
-        <svg className="w-6 h-6 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+      <button
+        onClick={handleShare}
+        className="flex-1 flex flex-col items-center justify-center py-3 gap-0.5 transition-colors active:bg-surface"
+      >
+        <svg
+          className="w-6 h-6 text-muted-foreground"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.8}
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+          />
         </svg>
-        <span className="text-[11px] font-semibold text-muted-foreground">Share</span>
+        <span className="text-[11px] font-semibold text-muted-foreground">
+          Share
+        </span>
       </button>
       <button className="flex-1 flex flex-col items-center justify-center py-3 gap-0.5 transition-colors active:bg-surface">
-        <svg className="w-6 h-6 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        <svg
+          className="w-6 h-6 text-muted-foreground"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.8}
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+          />
         </svg>
-        <span className="text-[11px] font-semibold text-muted-foreground">Message</span>
+        <span className="text-[11px] font-semibold text-muted-foreground">
+          Message
+        </span>
       </button>
     </div>
   );
@@ -548,36 +719,97 @@ export function ContentDetail({ id, lang }: Props) {
         onClick={handleLike}
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all"
         style={{
-          borderColor: liked ? "rgb(var(--brand-primary))" : "rgb(var(--color-border))",
-          color: liked ? "rgb(var(--brand-primary))" : "rgb(var(--color-text-muted))",
-          backgroundColor: liked ? "rgb(var(--brand-primary) / 0.06)" : "transparent",
+          borderColor: resolvedLiked
+            ? "rgb(var(--brand-primary))"
+            : "rgb(var(--color-border))",
+          color: resolvedLiked
+            ? "rgb(var(--brand-primary))"
+            : "rgb(var(--color-text-muted))",
+          backgroundColor: resolvedLiked
+            ? "rgb(var(--brand-primary) / 0.06)"
+            : "transparent",
         }}
       >
-        <svg className="w-4 h-4" viewBox="0 0 24 24" fill={liked ? "currentColor" : "none"} stroke="currentColor" strokeWidth={liked ? 0 : 1.8}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+        <svg
+          className="w-4 h-4"
+          viewBox="0 0 24 24"
+          fill={resolvedLiked ? "currentColor" : "none"}
+          stroke="currentColor"
+          strokeWidth={resolvedLiked ? 0 : 1.8}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+          />
         </svg>
-        <span className="text-xs font-semibold">{likeCount > 0 ? `${fmt(likeCount)} Likes` : "Like"}</span>
+        <span className="text-xs font-semibold">
+          {resolvedLikeCount > 0 ? `${fmt(resolvedLikeCount)} Likes` : "Like"}
+        </span>
       </button>
       {/* Comment count */}
       <div className="flex items-center gap-1.5 text-muted-foreground">
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.8}
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+          />
         </svg>
-        <span className="text-xs">{commentCount > 0 ? `${fmt(commentCount)} Comments` : "Comments"}</span>
+        <span className="text-xs">
+          {resolvedCommentCount > 0
+            ? `${fmt(resolvedCommentCount)} Comments`
+            : "Comments"}
+        </span>
       </div>
       {/* Spacer */}
       <div className="flex-1" />
       {/* Share */}
-      <button onClick={handleShare} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-default text-muted-foreground hover:border-primary hover:text-primary transition-all text-xs font-semibold">
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+      <button
+        onClick={handleShare}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-default text-muted-foreground hover:border-primary hover:text-primary transition-all text-xs font-semibold"
+      >
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.8}
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+          />
         </svg>
         Share
       </button>
       {/* Message */}
-      <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-white transition-all" style={{ background: "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary, var(--brand-primary))))" }}>
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+      <button
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-white transition-all"
+        style={{
+          background:
+            "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary, var(--brand-primary))))",
+        }}
+      >
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.8}
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+          />
         </svg>
         Message Seller
       </button>
@@ -587,7 +819,9 @@ export function ContentDetail({ id, lang }: Props) {
   const CommentsSection = (
     <div ref={commentsRef} className="px-4 pt-4">
       <h2 className="font-bold text-default text-sm mb-1">
-        {commentCount > 0 ? `${fmt(commentCount)} Comments` : "Comments"}
+        {resolvedCommentCount > 0
+          ? `${fmt(resolvedCommentCount)} Comments`
+          : "Comments"}
       </h2>
       {commentsLoading && allComments.length === 0 && (
         <div className="flex justify-center py-8">
@@ -598,12 +832,18 @@ export function ContentDetail({ id, lang }: Props) {
         <div className="flex flex-col items-center justify-center py-10 text-center">
           <span className="text-3xl mb-2">💬</span>
           <p className="text-sm text-muted-foreground">No comments yet.</p>
-          <p className="text-xs text-muted-foreground mt-0.5">Be the first to comment!</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Be the first to comment!
+          </p>
         </div>
       )}
       <div className="divide-y divide-default">
         {allComments.map((comment) => (
-          <CommentRow key={comment.id} comment={comment} currentUserId={currentUser?.id} />
+          <CommentRow
+            key={comment.id}
+            comment={comment}
+            currentUserId={currentUser?.id}
+          />
         ))}
       </div>
       <div ref={commentSentinelRef} className="h-1" />
@@ -612,8 +852,13 @@ export function ContentDetail({ id, lang }: Props) {
   );
 
   const CommentInput = (
-    <div className="flex items-center gap-2.5 px-3 pt-2.5 pb-3" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)" }}>
-      <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white text-[10px] font-bold bg-gradient-to-br ${avatarColors(currentUser?.id ?? "00")}`}>
+    <div
+      className="flex items-center gap-2.5 px-3 pt-2.5 pb-3"
+      style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)" }}
+    >
+      <div
+        className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white text-[10px] font-bold bg-gradient-to-br ${avatarColors(currentUser?.id ?? "00")}`}
+      >
         {currentUser?.id ? initials(currentUser.id) : "?"}
       </div>
       <input
@@ -621,8 +866,16 @@ export function ContentDetail({ id, lang }: Props) {
         type="text"
         value={commentText}
         onChange={(e) => setCommentText(e.target.value)}
-        onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-        onFocus={() => { if (!requireAuth({ contentId: id, action: "comment" })) inputRef.current?.blur(); }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            handleSend();
+          }
+        }}
+        onFocus={() => {
+          if (!requireAuth({ contentId: id, action: "comment" }))
+            inputRef.current?.blur();
+        }}
         placeholder="Add a comment…"
         maxLength={500}
         className="flex-1 bg-surface text-default text-sm rounded-full px-4 py-2.5 outline-none placeholder:text-muted-foreground border border-default focus:border-primary transition-colors"
@@ -631,10 +884,23 @@ export function ContentDetail({ id, lang }: Props) {
         onClick={handleSend}
         disabled={!commentText.trim()}
         className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center transition-opacity disabled:opacity-35"
-        style={{ background: "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary, var(--brand-primary))))" }}
+        style={{
+          background:
+            "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary, var(--brand-primary))))",
+        }}
       >
-        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+        <svg
+          className="w-4 h-4 text-white"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2.5}
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"
+          />
         </svg>
       </button>
     </div>
@@ -642,14 +908,12 @@ export function ContentDetail({ id, lang }: Props) {
 
   return (
     <div className="min-h-svh flex flex-col bg-app">
-
       {/* ════════════════════════════════════════════════════════
           DESKTOP LAYOUT  (md+)
           Left col: media (sticky)   Right col: info + comments
           Inspired by Facebook/Instagram post detail
       ════════════════════════════════════════════════════════ */}
       <div className="hidden md:flex h-screen overflow-hidden">
-
         {/* ── Left: media ────────────────────────────────────────────────────── */}
         <div
           className="flex-1 bg-black flex items-center justify-center overflow-hidden"
@@ -657,10 +921,10 @@ export function ContentDetail({ id, lang }: Props) {
         >
           {isVideo && hlsUrl ? (
             <div className="relative w-full h-full flex items-center justify-center">
+              {/* Desktop uses its own video element — autoPlay only on desktop to prevent double-audio with mobile video */}
               <video
-                ref={videoRef}
                 src={hlsUrl}
-                autoPlay
+                autoPlay={isDesktop}
                 loop
                 muted={muted}
                 playsInline
@@ -673,9 +937,29 @@ export function ContentDetail({ id, lang }: Props) {
                 className="absolute bottom-6 right-4 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white"
               >
                 {muted ? (
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+                  <svg
+                    className="w-4 h-4"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
                 ) : (
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.146 5.146a5 5 0 010 9.708v-1.717a3.001 3.001 0 000-6.274V5.146zm2.829-2.83a9 9 0 010 15.37l-.708-1.225a7 7 0 000-12.92l.708-1.225z" clipRule="evenodd" /></svg>
+                  <svg
+                    className="w-4 h-4"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.146 5.146a5 5 0 010 9.708v-1.717a3.001 3.001 0 000-6.274V5.146zm2.829-2.83a9 9 0 010 15.37l-.708-1.225a7 7 0 000-12.92l.708-1.225z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
                 )}
               </button>
             </div>
@@ -684,29 +968,77 @@ export function ContentDetail({ id, lang }: Props) {
               {media[imgIdx] && (
                 <Image
                   src={
-                    media[imgIdx].r2Variants?.find((v) => v.variant === "large")?.url ??
+                    media[imgIdx].r2Variants?.find((v) => v.variant === "large")
+                      ?.url ??
                     media[imgIdx].r2Variants?.[0]?.url ??
                     media[imgIdx].imageUrl ??
-                    media[imgIdx].thumbnailUrl ?? ""
+                    media[imgIdx].thumbnailUrl ??
+                    ""
                   }
                   alt={post.title}
                   fill
+                  sizes="65vw"
                   className="object-contain"
                   priority
+                  placeholder="blur"
+                  blurDataURL={SHIMMER}
                 />
               )}
               {/* Prev/next arrows for multi-image */}
               {media.length > 1 && (
                 <>
-                  <button onClick={() => setImgIdx((i) => Math.max(0, i - 1))} disabled={imgIdx === 0} className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center disabled:opacity-30">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                  <button
+                    onClick={() => setImgIdx((i) => Math.max(0, i - 1))}
+                    disabled={imgIdx === 0}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center disabled:opacity-30"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M15 19l-7-7 7-7"
+                      />
+                    </svg>
                   </button>
-                  <button onClick={() => setImgIdx((i) => Math.min(media.length - 1, i + 1))} disabled={imgIdx === media.length - 1} className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center disabled:opacity-30">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                  <button
+                    onClick={() =>
+                      setImgIdx((i) => Math.min(media.length - 1, i + 1))
+                    }
+                    disabled={imgIdx === media.length - 1}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center disabled:opacity-30"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
                   </button>
                   <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
                     {media.map((_, i) => (
-                      <button key={i} onClick={() => setImgIdx(i)} className={["rounded-full transition-all", i === imgIdx ? "w-4 h-1.5 bg-white" : "w-1.5 h-1.5 bg-white/50"].join(" ")} />
+                      <button
+                        key={i}
+                        onClick={() => setImgIdx(i)}
+                        className={[
+                          "rounded-full transition-all",
+                          i === imgIdx
+                            ? "w-4 h-1.5 bg-white"
+                            : "w-1.5 h-1.5 bg-white/50",
+                        ].join(" ")}
+                      />
                     ))}
                   </div>
                 </>
@@ -722,12 +1054,27 @@ export function ContentDetail({ id, lang }: Props) {
         >
           {/* Header row */}
           <div className="flex items-center gap-2 px-4 h-12 border-b border-default shrink-0">
-            <button onClick={() => router.back()} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface transition-colors">
-              <svg className="w-5 h-5 text-default" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            <button
+              onClick={() => router.back()}
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface transition-colors"
+            >
+              <svg
+                className="w-5 h-5 text-default"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2.5}
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15 19l-7-7 7-7"
+                />
               </svg>
             </button>
-            <span className="font-semibold text-default text-sm truncate flex-1">{post.title}</span>
+            <span className="font-semibold text-default text-sm truncate flex-1">
+              {post.title}
+            </span>
           </div>
 
           {/* Scrollable middle: creator + info + actions + comments */}
@@ -754,15 +1101,43 @@ export function ContentDetail({ id, lang }: Props) {
       <div className="md:hidden flex flex-col min-h-svh">
         {/* Sticky header */}
         <div className="sticky top-0 z-20 flex items-center gap-3 px-4 h-12 bg-app/90 backdrop-blur-md border-b border-default">
-          <button onClick={() => router.back()} className="w-8 h-8 -ml-1 flex items-center justify-center rounded-full hover:bg-surface transition-colors">
-            <svg className="w-5 h-5 text-default" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          <button
+            onClick={() => router.back()}
+            className="w-8 h-8 -ml-1 flex items-center justify-center rounded-full hover:bg-surface transition-colors"
+          >
+            <svg
+              className="w-5 h-5 text-default"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2.5}
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15 19l-7-7 7-7"
+              />
             </svg>
           </button>
-          <span className="font-semibold text-default text-sm truncate flex-1">{post.title}</span>
-          <button onClick={handleShare} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface transition-colors">
-            <svg className="w-5 h-5 text-default" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+          <span className="font-semibold text-default text-sm truncate flex-1">
+            {post.title}
+          </span>
+          <button
+            onClick={handleShare}
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface transition-colors"
+          >
+            <svg
+              className="w-5 h-5 text-default"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+              />
             </svg>
           </button>
         </div>

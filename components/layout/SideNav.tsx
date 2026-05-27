@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useSyncExternalStore } from "react";
 
 type Tab = {
   key: string;
@@ -310,18 +310,38 @@ export function SideNav({ lang = "en" }: { lang: string }) {
 }
 
 function ThemeToggle() {
-  const [isDark, setIsDark] = useState(() =>
-    typeof document !== "undefined"
-      ? document.documentElement.classList.contains("dark")
-      : false,
+  // useSyncExternalStore: server snapshot = null (unknown), client snapshot = real DOM value.
+  // This guarantees server HTML and client first-render both use null, avoiding hydration mismatch.
+  const isDark = useSyncExternalStore(
+    (cb) => {
+      const observer = new MutationObserver(cb);
+      observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+      return () => observer.disconnect();
+    },
+    () => document.documentElement.classList.contains("dark"),
+    () => null, // SSR / first paint — render neutral placeholder
   );
 
   function toggle() {
     const html = document.documentElement;
     const next = !html.classList.contains("dark");
     html.classList.toggle("dark", next);
-    setIsDark(next);
+    // No setState needed — MutationObserver triggers useSyncExternalStore re-render
     try { localStorage.setItem("theme", next ? "dark" : "light"); } catch {}
+  }
+
+  // Render a neutral placeholder until we know the real theme (avoids flash)
+  if (isDark === null) {
+    return (
+      <button
+        disabled
+        className="flex items-center gap-3 px-3 py-3 rounded-xl w-full opacity-0 pointer-events-none"
+        aria-hidden="true"
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" />
+        <span className="text-sm">Theme</span>
+      </button>
+    );
   }
 
   return (

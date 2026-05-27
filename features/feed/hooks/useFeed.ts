@@ -4,10 +4,11 @@ import { useQuery } from "@apollo/client/react";
 import { useCallback, useEffect, useRef } from "react";
 import {
   ForYouFeedDocument,
+  FollowingFeedDocument,
   TrendingContentDocument,
 } from "@/types/__generated__/graphql";
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 6;
 
 export function useForYouFeed() {
   const { data, loading, error, fetchMore, refetch } = useQuery(
@@ -48,6 +49,39 @@ export function useForYouFeed() {
             items: [
               ...(prev.forYouFeed?.items ?? []),
               ...fetchMoreResult.forYouFeed.items,
+            ],
+          },
+        };
+      },
+    });
+  }, [fetchMore, pageInfo]);
+
+  return { items, loading, error, hasMore: pageInfo?.hasNextPage ?? false, loadMore };
+}
+
+export function useFollowingFeed() {
+  const { data, loading, error, fetchMore } = useQuery(FollowingFeedDocument, {
+    variables: { limit: PAGE_SIZE },
+    fetchPolicy: "cache-and-network",
+    nextFetchPolicy: "cache-and-network",
+    notifyOnNetworkStatusChange: true,
+  });
+
+  const items = data?.followingFeed?.items ?? [];
+  const pageInfo = data?.followingFeed?.pageInfo;
+
+  const loadMore = useCallback(() => {
+    if (!pageInfo?.hasNextPage || !pageInfo.endCursor) return;
+    fetchMore({
+      variables: { limit: PAGE_SIZE, after: pageInfo.endCursor },
+      updateQuery(prev, { fetchMoreResult }) {
+        if (!fetchMoreResult) return prev;
+        return {
+          followingFeed: {
+            ...fetchMoreResult.followingFeed,
+            items: [
+              ...(prev.followingFeed?.items ?? []),
+              ...fetchMoreResult.followingFeed.items,
             ],
           },
         };

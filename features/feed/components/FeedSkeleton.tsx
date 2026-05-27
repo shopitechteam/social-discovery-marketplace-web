@@ -1,6 +1,6 @@
 "use client";
 
-function PostCardSkeleton() {
+export function PostCardSkeleton() {
   return (
     <div className="bg-elevated border-b border-default">
       {/* Header */}

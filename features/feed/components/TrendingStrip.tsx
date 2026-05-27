@@ -131,18 +131,7 @@ function TrendingItem({
       )}
 
       {/* Title */}
-      {/* <div className="absolute bottom-0 left-0 right-0 px-2 pb-2 pointer-events-none">
-        <p className="text-white text-[10px] font-semibold leading-tight line-clamp-2">
-          {post.title}
-        </p>
-        {post.price && (
-          <p className="text-primary text-[10px] font-bold mt-0.5">
-            {post.price.amount === 0
-              ? "Free"
-              : `${post.price.currency} ${post.price.amount.toLocaleString()}`}
-          </p>
-        )}
-      </div> */}
+      {/*   */}
     </button>
   );
 }

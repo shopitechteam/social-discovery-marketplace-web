@@ -98,3 +98,15 @@ query GetContent($id: String!) {
     ...ContentCardFields
   }
 }
+
+query FollowingFeed($limit: Int, $after: String) {
+  followingFeed(limit: $limit, after: $after) {
+    items {
+      ...ContentCardFields
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}

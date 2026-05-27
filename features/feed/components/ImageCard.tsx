@@ -9,6 +9,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { SHIMMER } from "@/lib/shimmer";
 import { PriceTag } from "./PriceTag";
 import { StatRow } from "./StatRow";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
@@ -55,8 +56,11 @@ export function ImageCard({ post, lang, priority, variant = "tall" }: Props) {
           alt={post.title}
           fill
           sizes="(max-width: 768px) 50vw, 25vw"
-          className="object-cover transition-transform duration-300 group-hover:scale-105"
+          className="object-cover transition-transform duration-500 group-hover:scale-105"
           priority={priority}
+          loading={priority ? "eager" : "lazy"}
+          placeholder="blur"
+          blurDataURL={SHIMMER}
           onError={() => setImgError(true)}
         />
       ) : (

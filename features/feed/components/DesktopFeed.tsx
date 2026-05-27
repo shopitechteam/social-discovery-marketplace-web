@@ -22,6 +22,12 @@ import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
 
 const COMMENTS_WIDTH = 420;
 
+function fmtTime(s: number): string {
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${m}:${sec.toString().padStart(2, "0")}`;
+}
+
 function fmt(n: number) {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
@@ -85,9 +91,16 @@ function VideoPlayer({
   isActive: boolean;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
+  const dotRef = useRef<HTMLDivElement>(null);
+  const timeRef = useRef<HTMLSpanElement>(null);
+  const rafRef = useRef<number | null>(null);
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
   const [thumbError, setThumbError] = useState(false);
+  const [duration, setDuration] = useState(0);
+  const [seeking, setSeeking] = useState(false);
+  const barRef = useRef<HTMLDivElement>(null);
 
   const hlsUrl = `https://stream.mux.com/${playbackId}.m3u8`;
   const thumb = `https://image.mux.com/${playbackId}/thumbnail.jpg?time=0&width=720&fit_mode=smartcrop`;
@@ -100,9 +113,33 @@ function VideoPlayer({
       vid.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
     } else {
       vid.pause();
+      vid.currentTime = 0;
       setPlaying(false);
     }
   }, [isActive]);
+
+  // RAF loop to update progress bar width
+  useEffect(() => {
+    if (!playing) {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      return;
+    }
+    function tick() {
+      const vid = videoRef.current;
+      const bar = progressRef.current;
+      const dot = dotRef.current;
+      const time = timeRef.current;
+      if (vid && vid.duration) {
+        const pct = (vid.currentTime / vid.duration) * 100;
+        if (bar) bar.style.width = `${pct}%`;
+        if (dot) dot.style.left = `calc(${pct}% - 7px)`;
+        if (time) time.textContent = fmtTime(vid.currentTime);
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    }
+    rafRef.current = requestAnimationFrame(tick);
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+  }, [playing]);
 
   function togglePlay() {
     const vid = videoRef.current;
@@ -123,6 +160,17 @@ function VideoPlayer({
     setMuted(vid.muted);
   }
 
+  // Seek on progress bar click/drag
+  function seekTo(e: React.MouseEvent<HTMLDivElement>) {
+    const vid = videoRef.current;
+    const bar = barRef.current;
+    if (!vid || !bar || !vid.duration) return;
+    const rect = bar.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    vid.currentTime = pct * vid.duration;
+    if (progressRef.current) progressRef.current.style.width = `${pct * 100}%`;
+  }
+
   return (
     <div className="relative w-full h-full cursor-pointer" onClick={togglePlay}>
       {/* Thumbnail until video loads */}
@@ -131,7 +179,7 @@ function VideoPlayer({
           src={thumb}
           alt=""
           className={[
-            "absolute inset-0 w-full h-full object-cover transition-opacity duration-300",
+            "absolute inset-0 w-full h-full object-contain transition-opacity duration-300",
             playing ? "opacity-0" : "opacity-100",
           ].join(" ")}
           onError={() => setThumbError(true)}
@@ -145,12 +193,13 @@ function VideoPlayer({
         loop
         playsInline
         preload="metadata"
-        className="absolute inset-0 w-full h-full object-cover"
+        className="absolute inset-0 w-full h-full object-contain"
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
+        onLoadedMetadata={(e) => setDuration((e.target as HTMLVideoElement).duration)}
       />
 
-      {/* Pause indicator — brief flash */}
+      {/* Pause indicator */}
       {!playing && isActive && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="w-16 h-16 rounded-full bg-black/50 flex items-center justify-center">
@@ -177,6 +226,72 @@ function VideoPlayer({
           </svg>
         )}
       </button>
+
+      {/* ── TikTok-style progress bar + time — bottom of video ── */}
+      <div
+        className="absolute bottom-0 left-0 right-0 z-20 group/prog"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Current / total time */}
+        <div className="flex items-center justify-between px-3 pb-1 pointer-events-none select-none">
+          <span
+            ref={timeRef}
+            className="text-white text-[11px] font-medium tabular-nums drop-shadow"
+            style={{ textShadow: "0 1px 3px rgba(0,0,0,0.7)" }}
+          >
+            0:00
+          </span>
+          {duration > 0 && (
+            <span
+              className="text-white/70 text-[11px] font-medium tabular-nums"
+              style={{ textShadow: "0 1px 3px rgba(0,0,0,0.7)" }}
+            >
+              {fmtTime(duration)}
+            </span>
+          )}
+        </div>
+        {/* Seek track — tall hit area so it's easy to click */}
+        <div
+          ref={barRef}
+          className="relative w-full cursor-pointer flex items-end"
+          style={{ height: 24 }}
+          onClick={seekTo}
+          onMouseDown={(e) => { setSeeking(true); seekTo(e); }}
+          onMouseMove={(e) => { if (seeking) seekTo(e); }}
+          onMouseUp={() => setSeeking(false)}
+          onMouseLeave={() => setSeeking(false)}
+        >
+          {/* Track background */}
+          <div
+            className="w-full rounded-full overflow-visible relative"
+            style={{ height: seeking ? 4 : 3, transition: "height 0.15s", backgroundColor: "rgba(255,255,255,0.30)" }}
+          >
+            {/* Filled portion */}
+            <div
+              ref={progressRef}
+              className="h-full rounded-full absolute top-0 left-0"
+              style={{
+                width: "0%",
+                backgroundColor: "rgba(255,255,255,0.95)",
+              }}
+            />
+          </div>
+
+          {/* Scrubber dot — appears on hover / while seeking */}
+          <div
+            ref={dotRef}
+            className="absolute rounded-full bg-white pointer-events-none opacity-0 group-hover/prog:opacity-100 transition-opacity duration-150"
+            style={{
+              width: 14,
+              height: 14,
+              bottom: 5,
+              left: "-7px",
+              boxShadow: "0 1px 6px rgba(0,0,0,0.55)",
+              opacity: seeking ? 1 : undefined,
+            }}
+          />
+        </div>
+      </div>
     </div>
   );
 }
@@ -281,7 +396,7 @@ function PostSlide({
           {isVideo ? (
             <VideoPlayer playbackId={mux!.playbackId!} isActive={isActive} />
           ) : imgSrc ? (
-            <Image src={imgSrc} alt={post.title} fill className="object-contain" priority={isActive} />
+            <Image src={imgSrc} alt={post.title} fill sizes="65vw" className="object-contain" priority={isActive} />
           ) : (
             <div className="absolute inset-0 bg-surface flex items-center justify-center">
               <svg className="w-16 h-16 text-muted-foreground/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -317,8 +432,9 @@ function PostSlide({
             <div className="flex items-center gap-2 mb-2 pointer-events-auto">
               <div className="w-8 h-8 rounded-full overflow-hidden bg-white/20 shrink-0 ring-2 ring-white/30">
                 {creator?.profile?.avatar ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={creator.profile.avatar} alt={creatorName} className="w-full h-full object-cover" />
+                  <div className="relative w-full h-full">
+                    <Image src={creator.profile.avatar} alt={creatorName} fill sizes="32px" className="object-cover" />
+                  </div>
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-primary to-secondary">
                     <span className="text-white text-[10px] font-bold">{post.creatorId.slice(-2).toUpperCase()}</span>
@@ -366,8 +482,9 @@ function PostSlide({
             <div className="relative mb-1">
               <div className="w-11 h-11 rounded-full overflow-hidden ring-2 ring-white/20">
                 {creator?.profile?.avatar ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={creator.profile.avatar} alt={creatorName} className="w-full h-full object-cover" />
+                  <div className="relative w-full h-full">
+                    <Image src={creator.profile.avatar} alt={creatorName} fill sizes="44px" className="object-cover" />
+                  </div>
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-primary to-secondary">
                     <span className="text-white text-xs font-bold">{post.creatorId.slice(-2).toUpperCase()}</span>
@@ -496,6 +613,7 @@ function PostSlide({
 
         <CommentsDrawer
           contentId={post.id}
+          contentCreatorId={post.creatorId}
           onClose={() => {}}
           onCommentAdded={() => setCommentCount(c => c + 1)}
           desktopInline

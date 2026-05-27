@@ -16,9 +16,11 @@
  *   └────────────────────────────────────────┘
  */
 
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback, useId } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { SHIMMER, SHIMMER_AVATAR, SHIMMER_PORTRAIT } from "@/lib/shimmer";
+import { registerVideo, updateRatio } from "@/lib/activeVideo";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { useInteractions } from "../hooks/useInteractions";
 import { useAuthGuard } from "../hooks/useAuthGuard";
@@ -89,6 +91,9 @@ function Avatar({ creatorId, avatarUrl, firstName, lastName }: AvatarProps) {
           alt={label}
           className="w-full h-full object-cover"
           fill
+          sizes="40px"
+          placeholder="blur"
+          blurDataURL={SHIMMER_AVATAR}
         />
       </div>
     );
@@ -114,8 +119,12 @@ function VideoMedia({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [visible, setVisible] = useState(false);
+  const [active, setActive] = useState(false);
   const [thumbError, setThumbError] = useState(false);
+  const [thumbLoaded, setThumbLoaded] = useState(false);
+  const [muted, setMuted] = useState(true);
+  const onThumbLoad = useCallback(() => setThumbLoaded(true), []);
+  const id = useId();
 
   const media = post.media?.[0];
   const mux = media?.muxMeta;
@@ -139,23 +148,26 @@ function VideoMedia({
       : `0:${String(Math.round(mux.duration)).padStart(2, "0")}`
     : null;
 
+  // Register with the global video coordinator and report ratio changes.
   useEffect(() => {
+    const unregister = registerVideo(id, setActive);
     const el = containerRef.current;
-    if (!el) return;
+    if (!el) return unregister;
     const obs = new IntersectionObserver(
-      ([e]) => setVisible(e.isIntersecting && e.intersectionRatio >= 0.4),
-      { threshold: 0.4 },
+      ([e]) => updateRatio(id, e.intersectionRatio),
+      { threshold: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0] },
     );
     obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
+    return () => { obs.disconnect(); unregister(); };
+  }, [id]);
 
+  // Play/pause based on whether this is the globally active video.
   useEffect(() => {
     const vid = videoRef.current;
     if (!vid) return;
-    if (visible) vid.play().catch(() => {});
+    if (active) vid.play().catch(() => {});
     else vid.pause();
-  }, [visible]);
+  }, [active]);
 
   return (
     <div
@@ -173,8 +185,14 @@ function VideoMedia({
           alt={post.title}
           fill
           sizes="100vw"
-          className={`object-cover transition-opacity duration-300 ${hlsUrl && visible ? "opacity-0" : "opacity-100"}`}
+          className={`object-cover transition-opacity duration-500 ${
+            hlsUrl && active ? "opacity-0" : thumbLoaded ? "opacity-100" : "opacity-0"
+          }`}
           priority={priority}
+          loading={priority ? "eager" : "lazy"}
+          placeholder="blur"
+          blurDataURL={SHIMMER_PORTRAIT}
+          onLoad={onThumbLoad}
           onError={() => setThumbError(true)}
         />
       )}
@@ -183,7 +201,7 @@ function VideoMedia({
         <video
           ref={videoRef}
           src={hlsUrl}
-          muted
+          muted={muted}
           loop
           playsInline
           preload="none"
@@ -196,21 +214,25 @@ function VideoMedia({
           {durationFmt}
         </div>
       )}
-      {/* Sound-off indicator */}
-      {visible && (
-        <div className="absolute bottom-2 left-2 bg-black/60 rounded-full p-1">
-          <svg
-            className="w-3.5 h-3.5 text-white/80"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fillRule="evenodd"
-              d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z"
-              clipRule="evenodd"
-            />
-          </svg>
-        </div>
+      {/* Mute / unmute button — absolute, stops propagation so it doesn't navigate */}
+      {active && (
+        <button
+          onClick={(e) => { e.stopPropagation(); setMuted((m) => !m); }}
+          className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm rounded-full p-1.5 text-white/90 active:scale-95 transition-transform"
+          aria-label={muted ? "Unmute" : "Mute"}
+        >
+          {muted ? (
+            // Muted — speaker with X
+            <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          ) : (
+            // Unmuted — speaker with sound waves
+            <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.146 5.146a5 5 0 010 9.708v-1.717a3.001 3.001 0 000-6.274V5.146zm2.829-2.83a9 9 0 010 15.37l-.708-1.225a7 7 0 000-12.92l.708-1.225z" clipRule="evenodd" />
+            </svg>
+          )}
+        </button>
       )}
     </div>
   );
@@ -280,6 +302,9 @@ function ImageMedia({
         sizes="100vw"
         className="object-cover"
         priority={priority}
+        loading={priority ? "eager" : "lazy"}
+        placeholder="blur"
+        blurDataURL={SHIMMER}
         onError={() => setErr(true)}
       />
       {/* Gallery indicator + prev/next */}
@@ -676,6 +701,7 @@ export function PostCard({ post, lang, priority }: Props) {
       {showComments && (
         <CommentsDrawer
           contentId={post.id}
+          contentCreatorId={post.creatorId}
           onClose={() => setShowComments(false)}
           onCommentAdded={() => setCommentCount((c) => c + 1)}
         />

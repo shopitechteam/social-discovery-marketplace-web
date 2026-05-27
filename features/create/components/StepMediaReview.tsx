@@ -176,6 +176,7 @@ export function StepMediaReview({ onBack }: { onBack?: () => void }) {
                 src={preview.thumbnailUrl ?? preview.localUri}
                 alt="preview"
                 fill
+                sizes="100vw"
                 className="object-cover"
                 unoptimized
               />
@@ -263,6 +264,7 @@ export function StepMediaReview({ onBack }: { onBack?: () => void }) {
                 src={item.thumbnailUrl ?? item.localUri}
                 alt=""
                 fill
+                sizes="80px"
                 className="object-cover"
                 unoptimized
               />

@@ -713,6 +713,7 @@ export function StepReady({ lang }: StepReadyProps) {
                 src={cover.thumbnailUrl ?? cover.localUri}
                 alt={title}
                 fill
+                sizes="100vw"
                 className="object-cover"
                 unoptimized={cover.localUri.startsWith("blob:")}
               />
@@ -801,6 +802,7 @@ export function StepReady({ lang }: StepReadyProps) {
                     src={cover.thumbnailUrl ?? cover.localUri}
                     alt={title}
                     fill
+                    sizes="100vw"
                     className="object-cover"
                     unoptimized={cover.localUri.startsWith("blob:")}
                   />

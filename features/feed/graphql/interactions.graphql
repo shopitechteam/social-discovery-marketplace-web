@@ -5,14 +5,28 @@ mutation ToggleLike($contentId: String!) {
   }
 }
 
+fragment CommentFields on Comment {
+  id
+  text
+  creatorId
+  createdAt
+  parentId
+  likeCount
+  replyCount
+  isLikedByMe
+  author {
+    id
+    profile {
+      firstName
+      lastName
+      avatar
+    }
+  }
+}
+
 mutation AddComment($input: AddCommentInput!) {
   addComment(input: $input) {
-    id
-    text
-    creatorId
-    createdAt
-    parentId
-    likeCount
+    ...CommentFields
   }
 }
 
@@ -24,15 +38,23 @@ mutation ShareContent($contentId: String!) {
   shareContent(contentId: $contentId)
 }
 
+mutation ToggleCommentLike($commentId: String!) {
+  toggleCommentLike(commentId: $commentId) {
+    liked
+    likeCount
+  }
+}
+
+query GetReplies($commentId: String!) {
+  replies(commentId: $commentId) {
+    ...CommentFields
+  }
+}
+
 query GetComments($contentId: String!, $limit: Int, $after: String) {
   comments(contentId: $contentId, limit: $limit, after: $after) {
     items {
-      id
-      text
-      creatorId
-      createdAt
-      parentId
-      likeCount
+      ...CommentFields
     }
     hasMore
     endCursor

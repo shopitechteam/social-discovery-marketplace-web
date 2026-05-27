@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/providers/ThemeProvider";
 import { siteConfig } from "@/config/site";
 import { defaultLocale, isValidLocale } from "@/i18n/config";
 import { cookies } from "next/headers";
+import Script from "next/script";
 import "./globals.css";
 import { ApolloWrapper } from "@/lib/apollo/ApolloWrapper";
 
@@ -142,7 +143,11 @@ export default async function RootLayout({
       className={`${manrope.variable} ${bricolage.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-app text-default">
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <Script
+          id="theme-script"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: themeScript }}
+        />
         <ThemeProvider>
           <ApolloWrapper>
             <main>{children}</main>

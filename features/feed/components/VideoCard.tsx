@@ -6,9 +6,10 @@
  * Uses IntersectionObserver to play only when visible (battery-friendly).
  */
 
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { SHIMMER_PORTRAIT } from "@/lib/shimmer";
 import { PriceTag } from "./PriceTag";
 import { StatRow } from "./StatRow";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
@@ -25,6 +26,8 @@ export function VideoCard({ post, lang, priority }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   const [thumbError, setThumbError] = useState(false);
+  const [thumbLoaded, setThumbLoaded] = useState(false);
+  const onThumbLoad = useCallback(() => setThumbLoaded(true), []);
 
   const media = post.media?.[0];
   const mux = media?.muxMeta;
@@ -90,8 +93,16 @@ export function VideoCard({ post, lang, priority }: Props) {
             alt={post.title}
             fill
             sizes="(max-width: 768px) 50vw, 25vw"
-            className={`object-cover transition-opacity duration-300 ${hlsUrl && visible ? "opacity-0" : "opacity-100"}`}
+            className={`object-cover transition-opacity duration-500 ${
+              hlsUrl && visible
+                ? "opacity-0"
+                : thumbLoaded ? "opacity-100" : "opacity-0"
+            }`}
             priority={priority}
+            loading={priority ? "eager" : "lazy"}
+            placeholder="blur"
+            blurDataURL={SHIMMER_PORTRAIT}
+            onLoad={onThumbLoad}
             onError={() => setThumbError(true)}
             unoptimized={!!animThumb && visible}
           />
@@ -111,7 +122,7 @@ export function VideoCard({ post, lang, priority }: Props) {
         )}
 
         {/* ── Gradient overlay ─────────────────────────────────────── */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/10 to-transparent" />
 
         {/* ── Duration badge ────────────────────────────────────────── */}
         {durationFmt && (
