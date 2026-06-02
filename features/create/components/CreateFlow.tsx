@@ -6,6 +6,7 @@ import { useApolloClient } from "@apollo/client/react";
 import { useCreateStore } from "@/stores/create";
 import type { CreateStep } from "@/stores/create";
 import { StepEdit } from "./StepEdit";
+import { StepMediaReview } from "./StepMediaReview";
 import { StepOptions } from "./StepOptions";
 import { StepReady } from "./StepReady";
 import { useRouter } from "next/navigation";
@@ -169,6 +170,7 @@ export function CreateFlow({ lang }: CreateFlowProps) {
     <div className="md:fixed md:inset-0 md:z-50 md:flex md:items-center md:justify-center md:bg-black/50 md:backdrop-blur-sm">
       <div className="create-flow-card flex flex-col bg-app w-full md:rounded-2xl md:shadow-2xl md:overflow-hidden">
         <div className="flex-1 flex flex-col">
+          {step === "media" && <StepMediaReview onBack={handleBack} />}
           {step === "edit" && <StepEdit onBack={handleBack} />}
           {step === "options" && <StepOptions />}
         </div>

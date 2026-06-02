@@ -14,7 +14,7 @@ export function CreateDrawer({ lang }: { lang: string }) {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
-  const { setDraftId, setContentType, setError, reset } = useCreateStore();
+  const { setDraftId, setContentType, setStep, setError, reset } = useCreateStore();
   const [createDraft] = useMutation(CreateDraftDocument);
   const { startImageUpload, startVideoUpload } = useMediaUpload();
 
@@ -46,6 +46,7 @@ export function CreateDrawer({ lang }: { lang: string }) {
         if (kind === "image") startImageUpload(file, did);
         else startVideoUpload(file, did);
       }
+      setStep("media");
       router.push(`/${lang}/upload/create`);
     } catch (err) {
       setError(String(err));

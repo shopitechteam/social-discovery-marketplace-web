@@ -20,6 +20,13 @@ fragment DraftFields on DraftContent {
     currency
     negotiable
   }
+  location {
+    placeName
+    formattedAddress
+    placeId
+    county
+    subregion
+  }
   createdAt
   updatedAt
 }

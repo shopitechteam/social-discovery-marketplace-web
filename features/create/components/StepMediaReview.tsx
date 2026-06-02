@@ -79,8 +79,11 @@ export function StepMediaReview({ onBack }: { onBack?: () => void }) {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-4 pb-3">
+      {/* Header — sticky so Next button is always reachable while scrolling */}
+      <div
+        className="flex items-center justify-between px-4 pt-4 pb-3 sticky top-0 z-10"
+        style={{ backgroundColor: "rgb(var(--color-bg))" }}
+      >
         <button
           onClick={onBack}
           className="flex items-center gap-1"
@@ -151,21 +154,21 @@ export function StepMediaReview({ onBack }: { onBack?: () => void }) {
 
       {/* Main preview */}
       <div
-        className="mx-4 rounded-2xl overflow-hidden relative bg-bg-subtle"
+        className="mx-4 rounded-2xl overflow-hidden relative"
         style={{
           aspectRatio: contentType === "video" ? "9/16" : "1/1",
-          maxHeight: 380,
+          maxHeight: 460,
+          backgroundColor: "rgb(var(--color-bg-subtle))",
         }}
       >
         {preview ? (
           <>
             {preview.type === "video" ? (
               /* Always use local blob for video preview — fast, no Mux needed */
-
               <video
                 key={preview.localUri}
                 src={preview.localUri}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
                 autoPlay
                 loop
                 muted
@@ -176,8 +179,8 @@ export function StepMediaReview({ onBack }: { onBack?: () => void }) {
                 src={preview.thumbnailUrl ?? preview.localUri}
                 alt="preview"
                 fill
-                sizes="100vw"
-                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 460px"
+                className="object-contain"
                 unoptimized
               />
             )}
@@ -252,8 +255,8 @@ export function StepMediaReview({ onBack }: { onBack?: () => void }) {
               onClick={() => setSelected(item.id)}
               className="relative flex-shrink-0 rounded-xl overflow-hidden"
               style={{
-                width: 64,
-                height: 64,
+                width: 104,
+                height: 104,
                 border:
                   selected === item.id
                     ? "2.5px solid rgb(var(--brand-primary))"
@@ -264,7 +267,7 @@ export function StepMediaReview({ onBack }: { onBack?: () => void }) {
                 src={item.thumbnailUrl ?? item.localUri}
                 alt=""
                 fill
-                sizes="80px"
+                sizes="112px"
                 className="object-cover"
                 unoptimized
               />
@@ -308,8 +311,8 @@ export function StepMediaReview({ onBack }: { onBack?: () => void }) {
               onClick={() => imageInputRef.current?.click()}
               className="flex-shrink-0 rounded-xl flex items-center justify-center"
               style={{
-                width: 64,
-                height: 64,
+                width: 104,
+                height: 104,
                 backgroundColor: "rgb(var(--color-bg-subtle))",
                 border: "1.5px dashed rgb(var(--color-border-strong))",
               }}

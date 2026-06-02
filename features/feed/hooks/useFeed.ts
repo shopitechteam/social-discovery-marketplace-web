@@ -10,26 +10,36 @@ import {
 
 const PAGE_SIZE = 6;
 
+// How long (ms) before a cached feed is considered stale and worth re-fetching.
+const STALE_MS = 60_000; // 1 minute
+
 export function useForYouFeed() {
   const { data, loading, error, fetchMore, refetch } = useQuery(
     ForYouFeedDocument,
     {
       variables: { limit: PAGE_SIZE },
-      // Always hit network — show cached items immediately while fresh data arrives.
-      // nextFetchPolicy keeps the same policy so re-renders after pagination
-      // don't silently fall back to cache-only.
+      // Serve from cache immediately; refetch in background only when stale.
+      // Avoid notifyOnNetworkStatusChange so background fetches don't trigger
+      // extra renders that cause images to flicker.
       fetchPolicy: "cache-and-network",
-      nextFetchPolicy: "cache-and-network",
-      notifyOnNetworkStatusChange: true,
+      nextFetchPolicy: "cache-first",
     },
   );
 
-  // Refetch page 1 every time the user navigates back to the feed.
-  // Skip the very first mount (the query above already fires a network request).
+  // Stale-while-revalidate: refetch in the background only if data is old.
+  // This avoids the re-render that causes all images to flicker when the user
+  // navigates back to the feed from a content detail page.
+  const lastFetchedAt = useRef<number>(Date.now());
   const hasMounted = useRef(false);
   useEffect(() => {
     if (hasMounted.current) {
-      refetch({ limit: PAGE_SIZE });
+      const age = Date.now() - lastFetchedAt.current;
+      if (age > STALE_MS) {
+        lastFetchedAt.current = Date.now();
+        refetch({ limit: PAGE_SIZE });
+      }
+    } else {
+      lastFetchedAt.current = Date.now();
     }
     hasMounted.current = true;
   }, [refetch]);
@@ -63,8 +73,7 @@ export function useFollowingFeed() {
   const { data, loading, error, fetchMore } = useQuery(FollowingFeedDocument, {
     variables: { limit: PAGE_SIZE },
     fetchPolicy: "cache-and-network",
-    nextFetchPolicy: "cache-and-network",
-    notifyOnNetworkStatusChange: true,
+    nextFetchPolicy: "cache-first",
   });
 
   const items = data?.followingFeed?.items ?? [];
@@ -96,7 +105,7 @@ export function useTrending(county?: string) {
   const { data, loading } = useQuery(TrendingContentDocument, {
     variables: { county },
     fetchPolicy: "cache-and-network",
-    nextFetchPolicy: "cache-and-network",
+    nextFetchPolicy: "cache-first",
   });
   return { items: data?.trendingContent ?? [], loading };
 }

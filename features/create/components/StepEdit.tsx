@@ -9,6 +9,7 @@ import {
   AutosaveDraftDocument,
   AdvanceDraftStepDocument,
 } from "@/types/__generated__/graphql";
+import { LocationPicker } from "./LocationPicker";
 
 interface EditFormValues {
   caption: string;
@@ -33,11 +34,13 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
     price,
     currency,
     isFree,
+    location,
     mediaItems,
     setTitle,
     setCaption,
     setHashtags,
     setPrice,
+    setLocation,
     setStep,
     setError,
     error,
@@ -103,13 +106,24 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
             title: titleValue || undefined,
             caption: watch("caption") || undefined,
             hashtags: tags.length ? tags : undefined,
+            location: location
+              ? {
+                  placeName: location.placeName,
+                  formattedAddress: location.formattedAddress,
+                  placeId: location.placeId,
+                  latitude: location.latitude,
+                  longitude: location.longitude,
+                  county: location.county,
+                  subregion: location.subregion,
+                }
+              : undefined,
           },
         },
       }).catch(() => undefined);
     }, 800);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [titleValue, watchCaption, tags]);
+  }, [titleValue, watchCaption, tags, location]);
 
   async function onNext(values: EditFormValues) {
     if (!draftId) {
@@ -118,11 +132,27 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
     }
     setError(null);
 
+    // Wait for any items still in "uploading" status — those haven't been
+    // attached to the draft yet (attach happens after the R2 PUT completes).
+    // Items in "processing" or "ready" are already attached server-side.
+    const ATTACH_TIMEOUT_MS = 30_000;
+    const started = Date.now();
+    while (
+      useCreateStore.getState().mediaItems.some((m) => m.status === "uploading") &&
+      Date.now() - started < ATTACH_TIMEOUT_MS
+    ) {
+      await new Promise((r) => setTimeout(r, 300));
+    }
+    if (useCreateStore.getState().mediaItems.some((m) => m.status === "uploading")) {
+      setError("Upload is taking too long — please try again.");
+      return;
+    }
+
     const parsedPrice = priceInput.trim() ? parseFloat(priceInput) : 0;
     const finalIsFree = parsedPrice === 0;
     setPrice(parsedPrice, finalIsFree);
 
-    // Final autosave (including price)
+    // Final autosave (including price + location)
     await autosaveMutation({
       variables: {
         id: draftId,
@@ -131,6 +161,17 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
           caption: values.caption,
           hashtags: tags,
           price: { amount: parsedPrice, currency, negotiable: false },
+          location: location
+            ? {
+                placeName: location.placeName,
+                formattedAddress: location.formattedAddress,
+                placeId: location.placeId,
+                latitude: location.latitude,
+                longitude: location.longitude,
+                county: location.county,
+                subregion: location.subregion,
+              }
+            : undefined,
         },
       },
     });
@@ -383,6 +424,34 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
     </div>
   );
 
+  const locationBlock = (
+    <div>
+      <label
+        className="block mb-1.5 font-medium"
+        style={{
+          fontSize: "var(--text-sm)",
+          color: "rgb(var(--color-text-muted))",
+        }}
+      >
+        Location
+      </label>
+      <LocationPicker
+        value={location}
+        onSelect={(loc) => setLocation(loc)}
+        onClear={() => setLocation(null)}
+      />
+      <p
+        style={{
+          fontSize: "var(--text-xs)",
+          color: "rgb(var(--color-text-muted))",
+          marginTop: 6,
+        }}
+      >
+        Helps buyers find your listing nearby
+      </p>
+    </div>
+  );
+
   const errorBlock = error ? (
     <div
       className="rounded-xl px-4 py-3"
@@ -593,6 +662,11 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
 
           {/* Price */}
           <div className="mt-4">{priceBlock}</div>
+
+          <Divider className="mt-4" />
+
+          {/* Location */}
+          <div className="mt-4">{locationBlock}</div>
 
           {/* Error */}
           {error && <div className="mt-4">{errorBlock}</div>}

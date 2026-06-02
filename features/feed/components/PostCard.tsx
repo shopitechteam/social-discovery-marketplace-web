@@ -16,16 +16,30 @@
  *   └────────────────────────────────────────┘
  */
 
-import { useRef, useEffect, useState, useCallback, useId } from "react";
+import {
+  useRef,
+  useEffect,
+  useState,
+  useCallback,
+  useId,
+  useMemo,
+} from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { SHIMMER, SHIMMER_AVATAR, SHIMMER_PORTRAIT } from "@/lib/shimmer";
+import Shimmer, {
+  SHIMMER,
+  SHIMMER_AVATAR,
+  SHIMMER_PORTRAIT,
+} from "@/lib/shimmer";
 import { registerVideo, updateRatio } from "@/lib/activeVideo";
+import { useHlsVideo } from "@/lib/useHlsVideo";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { useInteractions } from "../hooks/useInteractions";
 import { useAuthGuard } from "../hooks/useAuthGuard";
 import { useFollow } from "../hooks/useFollow";
 import { CommentsDrawer } from "./CommentsDrawer";
+import { BufferSpinner } from "./BufferSpinner";
+import toBase64 from "@/lib/utils";
 
 interface Props {
   post: ContentCardFieldsFragment;
@@ -118,7 +132,6 @@ function VideoMedia({
   priority?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const [active, setActive] = useState(false);
   const [thumbError, setThumbError] = useState(false);
   const [thumbLoaded, setThumbLoaded] = useState(false);
@@ -137,8 +150,6 @@ function VideoMedia({
       ? `https://image.mux.com/${mux.playbackId}/thumbnail.jpg?time=0&width=900&fit_mode=smartcrop`
       : null);
 
-  // 16:9 for landscape videos, otherwise 9:16 capped to a max-height so it
-  // doesn't take over the whole screen in a feed (like FB/LinkedIn does)
   const isLandscape = mux?.aspectRatio === "16:9";
   const aspectRatio = isLandscape ? "16/9" : "9/16";
 
@@ -147,6 +158,9 @@ function VideoMedia({
       ? `${Math.floor(mux.duration / 60)}:${String(Math.round(mux.duration % 60)).padStart(2, "0")}`
       : `0:${String(Math.round(mux.duration)).padStart(2, "0")}`
     : null;
+
+  // hls.js — fast ABR + buffering state
+  const { videoRef, buffering } = useHlsVideo(hlsUrl, active);
 
   // Register with the global video coordinator and report ratio changes.
   useEffect(() => {
@@ -158,16 +172,11 @@ function VideoMedia({
       { threshold: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0] },
     );
     obs.observe(el);
-    return () => { obs.disconnect(); unregister(); };
+    return () => {
+      obs.disconnect();
+      unregister();
+    };
   }, [id]);
-
-  // Play/pause based on whether this is the globally active video.
-  useEffect(() => {
-    const vid = videoRef.current;
-    if (!vid) return;
-    if (active) vid.play().catch(() => {});
-    else vid.pause();
-  }, [active]);
 
   return (
     <div
@@ -178,7 +187,7 @@ function VideoMedia({
         maxHeight: isLandscape ? undefined : "75vw",
       }}
     >
-      {/* Thumbnail */}
+      {/* Thumbnail — fades out once video is playing */}
       {thumbnail && !thumbError && (
         <Image
           src={thumbnail}
@@ -186,7 +195,11 @@ function VideoMedia({
           fill
           sizes="100vw"
           className={`object-cover transition-opacity duration-500 ${
-            hlsUrl && active ? "opacity-0" : thumbLoaded ? "opacity-100" : "opacity-0"
+            hlsUrl && active && !buffering
+              ? "opacity-0"
+              : thumbLoaded
+                ? "opacity-100"
+                : "opacity-0"
           }`}
           priority={priority}
           loading={priority ? "eager" : "lazy"}
@@ -196,17 +209,21 @@ function VideoMedia({
           onError={() => setThumbError(true)}
         />
       )}
-      {/* HLS video */}
+      {/* HLS video — src managed by useHlsVideo hook */}
       {hlsUrl && (
         <video
           ref={videoRef}
-          src={hlsUrl}
           muted={muted}
           loop
           playsInline
-          preload="none"
           className="absolute inset-0 w-full h-full object-cover"
         />
+      )}
+      {/* TikTok-style buffer spinner */}
+      {active && buffering && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <BufferSpinner />
+        </div>
       )}
       {/* Duration badge */}
       {durationFmt && (
@@ -217,19 +234,30 @@ function VideoMedia({
       {/* Mute / unmute button — absolute, stops propagation so it doesn't navigate */}
       {active && (
         <button
-          onClick={(e) => { e.stopPropagation(); setMuted((m) => !m); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            setMuted((m) => !m);
+          }}
           className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm rounded-full p-1.5 text-white/90 active:scale-95 transition-transform"
           aria-label={muted ? "Unmute" : "Mute"}
         >
           {muted ? (
             // Muted — speaker with X
             <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z" clipRule="evenodd" />
+              <path
+                fillRule="evenodd"
+                d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z"
+                clipRule="evenodd"
+              />
             </svg>
           ) : (
             // Unmuted — speaker with sound waves
             <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.146 5.146a5 5 0 010 9.708v-1.717a3.001 3.001 0 000-6.274V5.146zm2.829-2.83a9 9 0 010 15.37l-.708-1.225a7 7 0 000-12.92l.708-1.225z" clipRule="evenodd" />
+              <path
+                fillRule="evenodd"
+                d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.146 5.146a5 5 0 010 9.708v-1.717a3.001 3.001 0 000-6.274V5.146zm2.829-2.83a9 9 0 010 15.37l-.708-1.225a7 7 0 000-12.92l.708-1.225z"
+                clipRule="evenodd"
+              />
             </svg>
           )}
         </button>
@@ -238,40 +266,56 @@ function VideoMedia({
   );
 }
 
+// ── helpers ──────────────────────────────────────────────────────────────────
+
+function mediaSrc(
+  item: NonNullable<ContentCardFieldsFragment["media"]>[number] | undefined,
+  variant: "large" | "medium" = "large",
+): string | null {
+  if (!item) return null;
+  return (
+    item.r2Variants?.find((v) => v.variant === variant)?.url ??
+    item.r2Variants?.find((v) => v.variant === "medium")?.url ??
+    item.r2Variants?.[0]?.url ??
+    item.imageUrl ??
+    item.thumbnailUrl ??
+    null
+  );
+}
+
 // ── Image media block ─────────────────────────────────────────────────────────
 
 function ImageMedia({
   post,
   priority,
+  onNavigate,
 }: {
   post: ContentCardFieldsFragment;
   priority?: boolean;
+  onNavigate: () => void;
 }) {
-  const media = [...(post.media ?? [])].sort(
-    (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
+  const media = useMemo(
+    () =>
+      [...(post.media ?? [])].sort(
+        (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
+      ),
+    [post.media],
   );
-  const [idx, setIdx] = useState(0);
-  const [err, setErr] = useState(false);
 
-  const current = media[idx];
-  const src =
-    current?.r2Variants?.find((v) => v.variant === "large")?.url ??
-    current?.r2Variants?.find((v) => v.variant === "medium")?.url ??
-    current?.r2Variants?.[0]?.url ??
-    current?.imageUrl ??
-    current?.thumbnailUrl ??
-    null;
+  const nav = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onNavigate();
+  };
 
-  // Aspect ratio from stored dimensions, fallback 4:3
-  const w = current?.displayWidth;
-  const h = current?.displayHeight;
-  const aspectRatio = w && h ? `${w}/${h}` : "4/3";
+  const GRID_H = "min(72vw, 380px)";
+  const first = media[0];
+  const firstSrc = mediaSrc(first, "large");
 
-  if (!src || err) {
+  if (!firstSrc) {
     return (
       <div
         className="w-full bg-surface flex items-center justify-center"
-        style={{ aspectRatio: "4/3" }}
+        style={{ height: GRID_H }}
       >
         <svg
           className="w-12 h-12 text-muted-foreground/20"
@@ -290,95 +334,147 @@ function ImageMedia({
     );
   }
 
+  const count = media.length;
+
+  if (count === 1) {
+    return (
+      <div
+        className="relative w-full overflow-hidden bg-black cursor-pointer"
+        style={{ height: GRID_H }}
+        onClick={nav}
+      >
+        <Image
+          src={firstSrc}
+          alt={post.title}
+          fill
+          sizes="100vw"
+          className="object-cover"
+          priority={priority}
+          loading={priority ? "eager" : "lazy"}
+          placeholder="blur"
+          blurDataURL={`data:image/svg+xml;base64,${toBase64(Shimmer(700, 700))}`}
+        />
+      </div>
+    );
+  }
+
+  if (count === 2) {
+    return (
+      <div className="flex gap-0.5 overflow-hidden" style={{ height: GRID_H }}>
+        {media.map((item, i) => {
+          const src = mediaSrc(item, "large");
+          return (
+            <div
+              key={i}
+              className="relative flex-1 bg-black cursor-pointer"
+              onClick={nav}
+            >
+              {src && (
+                <Image
+                  src={src}
+                  alt={post.title}
+                  fill
+                  sizes="50vw"
+                  className="object-cover"
+                  priority={priority && i === 0}
+                  loading={priority && i === 0 ? "eager" : "lazy"}
+                  placeholder="blur"
+                  blurDataURL={SHIMMER}
+                />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  if (count === 3) {
+    return (
+      <div className="flex gap-0.5 overflow-hidden" style={{ height: GRID_H }}>
+        <div className="relative flex-2 bg-black cursor-pointer" onClick={nav}>
+          {firstSrc && (
+            <Image
+              src={firstSrc}
+              alt={post.title}
+              fill
+              sizes="66vw"
+              className="object-cover"
+              priority={priority}
+              loading={priority ? "eager" : "lazy"}
+              placeholder="blur"
+              blurDataURL={SHIMMER}
+            />
+          )}
+        </div>
+        <div className="flex flex-col gap-0.5 flex-1">
+          {media.slice(1, 3).map((item, i) => {
+            const src = mediaSrc(item, "medium");
+            return (
+              <div
+                key={i}
+                className="relative flex-1 bg-black cursor-pointer"
+                onClick={nav}
+              >
+                {src && (
+                  <Image
+                    src={src}
+                    alt={post.title}
+                    fill
+                    sizes="33vw"
+                    className="object-cover"
+                    placeholder="blur"
+                    blurDataURL={SHIMMER}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  const visible = media.slice(0, 4);
+  const overflow = count - 4;
+
   return (
     <div
-      className="relative w-full bg-black overflow-hidden"
-      style={{ aspectRatio }}
+      className="grid grid-cols-2 gap-0.5 overflow-hidden"
+      style={{ height: GRID_H }}
     >
-      <Image
-        src={src}
-        alt={post.title}
-        fill
-        sizes="100vw"
-        className="object-cover"
-        priority={priority}
-        loading={priority ? "eager" : "lazy"}
-        placeholder="blur"
-        blurDataURL={SHIMMER}
-        onError={() => setErr(true)}
-      />
-      {/* Gallery indicator + prev/next */}
-      {media.length > 1 && (
-        <>
-          {/* Dot strip */}
-          <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1">
-            {media.map((_, i) => (
-              <button
-                key={i}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIdx(i);
-                }}
-                className={[
-                  "rounded-full transition-all",
-                  i === idx ? "w-4 h-1.5 bg-white" : "w-1.5 h-1.5 bg-white/50",
-                ].join(" ")}
+      {visible.map((item, i) => {
+        const src = mediaSrc(item, i === 0 ? "large" : "medium");
+        const isLast = i === 3 && overflow > 0;
+        return (
+          <div
+            key={i}
+            className="relative bg-black cursor-pointer overflow-hidden"
+            onClick={nav}
+          >
+            {src && (
+              <Image
+                src={src}
+                alt={post.title}
+                fill
+                sizes="50vw"
+                className="object-cover"
+                priority={priority && i === 0}
+                loading={priority && i === 0 ? "eager" : "lazy"}
+                placeholder="blur"
+                blurDataURL={SHIMMER}
               />
-            ))}
+            )}
+            {isLast && (
+              <div className="absolute inset-0 bg-black/55 flex items-center justify-center">
+                <span className="text-white text-2xl font-bold">
+                  +{overflow}
+                </span>
+              </div>
+            )}
           </div>
-          {/* Count badge top-right */}
-          <div className="absolute top-2 right-2 bg-black/60 text-white text-[11px] font-semibold px-1.5 py-0.5 rounded-md">
-            {idx + 1} / {media.length}
-          </div>
-          {/* Arrow buttons */}
-          {idx > 0 && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setIdx((i) => i - 1);
-              }}
-              className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center"
-            >
-              <svg
-                className="w-4 h-4 text-white"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2.5}
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-            </button>
-          )}
-          {idx < media.length - 1 && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setIdx((i) => i + 1);
-              }}
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center"
-            >
-              <svg
-                className="w-4 h-4 text-white"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2.5}
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-            </button>
-          )}
-        </>
-      )}
+        );
+      })}
     </div>
   );
 }
@@ -569,7 +665,7 @@ export function PostCard({ post, lang, priority }: Props) {
         {post.type === "VIDEO" ? (
           <VideoMedia post={post} priority={priority} />
         ) : (
-          <ImageMedia post={post} priority={priority} />
+          <ImageMedia post={post} priority={priority} onNavigate={handleOpen} />
         )}
       </div>
 

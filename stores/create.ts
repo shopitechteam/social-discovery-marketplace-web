@@ -4,8 +4,8 @@ import { persist, createJSONStorage } from "zustand/middleware";
 export type CreateStep = "pick" | "media" | "edit" | "options" | "ready";
 
 export type MediaItem = {
-  id: string; // mediaAssetId from API
-  localUri: string; // blob URL for preview before upload
+  id: string;
+  localUri: string;
   type: "image" | "video";
   status: "uploading" | "processing" | "ready" | "error";
   thumbnailUrl?: string;
@@ -13,23 +13,26 @@ export type MediaItem = {
   errorMessage?: string;
 };
 
+/** Location as returned by the LocationPicker — mirrors ContentLocationInput */
+export type DraftLocation = {
+  placeName: string;           // e.g. "Madaraka Estate"
+  formattedAddress: string;    // full address from Google
+  placeId: string;             // Google Place ID
+  latitude: number;
+  longitude: number;
+  // Denormalized display labels (filled from Google address components)
+  county?: string;             // e.g. "Laikipia"
+  subregion?: string;          // e.g. "Nyahururu"
+};
+
 export type CreateFlowState = {
-  // Current step
   step: CreateStep;
-
-  // Draft ID from backend (null until created)
   draftId: string | null;
-
-  // Media items (local state mirrors backend mediaAssetIds order)
   mediaItems: MediaItem[];
-
-  // Edit step metadata
   title: string;
   caption: string;
   hashtags: string[];
   contentType: "image" | "video" | null;
-
-  // Options step
   price: number | null;
   currency: string;
   isFree: boolean;
@@ -37,15 +40,9 @@ export type CreateFlowState = {
   allowDownload: boolean;
   hdEnabled: boolean;
   scheduledPublishAt: Date | null;
-
-  // UI state
+  location: DraftLocation | null;
   isSubmitting: boolean;
   error: string | null;
-
-  /**
-   * Set to true while CreateFlow is fetching draft state from the API on reload.
-   * The UI shows a loading spinner instead of the wrong step.
-   */
   isRestoring: boolean;
 };
 
@@ -65,6 +62,7 @@ type CreateFlowActions = {
   setAllowDownload: (v: boolean) => void;
   setHdEnabled: (v: boolean) => void;
   setScheduledPublishAt: (date: Date | null) => void;
+  setLocation: (loc: DraftLocation | null) => void;
   setIsSubmitting: (v: boolean) => void;
   setIsRestoring: (v: boolean) => void;
   setError: (err: string | null) => void;
@@ -86,6 +84,7 @@ const DEFAULT_STATE: CreateFlowState = {
   allowDownload: false,
   hdEnabled: false,
   scheduledPublishAt: null,
+  location: null,
   isSubmitting: false,
   error: null,
   isRestoring: false,
@@ -130,6 +129,7 @@ export const useCreateStore = create<CreateFlowState & CreateFlowActions>()(
       setAllowDownload: (allowDownload) => set({ allowDownload }),
       setHdEnabled: (hdEnabled) => set({ hdEnabled }),
       setScheduledPublishAt: (scheduledPublishAt) => set({ scheduledPublishAt }),
+      setLocation: (location) => set({ location }),
       setIsSubmitting: (isSubmitting) => set({ isSubmitting }),
       setIsRestoring: (isRestoring) => set({ isRestoring }),
       setError: (error) => set({ error }),
@@ -139,16 +139,11 @@ export const useCreateStore = create<CreateFlowState & CreateFlowActions>()(
     {
       name: "shopi-create-draft",
       storage: createJSONStorage(() => sessionStorage),
-      // Only persist what's needed to re-land on the right step.
-      // Transient UI flags (isSubmitting, error, isRestoring) are excluded.
       partialize: (s) => ({
         draftId: s.draftId,
         step: s.step,
         contentType: s.contentType,
-        // Persist media items so in-progress uploads survive a reload.
-        // blob: URIs won't work after reload but thumbnailUrl / muxPlaybackId will.
         mediaItems: s.mediaItems,
-        // Persist text fields so the user doesn't lose typed content
         title: s.title,
         caption: s.caption,
         hashtags: s.hashtags,
@@ -159,6 +154,7 @@ export const useCreateStore = create<CreateFlowState & CreateFlowActions>()(
         allowDownload: s.allowDownload,
         hdEnabled: s.hdEnabled,
         scheduledPublishAt: s.scheduledPublishAt,
+        location: s.location,
       }),
     },
   ),

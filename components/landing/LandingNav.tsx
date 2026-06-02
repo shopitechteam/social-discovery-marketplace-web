@@ -79,10 +79,18 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
     e: React.MouseEvent<HTMLAnchorElement>,
     hash: string,
   ) {
-    setMenuOpen(false);
-    if (pathname === "/") return;
     e.preventDefault();
-    router.push(`/${hash}`);
+    setMenuOpen(false);
+    const id = hash.replace("#", "");
+    if (pathname === "/") {
+      const el = document.getElementById(id);
+      if (el) {
+        const top = el.getBoundingClientRect().top + window.scrollY - 72;
+        window.scrollTo({ top, behavior: "smooth" });
+      }
+    } else {
+      router.push(`/${hash}`);
+    }
   }
 
   return (

@@ -24,26 +24,14 @@
  *   └─────────────────────────────┘
  */
 
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
-  useState,
-  useRef,
-  useEffect,
-  useCallback,
-  useSyncExternalStore,
-} from "react";
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 
-// Returns true when viewport is ≥ 768px (md breakpoint). SSR-safe.
-function useIsDesktop() {
-  return useSyncExternalStore(
-    (cb) => {
-      const mq = window.matchMedia("(min-width: 768px)");
-      mq.addEventListener("change", cb);
-      return () => mq.removeEventListener("change", cb);
-    },
-    () => window.matchMedia("(min-width: 768px)").matches,
-    () => false, // SSR snapshot — assume mobile
-  );
-}
 import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
 import { useFollow } from "../hooks/useFollow";
 import { useQuery, useMutation, useApolloClient } from "@apollo/client/react";
@@ -64,6 +52,9 @@ import type {
 } from "@/types/__generated__/graphql";
 import { useAuthStore } from "@/stores/auth";
 import { useAuthGuard } from "../hooks/useAuthGuard";
+import { useHlsVideo } from "@/lib/useHlsVideo";
+import { Skeleton } from "@/components/ui/skeleton";
+import { BufferSpinner } from "./BufferSpinner";
 
 type CommentItem = NonNullable<GetCommentsQuery["comments"]["items"]>[number];
 
@@ -152,6 +143,81 @@ function CommentRow({
   );
 }
 
+// ─── MobileImageCarousel ──────────────────────────────────────────────────────
+
+type MediaItem = NonNullable<
+  NonNullable<
+    import("@/types/__generated__/graphql").GetContentQuery["content"]
+  >["media"]
+>[number];
+
+function MobileImageCarousel({
+  media,
+  title,
+  idx,
+  onIdx,
+}: {
+  media: MediaItem[];
+  title: string;
+  idx: number;
+  onIdx: (i: number) => void;
+}) {
+  const trackRef = useRef<HTMLDivElement>(null);
+
+  // Snap to idx imperatively so we don't fight browser scroll-snap
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    el.scrollTo({ left: idx * el.clientWidth, behavior: "smooth" });
+  }, [idx]);
+
+  // Update idx when user swipes natively
+  function handleScroll() {
+    const el = trackRef.current;
+    if (!el) return;
+    const i = Math.round(el.scrollLeft / el.clientWidth);
+    if (i !== idx) onIdx(i);
+  }
+
+  return (
+    <div
+      ref={trackRef}
+      onScroll={handleScroll}
+      className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
+      style={{ height: "100svh", scrollSnapType: "x mandatory" }}
+    >
+      {media.map((item, i) => {
+        const src =
+          item.r2Variants?.find((v) => v.variant === "large")?.url ??
+          item.r2Variants?.[0]?.url ??
+          item.imageUrl ??
+          item.thumbnailUrl ??
+          "";
+        return (
+          <div
+            key={i}
+            className="relative shrink-0 w-full snap-center bg-black"
+            style={{ height: "100svh" }}
+          >
+            {src && (
+              <Image
+                src={src}
+                alt={`${title} ${i + 1}`}
+                fill
+                sizes="100vw"
+                className="object-contain"
+                priority={i === 0}
+                placeholder="blur"
+                blurDataURL={SHIMMER_PORTRAIT}
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Main component ────────────────────────────────────────────────────────────
 
 interface Props {
@@ -189,13 +255,11 @@ export function ContentDetail({ id, lang }: Props) {
   const [shareMutation] = useMutation(ShareContentDocument);
   const [viewMutation] = useMutation(ViewContentDocument);
 
-  // ── Viewport ───────────────────────────────────────────────────────────────
-  const isDesktop = useIsDesktop();
-
   // ── Local state ────────────────────────────────────────────────────────────
   const post = data?.content;
   const [imgIdx, setImgIdx] = useState(0);
   const [muted, setMuted] = useState(false);
+  const [showCommentDrawer, setShowCommentDrawer] = useState(false);
   // Read liked/count straight from the Apollo cache (post updates reactively)
   const resolvedLiked = post?.isLikedByMe ?? false;
   const resolvedLikeCount = post?.stats?.likes ?? 0;
@@ -209,9 +273,26 @@ export function ContentDetail({ id, lang }: Props) {
     [],
   );
   const [captionExpanded, setCaptionExpanded] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const [paused, setPaused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const commentsRef = useRef<HTMLDivElement>(null);
+
+  const isVideo = post?.type === "VIDEO";
+  const media = [...(post?.media ?? [])].sort(
+    (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
+  );
+  const mux = media[0]?.muxMeta;
+  const hlsUrl = mux?.playbackId
+    ? `https://stream.mux.com/${mux.playbackId}.m3u8`
+    : null;
+
+  // hls.js — fast ABR + buffering state. Always active; paused by tap.
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const { videoRef, buffering: videoBuffering } = useHlsVideo(
+    isVideo ? hlsUrl : null,
+    true,
+    paused,
+  );
 
   // Fire view on mount
   useEffect(() => {
@@ -357,11 +438,37 @@ export function ContentDetail({ id, lang }: Props) {
     lang,
   });
 
-  // ── Loading state ──────────────────────────────────────────────────────────
+  // ── Loading state — full-screen TikTok skeleton ───────────────────────────
   if (loading) {
     return (
-      <div className="min-h-svh flex items-center justify-center">
-        <div className="w-7 h-7 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="md:hidden fixed inset-0 bg-black">
+        {/* Media area */}
+        <Skeleton className="absolute inset-0 rounded-none bg-neutral-900" />
+        {/* Back button */}
+        <Skeleton
+          className="absolute left-4 w-12 h-12 rounded-full bg-neutral-700"
+          style={{ top: "max(env(safe-area-inset-top,0px),16px)" }}
+        />
+        {/* Right action column */}
+        <div
+          className="absolute right-4 flex flex-col items-center gap-6"
+          style={{ bottom: 180 }}
+        >
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="flex flex-col items-center gap-1.5">
+              <Skeleton className="w-[52px] h-[52px] rounded-full bg-neutral-700" />
+              <Skeleton className="h-2.5 w-8 rounded-full bg-neutral-700" />
+            </div>
+          ))}
+        </div>
+        {/* Bottom text overlay */}
+        <div className="absolute bottom-0 left-0 right-20 px-4 pb-10 flex flex-col gap-2.5">
+          <Skeleton className="h-3 w-20 rounded-full bg-neutral-700" />
+          <Skeleton className="h-5 w-3/4 rounded-full bg-neutral-700" />
+          <Skeleton className="h-7 w-1/2 rounded-full bg-neutral-700" />
+          <Skeleton className="h-3 w-full rounded-full bg-neutral-700" />
+          <Skeleton className="h-3 w-2/3 rounded-full bg-neutral-700" />
+        </div>
       </div>
     );
   }
@@ -381,14 +488,6 @@ export function ContentDetail({ id, lang }: Props) {
     );
   }
 
-  const isVideo = post.type === "VIDEO";
-  const media = [...(post.media ?? [])].sort(
-    (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
-  );
-  const mux = media[0]?.muxMeta;
-  const hlsUrl = mux?.playbackId
-    ? `https://stream.mux.com/${mux.playbackId}.m3u8`
-    : null;
   const caption = post.caption ?? "";
   const isLongCaption = caption.length > 180;
   const displayCaption =
@@ -403,98 +502,6 @@ export function ContentDetail({ id, lang }: Props) {
   const avatarUrl = postCreator?.profile?.avatar;
   // isMyContent is resolved server-side — authoritative, no client-side ID comparison
   const isOwnPost = post.isMyContent ?? false;
-
-  // ── Reusable sub-sections (shared between mobile & desktop) ──────────────
-
-  const MediaSection = (
-    <>
-      {isVideo && hlsUrl ? (
-        <div
-          className="relative w-full bg-black"
-          style={{
-            aspectRatio: mux?.aspectRatio === "16:9" ? "16/9" : "9/16",
-            maxHeight: "60vh",
-          }}
-        >
-          <video
-            ref={videoRef}
-            src={hlsUrl}
-            autoPlay={!isDesktop}
-            loop
-            muted={muted}
-            playsInline
-            controls
-            className="w-full h-full object-contain"
-          />
-          <button
-            onClick={() => setMuted((m) => !m)}
-            className="absolute bottom-14 right-3 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white"
-          >
-            {muted ? (
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            ) : (
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.146 5.146a5 5 0 010 9.708v-1.717a3.001 3.001 0 000-6.274V5.146zm2.829-2.83a9 9 0 010 15.37l-.708-1.225a7 7 0 000-12.92l.708-1.225z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            )}
-          </button>
-        </div>
-      ) : (
-        <div>
-          <div
-            className="relative bg-black overflow-hidden"
-            style={{ aspectRatio: "4/3", maxHeight: "62vh" }}
-          >
-            {media[imgIdx] && (
-              <Image
-                src={
-                  media[imgIdx].r2Variants?.find((v) => v.variant === "large")
-                    ?.url ??
-                  media[imgIdx].r2Variants?.[0]?.url ??
-                  media[imgIdx].imageUrl ??
-                  media[imgIdx].thumbnailUrl ??
-                  ""
-                }
-                alt={post.title}
-                fill
-                sizes="100vw"
-                className="object-contain"
-                priority
-                placeholder="blur"
-                blurDataURL={SHIMMER_PORTRAIT}
-              />
-            )}
-          </div>
-          {media.length > 1 && (
-            <div className="flex justify-center gap-1.5 py-2">
-              {media.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setImgIdx(i)}
-                  className={[
-                    "rounded-full transition-all",
-                    i === imgIdx
-                      ? "w-4 h-1.5 bg-primary"
-                      : "w-1.5 h-1.5 bg-border",
-                  ].join(" ")}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-    </>
-  );
 
   const CreatorRow = (
     <div className="flex items-center gap-3 px-4 pt-4 pb-3">
@@ -607,107 +614,6 @@ export function ContentDetail({ id, lang }: Props) {
           {post.location.county && `, ${post.location.county}`}
         </div>
       )}
-    </div>
-  );
-
-  // Mobile-only action bar (4 tabs — hidden on desktop)
-  const ActionBar = (
-    <div className="md:hidden flex items-center border-b border-default">
-      <button
-        onClick={handleLike}
-        className="flex-1 flex flex-col items-center justify-center py-3 gap-0.5 transition-colors active:bg-surface"
-      >
-        <svg
-          className="w-6 h-6 transition-all"
-          viewBox="0 0 24 24"
-          fill={resolvedLiked ? "rgb(var(--brand-primary))" : "none"}
-          stroke={resolvedLiked ? "rgb(var(--brand-primary))" : "currentColor"}
-          strokeWidth={resolvedLiked ? 0 : 1.8}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-          />
-        </svg>
-        <span
-          className="text-[11px] font-semibold"
-          style={{
-            color: resolvedLiked
-              ? "rgb(var(--brand-primary))"
-              : "rgb(var(--color-text-muted))",
-          }}
-        >
-          {resolvedLikeCount > 0 ? fmt(resolvedLikeCount) : "Like"}
-        </span>
-      </button>
-      <button
-        onClick={() => {
-          if (!requireAuth({ contentId: id, action: "comment" })) return;
-          inputRef.current?.focus();
-          inputRef.current?.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-          });
-        }}
-        className="flex-1 flex flex-col items-center justify-center py-3 gap-0.5 transition-colors active:bg-surface"
-      >
-        <svg
-          className="w-6 h-6 text-muted-foreground"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={1.8}
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-          />
-        </svg>
-        <span className="text-[11px] font-semibold text-muted-foreground">
-          {resolvedCommentCount > 0 ? fmt(resolvedCommentCount) : "Comment"}
-        </span>
-      </button>
-      <button
-        onClick={handleShare}
-        className="flex-1 flex flex-col items-center justify-center py-3 gap-0.5 transition-colors active:bg-surface"
-      >
-        <svg
-          className="w-6 h-6 text-muted-foreground"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={1.8}
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-          />
-        </svg>
-        <span className="text-[11px] font-semibold text-muted-foreground">
-          Share
-        </span>
-      </button>
-      <button className="flex-1 flex flex-col items-center justify-center py-3 gap-0.5 transition-colors active:bg-surface">
-        <svg
-          className="w-6 h-6 text-muted-foreground"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={1.8}
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-          />
-        </svg>
-        <span className="text-[11px] font-semibold text-muted-foreground">
-          Message
-        </span>
-      </button>
     </div>
   );
 
@@ -921,16 +827,14 @@ export function ContentDetail({ id, lang }: Props) {
         >
           {isVideo && hlsUrl ? (
             <div className="relative w-full h-full flex items-center justify-center">
-              {/* Desktop uses its own video element — autoPlay only on desktop to prevent double-audio with mobile video */}
               <video
-                src={hlsUrl}
-                autoPlay={isDesktop}
+                ref={videoRef}
                 loop
                 muted={muted}
                 playsInline
-                controls
                 className="max-w-full max-h-full object-contain"
                 style={{ maxHeight: "100vh" }}
+                onClick={() => setPaused((p) => !p)}
               />
               <button
                 onClick={() => setMuted((m) => !m)}
@@ -1053,7 +957,7 @@ export function ContentDetail({ id, lang }: Props) {
           style={{ width: 380, flexShrink: 0 }}
         >
           {/* Header row */}
-          <div className="flex items-center gap-2 px-4 h-12 border-b border-default shrink-0">
+          <div className="flex items-center gap-2  h-12 border-b border-default shrink-0">
             <button
               onClick={() => router.back()}
               className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface transition-colors"
@@ -1096,17 +1000,59 @@ export function ContentDetail({ id, lang }: Props) {
       </div>
 
       {/* ════════════════════════════════════════════════════════
-          MOBILE LAYOUT  (< md) — untouched
+          MOBILE LAYOUT  (< md) — fixed full-screen, no scroll
       ════════════════════════════════════════════════════════ */}
-      <div className="md:hidden flex flex-col min-h-svh">
-        {/* Sticky header */}
-        <div className="sticky top-0 z-20 flex items-center gap-3 px-4 h-12 bg-app/90 backdrop-blur-md border-b border-default">
+      <div className="md:hidden fixed inset-0 bg-black overflow-hidden">
+        {/* ── Full-screen media ───────────────────────────────────────────── */}
+        <div className="absolute inset-0">
+          {isVideo && hlsUrl ? (
+            <>
+              <video
+                ref={videoRef}
+                loop
+                muted={muted}
+                playsInline
+                className="absolute inset-0 w-full h-full object-contain"
+                onClick={() => setPaused((p) => !p)}
+              />
+              {/* Tap-to-pause indicator */}
+              {paused && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+                  <div className="w-16 h-16 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center">
+                    <svg
+                      className="w-8 h-8 text-white"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                    </svg>
+                  </div>
+                </div>
+              )}
+              {/* Buffer spinner */}
+              {videoBuffering && !paused && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+                  <BufferSpinner />
+                </div>
+              )}
+            </>
+          ) : (
+            <MobileImageCarousel
+              media={media}
+              title={post.title}
+              idx={imgIdx}
+              onIdx={setImgIdx}
+            />
+          )}
+
+          {/* Back — top-left */}
           <button
             onClick={() => router.back()}
-            className="w-8 h-8 -ml-1 flex items-center justify-center rounded-full hover:bg-surface transition-colors"
+            className="absolute  z-30 w-12 h-12 rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center text-white"
+            style={{ top: "max(env(safe-area-inset-top, 0px), 16px)" }}
           >
             <svg
-              className="w-5 h-5 text-default"
+              className="w-6 h-6"
               fill="none"
               stroke="currentColor"
               strokeWidth={2.5}
@@ -1119,50 +1065,250 @@ export function ContentDetail({ id, lang }: Props) {
               />
             </svg>
           </button>
-          <span className="font-semibold text-default text-sm truncate flex-1">
-            {post.title}
-          </span>
-          <button
-            onClick={handleShare}
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface transition-colors"
-          >
-            <svg
-              className="w-5 h-5 text-default"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              viewBox="0 0 24 24"
+
+          {/* Video mute — top-right */}
+          {isVideo && (
+            <button
+              onClick={() => setMuted((m) => !m)}
+              className="absolute z-30 w-12 h-12 rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center text-white"
+              style={{
+                top: "max(env(safe-area-inset-top, 0px), 16px)",
+                right: 16,
+              }}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-              />
-            </svg>
-          </button>
+              {muted ? (
+                <svg
+                  className="w-6 h-6"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  className="w-6 h-6"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.146 5.146a5 5 0 010 9.708v-1.717a3.001 3.001 0 000-6.274V5.146zm2.829-2.83a9 9 0 010 15.37l-.708-1.225a7 7 0 000-12.92l.708-1.225z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              )}
+            </button>
+          )}
+
+          {/* Right-side action column */}
+          <div
+            className="absolute right-4 z-30 flex flex-col items-center gap-6"
+            style={{
+              bottom: "max(env(safe-area-inset-bottom, 0px) + 140px, 160px)",
+            }}
+          >
+            {/* Like */}
+            <button
+              onClick={handleLike}
+              className="flex flex-col items-center gap-1.5"
+            >
+              <div className="w-13 h-13 w-[52px] h-[52px] rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center">
+                <svg
+                  className="w-7 h-7 transition-all"
+                  viewBox="0 0 24 24"
+                  fill={resolvedLiked ? "rgb(var(--brand-primary))" : "none"}
+                  stroke={resolvedLiked ? "rgb(var(--brand-primary))" : "white"}
+                  strokeWidth={1.8}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                  />
+                </svg>
+              </div>
+              <span className="text-white text-xs font-semibold drop-shadow">
+                {resolvedLikeCount > 0 ? fmt(resolvedLikeCount) : "Like"}
+              </span>
+            </button>
+
+            {/* Comment — opens drawer */}
+            <button
+              onClick={() => {
+                if (!requireAuth({ contentId: id, action: "comment" })) return;
+                setShowCommentDrawer(true);
+              }}
+              className="flex flex-col items-center gap-1.5"
+            >
+              <div className="w-[52px] h-[52px] rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center">
+                <svg
+                  className="w-7 h-7 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.8}
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                  />
+                </svg>
+              </div>
+              <span className="text-white text-xs font-semibold drop-shadow">
+                {resolvedCommentCount > 0
+                  ? fmt(resolvedCommentCount)
+                  : "Comment"}
+              </span>
+            </button>
+
+            {/* Repost */}
+            <button className="flex flex-col items-center gap-1.5">
+              <div className="w-[52px] h-[52px] rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center">
+                <svg
+                  className="w-7 h-7 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.8}
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
+                </svg>
+              </div>
+              <span className="text-white text-xs font-semibold drop-shadow">
+                Repost
+              </span>
+            </button>
+
+            {/* Share */}
+            <button
+              onClick={handleShare}
+              className="flex flex-col items-center gap-1.5"
+            >
+              <div className="w-[52px] h-[52px] rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center">
+                <svg
+                  className="w-7 h-7 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.8}
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+                  />
+                </svg>
+              </div>
+              <span className="text-white text-xs font-semibold drop-shadow">
+                Share
+              </span>
+            </button>
+          </div>
+
+          {/* Overlay: title + description + creator bottom-left */}
+          <div className="absolute bottom-0 left-0 right-16 z-20 px-4 pb-8 pt-20 bg-linear-to-t from-black/85 via-black/40 to-transparent">
+            {/* Creator name */}
+            {creatorName ? (
+              <p className="text-white/80 text-sm font-semibold mb-1 drop-shadow">
+                {creatorName}
+              </p>
+            ) : null}
+
+            {/* Title */}
+            <h1 className="text-white font-bold text-xl leading-snug drop-shadow-md">
+              {post.title}
+            </h1>
+
+            {/* Price — larger, prominent */}
+            {post.price && (
+              <p className="text-white font-extrabold text-xl mt-1 drop-shadow-md">
+                {post.price.amount === 0
+                  ? "Free"
+                  : `${post.price.currency} ${post.price.amount.toLocaleString()}`}
+                {post.price.negotiable && (
+                  <span className="font-normal text-white/70 text-base ml-2">
+                    · negeotiable
+                  </span>
+                )}
+              </p>
+            )}
+
+            {/* Description — 2 lines, tap "more" to expand like LinkedIn */}
+            {caption && (
+              <p
+                className="text-white/90 text-base leading-relaxed mt-2 drop-shadow"
+                style={{ textShadow: "0 1px 3px rgba(0,0,0,0.7)" }}
+              >
+                <span className={captionExpanded ? "" : "line-clamp-2"}>
+                  {caption}
+                </span>
+                {isLongCaption && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCaptionExpanded((v) => !v);
+                    }}
+                    className="text-white/60 font-semibold ml-1 underline underline-offset-2"
+                  >
+                    {captionExpanded ? "less" : "more"}
+                  </button>
+                )}
+              </p>
+            )}
+
+            {/* Dot indicators for image carousel */}
+            {!isVideo && media.length > 1 && (
+              <div className="flex gap-1 mt-3">
+                {media.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setImgIdx(i)}
+                    className={[
+                      "rounded-full transition-all",
+                      i === imgIdx
+                        ? "w-4 h-1.5 bg-white"
+                        : "w-1.5 h-1.5 bg-white/50",
+                    ].join(" ")}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto pb-40">
-          {MediaSection}
-          {CreatorRow}
-          {PostInfo}
-          {ActionBar}
-          {CommentsSection}
-        </div>
-
-        {/* Sticky comment input */}
-        <div
-          className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full z-40"
-          style={{
-            maxWidth: "430px",
-            backgroundColor: "rgb(var(--color-bg-elevated) / 0.97)",
-            backdropFilter: "blur(20px) saturate(180%)",
-            WebkitBackdropFilter: "blur(20px) saturate(180%)",
-            borderTop: "1px solid rgb(var(--color-border))",
-          }}
-        >
-          {CommentInput}
-        </div>
+        {/* ── Comments drawer ──────────────────────────────────────────────── */}
+        <Drawer open={showCommentDrawer} onOpenChange={setShowCommentDrawer}>
+          <DrawerContent className="max-h-[80svh] flex flex-col">
+            <DrawerHeader className="shrink-0 pb-2">
+              <DrawerTitle>
+                {resolvedCommentCount > 0
+                  ? `${fmt(resolvedCommentCount)} Comments`
+                  : "Comments"}
+              </DrawerTitle>
+            </DrawerHeader>
+            <div className="flex-1 overflow-y-auto px-4 pb-2">
+              {CommentsSection}
+            </div>
+            <div
+              className="shrink-0 border-t border-default"
+              style={{
+                backgroundColor: "rgb(var(--color-bg-elevated))",
+                paddingBottom: "env(safe-area-inset-bottom, 0px)",
+              }}
+            >
+              {CommentInput}
+            </div>
+          </DrawerContent>
+        </Drawer>
       </div>
     </div>
   );

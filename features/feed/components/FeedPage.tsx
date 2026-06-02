@@ -13,6 +13,11 @@ interface Props {
 export function FeedPage({ lang }: Props) {
   const [tab, setTab] = useState<"for-you" | "following" | "nearby">("for-you");
 
+  function handleTabChange(next: "for-you" | "following" | "nearby") {
+    setTab(next);
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }
+
   return (
     <>
       {/* ── Desktop: fullscreen TikTok-style feed — no header/tabs needed ── */}
@@ -22,7 +27,7 @@ export function FeedPage({ lang }: Props) {
 
       {/* ── Mobile: existing card feed with tabs ── */}
       <div className="md:hidden min-h-svh">
-        <FeedHeader lang={lang} activeTab={tab} onTabChange={setTab} />
+        <FeedHeader lang={lang} activeTab={tab} onTabChange={handleTabChange} />
 
         <div className="relative">
           {tab === "for-you" && <FeedGrid lang={lang} />}

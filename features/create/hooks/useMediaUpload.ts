@@ -3,37 +3,24 @@
 /**
  * useMediaUpload — async-first media upload hook.
  *
- * ┌─────────────────────────────────────────────────────────────────┐
- * │  Design principle: NEVER block the user waiting for upload.     │
- * │                                                                 │
- * │  Image flow                                                     │
- * │    1. Add item with localUri (blob) → status "uploading"        │
- * │    2. Get presigned URL + PUT to R2  (background)               │
- * │    3. notifyImageUploaded → Sharp worker                        │
- * │    4. WS media:ready fires → swap blob for CDN URL, "ready"     │
- * │       Fallback: poll if socket not connected                    │
- * │                                                                 │
- * │  Video flow                                                     │
- * │    1. Add item with localUri (blob) → status "uploading"        │
- * │    2. Get Mux upload URL + PUT to Mux  (background)             │
- * │    3. User CAN PROCEED immediately — blob plays in preview      │
- * │    4. WS media:ready fires → attach muxPlaybackId, "ready"      │
- * │       Fallback: poll if socket not connected                    │
- * └─────────────────────────────────────────────────────────────────┘
+ * Image flow
+ *   1. Add item with localUri (blob) → status "uploading"
+ *   2. POST multipart to /upload/image — server runs Sharp → R2, returns CDN URLs
+ *   3. Response includes mediaAssetId + CDN URLs → swap blob, "ready" immediately
  *
- * The hook returns a fire-and-forget `startUpload()` — the caller
- * advances the step immediately without awaiting completion.
- * Background resolution is tracked in the Zustand store via
- * updateMediaItem() and WebSocket events.
+ * Video flow
+ *   1. Add item with localUri (blob) → status "uploading"
+ *   2. Get Mux upload URL + PUT to Mux (background)
+ *   3. User CAN PROCEED immediately — blob plays in preview
+ *   4. WS media:ready fires → attach muxPlaybackId, "ready"
+ *      Fallback: poll if socket not connected
  */
 
 import { useCallback } from "react";
 import { useMutation, useLazyQuery } from "@apollo/client/react";
 import { useCreateStore } from "@/stores/create";
 import {
-  RequestImageUploadDocument,
   RequestVideoUploadDocument,
-  NotifyImageUploadedDocument,
   NotifyVideoUploadedDocument,
   GetMediaAssetDocument,
   AttachMediaAssetDocument,
@@ -44,19 +31,19 @@ import {
   type MediaReadyPayload,
   type MediaFailedPayload,
 } from "@/lib/socket";
+import { useAuthStore } from "@/stores/auth";
 
-const WS_TIMEOUT_MS = 120_000; // 2 min max wait for WS event (Mux can be slow)
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
+const WS_TIMEOUT_MS = 120_000;
 const POLL_INTERVAL_MS = 3_000;
-const MAX_POLLS = 40; // 40 × 3s = 120s
+const MAX_POLLS = 40;
 
 export function useMediaUpload() {
   const { addMediaItem, updateMediaItem } = useCreateStore();
   const { on } = useSocket();
 
-  const [requestImageUpload] = useMutation(RequestImageUploadDocument);
   const [requestVideoUpload] = useMutation(RequestVideoUploadDocument);
   const [notifyVideoUploaded] = useMutation(NotifyVideoUploadedDocument);
-  const [notifyImageUploaded] = useMutation(NotifyImageUploadedDocument);
   const [attachMediaAsset] = useMutation(AttachMediaAssetDocument);
   const [getMediaAsset] = useLazyQuery(GetMediaAssetDocument, {
     fetchPolicy: "network-only",
@@ -86,7 +73,6 @@ export function useMediaUpload() {
           finish(() => reject(new Error(p.errorMessage || "Processing failed")));
         });
 
-        // Timeout: fall back to one HTTP poll
         const timer = setTimeout(async () => {
           offReady(); offFailed();
           if (done) return;
@@ -151,63 +137,58 @@ export function useMediaUpload() {
     [waitForReady, pollUntilReady],
   );
 
-  // ── Image: fire-and-forget background upload ───────────────────────────────
-  /**
-   * Adds media item immediately (localUri blob for instant preview),
-   * uploads in background, resolves via WebSocket.
-   * Returns the tempId so the caller can track it.
-   */
+  // ── Image: POST multipart to /upload/image — server processes + stores ──────
   const startImageUpload = useCallback(
     (file: File, did: string): string => {
       const localUri = URL.createObjectURL(file);
       const tempId = `temp-img-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-      // Instant optimistic add
       addMediaItem({ id: tempId, localUri, type: "image", status: "uploading" });
 
-      // Background work — doesn't block the caller
       (async () => {
         let mediaAssetId: string | null = null;
         try {
-          // 1. Presigned URL
-          const { data, error } = await requestImageUpload({
-            variables: { draftId: did, mimeType: file.type || "image/jpeg" },
+          const form = new FormData();
+          form.append("file", file);
+          form.append("draftId", did);
+
+          const token = useAuthStore.getState().accessToken;
+          const res = await fetch(`${API_BASE}/upload/image`, {
+            method: "POST",
+            body: form,
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
           });
-          if (error || !data?.requestImageUpload) throw new Error(error?.message ?? "Upload URL failed");
-          mediaAssetId = data.requestImageUpload.mediaAssetId;
-          const { uploadUrl } = data.requestImageUpload;
 
-          // 2. PUT to R2
-          const res = await fetch(uploadUrl, {
-            method: "PUT",
-            body: file,
-            headers: { "Content-Type": file.type || "image/jpeg" },
-          });
-          if (!res.ok) throw new Error(`R2 upload failed: ${res.status}`);
+          if (!res.ok) {
+            const body = await res.text().catch(() => "");
+            throw new Error(`Upload failed (${res.status}): ${body}`);
+          }
 
-          // Swap temp → real id, keep blob uri for now
-          useCreateStore.getState().removeMediaItem(tempId);
-          addMediaItem({ id: mediaAssetId, localUri, type: "image", status: "processing" });
+          const json = await res.json() as {
+            mediaAssetId: string;
+            imageUrl: string;
+            thumbnailUrl: string;
+          };
+          mediaAssetId = json.mediaAssetId;
 
-          // 3. Attach to draft
+          // Attach to draft
           await attachMediaAsset({
             variables: { draftId: did, mediaAssetId, sortOrder: 0 },
           });
 
-          // 4. Notify API → Sharp worker
-          await notifyImageUploaded({ variables: { mediaAssetId } });
-
-          // 5. Wait for WS/poll — swap blob for CDN URL
-          const ready = await waitForAsset(mediaAssetId);
-          updateMediaItem(mediaAssetId, {
+          // Swap temp → real, show CDN URL immediately (no WS wait needed)
+          useCreateStore.getState().removeMediaItem(tempId);
+          addMediaItem({
+            id: mediaAssetId,
+            localUri: json.imageUrl,
+            type: "image",
             status: "ready",
-            thumbnailUrl: ready.url ?? ready.thumbnailUrl ?? localUri,
+            thumbnailUrl: json.thumbnailUrl,
           });
         } catch (err) {
           const id = mediaAssetId ?? tempId;
           updateMediaItem(id, { status: "error", errorMessage: String(err) });
-          // Also clean up temp if real id was obtained
-          if (mediaAssetId && id !== tempId) {
+          if (mediaAssetId && mediaAssetId !== tempId) {
             useCreateStore.getState().removeMediaItem(tempId);
           }
         }
@@ -215,31 +196,20 @@ export function useMediaUpload() {
 
       return tempId;
     },
-    [
-      addMediaItem, updateMediaItem, requestImageUpload,
-      notifyImageUploaded, attachMediaAsset, waitForAsset,
-    ],
+    [addMediaItem, updateMediaItem, attachMediaAsset],
   );
 
   // ── Video: fire-and-forget — user gets preview IMMEDIATELY from blob ────────
-  /**
-   * Adds the video with local blob URI right away.
-   * User can watch preview and proceed through all steps.
-   * When Mux finishes, WebSocket fires media:ready → muxPlaybackId is attached.
-   * Publish is gated server-side on READY status.
-   */
   const startVideoUpload = useCallback(
     (file: File, did: string): string => {
       const localUri = URL.createObjectURL(file);
       const tempId = `temp-vid-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-      // Instant add with blob — video is playable immediately
       addMediaItem({ id: tempId, localUri, type: "video", status: "uploading" });
 
       (async () => {
         let mediaAssetId: string | null = null;
         try {
-          // 1. Get Mux upload URL
           const { data, error } = await requestVideoUpload({
             variables: { draftId: did },
           });
@@ -247,16 +217,13 @@ export function useMediaUpload() {
           mediaAssetId = data.requestVideoUpload.mediaAssetId;
           const { uploadUrl } = data.requestVideoUpload;
 
-          // Swap temp → real id, keep blob playing
           useCreateStore.getState().removeMediaItem(tempId);
           addMediaItem({ id: mediaAssetId, localUri, type: "video", status: "processing" });
 
-          // 2. Attach to draft while still uploading (backend allows PROCESSING status)
           await attachMediaAsset({
             variables: { draftId: did, mediaAssetId, sortOrder: 0 },
           });
 
-          // 3. PUT to Mux (can take seconds to minutes for large files)
           const res = await fetch(uploadUrl, {
             method: "PUT",
             body: file,
@@ -264,14 +231,9 @@ export function useMediaUpload() {
           });
           if (!res.ok) throw new Error(`Mux upload failed: ${res.status}`);
 
-          // 4. Notify backend — triggers MuxSync polling worker so status advances
-          //    even when Mux webhooks can't reach the server (local dev)
           await notifyVideoUploaded({ variables: { mediaAssetId } });
 
-          // 5. Wait for Mux to process — resolves via WebSocket or poll fallback
           const ready = await waitForAsset(mediaAssetId);
-
-          // Mux is ready — attach the playback ID, keep blob as thumbnail fallback
           updateMediaItem(mediaAssetId, {
             status: "ready",
             thumbnailUrl: ready.thumbnailUrl ?? localUri,
@@ -280,7 +242,7 @@ export function useMediaUpload() {
         } catch (err) {
           const id = mediaAssetId ?? tempId;
           updateMediaItem(id, { status: "error", errorMessage: String(err) });
-          if (mediaAssetId && id !== tempId) {
+          if (mediaAssetId && mediaAssetId !== tempId) {
             useCreateStore.getState().removeMediaItem(tempId);
           }
         }
@@ -288,10 +250,7 @@ export function useMediaUpload() {
 
       return tempId;
     },
-    [
-      addMediaItem, updateMediaItem, requestVideoUpload,
-      notifyVideoUploaded, attachMediaAsset, waitForAsset,
-    ],
+    [addMediaItem, updateMediaItem, requestVideoUpload, notifyVideoUploaded, attachMediaAsset, waitForAsset],
   );
 
   return { startImageUpload, startVideoUpload };

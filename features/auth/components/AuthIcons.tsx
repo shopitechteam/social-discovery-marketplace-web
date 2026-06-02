@@ -6,12 +6,14 @@ import Image from "next/image";
 export function ShopiLogo({
   height = 120,
   width = 120,
+  className,
 }: {
   height?: number;
   width?: number;
+  className?: string;
 }) {
   return (
-    <div>
+    <div className={className}>
       <Image
         src="/assets/shopi-logo.png"
         height={height}

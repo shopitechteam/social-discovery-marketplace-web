@@ -61,12 +61,14 @@ export function UploadPickerPage({ lang }: { lang: string }) {
     try {
       const did = await ensureDraft(kind);
       setContentType(kind);
-      setStep("edit");
+      // Start uploads in background — they run while user is on the media review step
       const list = Array.from(files).slice(0, kind === "video" ? 1 : 10);
       for (const file of list) {
         if (kind === "image") startImageUpload(file, did);
         else startVideoUpload(file, did);
       }
+      // Go to media review so user sees the preview and upload progress
+      setStep("media");
       router.push(`/${lang}/upload/create`);
     } catch (err) {
       setError(String(err));
