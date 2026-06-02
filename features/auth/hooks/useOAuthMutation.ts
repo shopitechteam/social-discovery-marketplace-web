@@ -90,7 +90,7 @@ export function useOAuthMutation(lang: string, from?: string) {
       if (!googleClientId) { resolve("Google client ID not configured."); return; }
 
       function initAndPrompt() {
-        const g = (window as Window & { google?: { accounts: { id: { initialize: (c: object) => void; prompt: () => void } } } }).google;
+        const g = (window as unknown as { google?: { accounts: { id: { initialize: (c: object) => void; prompt: () => void } } } }).google;
         if (!g) { resolve("Google sign-in failed to load."); return; }
 
         g.accounts.id.initialize({
