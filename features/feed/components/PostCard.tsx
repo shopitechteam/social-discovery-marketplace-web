@@ -24,6 +24,7 @@ import {
   useId,
   useMemo,
 } from "react";
+import { MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Shimmer, {
@@ -602,8 +603,8 @@ export function PostCard({ post, lang, priority }: Props) {
               </button>
             )}
             {post.location?.county && (
-              <span className="text-muted-foreground text-[11px]">
-                · 📍 {post.location.county}
+              <span className="flex items-center gap-0.5 text-muted-foreground text-[11px]">
+                · <MapPin className="w-3 h-3" /> {post.location.county}
               </span>
             )}
           </div>
@@ -612,7 +613,7 @@ export function PostCard({ post, lang, priority }: Props) {
             {post.location?.placeName && (
               <>
                 <span>·</span>
-                <span className="truncate max-w-[120px]">
+                <span className="truncate max-w-30">
                   {post.location.placeName}
                 </span>
               </>
@@ -629,7 +630,7 @@ export function PostCard({ post, lang, priority }: Props) {
 
       {/* ── Text content ───────────────────────────────────────────────── */}
       <div className="px-4 pb-2.5">
-        <p className="font-semibold text-default text-sm leading-snug mb-1">
+        <p className="font-semibold text-default text-[15px] text-black leading-snug mb-1">
           {post.title}
         </p>
         {caption && (
@@ -652,7 +653,7 @@ export function PostCard({ post, lang, priority }: Props) {
         {post.hashtags && post.hashtags.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-1.5">
             {post.hashtags.slice(0, 5).map((tag) => (
-              <span key={tag} className="text-primary text-xs font-medium">
+              <span key={tag} className="text-primary text-[13px] font-medium">
                 #{tag}
               </span>
             ))}
