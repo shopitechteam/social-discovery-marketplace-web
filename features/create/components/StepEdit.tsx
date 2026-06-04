@@ -131,7 +131,7 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
 
   async function onNext(values: EditFormValues) {
     if (!draftId) {
-      setError("Draft not ready yet — please wait a moment and try again.");
+      setError("Draft not ready ye— please wait a moment and try again.");
       return;
     }
     setError(null);
@@ -142,12 +142,16 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
     const ATTACH_TIMEOUT_MS = 30_000;
     const started = Date.now();
     while (
-      useCreateStore.getState().mediaItems.some((m) => m.status === "uploading") &&
+      useCreateStore
+        .getState()
+        .mediaItems.some((m) => m.status === "uploading") &&
       Date.now() - started < ATTACH_TIMEOUT_MS
     ) {
       await new Promise((r) => setTimeout(r, 300));
     }
-    if (useCreateStore.getState().mediaItems.some((m) => m.status === "uploading")) {
+    if (
+      useCreateStore.getState().mediaItems.some((m) => m.status === "uploading")
+    ) {
       setError("Upload is taking too long — please try again.");
       return;
     }
@@ -209,8 +213,7 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
         ref={titleRef}
         value={titleValue}
         onChange={(e) => {
-          if (e.target.value.length <= MAX_TITLE)
-            setTitleValue(e.target.value);
+          if (e.target.value.length <= MAX_TITLE) setTitleValue(e.target.value);
         }}
         placeholder="Add a title…"
         rows={1}
@@ -507,9 +510,23 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
             style={{ color: "rgb(var(--color-text-muted))" }}
           >
             <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
-              <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.5" />
+              <rect
+                x="3"
+                y="3"
+                width="18"
+                height="18"
+                rx="3"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              />
               <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" />
-              <path d="M3 15l5-5 4 4 3-3 6 6" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+              <path
+                d="M3 15l5-5 4 4 3-3 6 6"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              />
             </svg>
           </div>
         )}
@@ -518,11 +535,36 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
         {(!cover || cover.status !== "ready") && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
             <div className="flex flex-col items-center gap-1.5">
-              <svg className="animate-spin" width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" stroke="white" strokeOpacity="0.3" strokeWidth="3" />
-                <path d="M12 2a10 10 0 0 1 10 10" stroke="white" strokeWidth="3" strokeLinecap="round" />
+              <svg
+                className="animate-spin"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="white"
+                  strokeOpacity="0.3"
+                  strokeWidth="3"
+                />
+                <path
+                  d="M12 2a10 10 0 0 1 10 10"
+                  stroke="white"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                />
               </svg>
-              <span style={{ fontSize: 10, color: "white", fontWeight: 600, letterSpacing: "0.05em" }}>
+              <span
+                style={{
+                  fontSize: 10,
+                  color: "white",
+                  fontWeight: 600,
+                  letterSpacing: "0.05em",
+                }}
+              >
                 {cover?.status === "uploading" ? "UPLOADING" : "PROCESSING"}
               </span>
             </div>
@@ -532,8 +574,14 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
 
       {/* Media count badge */}
       {mediaItems.length > 1 && (
-        <p style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text-muted))" }}>
-          +{mediaItems.length - 1} more {mediaItems.length - 1 === 1 ? "file" : "files"}
+        <p
+          style={{
+            fontSize: "var(--text-sm)",
+            color: "rgb(var(--color-text-muted))",
+          }}
+        >
+          +{mediaItems.length - 1} more{" "}
+          {mediaItems.length - 1 === 1 ? "file" : "files"}
         </p>
       )}
 
@@ -628,11 +676,28 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
                 />
               ) : (
                 // Placeholder while no blob URL yet
-                <div className="absolute inset-0 flex items-center justify-center" style={{ color: "rgb(var(--color-text-muted))" }}>
+                <div
+                  className="absolute inset-0 flex items-center justify-center"
+                  style={{ color: "rgb(var(--color-text-muted))" }}
+                >
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.5" />
+                    <rect
+                      x="3"
+                      y="3"
+                      width="18"
+                      height="18"
+                      rx="3"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                    />
                     <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" />
-                    <path d="M3 15l5-5 4 4 3-3 6 6" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+                    <path
+                      d="M3 15l5-5 4 4 3-3 6 6"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinejoin="round"
+                      strokeLinecap="round"
+                    />
                   </svg>
                 </div>
               )}
@@ -641,12 +706,39 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
               {(!cover || cover.status !== "ready") && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
                   <div className="flex flex-col items-center gap-1">
-                    <svg className="animate-spin" width="20" height="20" viewBox="0 0 24 24" fill="none">
-                      <circle cx="12" cy="12" r="10" stroke="white" strokeOpacity="0.3" strokeWidth="3" />
-                      <path d="M12 2a10 10 0 0 1 10 10" stroke="white" strokeWidth="3" strokeLinecap="round" />
+                    <svg
+                      className="animate-spin"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                    >
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="white"
+                        strokeOpacity="0.3"
+                        strokeWidth="3"
+                      />
+                      <path
+                        d="M12 2a10 10 0 0 1 10 10"
+                        stroke="white"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                      />
                     </svg>
-                    <span style={{ fontSize: 9, color: "white", fontWeight: 600, letterSpacing: "0.05em" }}>
-                      {cover?.status === "uploading" ? "UPLOADING" : "PROCESSING"}
+                    <span
+                      style={{
+                        fontSize: 9,
+                        color: "white",
+                        fontWeight: 600,
+                        letterSpacing: "0.05em",
+                      }}
+                    >
+                      {cover?.status === "uploading"
+                        ? "UPLOADING"
+                        : "PROCESSING"}
                     </span>
                   </div>
                 </div>
@@ -657,9 +749,7 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
           </div>
 
           {/* Desktop-only: title block without thumbnail (thumbnail is in left panel) */}
-          <div className="hidden md:block mb-5">
-            {titleBlock}
-          </div>
+          <div className="hidden md:block mb-5">{titleBlock}</div>
 
           <Divider />
 
