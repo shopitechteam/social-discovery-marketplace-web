@@ -61,9 +61,8 @@ export function StepPickMedia() {
         }
       }
 
-      // Advance immediately — user sees local blob preview right away
-      // No waiting for upload/processing to finish
-      setStep("media");
+      // Skip media review — go straight to edit details (TikTok style)
+      setStep("edit");
     } catch (err) {
       setError(String(err));
     } finally {

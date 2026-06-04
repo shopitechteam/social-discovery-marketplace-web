@@ -14,20 +14,25 @@ export function CreateDrawer({ lang }: { lang: string }) {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
-  const { setDraftId, setContentType, setStep, setError, reset } = useCreateStore();
+  const { draftId, step, setDraftId, setContentType, setStep, setError, reset } =
+    useCreateStore();
   const [createDraft] = useMutation(CreateDraftDocument);
   const { startImageUpload, startVideoUpload } = useMediaUpload();
 
   function handleClose() {
-    window.location.href = `/${lang}/feed`;
+    // If there's a draft in progress, resume it instead of going to feed
+    if (draftId && step !== "pick") {
+      router.push(`/${lang}/upload/create`);
+    } else {
+      window.location.href = `/${lang}/feed`;
+    }
   }
 
   async function handleFiles(files: FileList, kind: "image" | "video") {
     if (!files.length) return;
     setError(null);
 
-    // Always start fresh — wipes any previous draft from store + sessionStorage
-    // so we never accidentally reuse a stale draftId from the last session.
+    // Start fresh for a new upload — wipes any previous draft
     reset();
 
     try {
@@ -46,7 +51,7 @@ export function CreateDrawer({ lang }: { lang: string }) {
         if (kind === "image") startImageUpload(file, did);
         else startVideoUpload(file, did);
       }
-      setStep("media");
+      setStep("edit");
       router.push(`/${lang}/upload/create`);
     } catch (err) {
       setError(String(err));
@@ -67,6 +72,8 @@ export function CreateDrawer({ lang }: { lang: string }) {
     imageInputRef.current?.click();
   }
 
+  const hasDraft = Boolean(draftId && step !== "pick");
+
   return (
     <>
       <Drawer
@@ -77,6 +84,20 @@ export function CreateDrawer({ lang }: { lang: string }) {
       >
         <DrawerContent>
           <div className="flex flex-col">
+            {/* Resume draft — only shown when a draft is in progress */}
+            {hasDraft && (
+              <>
+                <Button
+                  variant="ghost"
+                  onClick={() => router.push(`/${lang}/upload/create`)}
+                  className="w-full h-14 rounded-none active:bg-surface transition-colors"
+                >
+                  <span className="text-md font-medium text-primary">Continue draft</span>
+                </Button>
+                <div className="h-px bg-border" />
+              </>
+            )}
+
             {/* Video option */}
             <Button
               variant="ghost"
@@ -99,23 +120,10 @@ export function CreateDrawer({ lang }: { lang: string }) {
 
             <div className="h-px bg-border" />
 
-            {/* Text option */}
-            {/* <Button
-              variant="ghost"
-              onClick={handleText}
-              className="w-full h-14 rounded-none active:bg-surface transition-colors"
-            >
-              <span className="text-md font-medium">Text</span>
-            </Button> */}
-
-            <div className="h-px bg-border" />
-
             {/* TikTok import */}
             <Button
               variant="ghost"
               onClick={() => {
-                //router.push(`/${lang}/upload/tiktok`);
-
                 window.location.href = `/${lang}/upload/tiktok`;
               }}
               className="w-full h-14 rounded-none active:bg-surface transition-colors"

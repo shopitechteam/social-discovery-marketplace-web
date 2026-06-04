@@ -143,7 +143,8 @@ export const useCreateStore = create<CreateFlowState & CreateFlowActions>()(
         draftId: s.draftId,
         step: s.step,
         contentType: s.contentType,
-        mediaItems: s.mediaItems,
+        // Strip blob localUris — they're only valid in the originating tab's memory
+        mediaItems: s.mediaItems.map(({ localUri: _, ...rest }) => rest as MediaItem),
         title: s.title,
         caption: s.caption,
         hashtags: s.hashtags,

@@ -8,6 +8,10 @@ import { useRouter } from "next/navigation";
 import { useCreateStore } from "@/stores/create";
 import { PublishDraftDocument } from "@/types/__generated__/graphql";
 import type MuxPlayerElement from "@mux/mux-player";
+import {
+  getMediaPreviewSrc,
+  shouldUnoptimizeMedia,
+} from "@/features/create/utils/mediaPreview";
 
 interface StepReadyProps {
   lang: string;
@@ -51,6 +55,7 @@ export function StepReady({ lang }: StepReadyProps) {
   const [publishDraft] = useMutation(PublishDraftDocument);
 
   const cover = mediaItems[0];
+  const coverSrc = getMediaPreviewSrc(cover);
   const isVideo = contentType === "video";
 
   // ── Helpers that reach inside MuxPlayer's shadow DOM ─────────────────────
@@ -258,7 +263,7 @@ export function StepReady({ lang }: StepReadyProps) {
                 } as never
               }
             />
-          ) : cover ? (
+          ) : cover?.localUri ? (
             // Blob fallback (regular upload still processing)
             <video
               src={cover.localUri}
@@ -708,14 +713,14 @@ export function StepReady({ lang }: StepReadyProps) {
               backgroundColor: "rgb(var(--color-bg))",
             }}
           >
-            {cover ? (
+            {cover && coverSrc ? (
               <Image
-                src={cover.thumbnailUrl ?? cover.localUri}
+                src={coverSrc}
                 alt={title}
                 fill
                 sizes="100vw"
                 className="object-cover"
-                unoptimized={cover.localUri.startsWith("blob:")}
+                unoptimized={shouldUnoptimizeMedia(coverSrc)}
               />
             ) : (
               <div
@@ -797,14 +802,14 @@ export function StepReady({ lang }: StepReadyProps) {
               }}
             >
               <div className="relative w-full" style={{ aspectRatio: "1/1" }}>
-                {cover ? (
+                {cover && coverSrc ? (
                   <Image
-                    src={cover.thumbnailUrl ?? cover.localUri}
+                    src={coverSrc}
                     alt={title}
                     fill
                     sizes="100vw"
                     className="object-cover"
-                    unoptimized={cover.localUri.startsWith("blob:")}
+                    unoptimized={shouldUnoptimizeMedia(coverSrc)}
                   />
                 ) : (
                   <div

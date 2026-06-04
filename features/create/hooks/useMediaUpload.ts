@@ -5,8 +5,9 @@
  *
  * Image flow
  *   1. Add item with localUri (blob) → status "uploading"
- *   2. POST multipart to /upload/image — server runs Sharp → R2, returns CDN URLs
- *   3. Response includes mediaAssetId + CDN URLs → swap blob, "ready" immediately
+ *   2. Request a presigned R2 URL + upload the raw image directly to R2
+ *   3. Notify the API → Sharp variants run in the background worker
+ *   4. User CAN PROCEED immediately — blob shows until CDN variants are ready
  *
  * Video flow
  *   1. Add item with localUri (blob) → status "uploading"
@@ -20,6 +21,8 @@ import { useCallback } from "react";
 import { useMutation, useLazyQuery } from "@apollo/client/react";
 import { useCreateStore } from "@/stores/create";
 import {
+  RequestImageUploadDocument,
+  NotifyImageUploadedDocument,
   RequestVideoUploadDocument,
   NotifyVideoUploadedDocument,
   GetMediaAssetDocument,
@@ -31,9 +34,7 @@ import {
   type MediaReadyPayload,
   type MediaFailedPayload,
 } from "@/lib/socket";
-import { useAuthStore } from "@/stores/auth";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
 const WS_TIMEOUT_MS = 120_000;
 const POLL_INTERVAL_MS = 3_000;
 const MAX_POLLS = 40;
@@ -42,6 +43,8 @@ export function useMediaUpload() {
   const { addMediaItem, updateMediaItem } = useCreateStore();
   const { on } = useSocket();
 
+  const [requestImageUpload] = useMutation(RequestImageUploadDocument);
+  const [notifyImageUploaded] = useMutation(NotifyImageUploadedDocument);
   const [requestVideoUpload] = useMutation(RequestVideoUploadDocument);
   const [notifyVideoUploaded] = useMutation(NotifyVideoUploadedDocument);
   const [attachMediaAsset] = useMutation(AttachMediaAssetDocument);
@@ -137,7 +140,7 @@ export function useMediaUpload() {
     [waitForReady, pollUntilReady],
   );
 
-  // ── Image: POST multipart to /upload/image — server processes + stores ──────
+  // ── Image: direct PUT to R2, then queued Sharp processing ──────────────────
   const startImageUpload = useCallback(
     (file: File, did: string): string => {
       const localUri = URL.createObjectURL(file);
@@ -148,42 +151,41 @@ export function useMediaUpload() {
       (async () => {
         let mediaAssetId: string | null = null;
         try {
-          const form = new FormData();
-          form.append("file", file);
-          form.append("draftId", did);
-
-          const token = useAuthStore.getState().accessToken;
-          const res = await fetch(`${API_BASE}/upload/image`, {
-            method: "POST",
-            body: form,
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          const { data, error } = await requestImageUpload({
+            variables: {
+              draftId: did,
+              mimeType: file.type || "image/jpeg",
+            },
           });
-
-          if (!res.ok) {
-            const body = await res.text().catch(() => "");
-            throw new Error(`Upload failed (${res.status}): ${body}`);
+          if (error || !data?.requestImageUpload) {
+            throw new Error(error?.message ?? "Image upload URL failed");
           }
 
-          const json = await res.json() as {
-            mediaAssetId: string;
-            imageUrl: string;
-            thumbnailUrl: string;
-          };
-          mediaAssetId = json.mediaAssetId;
+          mediaAssetId = data.requestImageUpload.mediaAssetId;
+          const { uploadUrl } = data.requestImageUpload;
 
-          // Attach to draft
+          useCreateStore.getState().removeMediaItem(tempId);
+          addMediaItem({ id: mediaAssetId, localUri, type: "image", status: "uploading" });
+
           await attachMediaAsset({
             variables: { draftId: did, mediaAssetId, sortOrder: 0 },
           });
 
-          // Swap temp → real, show CDN URL immediately (no WS wait needed)
-          useCreateStore.getState().removeMediaItem(tempId);
-          addMediaItem({
-            id: mediaAssetId,
-            localUri: json.imageUrl,
-            type: "image",
+          const uploadRes = await fetch(uploadUrl, {
+            method: "PUT",
+            body: file,
+            headers: { "Content-Type": file.type || "image/jpeg" },
+          });
+          if (!uploadRes.ok) throw new Error(`R2 upload failed: ${uploadRes.status}`);
+
+          await notifyImageUploaded({ variables: { mediaAssetId } });
+          updateMediaItem(mediaAssetId, { status: "processing" });
+
+          const ready = await waitForAsset(mediaAssetId);
+          updateMediaItem(mediaAssetId, {
             status: "ready",
-            thumbnailUrl: json.thumbnailUrl,
+            localUri: ready.url ?? localUri,
+            thumbnailUrl: ready.thumbnailUrl ?? ready.url ?? localUri,
           });
         } catch (err) {
           const id = mediaAssetId ?? tempId;
@@ -196,7 +198,14 @@ export function useMediaUpload() {
 
       return tempId;
     },
-    [addMediaItem, updateMediaItem, attachMediaAsset],
+    [
+      addMediaItem,
+      updateMediaItem,
+      requestImageUpload,
+      notifyImageUploaded,
+      attachMediaAsset,
+      waitForAsset,
+    ],
   );
 
   // ── Video: fire-and-forget — user gets preview IMMEDIATELY from blob ────────

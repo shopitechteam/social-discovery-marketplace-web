@@ -16,6 +16,7 @@ import { useMutation } from "@apollo/client/react";
 import Image from "next/image";
 import { useCreateStore, MediaItem } from "@/stores/create";
 import { useMediaUpload } from "@/features/create/hooks/useMediaUpload";
+import { getMediaPreviewSrc } from "@/features/create/utils/mediaPreview";
 import {
   DetachMediaAssetDocument,
   ReorderDraftMediaDocument,
@@ -76,6 +77,7 @@ export function StepMediaReview({ onBack }: { onBack?: () => void }) {
   }
 
   const preview = mediaItems.find((m) => m.id === selected) ?? mediaItems[0];
+  const previewSrc = getMediaPreviewSrc(preview);
 
   return (
     <div className="flex flex-col h-full">
@@ -163,7 +165,7 @@ export function StepMediaReview({ onBack }: { onBack?: () => void }) {
       >
         {preview ? (
           <>
-            {preview.type === "video" ? (
+            {preview.type === "video" && preview.localUri ? (
               /* Always use local blob for video preview — fast, no Mux needed */
               <video
                 key={preview.localUri}
@@ -174,15 +176,17 @@ export function StepMediaReview({ onBack }: { onBack?: () => void }) {
                 muted
                 playsInline
               />
-            ) : (
+            ) : previewSrc ? (
               <Image
-                src={preview.thumbnailUrl ?? preview.localUri}
+                src={previewSrc}
                 alt="preview"
                 fill
                 sizes="(max-width: 768px) 100vw, 460px"
                 className="object-contain"
                 unoptimized
               />
+            ) : (
+              <div className="w-full h-full" style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }} />
             )}
 
             {/* Status badge — only while not ready */}
@@ -263,14 +267,16 @@ export function StepMediaReview({ onBack }: { onBack?: () => void }) {
                     : "2px solid transparent",
               }}
             >
-              <Image
-                src={item.thumbnailUrl ?? item.localUri}
-                alt=""
-                fill
-                sizes="112px"
-                className="object-cover"
-                unoptimized
-              />
+              {getMediaPreviewSrc(item) && (
+                <Image
+                  src={getMediaPreviewSrc(item)!}
+                  alt=""
+                  fill
+                  sizes="112px"
+                  className="object-cover"
+                  unoptimized
+                />
+              )}
               {/* Processing overlay */}
               {item.status !== "ready" && (
                 <div

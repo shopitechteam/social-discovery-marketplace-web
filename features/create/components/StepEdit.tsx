@@ -10,6 +10,10 @@ import {
   AdvanceDraftStepDocument,
 } from "@/types/__generated__/graphql";
 import { LocationPicker } from "./LocationPicker";
+import {
+  getMediaPreviewSrc,
+  shouldUnoptimizeMedia,
+} from "@/features/create/utils/mediaPreview";
 
 interface EditFormValues {
   caption: string;
@@ -192,6 +196,7 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
 
   // Show first media item immediately (blob) regardless of upload status
   const cover = mediaItems[0];
+  const coverSrc = getMediaPreviewSrc(cover);
 
   // ─────────────────────────────────────────────────────────────────────────
   // Shared sub-components (form fields) extracted so we can render them in
@@ -487,16 +492,14 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
           border: "1px solid rgb(var(--color-border))",
         }}
       >
-        {cover ? (
-          // Show thumbnail/cover image for all media in edit step —
-          // video preview plays on the final Review (StepReady) screen.
+        {coverSrc ? (
           <Image
-            src={cover.thumbnailUrl ?? cover.localUri}
+            src={coverSrc}
             alt=""
             fill
             sizes="100vw"
             className="object-cover"
-            unoptimized={cover.localUri.startsWith("blob:") || cover.localUri.startsWith("http")}
+            unoptimized={shouldUnoptimizeMedia(coverSrc)}
           />
         ) : (
           <div
@@ -511,16 +514,16 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
           </div>
         )}
 
-        {/* Processing overlay */}
-        {cover && cover.status !== "ready" && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-10">
+        {/* Upload / processing overlay — always show until ready */}
+        {(!cover || cover.status !== "ready") && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
             <div className="flex flex-col items-center gap-1.5">
               <svg className="animate-spin" width="24" height="24" viewBox="0 0 24 24" fill="none">
                 <circle cx="12" cy="12" r="10" stroke="white" strokeOpacity="0.3" strokeWidth="3" />
                 <path d="M12 2a10 10 0 0 1 10 10" stroke="white" strokeWidth="3" strokeLinecap="round" />
               </svg>
               <span style={{ fontSize: 10, color: "white", fontWeight: 600, letterSpacing: "0.05em" }}>
-                {cover.status === "uploading" ? "UPLOADING" : "PROCESSING"}
+                {cover?.status === "uploading" ? "UPLOADING" : "PROCESSING"}
               </span>
             </div>
           </div>
@@ -613,27 +616,37 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
                 backgroundColor: "rgb(var(--color-bg-subtle))",
               }}
             >
-              {cover && (
+              {/* Image preview — shown as soon as blob URL is available */}
+              {coverSrc ? (
                 <Image
-                  src={cover.thumbnailUrl ?? cover.localUri}
+                  src={coverSrc}
                   alt=""
                   fill
                   sizes="80px"
                   className="object-cover"
-                  unoptimized={cover.localUri.startsWith("blob:") || cover.localUri.startsWith("http")}
+                  unoptimized={shouldUnoptimizeMedia(coverSrc)}
                 />
+              ) : (
+                // Placeholder while no blob URL yet
+                <div className="absolute inset-0 flex items-center justify-center" style={{ color: "rgb(var(--color-text-muted))" }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.5" />
+                    <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" />
+                    <path d="M3 15l5-5 4 4 3-3 6 6" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+                  </svg>
+                </div>
               )}
 
-              {/* Processing overlay — scoped to thumbnail */}
-              {cover && cover.status !== "ready" && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-10">
+              {/* Upload / processing spinner overlay */}
+              {(!cover || cover.status !== "ready") && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
                   <div className="flex flex-col items-center gap-1">
                     <svg className="animate-spin" width="20" height="20" viewBox="0 0 24 24" fill="none">
                       <circle cx="12" cy="12" r="10" stroke="white" strokeOpacity="0.3" strokeWidth="3" />
                       <path d="M12 2a10 10 0 0 1 10 10" stroke="white" strokeWidth="3" strokeLinecap="round" />
                     </svg>
                     <span style={{ fontSize: 9, color: "white", fontWeight: 600, letterSpacing: "0.05em" }}>
-                      {cover.status === "uploading" ? "UPLOADING" : "PROCESSING"}
+                      {cover?.status === "uploading" ? "UPLOADING" : "PROCESSING"}
                     </span>
                   </div>
                 </div>

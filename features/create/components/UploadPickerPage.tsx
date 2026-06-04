@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@apollo/client/react";
 import { useCreateStore } from "@/stores/create";
@@ -39,9 +39,16 @@ export function UploadPickerPage({ lang }: { lang: string }) {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
-  const { setDraftId, setContentType, setStep, setError, draftId } = useCreateStore();
+  const { setDraftId, setContentType, setStep, setError, draftId, step } = useCreateStore();
   const [createDraft] = useMutation(CreateDraftDocument);
   const { startImageUpload, startVideoUpload } = useMediaUpload();
+
+  // If a draft is already in progress, skip the picker and resume it
+  useEffect(() => {
+    if (draftId && step !== "pick") {
+      router.replace(`/${lang}/upload/create`);
+    }
+  }, [draftId, step, lang, router]);
 
   async function ensureDraft(type: "image" | "video"): Promise<string> {
     if (draftId) return draftId;
@@ -67,8 +74,9 @@ export function UploadPickerPage({ lang }: { lang: string }) {
         if (kind === "image") startImageUpload(file, did);
         else startVideoUpload(file, did);
       }
-      // Go to media review so user sees the preview and upload progress
-      setStep("media");
+      // Skip media review — go straight to edit details (TikTok style)
+      // Media thumbnail in StepEdit shows upload progress while user fills in details
+      setStep("edit");
       router.push(`/${lang}/upload/create`);
     } catch (err) {
       setError(String(err));

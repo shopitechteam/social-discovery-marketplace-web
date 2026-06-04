@@ -8,6 +8,7 @@ import {
   AdvanceDraftStepDocument,
   VisibilityMode,
 } from "@/types/__generated__/graphql";
+import { getMediaPreviewSrc } from "@/features/create/utils/mediaPreview";
 
 type Visibility = "public" | "friends_only" | "private";
 
@@ -102,6 +103,7 @@ export function StepOptions() {
   }
 
   const cover = mediaItems[0];
+  const coverSrc = getMediaPreviewSrc(cover);
 
   // ── Shared form sections ──────────────────────────────────────────────────
 
@@ -184,7 +186,7 @@ export function StepOptions() {
               border: "1px solid rgb(var(--color-border))",
             }}
           >
-            {cover.type === "video" ? (
+            {cover.type === "video" && cover.localUri ? (
               <video
                 src={cover.localUri}
                 className="absolute inset-0 w-full h-full object-cover"
@@ -192,13 +194,15 @@ export function StepOptions() {
                 playsInline
                 preload="metadata"
               />
-            ) : (
+            ) : coverSrc ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={cover.thumbnailUrl ?? cover.localUri}
+                src={coverSrc}
                 alt=""
                 className="absolute inset-0 w-full h-full object-cover"
               />
+            ) : (
+              <div className="absolute inset-0" style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }} />
             )}
           </div>
         )}

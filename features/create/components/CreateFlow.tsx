@@ -10,7 +10,7 @@ import { StepMediaReview } from "./StepMediaReview";
 import { StepOptions } from "./StepOptions";
 import { StepReady } from "./StepReady";
 import { useRouter } from "next/navigation";
-import { GetDraftDocument } from "@/types/__generated__/graphql";
+import { GetDraftDocument, GetMediaAssetDocument } from "@/types/__generated__/graphql";
 import type { DraftStep, ContentType } from "@/types/__generated__/graphql";
 
 interface CreateFlowProps {
@@ -21,7 +21,7 @@ interface CreateFlowProps {
 function mapDraftStep(apiStep: DraftStep): CreateStep {
   switch (apiStep) {
     case "MEDIA_UPLOAD":
-      return "media";
+      return "edit";
     case "EDITING":
       return "edit";
     case "PUBLISHING_OPTIONS":
@@ -46,6 +46,7 @@ export function CreateFlow({ lang }: CreateFlowProps) {
   const {
     step,
     draftId,
+    mediaItems,
     setStep,
     setTitle,
     setCaption,
@@ -56,6 +57,8 @@ export function CreateFlow({ lang }: CreateFlowProps) {
     setAllowDownload,
     setHdEnabled,
     setError,
+    addMediaItem,
+    updateMediaItem,
   } = store;
 
   const router = useRouter();
@@ -90,8 +93,37 @@ export function CreateFlow({ lang }: CreateFlowProps) {
       return;
     }
 
-    // Store has a real step already (persisted from before the reload) — just render it
-    if (step !== "pick") return;
+    // Store has a real step already (persisted from before the reload).
+    // Still need to re-hydrate media items whose blob localUris were stripped.
+    if (step !== "pick") {
+      const missingBlobs = mediaItems.filter((m) => !m.localUri);
+      if (missingBlobs.length > 0) {
+        missingBlobs.forEach((item) => {
+          apolloClient
+            .query({
+              query: GetMediaAssetDocument,
+              variables: { id: item.id },
+              fetchPolicy: "network-only",
+            })
+            .then(({ data }) => {
+              const a = data?.mediaAsset;
+              if (!a) return;
+              const url =
+                a.r2Variants?.find((v) => v.variant === "medium")?.url ??
+                a.thumbnailUrl ??
+                undefined;
+              updateMediaItem(item.id, {
+                status: a.status === "READY" ? "ready" : a.status === "FAILED" ? "error" : "processing",
+                localUri: url ?? item.localUri,
+                thumbnailUrl: a.thumbnailUrl ?? undefined,
+                errorMessage: a.errorMessage ?? undefined,
+              });
+            })
+            .catch(() => undefined);
+        });
+      }
+      return;
+    }
 
     // draftId exists but step got reset to "pick" (e.g. sessionStorage only had
     // a partial write). Re-fetch from the API to get the authoritative step.
@@ -127,6 +159,36 @@ export function CreateFlow({ lang }: CreateFlowProps) {
         setAllowDownload(d.allowDownload ?? false);
         setHdEnabled(d.hdEnabled ?? false);
         if (d.price) setPrice(d.price.amount, d.price.amount === 0);
+
+        // Re-hydrate media items from the API — blob localUris are not persisted
+        const knownIds = new Set(useCreateStore.getState().mediaItems.map((m) => m.id));
+        const type = mapContentType(d.type) ?? "image";
+        const newIds = (d.mediaAssetIds ?? []).filter((id) => !knownIds.has(id));
+        newIds.forEach((id) => {
+          apolloClient
+            .query({
+              query: GetMediaAssetDocument,
+              variables: { id },
+              fetchPolicy: "network-only",
+            })
+            .then(({ data: ad }) => {
+              const a = ad?.mediaAsset;
+              if (!a || cancelled) return;
+              const url =
+                a.r2Variants?.find((v) => v.variant === "medium")?.url ??
+                a.thumbnailUrl ??
+                undefined;
+              addMediaItem({
+                id,
+                localUri: url ?? "",
+                type,
+                status: a.status === "READY" ? "ready" : a.status === "FAILED" ? "error" : "processing",
+                thumbnailUrl: a.thumbnailUrl ?? undefined,
+                errorMessage: a.errorMessage ?? undefined,
+              });
+            })
+            .catch(() => undefined);
+        });
       })
       .catch((err) => {
         if (cancelled) return;
@@ -143,7 +205,9 @@ export function CreateFlow({ lang }: CreateFlowProps) {
   }, [hydrated]);
 
   function handleBack() {
-    router.push(`/${lang}/upload`);
+    // Reset draft so the picker doesn't immediately redirect back here
+    useCreateStore.getState().reset();
+    router.push(`/${lang}/feed`);
   }
 
   // ── Not yet rehydrated from sessionStorage ────────────────────────────────
