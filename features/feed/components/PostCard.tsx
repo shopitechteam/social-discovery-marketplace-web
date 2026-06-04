@@ -134,7 +134,6 @@ function VideoMedia({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(false);
-  const [thumbError, setThumbError] = useState(false);
   const [thumbLoaded, setThumbLoaded] = useState(false);
   const [muted, setMuted] = useState(true);
   const onThumbLoad = useCallback(() => setThumbLoaded(true), []);
@@ -189,11 +188,10 @@ function VideoMedia({
       }}
     >
       {/* Thumbnail — fades out once video is playing */}
-      {thumbnail && !thumbError && (
-        <Image
+      {thumbnail && (
+        <FeedImage
           src={thumbnail}
           alt={post.title}
-          fill
           sizes="100vw"
           className={`object-cover transition-opacity duration-500 ${
             hlsUrl && active && !buffering
@@ -204,10 +202,8 @@ function VideoMedia({
           }`}
           priority={priority}
           loading={priority ? "eager" : "lazy"}
-          placeholder="blur"
           blurDataURL={SHIMMER_PORTRAIT}
           onLoad={onThumbLoad}
-          onError={() => setThumbError(true)}
         />
       )}
       {/* HLS video — src managed by useHlsVideo hook */}
@@ -265,6 +261,72 @@ function VideoMedia({
       )}
     </div>
   );
+}
+
+// ── FeedImage — Next.js Image with error fallback + one auto-retry ───────────
+
+function FeedImageInner({
+  src,
+  alt,
+  sizes,
+  className,
+  priority,
+  loading: loadingProp,
+  blurDataURL,
+  onLoad,
+}: {
+  src: string;
+  alt: string;
+  sizes?: string;
+  className?: string;
+  priority?: boolean;
+  loading?: "eager" | "lazy";
+  blurDataURL?: string;
+  onLoad?: () => void;
+}) {
+  const [retrySrc, setRetrySrc] = useState(src);
+  const [errored, setErrored] = useState(false);
+  const retried = useRef(false);
+
+  function handleError() {
+    if (!retried.current) {
+      retried.current = true;
+      setTimeout(() => setRetrySrc(`${src}?r=${Date.now()}`), 1500);
+    } else {
+      setErrored(true);
+    }
+  }
+
+  if (errored) {
+    return (
+      <div className="absolute inset-0 flex items-center justify-center bg-surface">
+        <svg className="w-10 h-10 text-muted-foreground/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+      </div>
+    );
+  }
+
+  return (
+    <Image
+      src={retrySrc}
+      alt={alt}
+      fill
+      sizes={sizes}
+      className={className}
+      priority={priority}
+      loading={loadingProp}
+      placeholder={blurDataURL ? "blur" : "empty"}
+      blurDataURL={blurDataURL}
+      onLoad={onLoad}
+      onError={handleError}
+    />
+  );
+}
+
+// Wrap with key=src so state resets automatically when the image URL changes
+function FeedImage(props: Parameters<typeof FeedImageInner>[0]) {
+  return <FeedImageInner key={props.src} {...props} />;
 }
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -344,15 +406,13 @@ function ImageMedia({
         style={{ height: GRID_H }}
         onClick={nav}
       >
-        <Image
+        <FeedImage
           src={firstSrc}
           alt={post.title}
-          fill
           sizes="100vw"
           className="object-cover"
           priority={priority}
           loading={priority ? "eager" : "lazy"}
-          placeholder="blur"
           blurDataURL={`data:image/svg+xml;base64,${toBase64(Shimmer(700, 700))}`}
         />
       </div>
@@ -365,21 +425,15 @@ function ImageMedia({
         {media.map((item, i) => {
           const src = mediaSrc(item, "large");
           return (
-            <div
-              key={i}
-              className="relative flex-1 bg-black cursor-pointer"
-              onClick={nav}
-            >
+            <div key={i} className="relative flex-1 bg-black cursor-pointer" onClick={nav}>
               {src && (
-                <Image
+                <FeedImage
                   src={src}
                   alt={post.title}
-                  fill
                   sizes="50vw"
                   className="object-cover"
                   priority={priority && i === 0}
                   loading={priority && i === 0 ? "eager" : "lazy"}
-                  placeholder="blur"
                   blurDataURL={SHIMMER}
                 />
               )}
@@ -394,37 +448,27 @@ function ImageMedia({
     return (
       <div className="flex gap-0.5 overflow-hidden" style={{ height: GRID_H }}>
         <div className="relative flex-2 bg-black cursor-pointer" onClick={nav}>
-          {firstSrc && (
-            <Image
-              src={firstSrc}
-              alt={post.title}
-              fill
-              sizes="66vw"
-              className="object-cover"
-              priority={priority}
-              loading={priority ? "eager" : "lazy"}
-              placeholder="blur"
-              blurDataURL={SHIMMER}
-            />
-          )}
+          <FeedImage
+            src={firstSrc}
+            alt={post.title}
+            sizes="66vw"
+            className="object-cover"
+            priority={priority}
+            loading={priority ? "eager" : "lazy"}
+            blurDataURL={SHIMMER}
+          />
         </div>
         <div className="flex flex-col gap-0.5 flex-1">
           {media.slice(1, 3).map((item, i) => {
             const src = mediaSrc(item, "medium");
             return (
-              <div
-                key={i}
-                className="relative flex-1 bg-black cursor-pointer"
-                onClick={nav}
-              >
+              <div key={i} className="relative flex-1 bg-black cursor-pointer" onClick={nav}>
                 {src && (
-                  <Image
+                  <FeedImage
                     src={src}
                     alt={post.title}
-                    fill
                     sizes="33vw"
                     className="object-cover"
-                    placeholder="blur"
                     blurDataURL={SHIMMER}
                   />
                 )}
@@ -440,37 +484,26 @@ function ImageMedia({
   const overflow = count - 4;
 
   return (
-    <div
-      className="grid grid-cols-2 gap-0.5 overflow-hidden"
-      style={{ height: GRID_H }}
-    >
+    <div className="grid grid-cols-2 gap-0.5 overflow-hidden" style={{ height: GRID_H }}>
       {visible.map((item, i) => {
         const src = mediaSrc(item, i === 0 ? "large" : "medium");
         const isLast = i === 3 && overflow > 0;
         return (
-          <div
-            key={i}
-            className="relative bg-black cursor-pointer overflow-hidden"
-            onClick={nav}
-          >
+          <div key={i} className="relative bg-black cursor-pointer overflow-hidden" onClick={nav}>
             {src && (
-              <Image
+              <FeedImage
                 src={src}
                 alt={post.title}
-                fill
                 sizes="50vw"
                 className="object-cover"
                 priority={priority && i === 0}
                 loading={priority && i === 0 ? "eager" : "lazy"}
-                placeholder="blur"
                 blurDataURL={SHIMMER}
               />
             )}
             {isLast && (
               <div className="absolute inset-0 bg-black/55 flex items-center justify-center">
-                <span className="text-white text-2xl font-bold">
-                  +{overflow}
-                </span>
+                <span className="text-white text-2xl font-bold">+{overflow}</span>
               </div>
             )}
           </div>
