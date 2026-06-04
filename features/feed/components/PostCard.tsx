@@ -579,7 +579,7 @@ export function PostCard({ post, lang, priority }: Props) {
             {creatorName ? (
               <button
                 onClick={handleOpen}
-                className="font-semibold text-sm text-default leading-tight hover:underline"
+                className="font-semibold text-base text-default leading-tight hover:underline"
               >
                 {creatorName}
               </button>
@@ -608,12 +608,12 @@ export function PostCard({ post, lang, priority }: Props) {
               </span>
             )}
           </div>
-          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mt-0.5">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
             <span>{timeAgo(post.createdAt)}</span>
             {post.location?.placeName && (
               <>
                 <span>·</span>
-                <span className="truncate max-w-30">
+                <span className="truncate max-w-50">
                   {post.location.placeName}
                 </span>
               </>
@@ -630,11 +630,11 @@ export function PostCard({ post, lang, priority }: Props) {
 
       {/* ── Text content ───────────────────────────────────────────────── */}
       <div className="px-4 pb-2.5">
-        <p className="font-semibold text-default text-[15px] text-black leading-snug mb-1">
+        <p className="font-semibold text-default text-[15px] leading-snug mb-1">
           {post.title}
         </p>
         {caption && (
-          <p className="text-default text-sm leading-relaxed">
+          <p className="text-default text-[15px] leading-relaxed">
             {displayCaption}
             {isLong && (
               <button
@@ -653,7 +653,7 @@ export function PostCard({ post, lang, priority }: Props) {
         {post.hashtags && post.hashtags.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-1.5">
             {post.hashtags.slice(0, 5).map((tag) => (
-              <span key={tag} className="text-primary text-[13px] font-medium">
+              <span key={tag} className="text-primary text-sm font-medium">
                 #{tag}
               </span>
             ))}
