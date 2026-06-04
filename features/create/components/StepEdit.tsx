@@ -131,7 +131,7 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
 
   async function onNext(values: EditFormValues) {
     if (!draftId) {
-      setError("Draft not ready ye— please wait a moment and try again.");
+      setError("Draft not read33y ye— please wait a moment and try again.");
       return;
     }
     setError(null);
