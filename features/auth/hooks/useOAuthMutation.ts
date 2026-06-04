@@ -89,10 +89,21 @@ export function useOAuthMutation(lang: string, from?: string) {
       const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
       if (!googleClientId) { resolve("Google client ID not configured."); return; }
 
+      type GIS = {
+        accounts: {
+          id: {
+            initialize: (c: object) => void;
+            prompt: (cb?: (n: { isNotDisplayed: () => boolean; isSkippedMoment: () => boolean; isDismissedMoment: () => boolean; getMomentType: () => string; getNotDisplayedReason: () => string; getSkippedReason: () => string }) => void) => void;
+            renderButton: (el: HTMLElement, opts: object) => void;
+          };
+        };
+      };
+
       function initAndPrompt() {
-        const g = (window as unknown as { google?: { accounts: { id: { initialize: (c: object) => void; prompt: () => void } } } }).google;
+        const g = (window as unknown as { google?: GIS }).google;
         if (!g) { resolve("Google sign-in failed to load."); return; }
 
+        // Always re-initialize so the callback closure is fresh
         g.accounts.id.initialize({
           client_id: googleClientId,
           callback: async (response: { credential?: string; error?: string }) => {
@@ -104,19 +115,50 @@ export function useOAuthMutation(lang: string, from?: string) {
             resolve(err);
           },
           ux_mode: "popup",
+          cancel_on_tap_outside: false,
         });
-        g.accounts.id.prompt();
+
+        g.accounts.id.prompt((notification) => {
+          // One Tap was suppressed (dismissed too many times, browser blocked, etc.)
+          // Fall back to a rendered button flow is not possible in popup mode,
+          // so resolve with null to unblock the UI — user can retry.
+          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            const reason = notification.isNotDisplayed()
+              ? notification.getNotDisplayedReason()
+              : notification.getSkippedReason();
+            // "suppressed_by_user" / "opt_out_or_no_session" etc — not a real error
+            const silentReasons = ["suppressed_by_user", "opt_out_or_no_session", "user_cancel", "tap_outside", "issuing_failed"];
+            if (silentReasons.includes(reason)) {
+              resolve(null);
+            } else {
+              resolve("Google sign-in was blocked by browser. Please try again.");
+            }
+          }
+        });
       }
 
       if ((window as Window & { google?: unknown }).google) {
         initAndPrompt();
       } else {
-        const script = document.createElement("script");
-        script.src = "https://accounts.google.com/gsi/client";
-        script.async = true;
-        script.onload = initAndPrompt;
-        script.onerror = () => resolve("Failed to load Google sign-in.");
-        document.head.appendChild(script);
+        // Prevent duplicate script injection
+        if (!document.querySelector('script[src="https://accounts.google.com/gsi/client"]')) {
+          const script = document.createElement("script");
+          script.src = "https://accounts.google.com/gsi/client";
+          script.async = true;
+          script.defer = true;
+          script.onload = initAndPrompt;
+          script.onerror = () => resolve("Failed to load Google sign-in.");
+          document.head.appendChild(script);
+        } else {
+          // Script tag exists but google not on window yet — wait briefly
+          const wait = setInterval(() => {
+            if ((window as Window & { google?: unknown }).google) {
+              clearInterval(wait);
+              initAndPrompt();
+            }
+          }, 100);
+          setTimeout(() => { clearInterval(wait); resolve("Google sign-in timed out. Please try again."); }, 5000);
+        }
       }
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps

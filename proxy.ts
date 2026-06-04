@@ -72,7 +72,8 @@ export function proxy(request: NextRequest) {
   // No locale in path — detect and redirect
   const locale = getPreferredLocale(request);
   const newUrl = request.nextUrl.clone();
-  newUrl.pathname = `/${locale}${pathname}`;
+  const bare = pathname === "/" ? "" : pathname;
+  newUrl.pathname = `/${locale}${bare}`;
 
   const response = NextResponse.redirect(newUrl);
   response.cookies.set("shopi_locale", locale, {
@@ -85,7 +86,8 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Skip Next.js internals, static files, and API routes
+    // Match all paths including root "/", skip Next.js internals and static files
+    "/",
     "/((?!_next|api|favicon.ico|manifest.json|og-default.png|robots.txt|sitemap.xml|.*\\..*).*)",
   ],
 };
