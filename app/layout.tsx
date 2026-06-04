@@ -111,6 +111,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1, // prevent iOS double-tap zoom
   userScalable: false,
+  viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: siteConfig.themeColor },
     { media: "(prefers-color-scheme: dark)", color: "#0a0a0e" },

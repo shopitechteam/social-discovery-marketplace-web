@@ -634,7 +634,7 @@ export function PostCard({ post, lang, priority }: Props) {
           {post.title}
         </p>
         {caption && (
-          <p className="text-default text-[15px] leading-relaxed">
+          <p className="text-default text-[14.5px] leading-7">
             {displayCaption}
             {isLong && (
               <button

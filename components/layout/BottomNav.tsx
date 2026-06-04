@@ -121,15 +121,17 @@ export function BottomNav({ lang = "en" }: { lang: string }) {
   return (
     <nav
       className="bottom-nav fixed bottom-0 left-1/2 -translate-x-1/2 w-full z-50 md:hidden"
-      style={{ paddingBottom: "var(--safe-bottom)" }}
+      style={{
+        paddingBottom: "var(--safe-bottom)",
+        backgroundColor: "rgb(var(--color-bg-elevated) / 0.92)",
+        backdropFilter: "blur(16px) saturate(180%)",
+        WebkitBackdropFilter: "blur(16px) saturate(180%)",
+      }}
     >
       <div
-        className="relative flex items-center justify-between "
+        className="relative flex items-center justify-between"
         style={{
           height: "var(--nav-height)",
-          backgroundColor: "rgb(var(--color-bg-elevated) / 0.92)",
-          backdropFilter: "blur(16px) saturate(180%)",
-          WebkitBackdropFilter: "blur(16px) saturate(180%)",
           borderTop: "1px solid rgb(var(--color-border))",
         }}
       >
