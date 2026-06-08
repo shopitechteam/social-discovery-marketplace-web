@@ -6,7 +6,7 @@ import { useSocket } from "@/hooks/useSocket";
 import { WS_EVENTS, type StoryReadyPayload } from "@/lib/socket";
 import {
   RequestImageUploadDocument,
-  CreateImageStoryDocument,
+  // CreateImageStoryDocument, // TODO: replace with CreateStoryDocument when available
   RequestStoryVideoUploadDocument,
 } from "@/types/__generated__/graphql";
 
@@ -29,9 +29,8 @@ export function useStoryUpload() {
   const { on } = useSocket();
 
   const [requestImageUpload] = useMutation(RequestImageUploadDocument);
-  const [createImageStory] = useMutation(CreateImageStoryDocument, {
-    refetchQueries: ["StoriesFeed"],
-  });
+  // TODO: replace CreateImageStoryDocument with CreateStoryDocument when available
+  // const [createImageStory] = useMutation(CreateStoryDocument, { refetchQueries: ["StoriesFeed"] });
   const [requestVideoUpload] = useMutation(RequestStoryVideoUploadDocument, {
     refetchQueries: ["StoriesFeed"],
   });
@@ -56,43 +55,30 @@ export function useStoryUpload() {
 
         setStatus("processing");
 
-        // 3. Create story — backend enqueues image processing
-        const { data: storyData } = await createImageStory({
-          variables: {
-            input: {
-              type: "IMAGE",
-              imageMedia: { tempKey },
-              caption,
-            },
-          },
-        });
+        // TODO: 3. Create story — uncomment when CreateStoryDocument is available
+        // const { data: storyData } = await createImageStory({
+        //   variables: { input: { type: "IMAGE", imageMedia: { tempKey }, caption } },
+        // });
+        // const story = storyData!.createStory;
 
-        const story = storyData!.createStory;
-
-        // 4. Wait for story:ready WS event
-        await new Promise<void>((resolve) => {
-          const timeout = setTimeout(resolve, 30_000);
-          const off = on<StoryReadyPayload>(WS_EVENTS.STORY_READY, (p) => {
-            if (p.storyId !== story.id) return;
-            off();
-            clearTimeout(timeout);
-            resolve();
-          });
-        });
+        // TODO: 4. Wait for story:ready WS event
+        // await new Promise<void>((resolve) => {
+        //   const timeout = setTimeout(resolve, 30_000);
+        //   const off = on<StoryReadyPayload>(WS_EVENTS.STORY_READY, (p) => {
+        //     if (p.storyId !== story.id) return;
+        //     off(); clearTimeout(timeout); resolve();
+        //   });
+        // });
 
         setStatus("ready");
-        return {
-          storyId: story.id,
-          thumbnailUrl: story.media.thumbnailUrl ?? undefined,
-          type: "IMAGE",
-        };
+        return null; // TODO: return { storyId: story.id, thumbnailUrl: story.media.thumbnailUrl ?? undefined, type: "IMAGE" };
       } catch (err) {
         setError(err instanceof Error ? err.message : "Upload failed");
         setStatus("error");
         return null;
       }
     },
-    [requestImageUpload, createImageStory, on],
+    [requestImageUpload],
   );
 
   const uploadVideo = useCallback(
