@@ -5,7 +5,7 @@ import { useMutation } from "@apollo/client/react";
 import { useSocket } from "@/hooks/useSocket";
 import { WS_EVENTS, type StoryReadyPayload } from "@/lib/socket";
 import {
-  RequestImageUploadForStoryDocument,
+  RequestImageUploadDocument,
   CreateImageStoryDocument,
   RequestStoryVideoUploadDocument,
 } from "@/types/__generated__/graphql";
@@ -28,7 +28,7 @@ export function useStoryUpload() {
   const [error, setError] = useState<string | null>(null);
   const { on } = useSocket();
 
-  const [requestImageUpload] = useMutation(RequestImageUploadForStoryDocument);
+  const [requestImageUpload] = useMutation(RequestImageUploadDocument);
   const [createImageStory] = useMutation(CreateImageStoryDocument, {
     refetchQueries: ["StoriesFeed"],
   });
