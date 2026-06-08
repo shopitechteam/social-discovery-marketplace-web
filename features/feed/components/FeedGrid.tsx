@@ -5,6 +5,7 @@ import { PostCard } from "./PostCard";
 import { useForYouFeed } from "../hooks/useFeed";
 import { FeedSkeleton } from "./FeedSkeleton";
 import { TrendingStrip } from "./TrendingStrip";
+import { StoriesBar } from "@/features/stories/components/StoriesBar";
 import { consumeAuthIntent } from "../hooks/useAuthGuard";
 import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
 
@@ -39,7 +40,9 @@ export function FeedGrid({ lang }: Props) {
     return (
       <div className="flex flex-col items-center justify-center py-24 px-6 text-center">
         <div className="text-5xl mb-4">🛍️</div>
-        <h3 className="font-bold text-default text-base mb-2">Your feed is empty</h3>
+        <h3 className="font-bold text-default text-base mb-2">
+          Your feed is empty
+        </h3>
         <p className="text-muted-foreground text-sm leading-relaxed">
           Follow sellers or explore categories to see content here.
         </p>
@@ -48,14 +51,17 @@ export function FeedGrid({ lang }: Props) {
   }
 
   return (
-    <div className="pb-safe-area-inset-bottom pb-6">
-      {/* ── Trending / Stories strip ─────────────────────────────────── */}
-      <div className="pt-2 pb-1">
+    <div className="pb-safe-area-inset-bottom pb-6 min-h-svh">
+      {/* ── Stories bar ──────────────────────────────────────────────── */}
+      <StoriesBar lang={lang} />
+
+      {/* ── Trending strip ────────────────────────────────────────────── */}
+      {/* <div className="pt-2 pb-1">
         <TrendingStrip lang={lang} />
-      </div>
+      </div> */}
 
       {/* ── Post cards ───────────────────────────────────────────────── */}
-      <div className="flex flex-col">
+      <div className="flex flex-col gap-2">
         {items.map((post, i) => (
           <PostCard key={post.id} post={post} lang={lang} priority={i < 3} />
         ))}

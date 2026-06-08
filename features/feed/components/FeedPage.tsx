@@ -29,7 +29,7 @@ export function FeedPage({ lang }: Props) {
       <div className="md:hidden min-h-svh">
         <FeedHeader lang={lang} activeTab={tab} onTabChange={handleTabChange} />
 
-        <div className="relative">
+        <div className="relative bg-surface">
           {tab === "for-you" && <FeedGrid lang={lang} />}
 
           {tab === "following" && <FollowingGrid lang={lang} />}

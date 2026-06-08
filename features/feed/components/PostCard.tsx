@@ -184,7 +184,8 @@ function VideoMedia({
       className="relative w-full bg-black overflow-hidden"
       style={{
         aspectRatio,
-        maxHeight: isLandscape ? undefined : "75vw",
+        minHeight: "40dvh",
+        maxHeight: "65dvh",
       }}
     >
       {/* Thumbnail — fades out once video is playing */}
@@ -300,8 +301,18 @@ function FeedImageInner({
   if (errored) {
     return (
       <div className="absolute inset-0 flex items-center justify-center bg-surface">
-        <svg className="w-10 h-10 text-muted-foreground/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        <svg
+          className="w-10 h-10 text-muted-foreground/20"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+          />
         </svg>
       </div>
     );
@@ -370,7 +381,7 @@ function ImageMedia({
     onNavigate();
   };
 
-  const GRID_H = "min(72vw, 380px)";
+  const GRID_H = "clamp(40dvh, 72vw, 60dvh)";
   const first = media[0];
   const firstSrc = mediaSrc(first, "large");
 
@@ -425,7 +436,11 @@ function ImageMedia({
         {media.map((item, i) => {
           const src = mediaSrc(item, "large");
           return (
-            <div key={i} className="relative flex-1 bg-black cursor-pointer" onClick={nav}>
+            <div
+              key={i}
+              className="relative flex-1 bg-black cursor-pointer"
+              onClick={nav}
+            >
               {src && (
                 <FeedImage
                   src={src}
@@ -462,7 +477,11 @@ function ImageMedia({
           {media.slice(1, 3).map((item, i) => {
             const src = mediaSrc(item, "medium");
             return (
-              <div key={i} className="relative flex-1 bg-black cursor-pointer" onClick={nav}>
+              <div
+                key={i}
+                className="relative flex-1 bg-black cursor-pointer"
+                onClick={nav}
+              >
                 {src && (
                   <FeedImage
                     src={src}
@@ -484,12 +503,19 @@ function ImageMedia({
   const overflow = count - 4;
 
   return (
-    <div className="grid grid-cols-2 gap-0.5 overflow-hidden" style={{ height: GRID_H }}>
+    <div
+      className="grid grid-cols-2 gap-0.5 overflow-hidden"
+      style={{ height: GRID_H }}
+    >
       {visible.map((item, i) => {
         const src = mediaSrc(item, i === 0 ? "large" : "medium");
         const isLast = i === 3 && overflow > 0;
         return (
-          <div key={i} className="relative bg-black cursor-pointer overflow-hidden" onClick={nav}>
+          <div
+            key={i}
+            className="relative bg-black cursor-pointer overflow-hidden"
+            onClick={nav}
+          >
             {src && (
               <FeedImage
                 src={src}
@@ -503,7 +529,9 @@ function ImageMedia({
             )}
             {isLast && (
               <div className="absolute inset-0 bg-black/55 flex items-center justify-center">
-                <span className="text-white text-2xl font-bold">+{overflow}</span>
+                <span className="text-white text-2xl font-bold">
+                  +{overflow}
+                </span>
               </div>
             )}
           </div>
@@ -596,7 +624,7 @@ export function PostCard({ post, lang, priority }: Props) {
   }
 
   return (
-    <article className="bg-elevated border-b border-default">
+    <article className="bg-elevated overflow-hidden">
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 px-4 pt-3.5 pb-2.5">
         <button onClick={handleOpen}>
@@ -607,53 +635,66 @@ export function PostCard({ post, lang, priority }: Props) {
             lastName={creator?.profile?.lastName}
           />
         </button>
+
+        {/* Name / location / time stack */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            {creatorName ? (
-              <button
-                onClick={handleOpen}
-                className="font-semibold text-base text-default leading-tight hover:underline"
-              >
-                {creatorName}
-              </button>
-            ) : (
-              // creator FieldResolver hasn't arrived yet — shimmer placeholder
-              <div className="h-3.5 w-24 rounded-full bg-surface animate-pulse" />
-            )}
-            {/* Follow button — hidden on own posts */}
-            {!isOwnPost && (
-              <button
-                onClick={handleFollow}
-                disabled={followLoading}
-                className={[
-                  "text-[11px] font-semibold px-2.5 py-0.5 rounded-full border transition-all disabled:opacity-60",
-                  following
-                    ? "border-border text-muted-foreground bg-surface"
-                    : "border-primary text-primary hover:bg-primary/5",
-                ].join(" ")}
-              >
-                {followLoading ? "…" : following ? "Following" : "+ Follow"}
-              </button>
-            )}
-            {post.location?.county && (
-              <span className="flex items-center gap-0.5 text-muted-foreground text-[11px]">
-                · <MapPin className="w-3 h-3" /> {post.location.county}
+          {creatorName ? (
+            <button
+              onClick={handleOpen}
+              className="font-semibold text-base text-default leading-tight hover:underline block"
+            >
+              {creatorName}
+            </button>
+          ) : (
+            <div className="h-3.5 w-24 rounded-full bg-surface animate-pulse" />
+          )}
+          {(post.location?.placeName || post.location?.county) && (
+            <p className="flex items-center gap-0.5 text-muted-foreground text-[11px] mt-0.5 leading-tight">
+              <MapPin className="w-3 h-3 shrink-0" />
+              <span className="truncate">
+                {[post.location.placeName, post.location.county]
+                  .filter(Boolean)
+                  .join(", ")}
               </span>
-            )}
-          </div>
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
-            <span>{timeAgo(post.createdAt)}</span>
-            {post.location?.placeName && (
+            </p>
+          )}
+          <p className="text-muted-foreground text-[11px] mt-0.5">
+            {timeAgo(post.createdAt)}
+          </p>
+        </div>
+
+        {/* Follow button — hidden on own posts, LinkedIn style no-border */}
+        {!isOwnPost && (
+          <button
+            onClick={handleFollow}
+            disabled={followLoading}
+            className={[
+              "flex items-center gap-1 text-[13px] font-semibold px-3 py-1.5 rounded-full transition-all disabled:opacity-60",
+              following
+                ? "text-muted-foreground bg-surface"
+                : "text-primary bg-primary/10 hover:bg-primary/20",
+            ].join(" ")}
+          >
+            {followLoading ? (
+              "…"
+            ) : following ? (
+              "Following"
+            ) : (
               <>
-                <span>·</span>
-                <span className="truncate max-w-50">
-                  {post.location.placeName}
-                </span>
+                <svg
+                  className="w-3.5 h-3.5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" />
+                </svg>
+                Follow
               </>
             )}
-          </div>
-        </div>
-        {/* More options button */}
+          </button>
+        )}
+
+        {/* More options */}
         <button className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface text-muted-foreground">
           <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
             <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
@@ -766,7 +807,7 @@ export function PostCard({ post, lang, priority }: Props) {
           onClick={handleCommentClick}
           icon={
             <svg
-              className="w-[18px] h-[18px]"
+              className="w-4.5 h-4.5"
               fill="none"
               stroke="currentColor"
               strokeWidth={1.8}

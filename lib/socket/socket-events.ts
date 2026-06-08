@@ -11,6 +11,8 @@ export const WS_EVENTS = {
   MEDIA_PROGRESS: 'media:progress',
   NOTIFICATION:   'notification',
   TIKTOK_IMPORT_UPDATED: 'tiktok:import:updated',
+  STORY_READY:  'story:ready',
+  STORY_FAILED: 'story:failed',
 } as const;
 
 export const WS_CLIENT_EVENTS = {
@@ -38,6 +40,13 @@ export interface MediaFailedPayload {
 export interface MediaProgressPayload {
   mediaAssetId: string;
   percent: number;
+}
+
+export interface StoryReadyPayload {
+  storyId: string;
+  type: 'image' | 'video';
+  thumbnailUrl?: string;
+  muxPlaybackId?: string;
 }
 
 export interface TiktokImportUpdatedPayload {

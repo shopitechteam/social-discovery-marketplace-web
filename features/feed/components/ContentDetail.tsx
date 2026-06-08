@@ -95,6 +95,21 @@ function initials(id: string) {
   return id.slice(-2).toUpperCase();
 }
 
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const query = window.matchMedia("(min-width: 768px)");
+    const update = () => setIsDesktop(query.matches);
+
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+
+  return isDesktop;
+}
+
 // ─── CommentRow ────────────────────────────────────────────────────────────────
 
 function CommentRow({
@@ -218,6 +233,126 @@ function MobileImageCarousel({
   );
 }
 
+function ContentVideo({
+  hlsUrl,
+  thumbnailUrl,
+  muted,
+  onToggleMuted,
+  fit = "contain",
+  fill = false,
+  showMuteButton = false,
+  showSpinner = false,
+}: {
+  hlsUrl: string;
+  thumbnailUrl?: string | null;
+  muted: boolean;
+  onToggleMuted?: () => void;
+  fit?: "contain" | "cover";
+  fill?: boolean;
+  showMuteButton?: boolean;
+  showSpinner?: boolean;
+}) {
+  const { videoRef, buffering } = useHlsVideo(hlsUrl, true);
+  const [playing, setPlaying] = useState(false);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.muted = muted;
+    video.defaultMuted = true;
+    video.playsInline = true;
+
+    const markPlaying = () => setPlaying(true);
+    const markStopped = () => setPlaying(false);
+
+    const tryPlay = () => {
+      video.play().catch(() => {
+        // Mobile browsers may block playback until the next user gesture.
+        setPlaying(false);
+      });
+    };
+
+    video.addEventListener("playing", markPlaying);
+    video.addEventListener("pause", markStopped);
+    video.addEventListener("ended", markStopped);
+    video.addEventListener("loadedmetadata", tryPlay);
+    video.addEventListener("canplay", tryPlay);
+
+    tryPlay();
+
+    return () => {
+      video.removeEventListener("playing", markPlaying);
+      video.removeEventListener("pause", markStopped);
+      video.removeEventListener("ended", markStopped);
+      video.removeEventListener("loadedmetadata", tryPlay);
+      video.removeEventListener("canplay", tryPlay);
+    };
+  }, [hlsUrl, muted, videoRef]);
+
+  const objectClass = fit === "cover" ? "object-cover" : "object-contain";
+  const videoClassName = fill
+    ? `absolute inset-0 w-full h-full ${objectClass}`
+    : `max-w-full max-h-full ${objectClass}`;
+
+  return (
+    <div className="relative w-full h-full flex items-center justify-center">
+      {thumbnailUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={thumbnailUrl}
+          alt=""
+          aria-hidden
+          className={`absolute inset-0 w-full h-full ${objectClass} transition-opacity duration-500 pointer-events-none z-10 ${playing && !buffering ? "opacity-0" : "opacity-100"}`}
+        />
+      )}
+
+      <video
+        ref={videoRef}
+        autoPlay
+        loop
+        muted={muted}
+        playsInline
+        preload="auto"
+        poster={thumbnailUrl ?? undefined}
+        className={videoClassName}
+        style={fill ? undefined : { maxHeight: "100vh" }}
+      />
+
+      {showSpinner && buffering && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+          <BufferSpinner />
+        </div>
+      )}
+
+      {showMuteButton && onToggleMuted && (
+        <button
+          onClick={onToggleMuted}
+          className="absolute bottom-6 right-4 z-30 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white"
+        >
+          {muted ? (
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fillRule="evenodd"
+                d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z"
+                clipRule="evenodd"
+              />
+            </svg>
+          ) : (
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fillRule="evenodd"
+                d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.146 5.146a5 5 0 010 9.708v-1.717a3.001 3.001 0 000-6.274V5.146zm2.829-2.83a9 9 0 010 15.37l-.708-1.225a7 7 0 000-12.92l.708-1.225z"
+                clipRule="evenodd"
+              />
+            </svg>
+          )}
+        </button>
+      )}
+    </div>
+  );
+}
+
 // ─── Main component ────────────────────────────────────────────────────────────
 
 interface Props {
@@ -258,7 +393,8 @@ export function ContentDetail({ id, lang }: Props) {
   // ── Local state ────────────────────────────────────────────────────────────
   const post = data?.content;
   const [imgIdx, setImgIdx] = useState(0);
-  const [muted, setMuted] = useState(false);
+  const [muted, setMuted] = useState(true);
+  const isDesktop = useIsDesktop();
   const [showCommentDrawer, setShowCommentDrawer] = useState(false);
   // Read liked/count straight from the Apollo cache (post updates reactively)
   const resolvedLiked = post?.isLikedByMe ?? false;
@@ -273,7 +409,6 @@ export function ContentDetail({ id, lang }: Props) {
     [],
   );
   const [captionExpanded, setCaptionExpanded] = useState(false);
-  const [paused, setPaused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const commentsRef = useRef<HTMLDivElement>(null);
 
@@ -285,14 +420,11 @@ export function ContentDetail({ id, lang }: Props) {
   const hlsUrl = mux?.playbackId
     ? `https://stream.mux.com/${mux.playbackId}.m3u8`
     : null;
-
-  // hls.js — fast ABR + buffering state. Always active; paused by tap.
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const { videoRef, buffering: videoBuffering } = useHlsVideo(
-    isVideo ? hlsUrl : null,
-    true,
-    paused,
-  );
+  const videoThumbnail =
+    media[0]?.thumbnailUrl ??
+    (mux?.playbackId
+      ? `https://image.mux.com/${mux.playbackId}/thumbnail.jpg?time=0&width=900&fit_mode=smartcrop`
+      : null);
 
   // Fire view on mount
   useEffect(() => {
@@ -819,151 +951,187 @@ export function ContentDetail({ id, lang }: Props) {
           Left col: media (sticky)   Right col: info + comments
           Inspired by Facebook/Instagram post detail
       ════════════════════════════════════════════════════════ */}
-      <div className="hidden md:flex h-screen overflow-hidden">
-        {/* ── Left: media ────────────────────────────────────────────────────── */}
-        <div
-          className="flex-1 bg-black flex items-center justify-center overflow-hidden"
-          style={{ minWidth: 0 }}
-        >
-          {isVideo && hlsUrl ? (
-            <div className="relative w-full h-full flex items-center justify-center">
-              <video
-                ref={videoRef}
-                loop
+      {isDesktop === true && (
+        <div className="flex h-screen overflow-hidden">
+          {/* ── Left: media ────────────────────────────────────────────────────── */}
+          <div
+            className="flex-1 bg-black flex items-center justify-center overflow-hidden"
+            style={{ minWidth: 0 }}
+          >
+            {isVideo && hlsUrl ? (
+              <ContentVideo
+                hlsUrl={hlsUrl}
+                thumbnailUrl={videoThumbnail}
                 muted={muted}
-                playsInline
-                className="max-w-full max-h-full object-contain"
-                style={{ maxHeight: "100vh" }}
-                onClick={() => setPaused((p) => !p)}
+                onToggleMuted={() => setMuted((m) => !m)}
+                showMuteButton
               />
-              <button
-                onClick={() => setMuted((m) => !m)}
-                className="absolute bottom-6 right-4 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white"
-              >
-                {muted ? (
-                  <svg
-                    className="w-4 h-4"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                ) : (
-                  <svg
-                    className="w-4 h-4"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.146 5.146a5 5 0 010 9.708v-1.717a3.001 3.001 0 000-6.274V5.146zm2.829-2.83a9 9 0 010 15.37l-.708-1.225a7 7 0 000-12.92l.708-1.225z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                )}
-              </button>
-            </div>
-          ) : (
-            <div className="relative w-full h-full flex items-center justify-center">
-              {media[imgIdx] && (
-                <Image
-                  src={
-                    media[imgIdx].r2Variants?.find((v) => v.variant === "large")
-                      ?.url ??
-                    media[imgIdx].r2Variants?.[0]?.url ??
-                    media[imgIdx].imageUrl ??
-                    media[imgIdx].thumbnailUrl ??
-                    ""
-                  }
-                  alt={post.title}
-                  fill
-                  sizes="65vw"
-                  className="object-contain"
-                  priority
-                  placeholder="blur"
-                  blurDataURL={SHIMMER}
-                />
-              )}
-              {/* Prev/next arrows for multi-image */}
-              {media.length > 1 && (
-                <>
-                  <button
-                    onClick={() => setImgIdx((i) => Math.max(0, i - 1))}
-                    disabled={imgIdx === 0}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center disabled:opacity-30"
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2.5}
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M15 19l-7-7 7-7"
-                      />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() =>
-                      setImgIdx((i) => Math.min(media.length - 1, i + 1))
+            ) : (
+              <div className="relative w-full h-full flex items-center justify-center">
+                {media[imgIdx] && (
+                  <Image
+                    src={
+                      media[imgIdx].r2Variants?.find(
+                        (v) => v.variant === "large",
+                      )?.url ??
+                      media[imgIdx].r2Variants?.[0]?.url ??
+                      media[imgIdx].imageUrl ??
+                      media[imgIdx].thumbnailUrl ??
+                      ""
                     }
-                    disabled={imgIdx === media.length - 1}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center disabled:opacity-30"
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2.5}
-                      viewBox="0 0 24 24"
+                    alt={post.title}
+                    fill
+                    sizes="65vw"
+                    className="object-contain"
+                    priority
+                    placeholder="blur"
+                    blurDataURL={SHIMMER}
+                  />
+                )}
+                {/* Prev/next arrows for multi-image */}
+                {media.length > 1 && (
+                  <>
+                    <button
+                      onClick={() => setImgIdx((i) => Math.max(0, i - 1))}
+                      disabled={imgIdx === 0}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center disabled:opacity-30"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
-                  </button>
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
-                    {media.map((_, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setImgIdx(i)}
-                        className={[
-                          "rounded-full transition-all",
-                          i === imgIdx
-                            ? "w-4 h-1.5 bg-white"
-                            : "w-1.5 h-1.5 bg-white/50",
-                        ].join(" ")}
-                      />
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-        </div>
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2.5}
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M15 19l-7-7 7-7"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() =>
+                        setImgIdx((i) => Math.min(media.length - 1, i + 1))
+                      }
+                      disabled={imgIdx === media.length - 1}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center disabled:opacity-30"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2.5}
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </button>
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
+                      {media.map((_, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setImgIdx(i)}
+                          className={[
+                            "rounded-full transition-all",
+                            i === imgIdx
+                              ? "w-4 h-1.5 bg-white"
+                              : "w-1.5 h-1.5 bg-white/50",
+                          ].join(" ")}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
 
-        {/* ── Right: info + comments + input ─────────────────────────────────── */}
-        <div
-          className="flex flex-col border-l border-default bg-app overflow-hidden"
-          style={{ width: 380, flexShrink: 0 }}
-        >
-          {/* Header row */}
-          <div className="flex items-center gap-2  h-12 border-b border-default shrink-0">
+          {/* ── Right: info + comments + input ─────────────────────────────────── */}
+          <div
+            className="flex flex-col border-l border-default bg-app overflow-hidden"
+            style={{ width: 380, flexShrink: 0 }}
+          >
+            {/* Header row */}
+            <div className="flex items-center gap-2  h-12 border-b border-default shrink-0">
+              <button
+                onClick={() => router.back()}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface transition-colors"
+              >
+                <svg
+                  className="w-5 h-5 text-default"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+              </button>
+              <span className="font-semibold text-default text-sm truncate flex-1">
+                {post.title}
+              </span>
+            </div>
+
+            {/* Scrollable middle: creator + info + actions + comments */}
+            <div className="flex-1 overflow-y-auto">
+              {CreatorRow}
+              {PostInfo}
+              {DesktopActions}
+              {CommentsSection}
+            </div>
+
+            {/* Sticky comment input at bottom of right panel */}
+            <div
+              className="shrink-0 border-t border-default"
+              style={{ backgroundColor: "rgb(var(--color-bg-elevated))" }}
+            >
+              {CommentInput}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ════════════════════════════════════════════════════════
+          MOBILE LAYOUT  (< md) — fixed full-screen, no scroll
+      ════════════════════════════════════════════════════════ */}
+      {isDesktop === false && (
+        <div className="fixed inset-0 bg-black overflow-hidden">
+          {/* ── Full-screen media ───────────────────────────────────────────── */}
+          <div className="absolute inset-0">
+            {isVideo && hlsUrl ? (
+              <ContentVideo
+                hlsUrl={hlsUrl}
+                thumbnailUrl={videoThumbnail}
+                muted={muted}
+                fill
+                showSpinner
+              />
+            ) : (
+              <MobileImageCarousel
+                media={media}
+                title={post.title}
+                idx={imgIdx}
+                onIdx={setImgIdx}
+              />
+            )}
+
+            {/* Back — top-left */}
             <button
               onClick={() => router.back()}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface transition-colors"
+              className="absolute  z-30 w-12 h-12 rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center text-white"
+              style={{ top: "max(env(safe-area-inset-top, 0px), 16px)" }}
             >
               <svg
-                className="w-5 h-5 text-default"
+                className="w-6 h-6"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth={2.5}
@@ -976,340 +1144,255 @@ export function ContentDetail({ id, lang }: Props) {
                 />
               </svg>
             </button>
-            <span className="font-semibold text-default text-sm truncate flex-1">
-              {post.title}
-            </span>
-          </div>
 
-          {/* Scrollable middle: creator + info + actions + comments */}
-          <div className="flex-1 overflow-y-auto">
-            {CreatorRow}
-            {PostInfo}
-            {DesktopActions}
-            {CommentsSection}
-          </div>
-
-          {/* Sticky comment input at bottom of right panel */}
-          <div
-            className="shrink-0 border-t border-default"
-            style={{ backgroundColor: "rgb(var(--color-bg-elevated))" }}
-          >
-            {CommentInput}
-          </div>
-        </div>
-      </div>
-
-      {/* ════════════════════════════════════════════════════════
-          MOBILE LAYOUT  (< md) — fixed full-screen, no scroll
-      ════════════════════════════════════════════════════════ */}
-      <div className="md:hidden fixed inset-0 bg-black overflow-hidden">
-        {/* ── Full-screen media ───────────────────────────────────────────── */}
-        <div className="absolute inset-0">
-          {isVideo && hlsUrl ? (
-            <>
-              <video
-                ref={videoRef}
-                loop
-                muted={muted}
-                playsInline
-                className="absolute inset-0 w-full h-full object-contain"
-                onClick={() => setPaused((p) => !p)}
-              />
-              {/* Tap-to-pause indicator */}
-              {paused && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-                  <div className="w-16 h-16 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center">
-                    <svg
-                      className="w-8 h-8 text-white"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-                    </svg>
-                  </div>
-                </div>
-              )}
-              {/* Buffer spinner */}
-              {videoBuffering && !paused && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-                  <BufferSpinner />
-                </div>
-              )}
-            </>
-          ) : (
-            <MobileImageCarousel
-              media={media}
-              title={post.title}
-              idx={imgIdx}
-              onIdx={setImgIdx}
-            />
-          )}
-
-          {/* Back — top-left */}
-          <button
-            onClick={() => router.back()}
-            className="absolute  z-30 w-12 h-12 rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center text-white"
-            style={{ top: "max(env(safe-area-inset-top, 0px), 16px)" }}
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2.5}
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-          </button>
-
-          {/* Video mute — top-right */}
-          {isVideo && (
-            <button
-              onClick={() => setMuted((m) => !m)}
-              className="absolute z-30 w-12 h-12 rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center text-white"
-              style={{
-                top: "max(env(safe-area-inset-top, 0px), 16px)",
-                right: 16,
-              }}
-            >
-              {muted ? (
-                <svg
-                  className="w-6 h-6"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              ) : (
-                <svg
-                  className="w-6 h-6"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.146 5.146a5 5 0 010 9.708v-1.717a3.001 3.001 0 000-6.274V5.146zm2.829-2.83a9 9 0 010 15.37l-.708-1.225a7 7 0 000-12.92l.708-1.225z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              )}
-            </button>
-          )}
-
-          {/* Right-side action column */}
-          <div
-            className="absolute right-4 z-30 flex flex-col items-center gap-6"
-            style={{
-              bottom: "max(env(safe-area-inset-bottom, 0px) + 140px, 160px)",
-            }}
-          >
-            {/* Like */}
-            <button
-              onClick={handleLike}
-              className="flex flex-col items-center gap-1.5"
-            >
-              <div className="w-13 h-13 w-[52px] h-[52px] rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center">
-                <svg
-                  className="w-7 h-7 transition-all"
-                  viewBox="0 0 24 24"
-                  fill={resolvedLiked ? "rgb(var(--brand-primary))" : "none"}
-                  stroke={resolvedLiked ? "rgb(var(--brand-primary))" : "white"}
-                  strokeWidth={1.8}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                  />
-                </svg>
-              </div>
-              <span className="text-white text-xs font-semibold drop-shadow">
-                {resolvedLikeCount > 0 ? fmt(resolvedLikeCount) : "Like"}
-              </span>
-            </button>
-
-            {/* Comment — opens drawer */}
-            <button
-              onClick={() => {
-                if (!requireAuth({ contentId: id, action: "comment" })) return;
-                setShowCommentDrawer(true);
-              }}
-              className="flex flex-col items-center gap-1.5"
-            >
-              <div className="w-[52px] h-[52px] rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center">
-                <svg
-                  className="w-7 h-7 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={1.8}
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                  />
-                </svg>
-              </div>
-              <span className="text-white text-xs font-semibold drop-shadow">
-                {resolvedCommentCount > 0
-                  ? fmt(resolvedCommentCount)
-                  : "Comment"}
-              </span>
-            </button>
-
-            {/* Repost */}
-            <button className="flex flex-col items-center gap-1.5">
-              <div className="w-[52px] h-[52px] rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center">
-                <svg
-                  className="w-7 h-7 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={1.8}
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                  />
-                </svg>
-              </div>
-              <span className="text-white text-xs font-semibold drop-shadow">
-                Repost
-              </span>
-            </button>
-
-            {/* Share */}
-            <button
-              onClick={handleShare}
-              className="flex flex-col items-center gap-1.5"
-            >
-              <div className="w-[52px] h-[52px] rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center">
-                <svg
-                  className="w-7 h-7 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={1.8}
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-                  />
-                </svg>
-              </div>
-              <span className="text-white text-xs font-semibold drop-shadow">
-                Share
-              </span>
-            </button>
-          </div>
-
-          {/* Overlay: title + description + creator bottom-left */}
-          <div className="absolute bottom-0 left-0 right-16 z-20 px-4 pb-8 pt-20 bg-linear-to-t from-black/85 via-black/40 to-transparent">
-            {/* Creator name */}
-            {creatorName ? (
-              <p className="text-white/80 text-sm font-semibold mb-1 drop-shadow">
-                {creatorName}
-              </p>
-            ) : null}
-
-            {/* Title */}
-            <h1 className="text-white font-bold text-xl leading-snug drop-shadow-md">
-              {post.title}
-            </h1>
-
-            {/* Price — larger, prominent */}
-            {post.price && (
-              <p className="text-white font-extrabold text-xl mt-1 drop-shadow-md">
-                {post.price.amount === 0
-                  ? "Free"
-                  : `${post.price.currency} ${post.price.amount.toLocaleString()}`}
-                {post.price.negotiable && (
-                  <span className="font-normal text-white/70 text-base ml-2">
-                    · negeotiable
-                  </span>
-                )}
-              </p>
-            )}
-
-            {/* Description — 2 lines, tap "more" to expand like LinkedIn */}
-            {caption && (
-              <p
-                className="text-white/90 text-base leading-relaxed mt-2 drop-shadow"
-                style={{ textShadow: "0 1px 3px rgba(0,0,0,0.7)" }}
+            {/* Video mute — top-right */}
+            {isVideo && (
+              <button
+                onClick={() => setMuted((m) => !m)}
+                className="absolute z-30 w-12 h-12 rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center text-white"
+                style={{
+                  top: "max(env(safe-area-inset-top, 0px), 16px)",
+                  right: 16,
+                }}
               >
-                <span className={captionExpanded ? "" : "line-clamp-2"}>
-                  {caption}
-                </span>
-                {isLongCaption && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setCaptionExpanded((v) => !v);
-                    }}
-                    className="text-white/60 font-semibold ml-1 underline underline-offset-2"
+                {muted ? (
+                  <svg
+                    className="w-6 h-6"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
                   >
-                    {captionExpanded ? "less" : "more"}
-                  </button>
+                    <path
+                      fillRule="evenodd"
+                      d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    className="w-6 h-6"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.146 5.146a5 5 0 010 9.708v-1.717a3.001 3.001 0 000-6.274V5.146zm2.829-2.83a9 9 0 010 15.37l-.708-1.225a7 7 0 000-12.92l.708-1.225z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
                 )}
-              </p>
+              </button>
             )}
 
-            {/* Dot indicators for image carousel */}
-            {!isVideo && media.length > 1 && (
-              <div className="flex gap-1 mt-3">
-                {media.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setImgIdx(i)}
-                    className={[
-                      "rounded-full transition-all",
-                      i === imgIdx
-                        ? "w-4 h-1.5 bg-white"
-                        : "w-1.5 h-1.5 bg-white/50",
-                    ].join(" ")}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* ── Comments drawer ──────────────────────────────────────────────── */}
-        <Drawer open={showCommentDrawer} onOpenChange={setShowCommentDrawer}>
-          <DrawerContent className="max-h-[80svh] flex flex-col">
-            <DrawerHeader className="shrink-0 pb-2">
-              <DrawerTitle>
-                {resolvedCommentCount > 0
-                  ? `${fmt(resolvedCommentCount)} Comments`
-                  : "Comments"}
-              </DrawerTitle>
-            </DrawerHeader>
-            <div className="flex-1 overflow-y-auto px-4 pb-2">
-              {CommentsSection}
-            </div>
+            {/* Right-side action column */}
             <div
-              className="shrink-0 border-t border-default"
+              className="absolute right-4 z-30 flex flex-col items-center gap-6"
               style={{
-                backgroundColor: "rgb(var(--color-bg-elevated))",
-                paddingBottom: "env(safe-area-inset-bottom, 0px)",
+                bottom: "max(env(safe-area-inset-bottom, 0px) + 140px, 160px)",
               }}
             >
-              {CommentInput}
+              {/* Like */}
+              <button
+                onClick={handleLike}
+                className="flex flex-col items-center gap-1.5"
+              >
+                <div className="w-13 h-13 w-[52px] h-[52px] rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center">
+                  <svg
+                    className="w-7 h-7 transition-all"
+                    viewBox="0 0 24 24"
+                    fill={resolvedLiked ? "rgb(var(--brand-primary))" : "none"}
+                    stroke={
+                      resolvedLiked ? "rgb(var(--brand-primary))" : "white"
+                    }
+                    strokeWidth={1.8}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                    />
+                  </svg>
+                </div>
+                <span className="text-white text-xs font-semibold drop-shadow">
+                  {resolvedLikeCount > 0 ? fmt(resolvedLikeCount) : "Like"}
+                </span>
+              </button>
+
+              {/* Comment — opens drawer */}
+              <button
+                onClick={() => {
+                  if (!requireAuth({ contentId: id, action: "comment" }))
+                    return;
+                  setShowCommentDrawer(true);
+                }}
+                className="flex flex-col items-center gap-1.5"
+              >
+                <div className="w-[52px] h-[52px] rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center">
+                  <svg
+                    className="w-7 h-7 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={1.8}
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                    />
+                  </svg>
+                </div>
+                <span className="text-white text-xs font-semibold drop-shadow">
+                  {resolvedCommentCount > 0
+                    ? fmt(resolvedCommentCount)
+                    : "Comment"}
+                </span>
+              </button>
+
+              {/* Repost */}
+              <button className="flex flex-col items-center gap-1.5">
+                <div className="w-[52px] h-[52px] rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center">
+                  <svg
+                    className="w-7 h-7 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={1.8}
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                </div>
+                <span className="text-white text-xs font-semibold drop-shadow">
+                  Repost
+                </span>
+              </button>
+
+              {/* Share */}
+              <button
+                onClick={handleShare}
+                className="flex flex-col items-center gap-1.5"
+              >
+                <div className="w-[52px] h-[52px] rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center">
+                  <svg
+                    className="w-7 h-7 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={1.8}
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+                    />
+                  </svg>
+                </div>
+                <span className="text-white text-xs font-semibold drop-shadow">
+                  Share
+                </span>
+              </button>
             </div>
-          </DrawerContent>
-        </Drawer>
-      </div>
+
+            {/* Overlay: title + description + creator bottom-left */}
+            <div className="absolute bottom-0 left-0 right-16 z-20 px-4 pb-8 pt-20 bg-linear-to-t from-black/85 via-black/40 to-transparent">
+              {/* Creator name */}
+              {creatorName ? (
+                <p className="text-white/80 text-sm font-semibold mb-1 drop-shadow">
+                  {creatorName}
+                </p>
+              ) : null}
+
+              {/* Title */}
+              <h1 className="text-white font-bold text-xl leading-snug drop-shadow-md">
+                {post.title}
+              </h1>
+
+              {/* Price — larger, prominent */}
+              {post.price && (
+                <p className="text-white font-extrabold text-xl mt-1 drop-shadow-md">
+                  {post.price.amount === 0
+                    ? "Free"
+                    : `${post.price.currency} ${post.price.amount.toLocaleString()}`}
+                  {post.price.negotiable && (
+                    <span className="font-normal text-white/70 text-base ml-2">
+                      · negotiable
+                    </span>
+                  )}
+                </p>
+              )}
+
+              {/* Description — 2 lines, tap "more" to expand like LinkedIn */}
+              {caption && (
+                <p
+                  className="text-white/90 text-base leading-relaxed mt-2 drop-shadow"
+                  style={{ textShadow: "0 1px 3px rgba(0,0,0,0.7)" }}
+                >
+                  <span className={captionExpanded ? "" : "line-clamp-2"}>
+                    {caption}
+                  </span>
+                  {isLongCaption && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCaptionExpanded((v) => !v);
+                      }}
+                      className="text-white/60 font-semibold ml-1 underline underline-offset-2"
+                    >
+                      {captionExpanded ? "less" : "more"}
+                    </button>
+                  )}
+                </p>
+              )}
+
+              {/* Dot indicators for image carousel */}
+              {!isVideo && media.length > 1 && (
+                <div className="flex gap-1 mt-3">
+                  {media.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setImgIdx(i)}
+                      className={[
+                        "rounded-full transition-all",
+                        i === imgIdx
+                          ? "w-4 h-1.5 bg-white"
+                          : "w-1.5 h-1.5 bg-white/50",
+                      ].join(" ")}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ── Comments drawer ──────────────────────────────────────────────── */}
+          <Drawer open={showCommentDrawer} onOpenChange={setShowCommentDrawer}>
+            <DrawerContent className="max-h-[80svh] flex flex-col">
+              <DrawerHeader className="shrink-0 pb-2">
+                <DrawerTitle>
+                  {resolvedCommentCount > 0
+                    ? `${fmt(resolvedCommentCount)} Comments`
+                    : "Comments"}
+                </DrawerTitle>
+              </DrawerHeader>
+              <div className="flex-1 overflow-y-auto px-4 pb-2">
+                {CommentsSection}
+              </div>
+              <div
+                className="shrink-0 border-t border-default"
+                style={{
+                  backgroundColor: "rgb(var(--color-bg-elevated))",
+                  paddingBottom: "env(safe-area-inset-bottom, 0px)",
+                }}
+              >
+                {CommentInput}
+              </div>
+            </DrawerContent>
+          </Drawer>
+        </div>
+      )}
     </div>
   );
 }

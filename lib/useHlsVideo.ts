@@ -2,14 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 
-/**
- * Wires hls.js to a <video> element with feed-optimised settings.
- *
- * @param hlsUrl   - m3u8 URL (null = no-op)
- * @param active   - controlled by the feed coordinator (feed cards) OR
- *                   pass `true` permanently for detail page auto-play
- * @param paused   - optional manual pause toggle (detail page tap-to-pause)
- */
 export function useHlsVideo(
   hlsUrl: string | null,
   active: boolean,
@@ -17,13 +9,38 @@ export function useHlsVideo(
 ) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [buffering, setBuffering] = useState(false);
+  const activeRef = useRef(active);
+  const pausedRef = useRef(paused);
+  // Track whether HLS has parsed the manifest so we can play/pause safely
+  const readyRef = useRef(false);
 
+  // Keep refs in sync without re-running the init effect
+  useEffect(() => { activeRef.current = active; }, [active]);
+  useEffect(() => { pausedRef.current = paused; }, [paused]);
+
+  // ── Init: load HLS source, wire buffering events, trigger first play ────────
   useEffect(() => {
     const vid = videoRef.current;
     if (!vid || !hlsUrl) return;
 
+    const v = vid;
+    const url = hlsUrl;
+    readyRef.current = false;
+
     let hls: import("hls.js").default | null = null;
     let destroyed = false;
+
+    // Reset video element state fully before attaching new source
+    v.pause();
+    v.removeAttribute("src");
+    v.load();
+
+    const onWaiting = () => { if (!destroyed) setBuffering(true); };
+    const onPlaying = () => { if (!destroyed) setBuffering(false); };
+    const onCanPlay = () => { if (!destroyed) setBuffering(false); };
+    v.addEventListener("waiting", onWaiting);
+    v.addEventListener("playing", onPlaying);
+    v.addEventListener("canplay", onCanPlay);
 
     async function init() {
       const Hls = (await import("hls.js")).default;
@@ -31,11 +48,12 @@ export function useHlsVideo(
 
       if (Hls.isSupported()) {
         hls = new Hls({
-          maxBufferLength: 8,
+          startLevel: 0,           // lowest quality first → first frame fastest
+          capLevelToPlayerSize: true,
+          maxBufferLength: 10,
           maxMaxBufferLength: 30,
           maxBufferSize: 20 * 1024 * 1024,
           backBufferLength: 4,
-          startLevel: -1,
           abrEwmaFastLive: 3,
           abrEwmaSlowLive: 9,
           abrBandWidthFactor: 0.8,
@@ -47,47 +65,62 @@ export function useHlsVideo(
           nudgeMaxRetry: 5,
           nudgeOffset: 0.2,
         });
-        hls.loadSource(hlsUrl!);
-        hls.attachMedia(vid!);
+
+        hls.loadSource(url);
+        hls.attachMedia(v);
+
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          if (destroyed) return;
+          readyRef.current = true;
+          if (activeRef.current && !pausedRef.current) {
+            v.play().catch(() => {});
+          }
+        });
+
         hls.on(Hls.Events.FRAG_BUFFERED, () => {
           if (!destroyed) setBuffering(false);
         });
-      } else if (vid!.canPlayType("application/vnd.apple.mpegurl")) {
-        vid!.src = hlsUrl!;
+
+        hls.on(Hls.Events.ERROR, (_e, data) => {
+          if (data.fatal && !destroyed) {
+            hls?.destroy();
+          }
+        });
+      } else if (v.canPlayType("application/vnd.apple.mpegurl")) {
+        // Safari native HLS
+        v.src = url;
+        v.load();
+        readyRef.current = true;
+        if (activeRef.current && !pausedRef.current) {
+          v.play().catch(() => {});
+        }
       }
-
-      const onWaiting = () => setBuffering(true);
-      const onPlaying = () => setBuffering(false);
-      const onCanPlay = () => setBuffering(false);
-      vid!.addEventListener("waiting", onWaiting);
-      vid!.addEventListener("playing", onPlaying);
-      vid!.addEventListener("canplay", onCanPlay);
-
-      return () => {
-        vid!.removeEventListener("waiting", onWaiting);
-        vid!.removeEventListener("playing", onPlaying);
-        vid!.removeEventListener("canplay", onCanPlay);
-      };
     }
 
-    const cleanupListeners = init();
+    init();
+
     return () => {
       destroyed = true;
-      cleanupListeners.then((fn) => fn?.());
+      readyRef.current = false;
+      v.removeEventListener("waiting", onWaiting);
+      v.removeEventListener("playing", onPlaying);
+      v.removeEventListener("canplay", onCanPlay);
+      v.pause();
+      v.removeAttribute("src");
+      v.load();
       hls?.destroy();
+      hls = null;
     };
   }, [hlsUrl]);
 
-  // Play / pause — driven by both the coordinator flag and manual paused toggle
+  // ── Play / pause: only act once HLS has the manifest ────────────────────────
   useEffect(() => {
     const vid = videoRef.current;
-    if (!vid) return;
+    if (!vid || !readyRef.current) return;
     if (active && !paused) {
       vid.play().catch(() => {});
     } else {
       vid.pause();
-      // Clear buffering indicator when inactive via a microtask so we
-      // don't call setState synchronously inside an effect body.
       if (!active) Promise.resolve().then(() => setBuffering(false));
     }
   }, [active, paused]);
