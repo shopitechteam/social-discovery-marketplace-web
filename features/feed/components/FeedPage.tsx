@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { FeedHeader } from "./FeedHeader";
 import { FeedGrid } from "./FeedGrid";
 import { FollowingGrid } from "./FollowingGrid";
@@ -11,10 +12,22 @@ interface Props {
   lang: string;
 }
 
-export function FeedPage({ lang }: Props) {
-  const [tab, setTab] = useState<"for-you" | "following" | "nearby">("for-you");
+type Tab = "for-you" | "following" | "nearby";
 
-  function handleTabChange(next: "for-you" | "following" | "nearby") {
+export function FeedPage({ lang }: Props) {
+  const searchParams = useSearchParams();
+  const initialTab = (searchParams.get("tab") as Tab | null) ?? "for-you";
+  const [tab, setTab] = useState<Tab>(initialTab);
+
+  // If the user returns from auth with ?tab=following, honour it
+  useEffect(() => {
+    const t = searchParams.get("tab") as Tab | null;
+    if (t && t !== tab) setTab(t);
+  // only re-run when the search params change, not when tab changes internally
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  function handleTabChange(next: Tab) {
     setTab(next);
     window.scrollTo({ top: 0, behavior: "instant" });
   }

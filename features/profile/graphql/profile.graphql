@@ -100,3 +100,63 @@ mutation UpdateMyProfile($input: UpdateProfileInput!) {
     ...ProfileUserFields
   }
 }
+
+# ── TikTok import ─────────────────────────────────────────────────────────────
+
+query GetMyTiktokVideos($cursor: String) {
+  myTiktokVideos(cursor: $cursor) {
+    videos {
+      id
+      title
+      coverImageUrl
+      shareUrl
+      duration
+      createTime
+    }
+    nextCursor
+    hasMore
+  }
+}
+
+query GetMyTiktokImports {
+  myTiktokImports {
+    id
+    url
+    status
+    title
+    thumbnailUrl
+    muxPlaybackId
+    hlsUrl
+    errorMessage
+    createdAt
+  }
+}
+
+mutation BatchImportTiktokVideos($shareUrls: [String!]!) {
+  batchImportTiktokVideos(shareUrls: $shareUrls) {
+    batchId
+    queued
+    skipped
+    downloads {
+      id
+      url
+      status
+      title
+      thumbnailUrl
+      errorMessage
+    }
+  }
+}
+
+query GetTiktokConnectStatus {
+  me {
+    id
+    authProviders {
+      tiktok
+    }
+  }
+}
+
+mutation GetTiktokConnectUrl($returnUrl: String) {
+  tiktokConnectUrl(returnUrl: $returnUrl)
+}

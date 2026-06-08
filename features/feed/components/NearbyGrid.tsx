@@ -87,7 +87,7 @@ export function NearbyGrid({ lang }: Props) {
   // ── Permission not yet requested ──────────────────────────────────────────
   if (permState === "idle") {
     return (
-      <div className="flex flex-col items-center justify-center py-20 px-6 text-center gap-5">
+      <div className="flex min-h-[60svh] flex-col items-center justify-center px-6 text-center gap-5">
         <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7z"/>
@@ -113,7 +113,7 @@ export function NearbyGrid({ lang }: Props) {
   // ── Requesting ────────────────────────────────────────────────────────────
   if (permState === "requesting") {
     return (
-      <div className="flex flex-col items-center justify-center py-20 px-6 text-center gap-4">
+      <div className="flex min-h-[60svh] flex-col items-center justify-center px-6 text-center gap-4">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         <p className="text-muted-foreground text-sm">Finding your location…</p>
       </div>
@@ -123,7 +123,7 @@ export function NearbyGrid({ lang }: Props) {
   // ── Denied ────────────────────────────────────────────────────────────────
   if (permState === "denied") {
     return (
-      <div className="flex flex-col items-center justify-center py-20 px-6 text-center gap-4">
+      <div className="flex min-h-[60svh] flex-col items-center justify-center px-6 text-center gap-4">
         <div className="text-4xl">🚫</div>
         <h3 className="font-bold text-default text-base">Location access denied</h3>
         <p className="text-muted-foreground text-sm leading-relaxed">
@@ -136,7 +136,7 @@ export function NearbyGrid({ lang }: Props) {
   // ── Unavailable ───────────────────────────────────────────────────────────
   if (permState === "unavailable") {
     return (
-      <div className="flex flex-col items-center justify-center py-20 px-6 text-center gap-4">
+      <div className="flex min-h-[60svh] flex-col items-center justify-center px-6 text-center gap-4">
         <div className="text-4xl">📍</div>
         <p className="text-muted-foreground text-sm">Location is not supported on this device.</p>
       </div>
@@ -149,7 +149,7 @@ export function NearbyGrid({ lang }: Props) {
   // ── Geo error (location resolved but reverse geocode failed) ──────────────
   if (geoError && !location) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 px-6 text-center gap-4">
+      <div className="flex min-h-[60svh] flex-col items-center justify-center px-6 text-center gap-4">
         <div className="text-4xl">⚠️</div>
         <p className="text-muted-foreground text-sm">{geoError}</p>
         <button onClick={requestLocation} className="px-5 py-2.5 bg-primary text-white rounded-full text-sm font-semibold">
@@ -162,7 +162,7 @@ export function NearbyGrid({ lang }: Props) {
   // ── No results ────────────────────────────────────────────────────────────
   if (!loading && items.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 px-6 text-center gap-4">
+      <div className="flex min-h-[60svh] flex-col items-center justify-center px-6 text-center gap-4">
         <div className="text-4xl">🏪</div>
         <h3 className="font-bold text-default text-base">No listings nearby yet</h3>
         <p className="text-muted-foreground text-sm leading-relaxed">

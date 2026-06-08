@@ -7,6 +7,7 @@ import {
   LogOut,
   Palette,
   Settings,
+  Tv2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useMyProfile, useMyPosts, useMyAnalytics } from "../hooks/useMyProfile";
@@ -14,10 +15,11 @@ import { ProfileHeader } from "./ProfileHeader";
 import { PostsGrid } from "./PostsGrid";
 import { AnalyticsPanel } from "./AnalyticsPanel";
 import { EditProfileSheet } from "./EditProfileSheet";
+import { TiktokImportPanel } from "./TiktokImportPanel";
 import { LogoutButton } from "@/features/auth/components/LogoutButton";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
-type Tab = "posts" | "analytics" | "settings";
+type Tab = "posts" | "analytics" | "tiktok" | "settings";
 
 interface Props {
   lang: string;
@@ -89,6 +91,7 @@ function ProfileSkeleton() {
 const tabConfig: { key: Tab; label: string; icon: LucideIcon }[] = [
   { key: "posts", label: "Posts", icon: LayoutGrid },
   { key: "analytics", label: "Analytics", icon: ChartColumn },
+  { key: "tiktok", label: "TikTok", icon: Tv2 },
   { key: "settings", label: "Settings", icon: Settings },
 ];
 
@@ -216,6 +219,8 @@ export function ProfileView({ lang }: Props) {
           ) : null}
         </>
       )}
+
+      {tab === "tiktok" && <TiktokImportPanel lang={lang} />}
 
       {tab === "settings" && <SettingsPanel lang={lang} />}
 
