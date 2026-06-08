@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { locales, defaultLocale, isValidLocale } from "@/i18n/config";
+import { locales, defaultLocale } from "@/i18n/config";
 
 // Routes that require a valid accessToken cookie.
 // Matched after locale prefix is stripped, so "/profile" covers "/{locale}/profile".
@@ -15,25 +15,15 @@ function isProtected(pathname: string): boolean {
   return PROTECTED_PATHS.some((p) => bare === p || bare.startsWith(`${p}/`));
 }
 
-function getPreferredLocale(request: NextRequest): string {
-  // 1. Cookie takes priority — user explicitly chose a language
-  const cookie = request.cookies.get("shopi_locale")?.value;
-  if (cookie && isValidLocale(cookie)) return cookie;
-
-  // 2. Browser Accept-Language header
-  const acceptLang = request.headers.get("accept-language") ?? "";
-  for (const part of acceptLang.split(",")) {
-    const tag = part.split(";")[0].trim().toLowerCase();
-    for (const locale of locales) {
-      if (tag === locale || tag.startsWith(`${locale}-`)) return locale;
-    }
-  }
-
-  return defaultLocale;
+function getPathLocale(pathname: string) {
+  return locales.find(
+    (locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`),
+  );
 }
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const pathnameLocale = getPathLocale(pathname);
 
   // ── Auth guard ────────────────────────────────────────────────────────────
   // accessToken is stored in localStorage by Zustand, so the proxy can't read
@@ -42,10 +32,7 @@ export function proxy(request: NextRequest) {
   if (isProtected(pathname)) {
     const hasSession = !!request.cookies.get("shopi-auth-hint")?.value;
     if (!hasSession) {
-      const locale =
-        locales.find(
-          (l) => pathname === `/${l}` || pathname.startsWith(`/${l}/`),
-        ) ?? getPreferredLocale(request);
+      const locale = pathnameLocale ?? defaultLocale;
 
       const loginUrl = request.nextUrl.clone();
       loginUrl.pathname = `/${locale}/auth/auth-welcome`;
@@ -55,10 +42,6 @@ export function proxy(request: NextRequest) {
   }
 
   // ── Locale prefix ─────────────────────────────────────────────────────────
-  const pathnameLocale = locales.find(
-    (locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`),
-  );
-
   if (pathnameLocale) {
     const response = NextResponse.next();
     response.cookies.set("shopi_locale", pathnameLocale, {
@@ -69,8 +52,8 @@ export function proxy(request: NextRequest) {
     return response;
   }
 
-  // No locale in path — detect and redirect
-  const locale = getPreferredLocale(request);
+  // No locale in path — redirect to the default English prefix.
+  const locale = defaultLocale;
   const newUrl = request.nextUrl.clone();
   const bare = pathname === "/" ? "" : pathname;
   newUrl.pathname = `/${locale}${bare}`;

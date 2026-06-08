@@ -1,0 +1,102 @@
+fragment ProfileUserFields on User {
+  id
+  username
+  email
+  profile {
+    firstName
+    lastName
+    avatar
+    bio
+    website
+  }
+  followerCount
+  followingCount
+  postCount
+  totalViews
+  totalLikes
+  isFollowedByMe
+}
+
+fragment ProfilePostFields on Content {
+  id
+  type
+  title
+  caption
+  createdAt
+  stats {
+    views
+    likes
+    saves
+    shares
+    comments
+  }
+  media {
+    mediaType
+    thumbnailUrl
+    url
+    sortOrder
+    muxMeta {
+      playbackId
+      thumbnailUrl
+      aspectRatio
+    }
+    r2Variants {
+      variant
+      url
+      width
+      height
+    }
+  }
+}
+
+query GetMyProfile {
+  me {
+    ...ProfileUserFields
+  }
+}
+
+query GetUserProfile($username: String!) {
+  userProfile(username: $username) {
+    ...ProfileUserFields
+  }
+}
+
+query GetMyPosts($limit: Int, $afterId: String) {
+  myPosts(limit: $limit, afterId: $afterId) {
+    hasMore
+    nextCursor
+    posts {
+      ...ProfilePostFields
+    }
+  }
+}
+
+query GetMyAnalytics {
+  myAnalytics {
+    last30DaysViews
+    last30DaysLikes
+    last30DaysFollowers
+    topPost {
+      contentId
+      views
+      likes
+    }
+    viewsByDay {
+      date
+      views
+    }
+  }
+}
+
+query CheckUsernameAvailability($username: String!) {
+  checkUsername(username: $username) {
+    username
+    available
+  }
+}
+
+mutation UpdateMyProfile($input: UpdateProfileInput!) {
+  updateProfile(input: $input) {
+    ...ProfileUserFields
+  }
+}

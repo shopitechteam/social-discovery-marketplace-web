@@ -601,7 +601,6 @@ export function PostCard({ post, lang, priority }: Props) {
   const {
     following,
     toggle: handleFollow,
-    loading: followLoading,
   } = useFollow({
     userId: creator?.id ?? post.creatorId,
     initialFollowing: creator?.isFollowedByMe ?? false,
@@ -663,29 +662,22 @@ export function PostCard({ post, lang, priority }: Props) {
           </p>
         </div>
 
-        {/* Follow button — hidden on own posts, LinkedIn style no-border */}
+        {/* Follow button — hidden on own posts, optimistic (no disabled/spinner) */}
         {!isOwnPost && (
           <button
             onClick={handleFollow}
-            disabled={followLoading}
             className={[
-              "flex items-center gap-1 text-[13px] font-semibold px-3 py-1.5 rounded-full transition-all disabled:opacity-60",
+              "flex items-center gap-1 text-[13px] font-semibold px-3 py-1.5 rounded-full transition-all active:scale-95",
               following
                 ? "text-muted-foreground bg-surface"
                 : "text-primary bg-primary/10 hover:bg-primary/20",
             ].join(" ")}
           >
-            {followLoading ? (
-              "…"
-            ) : following ? (
+            {following ? (
               "Following"
             ) : (
               <>
-                <svg
-                  className="w-3.5 h-3.5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
                   <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" />
                 </svg>
                 Follow
