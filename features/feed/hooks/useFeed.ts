@@ -6,6 +6,7 @@ import {
   ForYouFeedDocument,
   FollowingFeedDocument,
   TrendingContentDocument,
+  LocalFeedDocument,
 } from "@/types/__generated__/graphql";
 
 const PAGE_SIZE = 6;
@@ -112,6 +113,39 @@ export function useFollowingFeed() {
     hasMore: pageInfo?.hasNextPage ?? false,
     loadMore,
   };
+}
+
+export function useNearbyFeed(county: string | null, subregion?: string | null) {
+  const { data, loading, error, fetchMore } = useQuery(LocalFeedDocument, {
+    variables: { county: county ?? "", subregion: subregion ?? undefined, limit: PAGE_SIZE },
+    skip: !county,
+    fetchPolicy: "cache-and-network",
+    nextFetchPolicy: "cache-first",
+  });
+
+  const items = data?.localFeed?.items ?? [];
+  const pageInfo = data?.localFeed?.pageInfo;
+
+  const loadMore = useCallback(() => {
+    if (!pageInfo?.hasNextPage || !pageInfo.endCursor) return;
+    fetchMore({
+      variables: { county: county ?? "", subregion: subregion ?? undefined, limit: PAGE_SIZE, after: pageInfo.endCursor },
+      updateQuery(prev, { fetchMoreResult }) {
+        if (!fetchMoreResult) return prev;
+        return {
+          localFeed: {
+            ...fetchMoreResult.localFeed,
+            items: [
+              ...(prev.localFeed?.items ?? []),
+              ...fetchMoreResult.localFeed.items,
+            ],
+          },
+        };
+      },
+    });
+  }, [fetchMore, pageInfo, county, subregion]);
+
+  return { items, loading, error, hasMore: pageInfo?.hasNextPage ?? false, loadMore };
 }
 
 export function useTrending(county?: string) {

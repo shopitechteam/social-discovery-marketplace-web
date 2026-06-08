@@ -110,3 +110,15 @@ query FollowingFeed($limit: Int, $after: String) {
     }
   }
 }
+
+query LocalFeed($county: String!, $subregion: String, $limit: Int, $after: String) {
+  localFeed(county: $county, subregion: $subregion, limit: $limit, after: $after) {
+    items {
+      ...ContentCardFields
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
