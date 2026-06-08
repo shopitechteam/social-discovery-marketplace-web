@@ -1,12 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useApolloClient } from "@apollo/client/react";
 import { PostCard } from "./PostCard";
 import { FeedSkeleton } from "./FeedSkeleton";
 import { useNearbyFeed } from "../hooks/useFeed";
 import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
-import { ReverseGeocodeDocument } from "@/types/__generated__/graphql";
 
 type PermissionState = "idle" | "requesting" | "granted" | "denied" | "unavailable";
 
@@ -22,7 +20,6 @@ interface Props {
 }
 
 export function NearbyGrid({ lang }: Props) {
-  const client = useApolloClient();
   const [permState, setPermState] = useState<PermissionState>("idle");
   const [location, setLocation] = useState<Location | null>(null);
   const [geoError, setGeoError] = useState<string | null>(null);
@@ -57,18 +54,22 @@ export function NearbyGrid({ lang }: Props) {
       async (pos) => {
         const { latitude: lat, longitude: lng } = pos.coords;
         try {
-          const { data } = await client.query({
-            query: ReverseGeocodeDocument,
-            variables: { lat, lng },
-          });
-          const loc = data?.reverseGeocode?.location;
-          const countyName = loc?.countyName?.replace(/ county$/i, "").trim() ?? null;
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=6`,
+            { headers: { "Accept-Language": "en" } },
+          );
+          const json = await res.json();
+          // Nominatim returns state/county in address object
+          const addr = json?.address ?? {};
+          const raw = addr.state ?? addr.county ?? addr.region ?? null;
+          const countyName = raw?.replace(/ county$/i, "").trim() ?? null;
+          const subCountyName = addr.county !== raw ? (addr.county?.replace(/ county$/i, "").trim() ?? null) : null;
           if (!countyName) {
             setGeoError("Couldn't determine your county. Try again.");
             setPermState("granted");
             return;
           }
-          setLocation({ lat, lng, countyName, subCountyName: loc.subCountyName });
+          setLocation({ lat, lng, countyName, subCountyName });
           setPermState("granted");
         } catch {
           setGeoError("Location lookup failed. Please try again.");
@@ -81,7 +82,7 @@ export function NearbyGrid({ lang }: Props) {
       },
       { timeout: 10_000, maximumAge: 5 * 60_000 },
     );
-  }, [client]);
+  }, []);
 
   // ── Permission not yet requested ──────────────────────────────────────────
   if (permState === "idle") {

@@ -391,8 +391,8 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
         placeName: loc?.placeName ?? fallback.placeName ?? "",
         formattedAddress: loc?.formattedAddress ?? fallback.formattedAddress ?? "",
         placeId: loc?.googlePlaceId ?? placeId,
-        latitude: loc?.coordinates?.lat ?? fallback.latitude ?? 0,
-        longitude: loc?.coordinates?.lng ?? fallback.longitude ?? 0,
+        latitude: loc?.coordinates?.lat ?? fallback.latitude,
+        longitude: loc?.coordinates?.lng ?? fallback.longitude,
         county: loc?.countyName ?? fallback.county,
         subregion: loc?.subCountyName ?? fallback.subregion,
       });
@@ -406,8 +406,8 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
     resolveAndSelect(p.placeId, {
       placeName: p.name,
       formattedAddress: p.address ?? p.name,
-      latitude: p.lat ?? 0,
-      longitude: p.lng ?? 0,
+      latitude: p.lat ?? undefined,
+      longitude: p.lng ?? undefined,
     });
   }
 
@@ -426,8 +426,8 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
       placeName: w.name,
       formattedAddress: [w.name, w.subCountyName, w.countyName].filter(Boolean).join(", "),
       placeId: w.id,
-      latitude: 0,
-      longitude: 0,
+      latitude: undefined,
+      longitude: undefined,
       county: w.countyName ?? undefined,
       subregion: w.subCountyName ?? undefined,
     });

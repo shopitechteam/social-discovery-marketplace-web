@@ -18,8 +18,8 @@ export type DraftLocation = {
   placeName: string;           // e.g. "Madaraka Estate"
   formattedAddress: string;    // full address from Google
   placeId: string;             // Google Place ID
-  latitude: number;
-  longitude: number;
+  latitude?: number;
+  longitude?: number;
   // Denormalized display labels (filled from Google address components)
   county?: string;             // e.g. "Laikipia"
   subregion?: string;          // e.g. "Nyahururu"
