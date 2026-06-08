@@ -5,7 +5,7 @@ import { PostCard } from "./PostCard";
 import { useForYouFeed } from "../hooks/useFeed";
 import { FeedSkeleton } from "./FeedSkeleton";
 import { TrendingStrip } from "./TrendingStrip";
-import { StoriesBar } from "@/features/stories/components/StoriesBar";
+//import { StoriesBar } from "@/features/stories/components/StoriesBar";
 import { consumeAuthIntent } from "../hooks/useAuthGuard";
 import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
 
@@ -53,12 +53,12 @@ export function FeedGrid({ lang }: Props) {
   return (
     <div className="pb-safe-area-inset-bottom pb-6 min-h-svh">
       {/* ── Stories bar ──────────────────────────────────────────────── */}
-      <StoriesBar lang={lang} />
+      {/* <StoriesBar lang={lang} /> */}
 
       {/* ── Trending strip ────────────────────────────────────────────── */}
-      {/* <div className="pt-2 pb-1">
+      <div className="pt-2 pb-1">
         <TrendingStrip lang={lang} />
-      </div> */}
+      </div>
 
       {/* ── Post cards ───────────────────────────────────────────────── */}
       <div className="flex flex-col gap-2">

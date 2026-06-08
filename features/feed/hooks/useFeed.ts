@@ -29,6 +29,7 @@ export function useForYouFeed() {
   // Stale-while-revalidate: refetch in the background only if data is old.
   // This avoids the re-render that causes all images to flicker when the user
   // navigates back to the feed from a content detail page.
+  // eslint-disable-next-line react-hooks/purity
   const lastFetchedAt = useRef<number>(Date.now());
   const hasMounted = useRef(false);
   useEffect(() => {
@@ -66,7 +67,13 @@ export function useForYouFeed() {
     });
   }, [fetchMore, pageInfo]);
 
-  return { items, loading, error, hasMore: pageInfo?.hasNextPage ?? false, loadMore };
+  return {
+    items,
+    loading,
+    error,
+    hasMore: pageInfo?.hasNextPage ?? false,
+    loadMore,
+  };
 }
 
 export function useFollowingFeed() {
@@ -98,7 +105,13 @@ export function useFollowingFeed() {
     });
   }, [fetchMore, pageInfo]);
 
-  return { items, loading, error, hasMore: pageInfo?.hasNextPage ?? false, loadMore };
+  return {
+    items,
+    loading,
+    error,
+    hasMore: pageInfo?.hasNextPage ?? false,
+    loadMore,
+  };
 }
 
 export function useTrending(county?: string) {

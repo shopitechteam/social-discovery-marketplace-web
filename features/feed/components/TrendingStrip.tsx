@@ -146,7 +146,7 @@ export function TrendingStrip({ lang, county }: Props) {
         {[...Array(5)].map((_, i) => (
           <div
             key={i}
-            className="flex-none w-28 rounded-xl bg-surface animate-pulse"
+            className="flex-none w-28  rounded-xl bg-black/10 dark:bg-white/10 animate-pulse"
             style={{ aspectRatio: "9/14" }}
           />
         ))}
