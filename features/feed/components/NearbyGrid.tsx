@@ -2,15 +2,20 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { PostCard } from "./PostCard";
-import { FeedSkeleton } from "./FeedSkeleton";
+import { FeedPaginationSkeleton, FeedSkeleton } from "./FeedSkeleton";
 import { useNearbyFeed } from "../hooks/useFeed";
 import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
+import { useFeedPreferencesStore } from "@/stores/feedPreferences";
 
-type PermissionState = "idle" | "requesting" | "granted" | "denied" | "unavailable";
+type PermissionState =
+  | "checking"
+  | "idle"
+  | "requesting"
+  | "granted"
+  | "denied"
+  | "unavailable";
 
 interface Location {
-  lat: number;
-  lng: number;
   countyName: string;
   subCountyName?: string | null;
 }
@@ -20,27 +25,36 @@ interface Props {
 }
 
 export function NearbyGrid({ lang }: Props) {
-  const [permState, setPermState] = useState<PermissionState>("idle");
+  const [permState, setPermState] = useState<PermissionState>("checking");
   const [location, setLocation] = useState<Location | null>(null);
   const [geoError, setGeoError] = useState<string | null>(null);
+  const cachedLocation = useFeedPreferencesStore((s) => s.nearbyLocation);
+  const setCachedNearbyLocation = useFeedPreferencesStore(
+    (s) => s.setNearbyLocation,
+  );
+  const clearCachedNearbyLocation = useFeedPreferencesStore(
+    (s) => s.clearNearbyLocation,
+  );
+  const [prefsHydrated, setPrefsHydrated] = useState(() =>
+    useFeedPreferencesStore.persist.hasHydrated(),
+  );
+  const effectiveLocation: Location | null =
+    location ?? (prefsHydrated ? cachedLocation : null);
+  const effectivePermState: PermissionState = effectiveLocation
+    ? "granted"
+    : permState;
 
   const { items, loading, hasMore, loadMore } = useNearbyFeed(
-    location?.countyName ?? null,
-    location?.subCountyName,
+    effectiveLocation?.countyName ?? null,
+    effectiveLocation?.subCountyName,
   );
 
-  const { sentinelRef } = useInfiniteScroll({ hasMore, loading, onLoadMore: loadMore, rootMargin: "600px" });
-
-  // On mount, check if permission was already granted (restore without re-asking)
-  useEffect(() => {
-    if (!navigator.geolocation) {
-      setPermState("unavailable");
-      return;
-    }
-    navigator.permissions?.query({ name: "geolocation" }).then((result) => {
-      if (result.state === "granted") requestLocation();
-    });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const { sentinelRef } = useInfiniteScroll({
+    hasMore,
+    loading,
+    onLoadMore: loadMore,
+    rootMargin: "1400px",
+  });
 
   const requestLocation = useCallback(() => {
     if (!navigator.geolocation) {
@@ -63,13 +77,18 @@ export function NearbyGrid({ lang }: Props) {
           const addr = json?.address ?? {};
           const raw = addr.state ?? addr.county ?? addr.region ?? null;
           const countyName = raw?.replace(/ county$/i, "").trim() ?? null;
-          const subCountyName = addr.county !== raw ? (addr.county?.replace(/ county$/i, "").trim() ?? null) : null;
+          const subCountyName =
+            addr.county !== raw
+              ? (addr.county?.replace(/ county$/i, "").trim() ?? null)
+              : null;
           if (!countyName) {
             setGeoError("Couldn't determine your county. Try again.");
             setPermState("granted");
             return;
           }
-          setLocation({ lat, lng, countyName, subCountyName });
+          const nextLocation = { countyName, subCountyName };
+          setLocation(nextLocation);
+          setCachedNearbyLocation(nextLocation);
           setPermState("granted");
         } catch {
           setGeoError("Location lookup failed. Please try again.");
@@ -77,27 +96,90 @@ export function NearbyGrid({ lang }: Props) {
         }
       },
       (err) => {
-        if (err.code === err.PERMISSION_DENIED) setPermState("denied");
-        else { setGeoError("Couldn't get your location."); setPermState("granted"); }
+        if (err.code === err.PERMISSION_DENIED) {
+          clearCachedNearbyLocation();
+          setLocation(null);
+          setPermState("denied");
+        } else {
+          setGeoError("Couldn't get your location.");
+          setPermState("granted");
+        }
       },
       { timeout: 10_000, maximumAge: 5 * 60_000 },
     );
-  }, []);
+  }, [clearCachedNearbyLocation, setCachedNearbyLocation]);
+
+  useEffect(() => {
+    if (prefsHydrated) return;
+    const unsubscribe = useFeedPreferencesStore.persist.onFinishHydration(
+      () => {
+        setPrefsHydrated(true);
+      },
+    );
+    return unsubscribe;
+  }, [prefsHydrated]);
+
+  useEffect(() => {
+    if (!prefsHydrated) return;
+    if (cachedLocation) return;
+
+    if (!navigator.geolocation) {
+      queueMicrotask(() => setPermState("unavailable"));
+      return;
+    }
+
+    if (!navigator.permissions?.query) {
+      queueMicrotask(() => setPermState("idle"));
+      return;
+    }
+
+    navigator.permissions
+      .query({ name: "geolocation" })
+      .then((result) => {
+        if (result.state === "granted") {
+          requestLocation();
+        } else {
+          setPermState(result.state === "denied" ? "denied" : "idle");
+        }
+      })
+      .catch(() => setPermState("idle"));
+  }, [cachedLocation, prefsHydrated, requestLocation]);
+
+  if (effectivePermState === "checking") {
+    return (
+      <div className="flex min-h-[93svh] fixed top-0 left-0 w-full right-0 bottom-0 flex-col items-center justify-center px-6 text-center gap-4">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <p className="text-muted-foreground text-sm">Checking location…</p>
+      </div>
+    );
+  }
 
   // ── Permission not yet requested ──────────────────────────────────────────
-  if (permState === "idle") {
+  if (effectivePermState === "idle") {
     return (
-      <div className="flex min-h-[60svh] flex-col items-center justify-center px-6 text-center gap-5">
+      <div className="flex min-h-[93svh] fixed top-0 left-0 w-full right-0 bottom-0 flex-col items-center justify-center px-6 text-center gap-5">
         <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7z"/>
-            <circle cx="12" cy="9" r="2.5"/>
+          <svg
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="var(--color-primary)"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7z" />
+            <circle cx="12" cy="9" r="2.5" />
           </svg>
         </div>
         <div>
-          <h3 className="font-bold text-default text-base mb-1">Discover sellers near you</h3>
+          <h3 className="font-bold text-default text-base mb-1">
+            Discover sellers near you
+          </h3>
           <p className="text-muted-foreground text-sm leading-relaxed">
-            See listings from sellers in your area. We only use your location to find nearby content.
+            See listings from sellers in your area. We only use your location to
+            find nearby content.
           </p>
         </div>
         <button
@@ -111,9 +193,9 @@ export function NearbyGrid({ lang }: Props) {
   }
 
   // ── Requesting ────────────────────────────────────────────────────────────
-  if (permState === "requesting") {
+  if (effectivePermState === "requesting") {
     return (
-      <div className="flex min-h-[60svh] flex-col items-center justify-center px-6 text-center gap-4">
+      <div className="flex min-h-[93svh] fixed top-0 left-0 w-full right-0 bottom-0 flex-col items-center justify-center px-6 text-center gap-4">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         <p className="text-muted-foreground text-sm">Finding your location…</p>
       </div>
@@ -121,24 +203,29 @@ export function NearbyGrid({ lang }: Props) {
   }
 
   // ── Denied ────────────────────────────────────────────────────────────────
-  if (permState === "denied") {
+  if (effectivePermState === "denied") {
     return (
-      <div className="flex min-h-[60svh] flex-col items-center justify-center px-6 text-center gap-4">
+      <div className="flex min-h-[93svh] fixed top-0 left-0 w-full right-0 bottom-0 flex-col items-center justify-center px-6 text-center gap-4">
         <div className="text-4xl">🚫</div>
-        <h3 className="font-bold text-default text-base">Location access denied</h3>
+        <h3 className="font-bold text-default text-base">
+          Location access denied
+        </h3>
         <p className="text-muted-foreground text-sm leading-relaxed">
-          To see nearby listings, enable location access in your browser settings and reload.
+          To see nearby listings, enable location access in your browser
+          settings and reload.
         </p>
       </div>
     );
   }
 
   // ── Unavailable ───────────────────────────────────────────────────────────
-  if (permState === "unavailable") {
+  if (effectivePermState === "unavailable") {
     return (
-      <div className="flex min-h-[60svh] flex-col items-center justify-center px-6 text-center gap-4">
+      <div className="flex min-h-[93svh] fixed top-0 left-0 w-full right-0 bottom-0 flex-col items-center justify-center px-6 text-center gap-4">
         <div className="text-4xl">📍</div>
-        <p className="text-muted-foreground text-sm">Location is not supported on this device.</p>
+        <p className="text-muted-foreground text-sm">
+          Location is not supported on this device.
+        </p>
       </div>
     );
   }
@@ -149,10 +236,13 @@ export function NearbyGrid({ lang }: Props) {
   // ── Geo error (location resolved but reverse geocode failed) ──────────────
   if (geoError && !location) {
     return (
-      <div className="flex min-h-[60svh] flex-col items-center justify-center px-6 text-center gap-4">
+      <div className="flex min-h-[93svh] fixed top-0 left-0 w-full right-0 bottom-0 flex-col items-center justify-center px-6 text-center gap-4">
         <div className="text-4xl">⚠️</div>
         <p className="text-muted-foreground text-sm">{geoError}</p>
-        <button onClick={requestLocation} className="px-5 py-2.5 bg-primary text-white rounded-full text-sm font-semibold">
+        <button
+          onClick={requestLocation}
+          className="px-5 py-2.5 bg-primary text-white rounded-full text-sm font-semibold"
+        >
           Try again
         </button>
       </div>
@@ -162,12 +252,14 @@ export function NearbyGrid({ lang }: Props) {
   // ── No results ────────────────────────────────────────────────────────────
   if (!loading && items.length === 0) {
     return (
-      <div className="flex min-h-[60svh] flex-col items-center justify-center px-6 text-center gap-4">
+      <div className="flex min-h-[93svh] fixed top-0 left-0 w-full right-0 bottom-0 flex-col items-center justify-center px-6 text-center gap-4">
         <div className="text-4xl">🏪</div>
-        <h3 className="font-bold text-default text-base">No listings nearby yet</h3>
+        <h3 className="font-bold text-default text-base">
+          No listings nearby yet
+        </h3>
         <p className="text-muted-foreground text-sm leading-relaxed">
-          No sellers found in <strong>{location?.countyName}</strong> yet.{" "}
-          Be the first to list something!
+          No sellers found in <strong>{effectiveLocation?.countyName}</strong>{" "}
+          yet. Be the first to list something!
         </p>
       </div>
     );
@@ -176,20 +268,34 @@ export function NearbyGrid({ lang }: Props) {
   return (
     <div className="pb-safe-area-inset-bottom pb-6">
       {/* Location banner */}
-      {location && (
+      {effectiveLocation && (
         <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/30">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7z"/>
-            <circle cx="12" cy="9" r="2.5"/>
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="var(--color-primary)"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7z" />
+            <circle cx="12" cy="9" r="2.5" />
           </svg>
           <span className="text-xs text-muted-foreground">
             Showing listings in{" "}
             <span className="font-semibold text-default">
-              {location.subCountyName ? `${location.subCountyName}, ` : ""}
-              {location.countyName}
+              {effectiveLocation.subCountyName
+                ? `${effectiveLocation.subCountyName}, `
+                : ""}
+              {effectiveLocation.countyName}
             </span>
           </span>
-          <button onClick={requestLocation} className="ml-auto text-[11px] text-primary font-medium">
+          <button
+            onClick={requestLocation}
+            className="ml-auto text-[11px] text-primary font-medium"
+          >
             Refresh
           </button>
         </div>
@@ -203,11 +309,7 @@ export function NearbyGrid({ lang }: Props) {
 
       <div ref={sentinelRef} className="h-1" />
 
-      {loading && items.length > 0 && (
-        <div className="flex justify-center py-6">
-          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-        </div>
-      )}
+      {loading && items.length > 0 && <FeedPaginationSkeleton />}
 
       {!hasMore && items.length > 0 && (
         <p className="text-center text-muted-foreground text-xs py-6">

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useAuthStore } from "@/stores/auth";
 import { PostCard } from "./PostCard";
-import { FeedSkeleton } from "./FeedSkeleton";
+import { FeedPaginationSkeleton, FeedSkeleton } from "./FeedSkeleton";
 import { useFollowingFeed } from "../hooks/useFeed";
 import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
 
@@ -21,21 +21,32 @@ function LoginWall({ lang }: { lang: string }) {
         className="w-16 h-16 rounded-full flex items-center justify-center"
         style={{ backgroundColor: "rgb(var(--brand-primary) / 0.1)" }}
       >
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
-          stroke="rgb(var(--brand-primary))" strokeWidth="2"
-          strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          width="28"
+          height="28"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="rgb(var(--brand-primary))"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
           <circle cx="9" cy="7" r="4" />
           <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
         </svg>
       </div>
       <div>
-        <h3 className="font-bold text-base mb-1"
-          style={{ color: "rgb(var(--color-text))" }}>
+        <h3
+          className="font-bold text-base mb-1"
+          style={{ color: "rgb(var(--color-text))" }}
+        >
           Sign in to see your feed
         </h3>
-        <p className="text-sm leading-relaxed max-w-xs"
-          style={{ color: "rgb(var(--color-text-muted))" }}>
+        <p
+          className="text-sm leading-relaxed max-w-xs"
+          style={{ color: "rgb(var(--color-text-muted))" }}
+        >
           Follow sellers and creators to see their latest posts here.
         </p>
       </div>
@@ -54,7 +65,8 @@ function LoginWall({ lang }: { lang: string }) {
         className="text-sm font-medium"
         style={{ color: "rgb(var(--color-text-muted))" }}
       >
-        No account? <span style={{ color: "rgb(var(--brand-primary))" }}>Create one</span>
+        No account?{" "}
+        <span style={{ color: "rgb(var(--brand-primary))" }}>Create one</span>
       </Link>
     </div>
   );
@@ -69,7 +81,7 @@ export function FollowingGrid({ lang }: Props) {
     hasMore,
     loading,
     onLoadMore: loadMore,
-    rootMargin: "600px",
+    rootMargin: "1400px",
   });
 
   if (!isAuthenticated) return <LoginWall lang={lang} />;
@@ -78,14 +90,18 @@ export function FollowingGrid({ lang }: Props) {
 
   if (!loading && items.length === 0) {
     return (
-      <div className="flex min-h-[60svh] flex-col items-center justify-center px-6 text-center gap-4">
+      <div className="flex min-h-[93svh] fixed top-0 left-0 w-full right-0 bottom-0 no-bar overflow-y-hidden flex-col items-center justify-center px-6 text-center gap-4">
         <div className="text-5xl">👥</div>
-        <h3 className="font-bold text-base mb-1"
-          style={{ color: "rgb(var(--color-text))" }}>
+        <h3
+          className="font-bold text-base mb-1"
+          style={{ color: "rgb(var(--color-text))" }}
+        >
           Follow sellers you love
         </h3>
-        <p className="text-sm leading-relaxed"
-          style={{ color: "rgb(var(--color-text-muted))" }}>
+        <p
+          className="text-sm leading-relaxed"
+          style={{ color: "rgb(var(--color-text-muted))" }}
+        >
           Their latest listings will appear here once you follow someone.
         </p>
       </div>
@@ -102,16 +118,13 @@ export function FollowingGrid({ lang }: Props) {
 
       <div ref={sentinelRef} className="h-1" />
 
-      {loading && items.length > 0 && (
-        <div className="flex justify-center py-6">
-          <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin"
-            style={{ borderColor: "rgb(var(--brand-primary))", borderTopColor: "transparent" }} />
-        </div>
-      )}
+      {loading && items.length > 0 && <FeedPaginationSkeleton />}
 
       {!hasMore && items.length > 0 && (
-        <p className="text-center text-xs py-6"
-          style={{ color: "rgb(var(--color-text-muted))" }}>
+        <p
+          className="text-center text-xs py-6"
+          style={{ color: "rgb(var(--color-text-muted))" }}
+        >
           You&apos;re all caught up ✓
         </p>
       )}

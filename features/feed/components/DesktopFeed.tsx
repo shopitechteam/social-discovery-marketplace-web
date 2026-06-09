@@ -19,6 +19,8 @@ import { useFollow } from "../hooks/useFollow";
 import { CommentsDrawer } from "./CommentsDrawer";
 import { useForYouFeed } from "../hooks/useFeed";
 import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
+import { useFeedPreferencesStore } from "@/stores/feedPreferences";
+import { usePageFocused } from "../hooks/usePageFocused";
 
 const COMMENTS_WIDTH = 420;
 
@@ -96,11 +98,13 @@ function VideoPlayer({
   const timeRef = useRef<HTMLSpanElement>(null);
   const rafRef = useRef<number | null>(null);
   const [playing, setPlaying] = useState(false);
-  const [muted, setMuted] = useState(true);
+  const muted = useFeedPreferencesStore((s) => s.videoMuted);
+  const toggleVideoMuted = useFeedPreferencesStore((s) => s.toggleVideoMuted);
   const [thumbError, setThumbError] = useState(false);
   const [duration, setDuration] = useState(0);
   const [seeking, setSeeking] = useState(false);
   const barRef = useRef<HTMLDivElement>(null);
+  const pageFocused = usePageFocused();
 
   const hlsUrl = `https://stream.mux.com/${playbackId}.m3u8`;
   const thumb = `https://image.mux.com/${playbackId}/thumbnail.jpg?time=0&width=720&fit_mode=smartcrop`;
@@ -109,14 +113,13 @@ function VideoPlayer({
   useEffect(() => {
     const vid = videoRef.current;
     if (!vid) return;
-    if (isActive) {
+    if (isActive && pageFocused) {
       vid.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
     } else {
       vid.pause();
-      vid.currentTime = 0;
-      setPlaying(false);
+      if (!isActive) vid.currentTime = 0;
     }
-  }, [isActive]);
+  }, [isActive, pageFocused]);
 
   // RAF loop to update progress bar width
   useEffect(() => {
@@ -154,10 +157,7 @@ function VideoPlayer({
 
   function toggleMute(e: React.MouseEvent) {
     e.stopPropagation();
-    const vid = videoRef.current;
-    if (!vid) return;
-    vid.muted = !vid.muted;
-    setMuted(vid.muted);
+    toggleVideoMuted();
   }
 
   // Seek on progress bar click/drag
@@ -635,7 +635,7 @@ export function DesktopFeed({ lang }: { lang: string }) {
     hasMore,
     loading,
     onLoadMore: loadMore,
-    rootMargin: "400px",
+    rootMargin: "1600px",
   });
 
   // Update URL when active post changes
@@ -707,10 +707,12 @@ export function DesktopFeed({ lang }: { lang: string }) {
 
       {loading && items.length > 0 && (
         <div
-          className="h-16 flex items-center justify-center"
+          className="h-screen snap-start animate-pulse"
           style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
         >
-          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <div className="flex h-full items-center justify-center" style={{ marginRight: COMMENTS_WIDTH }}>
+            <div className="h-[calc(100vh-48px)] w-[min(68vh,560px)] rounded-2xl bg-muted" />
+          </div>
         </div>
       )}
     </div>

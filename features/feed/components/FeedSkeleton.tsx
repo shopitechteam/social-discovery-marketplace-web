@@ -72,3 +72,11 @@ export function FeedSkeleton() {
     </div>
   );
 }
+
+export function FeedPaginationSkeleton() {
+  return (
+    <div className="pt-2" aria-hidden>
+      <PostCardSkeleton />
+    </div>
+  );
+}

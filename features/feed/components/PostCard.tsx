@@ -34,12 +34,15 @@ import Shimmer, {
 } from "@/lib/shimmer";
 import { registerVideo, updateRatio } from "@/lib/activeVideo";
 import { useHlsVideo } from "@/lib/useHlsVideo";
+import { useFeedPreferencesStore } from "@/stores/feedPreferences";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
+import { VideoProgressBar } from "./VideoProgressBar";
 import { useInteractions } from "../hooks/useInteractions";
 import { useAuthGuard } from "../hooks/useAuthGuard";
 import { useFollow } from "../hooks/useFollow";
 import { CommentsDrawer } from "./CommentsDrawer";
 import { BufferSpinner } from "./BufferSpinner";
+import { usePageFocused } from "../hooks/usePageFocused";
 import toBase64 from "@/lib/utils";
 
 interface Props {
@@ -135,8 +138,10 @@ function VideoMedia({
   const containerRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(false);
   const [thumbLoaded, setThumbLoaded] = useState(false);
-  const [muted, setMuted] = useState(true);
+  const muted = useFeedPreferencesStore((s) => s.videoMuted);
+  const toggleVideoMuted = useFeedPreferencesStore((s) => s.toggleVideoMuted);
   const onThumbLoad = useCallback(() => setThumbLoaded(true), []);
+  const pageFocused = usePageFocused();
   const id = useId();
 
   const media = post.media?.[0];
@@ -160,7 +165,8 @@ function VideoMedia({
     : null;
 
   // hls.js — fast ABR + buffering state
-  const { videoRef, buffering } = useHlsVideo(hlsUrl, active);
+  const shouldPlay = active && pageFocused;
+  const { videoRef, buffering } = useHlsVideo(hlsUrl, shouldPlay);
 
   // Register with the global video coordinator and report ratio changes.
   useEffect(() => {
@@ -195,7 +201,7 @@ function VideoMedia({
           alt={post.title}
           sizes="100vw"
           className={`object-cover transition-opacity duration-500 ${
-            hlsUrl && active && !buffering
+            hlsUrl && shouldPlay && !buffering
               ? "opacity-0"
               : thumbLoaded
                 ? "opacity-100"
@@ -225,18 +231,25 @@ function VideoMedia({
       )}
       {/* Duration badge */}
       {durationFmt && (
-        <div className="absolute bottom-2 right-2 bg-black/70 text-white text-[11px] font-semibold px-1.5 py-0.5 rounded-md">
+        <div className="absolute bottom-5 right-2 bg-black/70 text-white text-[11px] font-semibold px-1.5 py-0.5 rounded-md">
           {durationFmt}
         </div>
+      )}
+      {hlsUrl && (
+        <VideoProgressBar
+          videoRef={videoRef}
+          active={shouldPlay}
+          className="opacity-90"
+        />
       )}
       {/* Mute / unmute button — absolute, stops propagation so it doesn't navigate */}
       {active && (
         <button
           onClick={(e) => {
             e.stopPropagation();
-            setMuted((m) => !m);
+            toggleVideoMuted();
           }}
-          className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm rounded-full p-1.5 text-white/90 active:scale-95 transition-transform"
+          className="absolute bottom-5 left-2 z-50 bg-black/60 backdrop-blur-sm rounded-full p-1.5 text-white/90 active:scale-95 transition-transform"
           aria-label={muted ? "Unmute" : "Mute"}
         >
           {muted ? (
@@ -719,7 +732,7 @@ export function PostCard({ post, lang, priority }: Props) {
         {post.hashtags && post.hashtags.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-1.5">
             {post.hashtags.slice(0, 5).map((tag) => (
-              <span key={tag} className="text-primary text-sm font-medium">
+              <span key={tag} className="text-muted-foreground text-sm font-medium">
                 #{tag}
               </span>
             ))}

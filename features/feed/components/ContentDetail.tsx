@@ -55,6 +55,9 @@ import { useAuthGuard } from "../hooks/useAuthGuard";
 import { useHlsVideo } from "@/lib/useHlsVideo";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BufferSpinner } from "./BufferSpinner";
+import { useFeedPreferencesStore } from "@/stores/feedPreferences";
+import { VideoProgressBar } from "./VideoProgressBar";
+import { usePageFocused } from "../hooks/usePageFocused";
 
 type CommentItem = NonNullable<GetCommentsQuery["comments"]["items"]>[number];
 
@@ -252,7 +255,10 @@ function ContentVideo({
   showMuteButton?: boolean;
   showSpinner?: boolean;
 }) {
-  const { videoRef, buffering } = useHlsVideo(hlsUrl, true);
+  const pageFocused = usePageFocused();
+  const [manualPaused, setManualPaused] = useState(false);
+  const shouldPlay = pageFocused && !manualPaused;
+  const { videoRef, buffering } = useHlsVideo(hlsUrl, shouldPlay);
   const [playing, setPlaying] = useState(false);
 
   useEffect(() => {
@@ -260,33 +266,20 @@ function ContentVideo({
     if (!video) return;
 
     video.muted = muted;
-    video.defaultMuted = true;
+    video.defaultMuted = muted;
     video.playsInline = true;
 
     const markPlaying = () => setPlaying(true);
     const markStopped = () => setPlaying(false);
 
-    const tryPlay = () => {
-      video.play().catch(() => {
-        // Mobile browsers may block playback until the next user gesture.
-        setPlaying(false);
-      });
-    };
-
     video.addEventListener("playing", markPlaying);
     video.addEventListener("pause", markStopped);
     video.addEventListener("ended", markStopped);
-    video.addEventListener("loadedmetadata", tryPlay);
-    video.addEventListener("canplay", tryPlay);
-
-    tryPlay();
 
     return () => {
       video.removeEventListener("playing", markPlaying);
       video.removeEventListener("pause", markStopped);
       video.removeEventListener("ended", markStopped);
-      video.removeEventListener("loadedmetadata", tryPlay);
-      video.removeEventListener("canplay", tryPlay);
     };
   }, [hlsUrl, muted, videoRef]);
 
@@ -294,6 +287,20 @@ function ContentVideo({
   const videoClassName = fill
     ? `absolute inset-0 w-full h-full ${objectClass}`
     : `max-w-full max-h-full ${objectClass}`;
+  const showPlayOverlay = manualPaused || (!playing && !buffering && pageFocused);
+
+  function togglePlayback() {
+    const video = videoRef.current;
+
+    if (manualPaused || video?.paused) {
+      setManualPaused(false);
+      video?.play().catch(() => {});
+      return;
+    }
+
+    setManualPaused(true);
+    video?.pause();
+  }
 
   return (
     <div className="relative w-full h-full flex items-center justify-center">
@@ -309,7 +316,6 @@ function ContentVideo({
 
       <video
         ref={videoRef}
-        autoPlay
         loop
         muted={muted}
         playsInline
@@ -319,16 +325,49 @@ function ContentVideo({
         style={fill ? undefined : { maxHeight: "100vh" }}
       />
 
+      <button
+        type="button"
+        onClick={togglePlayback}
+        className="absolute inset-0 z-20 flex items-center justify-center"
+        aria-label={manualPaused || !playing ? "Play video" : "Pause video"}
+      >
+        <span
+          className={[
+            "flex h-16 w-16 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm transition-opacity duration-200",
+            showPlayOverlay ? "opacity-100" : "opacity-0",
+          ].join(" ")}
+        >
+          {manualPaused || !playing ? (
+            <svg className="ml-1 h-7 w-7" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          ) : (
+            <svg className="h-7 w-7" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M7 5h4v14H7zM13 5h4v14h-4z" />
+            </svg>
+          )}
+        </span>
+      </button>
+
       {showSpinner && buffering && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
           <BufferSpinner />
         </div>
       )}
 
+      <VideoProgressBar
+        videoRef={videoRef}
+        active={playing}
+        showTime={!fill}
+      />
+
       {showMuteButton && onToggleMuted && (
         <button
-          onClick={onToggleMuted}
-          className="absolute bottom-6 right-4 z-30 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white"
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleMuted();
+          }}
+          className="absolute bottom-12 right-4 z-50 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white"
         >
           {muted ? (
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -393,7 +432,8 @@ export function ContentDetail({ id, lang }: Props) {
   // ── Local state ────────────────────────────────────────────────────────────
   const post = data?.content;
   const [imgIdx, setImgIdx] = useState(0);
-  const [muted, setMuted] = useState(true);
+  const muted = useFeedPreferencesStore((s) => s.videoMuted);
+  const toggleVideoMuted = useFeedPreferencesStore((s) => s.toggleVideoMuted);
   const isDesktop = useIsDesktop();
   const [showCommentDrawer, setShowCommentDrawer] = useState(false);
   // Read liked/count straight from the Apollo cache (post updates reactively)
@@ -723,7 +763,7 @@ export function ContentDetail({ id, lang }: Props) {
       {post.hashtags && post.hashtags.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-3">
           {post.hashtags.map((tag) => (
-            <span key={tag} className="text-primary text-xs font-medium">
+            <span key={tag} className="text-muted-foreground text-xs font-medium">
               #{tag}
             </span>
           ))}
@@ -963,7 +1003,7 @@ export function ContentDetail({ id, lang }: Props) {
                 hlsUrl={hlsUrl}
                 thumbnailUrl={videoThumbnail}
                 muted={muted}
-                onToggleMuted={() => setMuted((m) => !m)}
+                onToggleMuted={toggleVideoMuted}
                 showMuteButton
               />
             ) : (
@@ -1148,7 +1188,7 @@ export function ContentDetail({ id, lang }: Props) {
             {/* Video mute — top-right */}
             {isVideo && (
               <button
-                onClick={() => setMuted((m) => !m)}
+                onClick={toggleVideoMuted}
                 className="absolute z-30 w-12 h-12 rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center text-white"
                 style={{
                   top: "max(env(safe-area-inset-top, 0px), 16px)",

@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { PostCard } from "./PostCard";
 import { useForYouFeed } from "../hooks/useFeed";
-import { FeedSkeleton } from "./FeedSkeleton";
+import { FeedPaginationSkeleton, FeedSkeleton } from "./FeedSkeleton";
 import { TrendingStrip } from "./TrendingStrip";
 //import { StoriesBar } from "@/features/stories/components/StoriesBar";
 import { consumeAuthIntent } from "../hooks/useAuthGuard";
@@ -20,7 +20,7 @@ export function FeedGrid({ lang }: Props) {
     hasMore,
     loading,
     onLoadMore: loadMore,
-    rootMargin: "600px",
+    rootMargin: "1400px",
   });
 
   // Restore scroll position when returning from auth (after like/comment redirect)
@@ -71,9 +71,7 @@ export function FeedGrid({ lang }: Props) {
       <div ref={sentinelRef} className="h-1" />
 
       {loading && items.length > 0 && (
-        <div className="flex justify-center py-6">
-          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-        </div>
+        <FeedPaginationSkeleton />
       )}
 
       {!hasMore && items.length > 0 && (
