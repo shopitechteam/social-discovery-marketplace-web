@@ -1,31 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-/**
- * ContentDetail — full-page post view.
- *
- * Layout (mobile-first, max-w 430px):
- *   ┌─────────────────────────────┐
- *   │  ← Back          [share]   │  sticky header
- *   ├─────────────────────────────┤
- *   │         media               │  video / image gallery
- *   ├─────────────────────────────┤
- *   │  [avatar] Name  · Follow    │
- *   │  Title                      │
- *   │  Caption…                   │
- *   │  #tag #tag                  │
- *   │  📍 location · 2h ago       │
- *   │  KES 310,000 · negotiable   │
- *   ├─────────────────────────────┤
- *   │  ❤️ Like  💬 Comment  ↗ Share│  action bar
- *   ├─────────────────────────────┤
- *   │  Comments (inline)          │
- *   │  ────────────────────────── │
- *   │  [avatar] add comment…  [➤] │  sticky input
- *   └─────────────────────────────┘
- */
-
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Download, Bookmark, Plus, X } from "lucide-react";
+import { Download, Bookmark, Plus } from "lucide-react";
 import { gql } from "@apollo/client";
 import {
   Drawer,
@@ -309,7 +286,8 @@ function ContentVideo({
   const videoClassName = fill
     ? `absolute inset-0 w-full h-full ${objectClass}`
     : `max-w-full max-h-full ${objectClass}`;
-  const showPlayOverlay = manualPaused || (!playing && !buffering && pageFocused);
+  const showPlayOverlay =
+    manualPaused || (!playing && !buffering && pageFocused);
 
   function togglePlayback() {
     const video = videoRef.current;
@@ -360,7 +338,11 @@ function ContentVideo({
           ].join(" ")}
         >
           {manualPaused || !playing ? (
-            <svg className="ml-1 h-7 w-7" fill="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="ml-1 h-7 w-7"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path d="M8 5v14l11-7z" />
             </svg>
           ) : (
@@ -377,11 +359,7 @@ function ContentVideo({
         </div>
       )}
 
-      <VideoProgressBar
-        videoRef={videoRef}
-        active={playing}
-        showTime={!fill}
-      />
+      <VideoProgressBar videoRef={videoRef} active={playing} showTime={!fill} />
 
       {showMuteButton && onToggleMuted && (
         <button
@@ -468,13 +446,13 @@ export function ContentDetail({ id, lang }: Props) {
   const isDesktop = useIsDesktop();
   const [showCommentDrawer, setShowCommentDrawer] = useState(false);
   const [showSaveSheet, setShowSaveSheet] = useState(false);
-  const resolvedSaved = (post as (typeof post) & { isSavedByMe?: boolean })?.isSavedByMe ?? false;
+  const resolvedSaved =
+    (post as typeof post & { isSavedByMe?: boolean })?.isSavedByMe ?? false;
   const resolvedSaveCount = post?.stats?.saves ?? 0;
   const [commentCountOverride, setCommentCountOverride] = useState<
     number | null
   >(null);
-  const resolvedCommentCount =
-    commentCountOverride ?? post?.stats?.comments ?? 0;
+  const resolvedCommentCount = commentCountOverride ?? 0;
   const [commentText, setCommentText] = useState("");
   const [optimisticComments, setOptimisticComments] = useState<CommentItem[]>(
     [],
@@ -526,7 +504,8 @@ export function ContentDetail({ id, lang }: Props) {
       const { data: res } = await toggleSaveMutation({
         variables: { contentId: id, collectionId: collectionId ?? null },
       });
-      if (res?.toggleSave) writeSaveToCache(res.toggleSave.saved, res.toggleSave.saveCount);
+      if (res?.toggleSave)
+        writeSaveToCache(res.toggleSave.saved, res.toggleSave.saveCount);
     } catch {
       writeSaveToCache(wasSaved, resolvedSaveCount);
     }
@@ -818,7 +797,10 @@ export function ContentDetail({ id, lang }: Props) {
       {post.hashtags && post.hashtags.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-3">
           {post.hashtags.map((tag) => (
-            <span key={tag} className="text-muted-foreground text-xs font-medium">
+            <span
+              key={tag}
+              className="text-muted-foreground text-xs font-medium"
+            >
               #{tag}
             </span>
           ))}
@@ -852,9 +834,15 @@ export function ContentDetail({ id, lang }: Props) {
         onClick={() => setShowSaveSheet(true)}
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all"
         style={{
-          borderColor: resolvedSaved ? "rgb(var(--brand-primary))" : "rgb(var(--color-border))",
-          color: resolvedSaved ? "rgb(var(--brand-primary))" : "rgb(var(--color-text-muted))",
-          backgroundColor: resolvedSaved ? "rgb(var(--brand-primary) / 0.06)" : "transparent",
+          borderColor: resolvedSaved
+            ? "rgb(var(--brand-primary))"
+            : "rgb(var(--color-border))",
+          color: resolvedSaved
+            ? "rgb(var(--brand-primary))"
+            : "rgb(var(--color-text-muted))",
+          backgroundColor: resolvedSaved
+            ? "rgb(var(--brand-primary) / 0.06)"
+            : "transparent",
         }}
       >
         <Bookmark
@@ -917,9 +905,24 @@ export function ContentDetail({ id, lang }: Props) {
         >
           {isDownloading ? (
             <>
-              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+              <svg
+                className="w-4 h-4 animate-spin"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                />
               </svg>
               Downloading…
             </>
@@ -1302,7 +1305,9 @@ export function ContentDetail({ id, lang }: Props) {
                   <Bookmark
                     className="w-7 h-7 transition-all"
                     fill={resolvedSaved ? "rgb(var(--brand-primary))" : "none"}
-                    stroke={resolvedSaved ? "rgb(var(--brand-primary))" : "white"}
+                    stroke={
+                      resolvedSaved ? "rgb(var(--brand-primary))" : "white"
+                    }
                     strokeWidth={1.8}
                   />
                 </div>
@@ -1397,12 +1402,30 @@ export function ContentDetail({ id, lang }: Props) {
                 >
                   <div className="w-[52px] h-[52px] rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center">
                     {isDownloading ? (
-                      <svg className="w-7 h-7 text-white animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                      <svg
+                        className="w-7 h-7 text-white animate-spin"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="3"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                        />
                       </svg>
                     ) : (
-                      <Download className="w-7 h-7 text-white" strokeWidth={1.8} />
+                      <Download
+                        className="w-7 h-7 text-white"
+                        strokeWidth={1.8}
+                      />
                     )}
                   </div>
                   <span className="text-white text-xs font-semibold drop-shadow">
@@ -1511,17 +1534,16 @@ export function ContentDetail({ id, lang }: Props) {
       )}
 
       {/* ── Save collection sheet ─────────────────────────────────────────── */}
-      {showSaveSheet && post && (
-        <DetailSaveSheet
-          contentId={post.id}
-          saved={resolvedSaved}
-          onSave={(collectionId) => {
-            handleSave(collectionId);
-            setShowSaveSheet(false);
-          }}
-          onClose={() => setShowSaveSheet(false)}
-        />
-      )}
+      <DetailSaveSheet
+        open={showSaveSheet && !!post}
+        contentId={post?.id ?? ""}
+        saved={resolvedSaved}
+        onSave={(collectionId) => {
+          handleSave(collectionId);
+          setShowSaveSheet(false);
+        }}
+        onClose={() => setShowSaveSheet(false)}
+      />
     </div>
   );
 }
@@ -1551,17 +1573,29 @@ const CREATE_COLLECTION_DETAIL = gql`
 `;
 
 const COLLECTION_COLORS_DETAIL = [
-  "#e07a5f", "#c9a84c", "#3d8b6e", "#4a90d9", "#7c5cbf", "#3aafa9",
+  "#e07a5f",
+  "#c9a84c",
+  "#3d8b6e",
+  "#4a90d9",
+  "#7c5cbf",
+  "#3aafa9",
 ];
 
-type ColItem = { id: string; name: string; color?: string | null; itemCount: number };
+type ColItem = {
+  id: string;
+  name: string;
+  color?: string | null;
+  itemCount: number;
+};
 
 function DetailSaveSheet({
+  open,
   contentId,
   saved,
   onSave,
   onClose,
 }: {
+  open: boolean;
   contentId: string;
   saved: boolean;
   onSave: (collectionId?: string) => void;
@@ -1569,12 +1603,17 @@ function DetailSaveSheet({
 }) {
   const [newName, setNewName] = useState("");
   const [creating, setCreating] = useState(false);
-  const [selectedColor, setSelectedColor] = useState(COLLECTION_COLORS_DETAIL[0]);
+  const [selectedColor, setSelectedColor] = useState(
+    COLLECTION_COLORS_DETAIL[0],
+  );
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, refetch } = (useQuery as any)(GET_MY_COLLECTIONS_DETAIL, {
     fetchPolicy: "cache-and-network",
-  }) as { data?: { myCollections: ColItem[] }; refetch: () => Promise<unknown> };
+  }) as {
+    data?: { myCollections: ColItem[] };
+    refetch: () => Promise<unknown>;
+  };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [createCollection] = useMutation(CREATE_COLLECTION_DETAIL) as any;
 
@@ -1583,7 +1622,9 @@ function DetailSaveSheet({
   async function handleCreate() {
     const trimmed = newName.trim();
     if (!trimmed) return;
-    const { data: res } = await createCollection({ variables: { name: trimmed, color: selectedColor } });
+    const { data: res } = await createCollection({
+      variables: { name: trimmed, color: selectedColor },
+    });
     const newCol = res?.createCollection as ColItem | undefined;
     setNewName("");
     setCreating(false);
@@ -1591,93 +1632,141 @@ function DetailSaveSheet({
     if (newCol) onSave(newCol.id);
   }
 
+  function handleOpenChange(val: boolean) {
+    if (!val) {
+      setCreating(false);
+      setNewName("");
+      onClose();
+    }
+  }
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-lg bg-elevated rounded-t-2xl shadow-2xl overflow-hidden">
-        <div className="flex justify-center pt-2.5 pb-1">
-          <div className="w-10 h-1 rounded-full bg-border" />
-        </div>
-        <div className="flex items-center justify-between px-5 pb-3">
-          <div>
-            <p className="font-semibold text-base text-default">Save to collection</p>
-            <p className="text-xs text-muted-foreground">Keep what you love, organised</p>
-          </div>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-surface text-muted-foreground">
-            <X className="w-4 h-4" />
+    <Drawer open={open} onOpenChange={handleOpenChange}>
+      <DrawerContent className="flex flex-col max-h-[85dvh]">
+        <DrawerHeader className="shrink-0 px-5 pb-2">
+          <DrawerTitle className="text-xl font-bold text-default text-left">
+            Save to collection
+          </DrawerTitle>
+          <p className="text-base text-muted-foreground text-left">
+            Keep what you love, organised
+          </p>
+        </DrawerHeader>
+
+        {/* Collection list — stable, never shifts */}
+        <div className="flex-1 overflow-y-auto px-5 space-y-1 min-h-0">
+          <button
+            onClick={() => setCreating(true)}
+            className="flex items-center gap-4 w-full py-3 text-left"
+          >
+            <div className="w-14 h-14 rounded-xl border-2 border-dashed border-primary/50 flex items-center justify-center shrink-0">
+              <Plus
+                className="w-6 h-6"
+                style={{ color: "rgb(var(--brand-primary))" }}
+              />
+            </div>
+            <span
+              className="font-semibold text-lg"
+              style={{ color: "rgb(var(--brand-primary))" }}
+            >
+              New collection
+            </span>
           </button>
+
+          {collections.map((col) => (
+            <button
+              key={col.id}
+              onClick={() => {
+                onSave(col.id);
+                onClose();
+              }}
+              className="flex items-center gap-4 w-full py-3 text-left rounded-xl hover:bg-surface transition-colors px-2 -mx-2"
+            >
+              <div
+                className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 text-white font-bold text-xl"
+                style={{
+                  backgroundColor: col.color ?? "rgb(var(--brand-primary))",
+                }}
+              >
+                {(col.name ?? "").charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-lg text-default truncate">
+                  {col.name}
+                </p>
+                <p className="text-base text-muted-foreground">
+                  {col.itemCount} items
+                </p>
+              </div>
+              <div className="w-5 h-5 rounded-full border-2 border-border shrink-0" />
+            </button>
+          ))}
         </div>
 
-        <div className="px-4 max-h-[55dvh] overflow-y-auto pb-4 space-y-1">
-          {creating ? (
-            <div className="flex items-center gap-2 py-2">
-              <div className="flex gap-1">
-                {COLLECTION_COLORS_DETAIL.map((c) => (
-                  <button
-                    key={c}
-                    onClick={() => setSelectedColor(c)}
-                    className="w-6 h-6 rounded-full border-2 transition-all"
-                    style={{ backgroundColor: c, borderColor: selectedColor === c ? "#fff" : "transparent", outline: selectedColor === c ? `2px solid ${c}` : "none" }}
-                  />
-                ))}
-              </div>
+        {/* Create form — fixed below list, no layout shift */}
+        {creating && (
+          <div className="shrink-0 px-5 pt-3 pb-2 border-t border-border">
+            <div className="flex gap-3 mb-3">
+              {COLLECTION_COLORS_DETAIL.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setSelectedColor(c)}
+                  className="w-8 h-8 rounded-full border-2 transition-all"
+                  style={{
+                    backgroundColor: c,
+                    borderColor: selectedColor === c ? "#fff" : "transparent",
+                    outline: selectedColor === c ? `2px solid ${c}` : "none",
+                  }}
+                />
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
               <input
                 autoFocus
-                className="flex-1 bg-surface rounded-xl px-3 py-2 text-sm text-default placeholder:text-muted-foreground outline-none border border-border focus:border-primary"
+                className="flex-1 bg-surface rounded-xl px-4 py-3 text-lg text-default placeholder:text-muted-foreground outline-none border border-border focus:border-primary"
                 placeholder="Collection name…"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleCreate()}
               />
               <button
+                onClick={() => {
+                  setCreating(false);
+                  setNewName("");
+                }}
+                className="px-3 py-3 rounded-xl text-base text-muted-foreground shrink-0"
+              >
+                Cancel
+              </button>
+              <button
                 onClick={handleCreate}
                 disabled={!newName.trim()}
-                className="px-3 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-40"
+                className="px-4 py-3 rounded-xl text-base font-semibold text-white disabled:opacity-40 shrink-0"
                 style={{ backgroundColor: "rgb(var(--brand-primary))" }}
               >
                 Create
               </button>
             </div>
-          ) : (
-            <button onClick={() => setCreating(true)} className="flex items-center gap-3 w-full py-3 text-left">
-              <div className="w-12 h-12 rounded-xl border-2 border-dashed border-primary/50 flex items-center justify-center flex-shrink-0">
-                <Plus className="w-5 h-5" style={{ color: "rgb(var(--brand-primary))" }} />
-              </div>
-              <span className="font-medium text-sm" style={{ color: "rgb(var(--brand-primary))" }}>New collection</span>
-            </button>
-          )}
+          </div>
+        )}
 
-          {collections.map((col) => (
-            <button
-              key={col.id}
-              onClick={() => { onSave(col.id); onClose(); }}
-              className="flex items-center gap-3 w-full py-2.5 text-left rounded-xl hover:bg-surface transition-colors px-2 -mx-2"
-            >
-              <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-white font-bold text-lg"
-                style={{ backgroundColor: col.color ?? "rgb(var(--brand-primary))" }}
-              >
-                {(col.name ?? "").charAt(0).toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm text-default truncate">{col.name}</p>
-                <p className="text-xs text-muted-foreground">{col.itemCount} items</p>
-              </div>
-              <div className="w-5 h-5 rounded-full border-2 border-border" />
-            </button>
-          ))}
-        </div>
-
-        <div className="px-4 pt-2 pb-4">
+        <div className="shrink-0 px-5 pt-3 pb-8">
           <button
-            onClick={() => { onSave(undefined); onClose(); }}
-            className="w-full py-3.5 rounded-xl font-semibold text-sm"
-            style={{ backgroundColor: saved ? "rgb(var(--color-surface))" : "rgb(var(--brand-primary))", color: saved ? "rgb(var(--color-text-muted))" : "#fff" }}
+            onClick={() => {
+              onSave(undefined);
+              onClose();
+            }}
+            className="w-full py-4 rounded-xl font-bold text-lg"
+            style={{
+              backgroundColor: saved
+                ? "rgb(var(--color-surface))"
+                : "rgb(var(--brand-primary))",
+              color: saved ? "rgb(var(--color-text-muted))" : "#fff",
+            }}
           >
             {saved ? "Done" : "Save without collection"}
           </button>
         </div>
-      </div>
-    </div>
+      </DrawerContent>
+    </Drawer>
   );
 }
