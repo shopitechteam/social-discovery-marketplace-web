@@ -670,7 +670,6 @@ function SaveCollectionSheet({
   const [creating, setCreating] = useState(false);
   const [busy, setBusy] = useState<string | null>(null); // collectionId being toggled
 
-
   const { data: colData, refetch: refetchCols } = (useQuery as any)(
     GET_MY_COLLECTIONS,
     {
@@ -737,7 +736,9 @@ function SaveCollectionSheet({
         await toggleSave({ variables: { contentId, collectionId: col.id } });
         onUnsave(col.id);
       } else if (isSaved) {
-        await addSaveToCollection({ variables: { contentId, collectionId: col.id } });
+        await addSaveToCollection({
+          variables: { contentId, collectionId: col.id },
+        });
         onSave(col.id);
       } else {
         await toggleSave({ variables: { contentId, collectionId: col.id } });
@@ -757,7 +758,7 @@ function SaveCollectionSheet({
           <DrawerTitle className="text-base font-semibold">
             Save to collection
           </DrawerTitle>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-sm text-muted-foreground mt-0.5">
             Tap a collection to save · tap again to remove
           </p>
         </DrawerHeader>
@@ -912,7 +913,7 @@ function SaveCollectionSheet({
         <div className="px-4 pt-3 pb-6">
           <button
             onClick={onClose}
-            className="w-full py-3.5 rounded-2xl font-semibold text-sm text-white"
+            className="w-full py-3.5 sticky bottom-0 rounded-2xl font-semibold text-sm text-white"
             style={{ backgroundColor: "rgb(var(--brand-primary))" }}
           >
             Done
