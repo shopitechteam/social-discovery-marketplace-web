@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 /**
@@ -671,13 +672,17 @@ function SaveCollectionSheet({
 
   // Stable ref so the effect doesn't re-run when onClose identity changes
   const onCloseRef = useRef(onClose);
-  useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   // Push a history entry when drawer opens so browser/phone back button closes it
   useEffect(() => {
     if (!open) return;
     window.history.pushState({ drawerOpen: true }, "");
-    function handlePop() { onCloseRef.current(); }
+    function handlePop() {
+      onCloseRef.current();
+    }
     window.addEventListener("popstate", handlePop);
     return () => {
       window.removeEventListener("popstate", handlePop);
@@ -686,27 +691,48 @@ function SaveCollectionSheet({
         window.history.back();
       }
     };
-  // Only re-run when open changes, not onClose
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Only re-run when open changes, not onClose
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  const { data: colData, refetch: refetchCols } = (useQuery as any)(GET_MY_COLLECTIONS, {
-    fetchPolicy: "cache-and-network",
-    skip: !open,
-  }) as { data?: { myCollections: CollectionItem[] }; refetch: () => Promise<unknown> };
+  const { data: colData, refetch: refetchCols } = (useQuery as any)(
+    GET_MY_COLLECTIONS,
+    {
+      fetchPolicy: "cache-and-network",
+      skip: !open,
+    },
+  ) as {
+    data?: { myCollections: CollectionItem[] };
+    refetch: () => Promise<unknown>;
+  };
 
-  const { data: statusData, refetch: refetchStatus } = (useQuery as any)(GET_CONTENT_SAVE_STATUS, {
-    variables: { contentId },
-    fetchPolicy: "cache-and-network",
-    skip: !open,
-  }) as { data?: { contentSaveStatus: { isSaved: boolean; savedInCollections: { collectionId: string }[] } }; refetch: () => Promise<unknown> };
+  const { data: statusData, refetch: refetchStatus } = (useQuery as any)(
+    GET_CONTENT_SAVE_STATUS,
+    {
+      variables: { contentId },
+      fetchPolicy: "cache-and-network",
+      skip: !open,
+    },
+  ) as {
+    data?: {
+      contentSaveStatus: {
+        isSaved: boolean;
+        savedInCollections: { collectionId: string }[];
+      };
+    };
+    refetch: () => Promise<unknown>;
+  };
 
   const [createCollection] = useMutation(CREATE_COLLECTION) as any;
   const [toggleSave] = useMutation(TOGGLE_SAVE_SHEET) as any;
   const [addSaveToCollection] = useMutation(ADD_SAVE_TO_COLLECTION) as any;
 
   const collections: CollectionItem[] = colData?.myCollections ?? [];
-  const savedInIds = new Set((statusData?.contentSaveStatus?.savedInCollections ?? []).map((s: { collectionId: string }) => s.collectionId));
+  const savedInIds = new Set(
+    (statusData?.contentSaveStatus?.savedInCollections ?? []).map(
+      (s: { collectionId: string }) => s.collectionId,
+    ),
+  );
   const isSaved = statusData?.contentSaveStatus?.isSaved ?? false;
 
   async function handleCreate() {
@@ -714,7 +740,9 @@ function SaveCollectionSheet({
     if (!trimmed) return;
     setBusy("new");
     try {
-      const { data: res } = await createCollection({ variables: { name: trimmed } });
+      const { data: res } = await createCollection({
+        variables: { name: trimmed },
+      });
       const newCol = res?.createCollection as CollectionItem | undefined;
       setNewName("");
       setCreating(false);
@@ -735,7 +763,9 @@ function SaveCollectionSheet({
         onUnsave(col.id);
       } else if (isSaved) {
         // Already saved (uncollected) — move into this collection
-        await addSaveToCollection({ variables: { contentId, collectionId: col.id } });
+        await addSaveToCollection({
+          variables: { contentId, collectionId: col.id },
+        });
         onSave(col.id);
       } else {
         // Not saved yet — save into this collection
@@ -790,9 +820,15 @@ function SaveCollectionSheet({
                 className="w-12 h-12 rounded-xl border-2 border-dashed flex items-center justify-center flex-shrink-0"
                 style={{ borderColor: "rgb(var(--brand-primary) / 0.5)" }}
               >
-                <Plus className="w-5 h-5" style={{ color: "rgb(var(--brand-primary))" }} />
+                <Plus
+                  className="w-5 h-5"
+                  style={{ color: "rgb(var(--brand-primary))" }}
+                />
               </div>
-              <span className="font-medium text-sm" style={{ color: "rgb(var(--brand-primary))" }}>
+              <span
+                className="font-medium text-sm"
+                style={{ color: "rgb(var(--brand-primary))" }}
+              >
                 New collection
               </span>
             </button>
@@ -812,24 +848,39 @@ function SaveCollectionSheet({
               >
                 {/* Left: if already saved here → open collection; otherwise toggle */}
                 <button
-                  onClick={() => isIn
-                    ? (onClose(), router.push(`/${lang}/collections/${col.id}?from=/${lang}/feed`))
-                    : handleToggleCollection(col)
+                  onClick={() =>
+                    isIn
+                      ? (onClose(),
+                        router.push(
+                          `/${lang}/collections/${col.id}?from=/${lang}/feed`,
+                        ))
+                      : handleToggleCollection(col)
                   }
                   disabled={isLoading || isDisabled}
                   className="flex items-center gap-3 flex-1 min-w-0 text-left"
                 >
                   <div
                     className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-white font-bold text-lg"
-                    style={{ backgroundColor: col.color ?? "rgb(var(--brand-primary))" }}
+                    style={{
+                      backgroundColor: col.color ?? "rgb(var(--brand-primary))",
+                    }}
                   >
                     {(col.name ?? "").charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm truncate" style={{ color: isIn ? "rgb(var(--brand-primary))" : "rgb(var(--color-text))" }}>
+                    <p
+                      className="font-semibold text-sm truncate"
+                      style={{
+                        color: isIn
+                          ? "rgb(var(--brand-primary))"
+                          : "rgb(var(--color-text))",
+                      }}
+                    >
                       {col.name}
                     </p>
-                    <p className="text-xs text-muted-foreground">{col.itemCount} items</p>
+                    <p className="text-xs text-muted-foreground">
+                      {col.itemCount} items
+                    </p>
                   </div>
                 </button>
                 {/* Right: toggle save in this collection */}
@@ -839,14 +890,42 @@ function SaveCollectionSheet({
                   className="flex-shrink-0 p-1"
                 >
                   {isLoading ? (
-                    <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                    <svg
+                      className="w-5 h-5 animate-spin"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                      />
                     </svg>
                   ) : isIn ? (
-                    <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgb(var(--brand-primary))" }}>
-                      <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    <div
+                      className="w-5 h-5 rounded-full flex items-center justify-center"
+                      style={{ backgroundColor: "rgb(var(--brand-primary))" }}
+                    >
+                      <svg
+                        className="w-3 h-3 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2.5}
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M5 13l4 4L19 7"
+                        />
                       </svg>
                     </div>
                   ) : (
@@ -877,9 +956,10 @@ function SaveCollectionSheet({
 export function PostCard({ post, lang, priority }: Props) {
   const router = useRouter();
   const { requireAuth } = useAuthGuard(lang);
-  const { saved, saveCount, handleSave, handleShare, fireView } = useInteractions(post, {
-    requireAuth,
-  });
+  const { saved, saveCount, handleSave, handleShare, fireView } =
+    useInteractions(post, {
+      requireAuth,
+    });
   const cardRef = useRef<HTMLElement>(null);
   const [expanded, setExpanded] = useState(false);
   const [showSaveSheet, setShowSaveSheet] = useState(false);
@@ -890,13 +970,15 @@ export function PostCard({ post, lang, priority }: Props) {
     const el = cardRef.current;
     if (!el) return;
     const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.intersectionRatio >= 0.5) fireView(); },
+      ([entry]) => {
+        if (entry.intersectionRatio >= 0.5) fireView();
+      },
       { threshold: 0.5 },
     );
     obs.observe(el);
     return () => obs.disconnect();
-  // fireView is stable (ref-based) — no need to list it
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // fireView is stable (ref-based) — no need to list it
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const creator = post.creator;
@@ -1083,8 +1165,15 @@ export function PostCard({ post, lang, priority }: Props) {
       <div className="flex items-center justify-between px-4 pt-2.5 pb-1">
         <div className="flex items-center gap-3 text-muted-foreground text-xs font-medium">
           {saveCount > 0 && <span>{fmt(saveCount)} saved</span>}
-          {(post.stats?.shares ?? 0) > 0 && <span>{saveCount > 0 ? "· " : ""}{fmt(post.stats!.shares!)} shares</span>}
-          {(post.stats?.views ?? 0) > 0 && <span>· {fmt(post.stats!.views!)} views</span>}
+          {(post.stats?.shares ?? 0) > 0 && (
+            <span>
+              {saveCount > 0 ? "· " : ""}
+              {fmt(post.stats!.shares!)} shares
+            </span>
+          )}
+          {(post.stats?.views ?? 0) > 0 && (
+            <span>· {fmt(post.stats!.views!)} views</span>
+          )}
         </div>
         {post.price && post.price.amount > 0 && (
           <span
