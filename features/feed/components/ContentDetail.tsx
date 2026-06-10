@@ -1675,10 +1675,7 @@ function DetailSaveSheet({
           {collections.map((col) => (
             <button
               key={col.id}
-              onClick={() => {
-                onSave(col.id);
-                onClose();
-              }}
+              onClick={() => onSave(col.id)}
               className="flex items-center gap-4 w-full py-3 text-left rounded-xl hover:bg-surface transition-colors px-2 -mx-2"
             >
               <div
