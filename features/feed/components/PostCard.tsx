@@ -753,59 +753,39 @@ function SaveCollectionSheet({
 
   return (
     <Drawer open={open} onOpenChange={(v) => !v && onClose()}>
-      <DrawerContent>
-        <DrawerHeader className="text-left px-5 pt-2 pb-3">
-          <DrawerTitle className="text-base font-semibold">
+      <DrawerContent className="flex flex-col max-h-[85dvh]">
+        <DrawerHeader className="shrink-0 text-left px-5 pt-2 pb-3">
+          <DrawerTitle className="text-lg font-semibold">
             Save to collection
           </DrawerTitle>
-          <p className="text-sm text-muted-foreground mt-0.5">
+          <p className="text-base text-muted-foreground mt-0.5">
             Tap a collection to save · tap again to remove
           </p>
         </DrawerHeader>
 
-        <div className="px-4 max-h-[60dvh] overflow-y-auto pb-2 space-y-1">
-          {/* New collection row */}
-          {creating ? (
-            <div className="flex items-center gap-2 py-2">
-              <input
-                autoFocus
-                className="flex-1 bg-surface rounded-xl px-3 py-2.5 text-sm text-default placeholder:text-muted-foreground outline-none border border-border focus:border-primary"
-                placeholder="Collection name…"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-              />
-              <button
-                onClick={handleCreate}
-                disabled={!newName.trim() || busy === "new"}
-                className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40"
-                style={{ backgroundColor: "rgb(var(--brand-primary))" }}
-              >
-                {busy === "new" ? "…" : "Create"}
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setCreating(true)}
-              className="flex items-center gap-3 w-full py-3 text-left"
+        {/* Scrollable collection list — always stable, never shifts */}
+        <div className="flex-1 overflow-y-auto px-4 pb-2 space-y-1 min-h-0">
+          {/* New collection button — always stays here */}
+          <button
+            onClick={() => setCreating(true)}
+            className="flex items-center gap-3 w-full py-3 text-left"
+          >
+            <div
+              className="w-12 h-12 rounded-xl border-2 border-dashed flex items-center justify-center flex-shrink-0"
+              style={{ borderColor: "rgb(var(--brand-primary) / 0.5)" }}
             >
-              <div
-                className="w-12 h-12 rounded-xl border-2 border-dashed flex items-center justify-center flex-shrink-0"
-                style={{ borderColor: "rgb(var(--brand-primary) / 0.5)" }}
-              >
-                <Plus
-                  className="w-5 h-5"
-                  style={{ color: "rgb(var(--brand-primary))" }}
-                />
-              </div>
-              <span
-                className="font-medium text-sm"
+              <Plus
+                className="w-5 h-5"
                 style={{ color: "rgb(var(--brand-primary))" }}
-              >
-                New collection
-              </span>
-            </button>
-          )}
+              />
+            </div>
+            <span
+              className="font-medium text-base"
+              style={{ color: "rgb(var(--brand-primary))" }}
+            >
+              New collection
+            </span>
+          </button>
 
           {/* Collection rows */}
           {collections.map((col) => {
@@ -910,10 +890,40 @@ function SaveCollectionSheet({
           })}
         </div>
 
-        <div className="px-4 pt-3 pb-6">
+        {/* Create form — anchored below list, keyboard pushes it up but list stays */}
+        {creating && (
+          <div className="shrink-0 px-4 pt-3 pb-2 border-t border-border" data-vaul-no-drag>
+            <div className="flex items-center gap-2">
+              <input
+                autoFocus
+                className="flex-1 bg-surface rounded-xl px-4 py-3 text-base text-default placeholder:text-muted-foreground outline-none border border-border focus:border-primary"
+                placeholder="Collection name…"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+              />
+              <button
+                onClick={() => { setCreating(false); setNewName(""); }}
+                className="px-3 py-3 rounded-xl text-base text-muted-foreground shrink-0"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreate}
+                disabled={!newName.trim() || busy === "new"}
+                className="px-4 py-3 rounded-xl text-base font-semibold text-white disabled:opacity-40 shrink-0"
+                style={{ backgroundColor: "rgb(var(--brand-primary))" }}
+              >
+                {busy === "new" ? "…" : "Create"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="shrink-0 px-4 pt-3 pb-8">
           <button
             onClick={onClose}
-            className="w-full py-3.5 sticky bottom-0 rounded-2xl font-semibold text-sm text-white"
+            className="w-full py-4 rounded-2xl font-semibold text-base text-white"
             style={{ backgroundColor: "rgb(var(--brand-primary))" }}
           >
             Done
