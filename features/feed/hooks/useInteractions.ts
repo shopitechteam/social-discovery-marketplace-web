@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMutation, useApolloClient } from "@apollo/client/react";
 import { gql } from "@apollo/client";
 import {
@@ -67,6 +67,7 @@ export function useInteractions(post: ContentCardFieldsFragment, options?: Optio
   const [toggleLikeMutation] = useMutation(ToggleLikeDocument);
   const [viewMutation] = useMutation(ViewContentDocument);
   const [shareMutation] = useMutation(ShareContentDocument);
+  const viewFired = useRef(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [toggleSaveMutation] = useMutation(TOGGLE_SAVE) as any;
 
@@ -77,11 +78,12 @@ export function useInteractions(post: ContentCardFieldsFragment, options?: Optio
     setSaveCount(post.stats?.saves ?? 0);
   }, [post.isLikedByMe, post.stats?.likes, (post as ContentCardFieldsFragment & { isSavedByMe?: boolean }).isSavedByMe, post.stats?.saves]);
 
-  // Fire viewContent once on mount (fire-and-forget)
-  useEffect(() => {
+  // Call this when the post scrolls into view — fires at most once per mount
+  function fireView() {
+    if (viewFired.current) return;
+    viewFired.current = true;
     viewMutation({ variables: { contentId: post.id } }).catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [post.id]);
+  }
 
   async function handleLike() {
     if (options?.requireAuth) {
@@ -146,5 +148,5 @@ export function useInteractions(post: ContentCardFieldsFragment, options?: Optio
     }
   }
 
-  return { liked, likeCount, handleLike, saved, saveCount, handleSave, handleShare };
+  return { liked, likeCount, handleLike, saved, saveCount, handleSave, handleShare, fireView };
 }

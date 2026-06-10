@@ -801,11 +801,27 @@ function SaveCollectionSheet({
 export function PostCard({ post, lang, priority }: Props) {
   const router = useRouter();
   const { requireAuth } = useAuthGuard(lang);
-  const { saved, saveCount, handleSave, handleShare } = useInteractions(post, {
+  const { saved, saveCount, handleSave, handleShare, fireView } = useInteractions(post, {
     requireAuth,
   });
+  const cardRef = useRef<HTMLElement>(null);
   const [expanded, setExpanded] = useState(false);
   const [showSaveSheet, setShowSaveSheet] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  // Fire viewContent only when the card is at least 50% visible
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.intersectionRatio >= 0.5) fireView(); },
+      { threshold: 0.5 },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  // fireView is stable (ref-based) — no need to list it
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const creator = post.creator;
   // creator is a FieldResolver — it may arrive slightly after the content item.
@@ -837,22 +853,36 @@ export function PostCard({ post, lang, priority }: Props) {
     router.push(`/${lang}/content/${post.id}`);
   }
 
-  function handleDownload() {
+  async function handleDownload() {
     const src = downloadSrc(post);
     if (!src || typeof document === "undefined") return;
 
-    const a = document.createElement("a");
-    a.href = src;
-    a.download = `${post.title || "shopi-post"}`;
-    a.target = "_blank";
-    a.rel = "noreferrer";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+    setIsDownloading(true);
+    try {
+      const res = await fetch(src);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = post.title || "shopi-post";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      const a = document.createElement("a");
+      a.href = src;
+      a.download = post.title || "shopi-post";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } finally {
+      setIsDownloading(false);
+    }
   }
 
   return (
-    <article className="bg-elevated overflow-hidden">
+    <article ref={cardRef} className="bg-elevated overflow-hidden">
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 px-4 pt-3.5 pb-2.5">
         <button onClick={handleOpen}>
@@ -982,7 +1012,7 @@ export function PostCard({ post, lang, priority }: Props) {
         </div>
         {post.price && (
           <span
-            className="text-xs font-bold"
+            className="text-base font-bold"
             style={{ color: "rgb(var(--color-text))" }}
           >
             {post.price.currency}{" "}
@@ -1026,10 +1056,38 @@ export function PostCard({ post, lang, priority }: Props) {
         {post.allowDownload && (
           <button
             onClick={handleDownload}
-            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-full border border-border text-xs font-semibold transition-all active:scale-95"
+            disabled={isDownloading}
+            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-full border border-border text-xs font-semibold transition-all active:scale-95 disabled:opacity-60"
           >
-            <Download className="w-4 h-4" strokeWidth={1.8} />
-            <span>Download</span>
+            {isDownloading ? (
+              <>
+                <svg
+                  className="w-4 h-4 animate-spin"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                  />
+                </svg>
+                <span>Down.…</span>
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4" strokeWidth={1.8} />
+                <span>Download</span>
+              </>
+            )}
           </button>
         )}
 
@@ -1061,8 +1119,8 @@ export function PostCard({ post, lang, priority }: Props) {
         {/* Message pill — soft gray, grows to fill remaining space */}
         <button
           onClick={handleOpen}
-          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-xs font-semibold text-white transition-all active:scale-95"
-          style={{ backgroundColor: "rgb(150 150 150)" }}
+          className="flex-1 bg-primary/90 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-xs font-semibold text-[#f1f1f1] transition-all active:scale-95"
+          // style={{ backgroundColor: "rgb(150 150 150)" }}
         >
           <svg
             className="w-4 h-4"

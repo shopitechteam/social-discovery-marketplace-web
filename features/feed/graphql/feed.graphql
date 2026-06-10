@@ -60,7 +60,6 @@ fragment ContentCardFields on Content {
   stats {
     views
     likes
-    comments
     shares
     saves
   }

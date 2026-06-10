@@ -4,18 +4,14 @@ import { useSyncExternalStore } from "react";
 
 function getSnapshot() {
   if (typeof document === "undefined") return true;
-  return document.visibilityState === "visible" && document.hasFocus();
+  return document.visibilityState === "visible";
 }
 
 function subscribe(onStoreChange: () => void) {
   document.addEventListener("visibilitychange", onStoreChange);
-  window.addEventListener("focus", onStoreChange);
-  window.addEventListener("blur", onStoreChange);
 
   return () => {
     document.removeEventListener("visibilitychange", onStoreChange);
-    window.removeEventListener("focus", onStoreChange);
-    window.removeEventListener("blur", onStoreChange);
   };
 }
 
