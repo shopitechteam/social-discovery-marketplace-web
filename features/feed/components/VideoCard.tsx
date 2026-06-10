@@ -150,7 +150,7 @@ export function VideoCard({ post, lang, priority }: Props) {
           <div className="flex items-center justify-between gap-1">
             <StatRow
               likes={post.stats?.likes ?? 0}
-              comments={post.stats?.comments ?? 0}
+              comments={0}
               views={post.stats?.views}
               inverted
             />

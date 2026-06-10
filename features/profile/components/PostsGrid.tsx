@@ -159,7 +159,7 @@ function PostThumbnail({
           <StatChip icon={Eye} value={post.stats.views} />
           <StatChip icon={Heart} value={post.stats.likes} />
           <span className="hidden sm:inline-flex">
-            <StatChip icon={MessageCircle} value={post.stats.comments} />
+            <StatChip icon={MessageCircle} value={0} />
           </span>
         </div>
       </div>

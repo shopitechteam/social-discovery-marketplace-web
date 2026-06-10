@@ -92,7 +92,7 @@ export function ImageCard({ post, lang, priority, variant = "tall" }: Props) {
         <div className="flex items-center justify-between gap-1">
           <StatRow
             likes={post.stats?.likes ?? 0}
-            comments={post.stats?.comments ?? 0}
+            comments={0}
             inverted
           />
           {post.price && (
