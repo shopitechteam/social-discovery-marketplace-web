@@ -7,12 +7,18 @@
  * starts at the right position.
  */
 
-import { DesktopFeed } from "./DesktopFeed";
+import DesktopFeed from "./DesktopFeed";
 
-export function DesktopContentRedirect({ lang, id: _id }: { lang: string; id: string }) {
+export function DesktopContentRedirect({
+  lang,
+  id: _id,
+}: {
+  lang: string;
+  id: string;
+}) {
   return (
     <div className="hidden md:block">
-      <DesktopFeed lang={lang} />
+      <DesktopFeed />
     </div>
   );
 }
