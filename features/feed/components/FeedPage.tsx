@@ -6,7 +6,7 @@ import { FeedHeader } from "./FeedHeader";
 import { FeedGrid } from "./FeedGrid";
 import { FollowingGrid } from "./FollowingGrid";
 import { NearbyGrid } from "./NearbyGrid";
-import { DesktopFeed } from "./DesktopFeed";
+import DesktopFeed from "./DesktopFeed";
 
 interface Props {
   lang: string;
@@ -37,7 +37,7 @@ export function FeedPage({ lang }: Props) {
     <>
       {/* ── Desktop: fullscreen TikTok-style feed — no header/tabs needed ── */}
       <div className="hidden md:block">
-        <DesktopFeed lang={lang} />
+        <DesktopFeed />
       </div>
 
       {/* ── Mobile: existing card feed with tabs ── */}
