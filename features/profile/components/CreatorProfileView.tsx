@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -23,6 +23,7 @@ import {
   type ProfilePostFieldsFragment,
 } from "@/types/__generated__/graphql";
 import { useFollow } from "@/features/feed/hooks/useFollow";
+import { Skeleton } from "@/components/ui/skeleton";
 
 function formatCompact(value: number | null | undefined) {
   if (value == null) return "0";
@@ -246,6 +247,38 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
   const hasMore = data?.userPosts.hasMore ?? false;
   const nextCursor = data?.userPosts.nextCursor ?? undefined;
 
+  // Infinite scroll sentinel
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const fetchingMore = useRef(false);
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !postsLoading && !fetchingMore.current) {
+          fetchingMore.current = true;
+          fetchMore({
+            variables: { userId: user.id, limit: 18, afterId: nextCursor },
+            updateQuery(prev, { fetchMoreResult }) {
+              fetchingMore.current = false;
+              if (!fetchMoreResult) return prev;
+              return {
+                userPosts: {
+                  ...fetchMoreResult.userPosts,
+                  posts: [...prev.userPosts.posts, ...fetchMoreResult.userPosts.posts],
+                },
+              };
+            },
+          });
+        }
+      },
+      { rootMargin: "200px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasMore, postsLoading, nextCursor, fetchMore, user.id]);
+
   const handleShare = useCallback((post: ProfilePostFieldsFragment) => {
     const url = `${window.location.origin}/${lang}/content/${post.id}`;
     if (navigator.share) {
@@ -259,21 +292,6 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
     const url = `${window.location.origin}/${lang}/content/${post.id}`;
     navigator.clipboard.writeText(url).catch(() => {});
   }, [lang]);
-
-  function loadMore() {
-    fetchMore({
-      variables: { userId: user.id, limit: 18, afterId: nextCursor },
-      updateQuery(prev, { fetchMoreResult }) {
-        if (!fetchMoreResult) return prev;
-        return {
-          userPosts: {
-            ...fetchMoreResult.userPosts,
-            posts: [...prev.userPosts.posts, ...fetchMoreResult.userPosts.posts],
-          },
-        };
-      },
-    });
-  }
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "rgb(var(--color-bg))" }}>
@@ -466,11 +484,19 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
         {postsLoading && posts.length === 0 ? (
           <div className="grid grid-cols-3 gap-2">
             {Array.from({ length: 9 }).map((_, i) => (
-              <div
-                key={i}
-                className="animate-pulse rounded-xl"
-                style={{ aspectRatio: "9/16", backgroundColor: "rgb(var(--color-bg-subtle))" }}
-              />
+              <div key={i} className="relative overflow-hidden rounded-xl" style={{ aspectRatio: "9/16" }}>
+                {/* thumbnail area */}
+                <Skeleton className="absolute inset-0" />
+                {/* type badge */}
+                <div className="absolute left-2 top-2">
+                  <Skeleton className="h-6 w-6 rounded-lg" />
+                </div>
+                {/* stats strip */}
+                <div className="absolute inset-x-0 bottom-0 p-2 flex gap-2">
+                  <Skeleton className="h-3 w-8 rounded" />
+                  <Skeleton className="h-3 w-8 rounded" />
+                </div>
+              </div>
             ))}
           </div>
         ) : posts.length === 0 ? (
@@ -499,21 +525,24 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
               ))}
             </div>
 
-            {hasMore && (
-              <div className="mt-6 flex justify-center">
-                <button
-                  onClick={loadMore}
-                  disabled={postsLoading}
-                  className="inline-flex h-10 items-center gap-2 rounded-xl border px-6 font-semibold transition-opacity active:opacity-75 disabled:opacity-50"
-                  style={{
-                    backgroundColor: "rgb(var(--color-bg-elevated))",
-                    borderColor: "rgb(var(--color-border))",
-                    color: "rgb(var(--color-text))",
-                    fontSize: "var(--text-sm)",
-                  }}
-                >
-                  {postsLoading ? "Loading…" : "Load more"}
-                </button>
+            {/* Infinite scroll sentinel — triggers next page fetch */}
+            <div ref={sentinelRef} className="h-1" />
+
+            {/* Skeleton tiles while fetching the next page */}
+            {postsLoading && posts.length > 0 && (
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="relative overflow-hidden rounded-xl" style={{ aspectRatio: "9/16" }}>
+                    <Skeleton className="absolute inset-0" />
+                    <div className="absolute left-2 top-2">
+                      <Skeleton className="h-6 w-6 rounded-lg" />
+                    </div>
+                    <div className="absolute inset-x-0 bottom-0 p-2 flex gap-2">
+                      <Skeleton className="h-3 w-8 rounded" />
+                      <Skeleton className="h-3 w-8 rounded" />
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </>
