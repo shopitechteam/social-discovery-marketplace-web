@@ -670,30 +670,6 @@ function SaveCollectionSheet({
   const [creating, setCreating] = useState(false);
   const [busy, setBusy] = useState<string | null>(null); // collectionId being toggled
 
-  // Stable ref so the effect doesn't re-run when onClose identity changes
-  const onCloseRef = useRef(onClose);
-  useEffect(() => {
-    onCloseRef.current = onClose;
-  }, [onClose]);
-
-  // Push a history entry when drawer opens so browser/phone back button closes it
-  useEffect(() => {
-    if (!open) return;
-    window.history.pushState({ drawerOpen: true }, "");
-    function handlePop() {
-      onCloseRef.current();
-    }
-    window.addEventListener("popstate", handlePop);
-    return () => {
-      window.removeEventListener("popstate", handlePop);
-      // Drawer closed via Done/swipe (not back button) — pop the entry we pushed
-      if (window.history.state?.drawerOpen) {
-        window.history.back();
-      }
-    };
-    // Only re-run when open changes, not onClose
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
 
   const { data: colData, refetch: refetchCols } = (useQuery as any)(
     GET_MY_COLLECTIONS,
@@ -758,21 +734,17 @@ function SaveCollectionSheet({
     const alreadyIn = savedInIds.has(col.id);
     try {
       if (alreadyIn) {
-        // Unsave from this specific collection
         await toggleSave({ variables: { contentId, collectionId: col.id } });
         onUnsave(col.id);
       } else if (isSaved) {
-        // Already saved (uncollected) — move into this collection
-        await addSaveToCollection({
-          variables: { contentId, collectionId: col.id },
-        });
+        await addSaveToCollection({ variables: { contentId, collectionId: col.id } });
         onSave(col.id);
       } else {
-        // Not saved yet — save into this collection
         await toggleSave({ variables: { contentId, collectionId: col.id } });
         onSave(col.id);
       }
-      await refetchStatus();
+      // Refresh both so itemCount and checkmarks are up to date immediately
+      await Promise.all([refetchStatus(), refetchCols()]);
     } finally {
       setBusy(null);
     }
@@ -956,7 +928,7 @@ function SaveCollectionSheet({
 export function PostCard({ post, lang, priority }: Props) {
   const router = useRouter();
   const { requireAuth } = useAuthGuard(lang);
-  const { saved, saveCount, handleSave, handleShare, fireView } =
+  const { saved, saveCount, handleShare, fireView, syncSaved } =
     useInteractions(post, {
       requireAuth,
     });
@@ -1306,8 +1278,8 @@ export function PostCard({ post, lang, priority }: Props) {
         open={showSaveSheet}
         contentId={post.id}
         lang={lang}
-        onSave={(collectionId) => handleSave(collectionId)}
-        onUnsave={(collectionId) => handleSave(collectionId)}
+        onSave={() => syncSaved(true, saveCount + 1)}
+        onUnsave={() => syncSaved(false, Math.max(0, saveCount - 1))}
         onClose={() => setShowSaveSheet(false)}
       />
     </article>

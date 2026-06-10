@@ -148,5 +148,11 @@ export function useInteractions(post: ContentCardFieldsFragment, options?: Optio
     }
   }
 
-  return { liked, likeCount, handleLike, saved, saveCount, handleSave, handleShare, fireView };
+  function syncSaved(isSaved: boolean, count: number) {
+    setSaved(isSaved);
+    setSaveCount(count);
+    writeSaveToCache(client, post.id, isSaved, count);
+  }
+
+  return { liked, likeCount, handleLike, saved, saveCount, handleSave, handleShare, fireView, syncSaved };
 }
