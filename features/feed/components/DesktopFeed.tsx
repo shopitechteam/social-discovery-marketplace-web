@@ -370,7 +370,7 @@ function PostSlide({
     ? `${creator.profile.firstName}${creator.profile.lastName ? " " + creator.profile.lastName : ""}`
     : creator === null
       ? `Seller ${post.creatorId.slice(-6)}`
-      : "..";
+      : "...";
 
   const {
     following,
