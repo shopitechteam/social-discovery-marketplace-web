@@ -36,6 +36,7 @@ import { BufferSpinner } from "./BufferSpinner";
 import { useFeedPreferencesStore } from "@/stores/feedPreferences";
 import { VideoProgressBar } from "./VideoProgressBar";
 import { usePageFocused } from "../hooks/usePageFocused";
+import { shouldFire } from "@/lib/interactionDedup";
 
 type CommentItem = NonNullable<GetCommentsQuery["comments"]["items"]>[number];
 type DetailPost = NonNullable<GetContentQuery["content"]>;
@@ -244,6 +245,8 @@ function ContentVideo({
   fill = false,
   showMuteButton = false,
   showSpinner = false,
+  onVideoCompleted,
+  onVideoReplayed,
 }: {
   hlsUrl: string;
   thumbnailUrl?: string | null;
@@ -253,12 +256,16 @@ function ContentVideo({
   fill?: boolean;
   showMuteButton?: boolean;
   showSpinner?: boolean;
+  onVideoCompleted?: (completionRate: number, watchDuration: number) => void;
+  onVideoReplayed?: () => void;
 }) {
   const pageFocused = usePageFocused();
   const [manualPaused, setManualPaused] = useState(false);
+  const [videoEnded, setVideoEnded] = useState(false);
   const shouldPlay = pageFocused && !manualPaused;
-  const { videoRef, buffering } = useHlsVideo(hlsUrl, shouldPlay);
+  const { videoRef, buffering } = useHlsVideo(hlsUrl, shouldPlay, videoEnded);
   const [playing, setPlaying] = useState(false);
+  const endedCountRef = useRef(0);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -270,17 +277,41 @@ function ContentVideo({
 
     const markPlaying = () => setPlaying(true);
     const markStopped = () => setPlaying(false);
+    const handleEnded = () => {
+      setPlaying(false);
+      setVideoEnded(true);
+      const duration = video.duration || 0;
+      const watched = video.currentTime || duration;
+      const completionRate = duration > 0 ? Math.min(watched / duration, 1) : 1;
+      endedCountRef.current += 1;
+      if (endedCountRef.current === 1) {
+        onVideoCompleted?.(completionRate, watched);
+      } else {
+        onVideoReplayed?.();
+      }
+    };
 
     video.addEventListener("playing", markPlaying);
     video.addEventListener("pause", markStopped);
-    video.addEventListener("ended", markStopped);
+    video.addEventListener("ended", handleEnded);
 
     return () => {
       video.removeEventListener("playing", markPlaying);
       video.removeEventListener("pause", markStopped);
-      video.removeEventListener("ended", markStopped);
+      video.removeEventListener("ended", handleEnded);
     };
-  }, [hlsUrl, muted, videoRef]);
+  }, [hlsUrl, muted, videoRef, onVideoCompleted, onVideoReplayed]);
+
+  function handleReplay() {
+    const video = videoRef.current;
+    if (!video) return;
+    endedCountRef.current += 1;
+    setVideoEnded(false);
+    setManualPaused(false);
+    video.currentTime = 0;
+    video.play().catch(() => {});
+    onVideoReplayed?.();
+  }
 
   const objectClass = "object-contain";
   const videoClassName = fill
@@ -316,7 +347,6 @@ function ContentVideo({
 
       <video
         ref={videoRef}
-        loop
         muted={muted}
         playsInline
         preload="auto"
@@ -325,33 +355,49 @@ function ContentVideo({
         style={fill ? undefined : { maxHeight: "100vh" }}
       />
 
-      <button
-        type="button"
-        onClick={togglePlayback}
-        className="absolute inset-0 z-20 flex items-center justify-center"
-        aria-label={manualPaused || !playing ? "Play video" : "Pause video"}
-      >
-        <span
-          className={[
-            "flex h-16 w-16 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm transition-opacity duration-200",
-            showPlayOverlay ? "opacity-100" : "opacity-0",
-          ].join(" ")}
+      {/* Replay overlay — shown when video finishes */}
+      {videoEnded ? (
+        <button
+          type="button"
+          onClick={handleReplay}
+          className="absolute inset-0 z-20 flex items-center justify-center bg-black/40"
+          aria-label="Replay video"
         >
-          {manualPaused || !playing ? (
-            <svg
-              className="ml-1 h-7 w-7"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path d="M8 5v14l11-7z" />
-            </svg>
-          ) : (
+          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm">
             <svg className="h-7 w-7" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M7 5h4v14H7zM13 5h4v14h-4z" />
+              <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" />
             </svg>
-          )}
-        </span>
-      </button>
+          </span>
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={togglePlayback}
+          className="absolute inset-0 z-20 flex items-center justify-center"
+          aria-label={manualPaused || !playing ? "Play video" : "Pause video"}
+        >
+          <span
+            className={[
+              "flex h-16 w-16 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm transition-opacity duration-200",
+              showPlayOverlay ? "opacity-100" : "opacity-0",
+            ].join(" ")}
+          >
+            {manualPaused || !playing ? (
+              <svg
+                className="ml-1 h-7 w-7"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            ) : (
+              <svg className="h-7 w-7" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M7 5h4v14H7zM13 5h4v14h-4z" />
+              </svg>
+            )}
+          </span>
+        </button>
+      )}
 
       {showSpinner && buffering && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
@@ -425,6 +471,11 @@ export function ContentDetail({ id, lang }: Props) {
   // ── Mutations ──────────────────────────────────────────────────────────────
   const client = useApolloClient();
   const [addCommentMutation] = useMutation(AddCommentDocument);
+  const [trackInteractionMutation] = useMutation(gql`
+    mutation TrackInteractionDetail($contentId: String!, $type: InteractionType!, $watchDuration: Float, $completionRate: Float) {
+      trackInteraction(input: { contentId: $contentId, type: $type, watchDuration: $watchDuration, completionRate: $completionRate })
+    }
+  `);
   const [shareMutation] = useMutation(ShareContentDocument);
   const [viewMutation] = useMutation(ViewContentDocument);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -479,6 +530,25 @@ export function ContentDetail({ id, lang }: Props) {
   useEffect(() => {
     viewMutation({ variables: { contentId: id } }).catch(() => {});
   }, [id, viewMutation]);
+
+  // ── Video completion / replay tracking ────────────────────────────────────
+  const handleVideoCompleted = useCallback(
+    (completionRate: number, watchDuration: number) => {
+      if (shouldFire(id, "VIDEO_COMPLETED")) {
+        trackInteractionMutation({
+          variables: { contentId: id, type: "VIDEO_COMPLETED", completionRate, watchDuration },
+        }).catch(() => {});
+      }
+    },
+    [id, trackInteractionMutation],
+  );
+
+  const handleVideoReplayed = useCallback(() => {
+    // VIDEO_REPLAYED is always allowed (not in SESSION_ONCE)
+    trackInteractionMutation({
+      variables: { contentId: id, type: "VIDEO_REPLAYED" },
+    }).catch(() => {});
+  }, [id, trackInteractionMutation]);
 
   // ── Cache writer — keeps feed cards + detail in sync ─────────────────────
   function writeSaveToCache(saved: boolean, saveCount: number) {
@@ -1070,6 +1140,8 @@ export function ContentDetail({ id, lang }: Props) {
                 muted={muted}
                 onToggleMuted={toggleVideoMuted}
                 showMuteButton
+                onVideoCompleted={handleVideoCompleted}
+                onVideoReplayed={handleVideoReplayed}
               />
             ) : (
               <div className="relative w-full h-full flex items-center justify-center">
@@ -1219,6 +1291,8 @@ export function ContentDetail({ id, lang }: Props) {
                 muted={muted}
                 fill
                 showSpinner
+                onVideoCompleted={handleVideoCompleted}
+                onVideoReplayed={handleVideoReplayed}
               />
             ) : (
               <MobileImageCarousel

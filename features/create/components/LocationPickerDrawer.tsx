@@ -71,6 +71,8 @@ interface LocationResult {
 }
 
 interface ReverseGeocodeResult {
+  placeName?: string | null;
+  formattedAddress?: string | null;
   countyName?: string | null;
   subCountyName?: string | null;
   wardName?: string | null;
@@ -139,6 +141,8 @@ const REVERSE_GEOCODE: TypedDocumentNode<
     reverseGeocode(lat: $lat, lng: $lng) {
       matched
       location {
+        placeName
+        formattedAddress
         countyName
         subCountyName
         wardName
@@ -265,7 +269,7 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
         cb(true);
       },
       (err) => { cb(false, err.code); },
-      { timeout: 10000, maximumAge: 60000 },
+      { timeout: 15000, maximumAge: 120000, enableHighAccuracy: false },
     );
   }
 
@@ -280,18 +284,29 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
         return;
       }
       if (code === 1) { setNearbyStatus("denied"); return; }
-      // code 2 = kCLErrorLocationUnknown (transient) — retry once after a short delay
-      setTimeout(() => {
-        requestGps((granted2, code2) => {
-          if (granted2 && gpsRef.current) {
-            radiusIndexRef.current = 0;
-            nearbyItemsRef.current = [];
-            fetchNearbyBatch(0);
-          } else {
-            setNearbyStatus(code2 === 1 ? "denied" : "error");
-          }
-        });
-      }, 2000);
+      // code 2/3 = transient unavailable/timeout — retry up to 2 more times with longer delay
+      let retries = 0;
+      function retry() {
+        retries++;
+        setTimeout(() => {
+          gpsRef.current = null; // clear so requestGps re-attempts
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              gpsRef.current = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+              radiusIndexRef.current = 0;
+              nearbyItemsRef.current = [];
+              fetchNearbyBatch(0);
+            },
+            (err2) => {
+              if (err2.code === 1) { setNearbyStatus("denied"); return; }
+              if (retries < 2) { retry(); return; }
+              setNearbyStatus("error");
+            },
+            { timeout: 15000, maximumAge: 0, enableHighAccuracy: false },
+          );
+        }, retries * 2000);
+      }
+      retry();
     });
   }
 
@@ -482,11 +497,14 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
         });
         const loc = data?.reverseGeocode?.location;
         const placeName =
-          loc?.wardName ?? loc?.subCountyName ?? loc?.countyName ?? "Current location";
+          loc?.placeName ??
+          loc?.wardName ??
+          loc?.subCountyName ??
+          loc?.countyName ??
+          "Current location";
         const formattedAddress =
-          [loc?.wardName, loc?.subCountyName, loc?.countyName]
-            .filter(Boolean)
-            .join(", ") || "Current location";
+          loc?.formattedAddress ??
+          ([loc?.wardName, loc?.subCountyName, loc?.countyName].filter(Boolean).join(", ") || "Current location");
 
         confirmLocation({
           placeName,
@@ -767,16 +785,26 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
                   <circle cx="12" cy="10" r="3" />
                 </svg>
                 <p style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text-muted))" }}>
-                  Could not determine your location.<br />Switch to <strong>All</strong> to search instead.
+                  GPS signal weak — move to an open area or use <strong>All</strong> to search instead.
                 </p>
-                <button
-                  type="button"
-                  onClick={() => { nearbyLoadedRef.current = false; setNearbyItems([]); radiusIndexRef.current = 0; startNearby(); }}
-                  className="px-4 py-2 rounded-lg text-sm font-semibold"
-                  style={{ backgroundColor: "rgb(var(--brand-primary) / 0.1)", color: "rgb(var(--brand-primary))" }}
-                >
-                  Retry
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { nearbyLoadedRef.current = false; setNearbyItems([]); radiusIndexRef.current = 0; startNearby(); }}
+                    className="px-4 py-2 rounded-lg text-sm font-semibold"
+                    style={{ backgroundColor: "rgb(var(--brand-primary) / 0.1)", color: "rgb(var(--brand-primary))" }}
+                  >
+                    Retry
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTab("all")}
+                    className="px-4 py-2 rounded-lg text-sm font-semibold"
+                    style={{ backgroundColor: "rgb(var(--color-bg-subtle))", color: "rgb(var(--color-text))" }}
+                  >
+                    Search All
+                  </button>
+                </div>
               </div>
             )}
 

@@ -58,7 +58,7 @@ export function FeedGrid({ lang }: Props) {
 
   if (!loading && items.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 px-6 text-center">
+      <div className="flex min-h-[93svh] fixed top-0 left-0 right-0 bottom-0  flex-col items-center justify-center py-24 px-6 text-center">
         <div className="text-5xl mb-4">🛍️</div>
         <h3 className="font-bold text-default text-base mb-2">
           Your feed is empty
@@ -90,9 +90,7 @@ export function FeedGrid({ lang }: Props) {
       {/* ── Infinite scroll sentinel ─────────────────────────────────── */}
       <div ref={sentinelRef} className="h-1" />
 
-      {loading && items.length > 0 && (
-        <FeedPaginationSkeleton />
-      )}
+      {loading && items.length > 0 && <FeedPaginationSkeleton />}
 
       {!hasMore && items.length > 0 && (
         <p className="text-center text-muted-foreground text-xs py-6">

@@ -7,6 +7,7 @@ import { cookies } from "next/headers";
 import Script from "next/script";
 import "./globals.css";
 import { ApolloWrapper } from "@/lib/apollo/ApolloWrapper";
+import { Toaster } from "@/components/ui/sonner";
 
 // ── Fonts ────────────────────────────────────────────────────────
 const manrope = Manrope({
@@ -153,6 +154,7 @@ export default async function RootLayout({
           <ApolloWrapper>
             <main>{children}</main>
           </ApolloWrapper>
+          <Toaster position="bottom-center" richColors />
         </ThemeProvider>
       </body>
     </html>

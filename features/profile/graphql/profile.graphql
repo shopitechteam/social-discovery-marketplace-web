@@ -2,6 +2,8 @@ fragment ProfileUserFields on User {
   id
   username
   email
+  isVerified
+  tiktokOpenId
   profile {
     firstName
     lastName
@@ -58,6 +60,16 @@ query GetMyProfile {
 query GetUserProfile($username: String!) {
   userProfile(username: $username) {
     ...ProfileUserFields
+  }
+}
+
+query GetUserPosts($userId: String!, $limit: Int, $afterId: String) {
+  userPosts(userId: $userId, limit: $limit, afterId: $afterId) {
+    hasMore
+    nextCursor
+    posts {
+      ...ProfilePostFields
+    }
   }
 }
 

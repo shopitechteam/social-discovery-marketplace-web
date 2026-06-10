@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useMutation } from "@apollo/client/react";
+import React, { useEffect, useState } from "react";
+import { useMutation, useQuery } from "@apollo/client/react";
 import { useCreateStore } from "@/stores/create";
 import {
   AutosaveDraftDocument,
   AdvanceDraftStepDocument,
+  TiktokConnectUrlDocument,
+  MeDocument,
 } from "@/types/__generated__/graphql";
 import type { VisibilityMode } from "@/types/__generated__/graphql";
 import { getMediaPreviewSrc } from "@/features/create/utils/mediaPreview";
@@ -43,21 +45,61 @@ export function StepOptions() {
     title,
     isFree,
     mediaItems,
+    contentType,
     visibilityMode,
     allowDownload,
     hdEnabled,
+    postOnTiktok,
     setVisibilityMode,
     setAllowDownload,
     setHdEnabled,
+    setPostOnTiktok,
     setStep,
     setError,
     error,
   } = useCreateStore();
 
   const [advancing, setAdvancing] = useState(false);
+  const [connectingTiktok, setConnectingTiktok] = useState(false);
+
+  const { data: meData, refetch: refetchMe } = useQuery(MeDocument, { fetchPolicy: "cache-and-network" });
+  const isTiktokConnected = meData?.me?.authProviders?.tiktok ?? false;
 
   const [autosave] = useMutation(AutosaveDraftDocument);
   const [advanceStep] = useMutation(AdvanceDraftStepDocument);
+  const [getTiktokConnectUrl] = useMutation(TiktokConnectUrlDocument);
+
+  async function handleTiktokToggle() {
+    if (postOnTiktok) {
+      setPostOnTiktok(false);
+      return;
+    }
+    if (isTiktokConnected) {
+      setPostOnTiktok(true);
+      return;
+    }
+    // Not connected — open OAuth popup then re-check
+    setConnectingTiktok(true);
+    try {
+      const { data } = await getTiktokConnectUrl({ variables: { returnUrl: undefined } });
+      const url = data?.tiktokConnectUrl;
+      if (!url) return;
+      const popup = window.open(url, "tiktok-connect", "width=520,height=680");
+      // Poll until popup closes
+      const poll = setInterval(async () => {
+        if (!popup || popup.closed) {
+          clearInterval(poll);
+          setConnectingTiktok(false);
+          const { data: fresh } = await refetchMe();
+          if (fresh?.me?.authProviders?.tiktok) {
+            setPostOnTiktok(true);
+          }
+        }
+      }, 800);
+    } catch {
+      setConnectingTiktok(false);
+    }
+  }
 
   useEffect(() => {
     if (!draftId) return;
@@ -193,6 +235,31 @@ export function StepOptions() {
     </Section>
   );
 
+  const tiktokSection = contentType === "video" && (
+    <Section title="Share">
+      <div className="flex flex-col">
+        <ToggleRow
+          label="Post on TikTok"
+          description={
+            connectingTiktok
+              ? "Connecting to TikTok…"
+              : isTiktokConnected
+                ? "Cross-post this video to your TikTok"
+                : "Connect TikTok to enable cross-posting"
+          }
+          value={postOnTiktok}
+          onChange={handleTiktokToggle}
+          disabled={connectingTiktok}
+          icon={
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{ color: postOnTiktok ? "rgb(var(--brand-primary))" : "rgb(var(--color-text-muted))" }}>
+              <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.75a8.27 8.27 0 0 0 4.84 1.55V6.85a4.85 4.85 0 0 1-1.07-.16z"/>
+            </svg>
+          }
+        />
+      </div>
+    </Section>
+  );
+
   return (
     <div className="flex flex-col md:flex-row h-full flex-1">
 
@@ -290,6 +357,7 @@ export function StepOptions() {
         <div className="flex-1 overflow-y-auto px-4 pb-8 flex flex-col gap-5">
           {visibilitySection}
           {togglesSection}
+          {tiktokSection}
 
           {error && (
             <div
@@ -360,14 +428,19 @@ function ToggleRow({
   description,
   value,
   onChange,
+  disabled,
+  icon,
 }: {
   label: string;
   description: string;
   value: boolean;
   onChange: (v: boolean) => void;
+  disabled?: boolean;
+  icon?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-3 py-3">
+    <div className="flex items-center gap-3 py-3" style={{ opacity: disabled ? 0.6 : 1 }}>
+      {icon && <span className="flex-shrink-0">{icon}</span>}
       <div className="flex-1 min-w-0">
         <p style={{ fontSize: "var(--text-base)", fontWeight: 500, color: "rgb(var(--color-text))" }}>
           {label}
@@ -379,7 +452,8 @@ function ToggleRow({
       <button
         role="switch"
         aria-checked={value}
-        onClick={() => onChange(!value)}
+        onClick={() => !disabled && onChange(!value)}
+        disabled={disabled}
         className="relative flex-shrink-0 rounded-full transition-colors"
         style={{
           width: 44,

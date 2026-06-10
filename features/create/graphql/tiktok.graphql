@@ -57,3 +57,7 @@ query Me {
     }
   }
 }
+
+mutation PostToTiktok($contentId: String!) {
+  postToTiktok(contentId: $contentId)
+}

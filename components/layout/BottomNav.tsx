@@ -54,11 +54,12 @@ const tabs: Tab[] = [
 export function BottomNav({ lang = "en" }: { lang: string }) {
   const pathname = usePathname();
 
-  // Hide on the full create flow and content detail pages
+  // Hide on the full create flow, content detail, and creator profile pages
   if (
     pathname.includes("/upload/create") ||
     pathname.includes("/upload/tiktok") ||
-    pathname.includes("/content/")
+    pathname.includes("/content/") ||
+    /\/profile\/[^/]+$/.test(pathname)
   )
     return null;
 

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 /**
@@ -25,7 +24,15 @@ import {
   useId,
   useMemo,
 } from "react";
-import { Download, MapPin, Bookmark } from "lucide-react";
+import {
+  Download,
+  MapPin,
+  Bookmark,
+  Link2,
+  EyeOff,
+  Flag,
+  MoreHorizontal,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Shimmer, {
@@ -38,12 +45,21 @@ import { useHlsVideo } from "@/lib/useHlsVideo";
 import { useFeedPreferencesStore } from "@/stores/feedPreferences";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { VideoProgressBar } from "./VideoProgressBar";
+import { gql } from "@apollo/client";
+import { useMutation } from "@apollo/client/react";
+import { shouldFire, hasFired } from "@/lib/interactionDedup";
 import { useInteractions } from "../hooks/useInteractions";
 import { useAuthGuard } from "../hooks/useAuthGuard";
 import { useFollow } from "../hooks/useFollow";
 import { BufferSpinner } from "./BufferSpinner";
 import { usePageFocused } from "../hooks/usePageFocused";
 import toBase64 from "@/lib/utils";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { toast } from "sonner";
 
 interface Props {
   post: ContentCardFieldsFragment;
@@ -103,7 +119,6 @@ function Avatar({ creatorId, avatarUrl, firstName, lastName }: AvatarProps) {
   if (avatarUrl) {
     return (
       <div className="w-10 h-10 rounded-full relative shrink-0 overflow-hidden bg-surface">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <Image
           src={avatarUrl}
           alt={label}
@@ -164,9 +179,104 @@ function VideoMedia({
       : `0:${String(Math.round(mux.duration)).padStart(2, "0")}`
     : null;
 
+  const [ended, setEnded] = useState(false);
+
   // hls.js — fast ABR + buffering state
+  // Pass ended as paused so useHlsVideo doesn't resume after the ended event
   const shouldPlay = active && pageFocused;
-  const { videoRef, buffering } = useHlsVideo(hlsUrl, shouldPlay);
+  const { videoRef, buffering } = useHlsVideo(hlsUrl, shouldPlay, ended);
+
+  const [trackInteractionMutation] = useMutation(gql`
+    mutation TrackInteractionFeed(
+      $contentId: String!
+      $type: InteractionType!
+      $watchDuration: Float
+      $completionRate: Float
+    ) {
+      trackInteraction(
+        input: {
+          contentId: $contentId
+          type: $type
+          watchDuration: $watchDuration
+          completionRate: $completionRate
+        }
+      )
+    }
+  `);
+  const endedCountRef = useRef(0);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const handleEnded = () => {
+      const duration = video.duration || 0;
+      const watched = video.currentTime || duration;
+      const completionRate = duration > 0 ? Math.min(watched / duration, 1) : 1;
+      endedCountRef.current += 1;
+      const type =
+        endedCountRef.current === 1 ? "VIDEO_COMPLETED" : "VIDEO_REPLAYED";
+      if (shouldFire(post.id, type)) {
+        trackInteractionMutation({
+          variables: {
+            contentId: post.id,
+            type,
+            completionRate,
+            watchDuration: watched,
+          },
+        }).catch(() => {});
+      }
+      setEnded(true);
+    };
+    video.addEventListener("ended", handleEnded);
+    return () => video.removeEventListener("ended", handleEnded);
+  }, [videoRef, post.id, trackInteractionMutation]);
+
+  // Reset ended state and check for skip when video scrolls away
+  useEffect(() => {
+    if (!active) {
+      // Defer resetting ended to avoid synchronous setState inside the effect
+      const t = setTimeout(() => setEnded(false), 0);
+      const video = videoRef.current;
+      if (!video) {
+        clearTimeout(t);
+        return;
+      }
+      const duration = video.duration || 0;
+      const watched = video.currentTime || 0;
+      // Skip = watched at least 1s but less than 50% of video length,
+      // and the video was never completed this session (completed > skipped)
+      if (
+        duration > 0 &&
+        watched >= 1 &&
+        watched < duration * 0.5 &&
+        !hasFired(post.id, "VIDEO_COMPLETED") &&
+        shouldFire(post.id, "SKIPPED")
+      ) {
+        trackInteractionMutation({
+          variables: {
+            contentId: post.id,
+            type: "SKIPPED",
+            watchDuration: watched,
+            completionRate: watched / duration,
+          },
+        }).catch(() => {});
+      }
+      return () => clearTimeout(t);
+    }
+  }, [active, videoRef, post.id, trackInteractionMutation]);
+
+  function handleReplay() {
+    const video = videoRef.current;
+    if (!video) return;
+    endedCountRef.current += 1;
+    setEnded(false);
+    video.currentTime = 0;
+    video.play().catch(() => {});
+    // VIDEO_REPLAYED is always allowed through (not in SESSION_ONCE)
+    trackInteractionMutation({
+      variables: { contentId: post.id, type: "VIDEO_REPLAYED" },
+    }).catch(() => {});
+  }
 
   // Register with the global video coordinator and report ratio changes.
   useEffect(() => {
@@ -213,15 +323,32 @@ function VideoMedia({
           onLoad={onThumbLoad}
         />
       )}
-      {/* HLS video — src managed by useHlsVideo hook */}
+      {/* HLS video — src managed by useHlsVideo hook, no loop so ended fires */}
       {hlsUrl && (
         <video
           ref={videoRef}
           muted={muted}
-          loop
           playsInline
           className="absolute inset-0 w-full h-full object-cover"
         />
+      )}
+      {/* Replay button — shown when video finishes */}
+      {ended && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleReplay();
+          }}
+          className="absolute inset-0 z-20 flex items-center justify-center bg-black/40"
+          aria-label="Replay video"
+        >
+          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm">
+            <svg className="h-7 w-7" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" />
+            </svg>
+          </span>
+        </button>
       )}
       {/* TikTok-style buffer spinner */}
       {active && buffering && (
@@ -578,19 +705,35 @@ function ImageMedia({
   );
 }
 
-
 // ── Main PostCard ─────────────────────────────────────────────────────────────
 
 export function PostCard({ post, lang, priority }: Props) {
   const router = useRouter();
   const { requireAuth } = useAuthGuard(lang);
-  const { saved, saveCount, handleSave, handleShare, fireView } =
+  const { saved, saveCount, handleSave, handleShare, fireView, handleReport } =
     useInteractions(post, {
       requireAuth,
     });
   const cardRef = useRef<HTMLElement>(null);
   const [expanded, setExpanded] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const [trackDetailViewed] = useMutation(gql`
+    mutation TrackDetailViewed($contentId: String!) {
+      trackInteraction(input: { contentId: $contentId, type: DETAIL_VIEWED })
+    }
+  `);
+  const [trackCopyLink] = useMutation(gql`
+    mutation CopyLinkPostCard($contentId: String!) {
+      copyLink(contentId: $contentId)
+    }
+  `);
+  const [trackCreatorMessaged] = useMutation(gql`
+    mutation CreatorMessaged($contentId: String!) {
+      creatorMessaged(contentId: $contentId)
+    }
+  `);
 
   // Fire viewContent only when the card is at least 50% visible
   useEffect(() => {
@@ -636,7 +779,33 @@ export function PostCard({ post, lang, priority }: Props) {
 
   function handleOpen() {
     sessionStorage.setItem("feed-scroll", String(window.scrollY));
+    if (shouldFire(post.id, "DETAIL_VIEWED")) {
+      trackDetailViewed({ variables: { contentId: post.id } }).catch(() => {});
+    }
     router.push(`/${lang}/content/${post.id}`);
+  }
+
+  async function handleCopyLink() {
+    if (typeof window === "undefined") return;
+    const url = `${window.location.origin}/${lang}/content/${post.id}`;
+    try {
+      await navigator.clipboard?.writeText(url);
+    } catch {
+      const textarea = document.createElement("textarea");
+      textarea.value = url;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      textarea.remove();
+    }
+    setMenuOpen(false);
+    toast.success("Link copied");
+    if (shouldFire(post.id, "LINK_COPIED")) {
+      trackCopyLink({ variables: { contentId: post.id } }).catch(() => {});
+    }
   }
 
   async function handleDownload() {
@@ -671,7 +840,13 @@ export function PostCard({ post, lang, priority }: Props) {
     <article ref={cardRef} className="bg-elevated overflow-hidden">
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 px-4 pt-3.5 pb-2.5">
-        <button onClick={handleOpen}>
+        <button
+          onClick={() =>
+            creator?.id
+              ? router.push(`/${lang}/profile/${creator.id}`)
+              : handleOpen()
+          }
+        >
           <Avatar
             creatorId={post.creatorId}
             avatarUrl={creator?.profile?.avatar}
@@ -684,7 +859,11 @@ export function PostCard({ post, lang, priority }: Props) {
         <div className="flex-1 min-w-0">
           {creatorName ? (
             <button
-              onClick={handleOpen}
+              onClick={() =>
+                creator?.id
+                  ? router.push(`/${lang}/profile/${creator.id}`)
+                  : handleOpen()
+              }
               className="font-semibold text-base text-default leading-tight hover:underline block"
             >
               {creatorName}
@@ -736,11 +915,58 @@ export function PostCard({ post, lang, priority }: Props) {
         )}
 
         {/* More options */}
-        <button className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface text-muted-foreground">
-          <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
-          </svg>
-        </button>
+        <Popover open={menuOpen} onOpenChange={setMenuOpen}>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              onClick={(e) => e.stopPropagation()}
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface text-muted-foreground"
+              aria-label="Post options"
+            >
+              <MoreHorizontal className="w-5 h-5" strokeWidth={2.6} />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            align="end"
+            sideOffset={8}
+            className="w-52 p-1.5 rounded-2xl border border-border bg-elevated shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                void handleCopyLink();
+              }}
+              className="flex w-full tex-sm items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold text-default hover:bg-surface transition-colors"
+            >
+              <Link2
+                className="w-4 h-4 shrink-0 text-muted-foreground"
+                strokeWidth={2.2}
+              />
+              Copy link
+            </button>
+
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!requireAuth({ contentId: post.id })) return;
+                setMenuOpen(false);
+                void handleReport().then(() =>
+                  toast.success("Report submitted"),
+                );
+              }}
+              className="flex tex-sm w-full items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold text-default hover:bg-surface transition-colors"
+            >
+              <Flag
+                className="w-4 h-4 shrink-0 text-muted-foreground"
+                strokeWidth={2.2}
+              />
+              Report listing
+            </button>
+          </PopoverContent>
+        </Popover>
       </div>
 
       {/* ── Text content ───────────────────────────────────────────────── */}
@@ -904,7 +1130,14 @@ export function PostCard({ post, lang, priority }: Props) {
 
         {/* Message pill — soft gray, grows to fill remaining space */}
         <button
-          onClick={handleOpen}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!requireAuth({ contentId: post.id })) return;
+            trackCreatorMessaged({ variables: { contentId: post.id } }).catch(
+              () => {},
+            );
+            toast.success("Creator contacted");
+          }}
           className="flex-1 bg-primary/90 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-xs font-semibold text-[#f1f1f1] transition-all active:scale-95"
           // style={{ backgroundColor: "rgb(150 150 150)" }}
         >
@@ -924,7 +1157,6 @@ export function PostCard({ post, lang, priority }: Props) {
           Message
         </button>
       </div>
-
     </article>
   );
 }

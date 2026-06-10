@@ -2,11 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import {
-  useQuery,
-  useMutation,
-  useApolloClient,
-} from "@apollo/client/react";
+import { useQuery, useMutation, useApolloClient } from "@apollo/client/react";
 import {
   GetTiktokConnectStatusDocument,
   GetTiktokConnectUrlDocument,
@@ -58,18 +54,42 @@ function formatDuration(seconds: number) {
 function formatDate(ts: unknown) {
   const d = ts instanceof Date ? ts : new Date(Number(ts) * 1000);
   if (isNaN(d.getTime())) return "";
-  return d.toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric" });
+  return d.toLocaleDateString("en", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
 const STATUS_CONFIG: Record<
   ImportStatus,
-  { label: string; icon: React.ElementType; variant: "default" | "secondary" | "destructive" | "outline"; className?: string }
+  {
+    label: string;
+    icon: React.ElementType;
+    variant: "default" | "secondary" | "destructive" | "outline";
+    className?: string;
+  }
 > = {
-  PENDING:    { label: "Queued",     icon: Clock,         variant: "secondary" },
-  UPLOADING:  { label: "Uploading",  icon: Upload,        variant: "secondary", className: "animate-pulse" },
-  PROCESSING: { label: "Processing", icon: Loader2,       variant: "secondary", className: "animate-spin" },
-  COMPLETED:  { label: "Imported",   icon: CheckCircle2,  variant: "default",   className: "text-green-600 dark:text-green-400" },
-  FAILED:     { label: "Failed",     icon: XCircle,       variant: "destructive" },
+  PENDING: { label: "Queued", icon: Clock, variant: "secondary" },
+  UPLOADING: {
+    label: "Uploading",
+    icon: Upload,
+    variant: "secondary",
+    className: "animate-pulse",
+  },
+  PROCESSING: {
+    label: "Processing",
+    icon: Loader2,
+    variant: "secondary",
+    className: "animate-spin",
+  },
+  COMPLETED: {
+    label: "Imported",
+    icon: CheckCircle2,
+    variant: "default",
+    className: "text-green-600 dark:text-green-400",
+  },
+  FAILED: { label: "Failed", icon: XCircle, variant: "destructive" },
 };
 
 const ACTIVE_STATUSES: ImportStatus[] = ["PENDING", "UPLOADING", "PROCESSING"];
@@ -83,29 +103,61 @@ function ConnectGate({ lang }: { lang: string }) {
     const returnUrl = `${window.location.origin}/${lang}/profile`;
     const { data } = await getConnectUrl({ variables: { returnUrl } });
     if (data?.tiktokConnectUrl) {
-      window.open(data.tiktokConnectUrl, "_blank", "width=600,height=700,noopener");
+      window.open(
+        data.tiktokConnectUrl,
+        "_blank",
+        "width=600,height=700,noopener",
+      );
     }
   }
 
   return (
-    <div className="flex flex-col items-center justify-center gap-5 rounded-xl border border-dashed py-14 px-6 text-center"
-      style={{ borderColor: "rgb(var(--color-border))" }}>
-      <div className="flex h-16 w-16 items-center justify-center rounded-2xl"
-        style={{ background: "linear-gradient(135deg, #010101 0%, #69C9D0 100%)" }}>
+    <div
+      className="flex flex-col items-center justify-center gap-5 rounded-xl border border-dashed py-14 px-6 text-center"
+      style={{ borderColor: "rgb(var(--color-border))" }}
+    >
+      <div
+        className="flex h-16 w-16 items-center justify-center rounded-2xl"
+        style={{
+          background: "linear-gradient(135deg, #010101 0%, #69C9D0 100%)",
+        }}
+      >
         <Tv2 className="text-white" size={28} />
       </div>
       <div>
-        <p className="font-bold" style={{ fontSize: "var(--text-lg)", color: "rgb(var(--color-text))" }}>
+        <p
+          className="font-bold"
+          style={{
+            fontSize: "var(--text-lg)",
+            color: "rgb(var(--color-text))",
+          }}
+        >
           Connect TikTok
         </p>
-        <p className="mt-1 max-w-xs leading-snug" style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text-muted))" }}>
+        <p
+          className="mt-1 max-w-xs leading-snug"
+          style={{
+            fontSize: "var(--text-sm)",
+            color: "rgb(var(--color-text-muted))",
+          }}
+        >
           Link your TikTok account to browse and import your videos into Shopi.
         </p>
       </div>
-      <Button onClick={handleConnect} disabled={loading}
+      <Button
+        onClick={handleConnect}
+        disabled={loading}
         className="gap-2 px-6 font-semibold"
-        style={{ background: "linear-gradient(135deg, #010101 0%, #69C9D0 100%)", color: "#fff" }}>
-        {loading ? <Loader2 size={15} className="animate-spin" /> : <ExternalLink size={15} />}
+        style={{
+          background: "linear-gradient(135deg, #010101 0%, #69C9D0 100%)",
+          color: "#fff",
+        }}
+      >
+        {loading ? (
+          <Loader2 size={15} className="animate-spin" />
+        ) : (
+          <ExternalLink size={15} />
+        )}
         Connect TikTok
       </Button>
     </div>
@@ -132,9 +184,10 @@ function VideoCard({
         imported && "cursor-default opacity-60",
       )}
       style={{
-        borderColor: selected && !imported
-          ? "rgb(var(--brand-primary))"
-          : "rgb(var(--color-border))",
+        borderColor:
+          selected && !imported
+            ? "rgb(var(--brand-primary))"
+            : "rgb(var(--color-border))",
         ["--tw-ring-color" as string]: "rgb(var(--brand-primary))",
         backgroundColor: "rgb(var(--color-bg-elevated))",
       }}
@@ -150,15 +203,23 @@ function VideoCard({
           unoptimized
         />
         {/* Duration pill */}
-        <div className="absolute bottom-1.5 right-1.5 rounded-md px-1.5 py-0.5 text-white"
-          style={{ fontSize: "var(--text-xs)", backgroundColor: "rgba(0,0,0,0.65)", fontWeight: 600 }}>
+        <div
+          className="absolute bottom-1.5 right-1.5 rounded-md px-1.5 py-0.5 text-white"
+          style={{
+            fontSize: "var(--text-xs)",
+            backgroundColor: "rgba(0,0,0,0.65)",
+            fontWeight: 600,
+          }}
+        >
           {formatDuration(video.duration)}
         </div>
 
         {/* Already imported overlay */}
         {imported && (
-          <div className="absolute inset-0 flex items-center justify-center"
-            style={{ backgroundColor: "rgba(0,0,0,0.45)" }}>
+          <div
+            className="absolute inset-0 flex items-center justify-center"
+            style={{ backgroundColor: "rgba(0,0,0,0.45)" }}
+          >
             <CheckCircle2 size={28} className="text-white drop-shadow" />
           </div>
         )}
@@ -178,11 +239,23 @@ function VideoCard({
 
       {/* Title */}
       <div className="p-2">
-        <p className="line-clamp-2 leading-tight"
-          style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text))", fontWeight: 500 }}>
+        <p
+          className="line-clamp-2 leading-tight"
+          style={{
+            fontSize: "var(--text-xs)",
+            color: "rgb(var(--color-text))",
+            fontWeight: 500,
+          }}
+        >
           {video.title || "Untitled"}
         </p>
-        <p className="mt-0.5" style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}>
+        <p
+          className="mt-0.5"
+          style={{
+            fontSize: "var(--text-xs)",
+            color: "rgb(var(--color-text-muted))",
+          }}
+        >
           {formatDate(video.createTime)}
         </p>
       </div>
@@ -190,54 +263,102 @@ function VideoCard({
   );
 }
 
-function ImportRow({ item, liveStatus }: { item: TiktokImport; liveStatus?: ImportStatus }) {
+function ImportRow({
+  item,
+  liveStatus,
+}: {
+  item: TiktokImport;
+  liveStatus?: ImportStatus;
+}) {
   const status = liveStatus ?? item.status;
   const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.PENDING;
   const StatusIcon = cfg.icon;
   const isActive = ACTIVE_STATUSES.includes(status);
 
   return (
-    <div className="flex items-start gap-3 rounded-xl border p-3"
+    <div
+      className="flex items-start gap-3 rounded-xl border p-3"
       style={{
-        borderColor: status === "FAILED" ? "rgb(var(--color-error) / 0.35)" : "rgb(var(--color-border))",
+        borderColor:
+          status === "FAILED"
+            ? "rgb(var(--color-error) / 0.35)"
+            : "rgb(var(--color-border))",
         backgroundColor: "rgb(var(--color-bg-elevated))",
-      }}>
+      }}
+    >
       {/* Thumbnail */}
-      <div className="relative h-16 w-10 flex-shrink-0 overflow-hidden rounded-lg"
-        style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}>
+      <div
+        className="relative h-16 w-10 shrink-0 overflow-hidden rounded-lg"
+        style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
+      >
         {item.thumbnailUrl ? (
-          <Image src={item.thumbnailUrl} alt={item.title ?? ""} fill className="object-cover" unoptimized />
+          <Image
+            src={item.thumbnailUrl}
+            alt={item.title ?? ""}
+            fill
+            className="object-cover"
+            unoptimized
+          />
         ) : (
           <div className="flex h-full items-center justify-center">
-            <Video size={16} style={{ color: "rgb(var(--color-text-placeholder))" }} />
+            <Video
+              size={16}
+              style={{ color: "rgb(var(--color-text-placeholder))" }}
+            />
           </div>
         )}
       </div>
 
       {/* Info */}
       <div className="min-w-0 flex-1">
-        <p className="truncate font-medium" style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text))" }}>
+        <p
+          className="truncate font-medium"
+          style={{
+            fontSize: "var(--text-sm)",
+            color: "rgb(var(--color-text))",
+          }}
+        >
           {item.title ?? "Untitled"}
         </p>
 
         <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
-          <Badge variant={cfg.variant}
-            className={cn("gap-1 py-0.5 text-[10px] font-semibold", cfg.variant === "default" && "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400")}>
-            <StatusIcon size={10} className={cfg.className} />
+          <Badge
+            variant={cfg.variant === "default" ? "secondary" : cfg.variant}
+            className={cn(
+              "gap-1 py-0.5 text-[10px] font-semibold",
+              cfg.variant !== "default" &&
+                " dark:bg-green-900/30 dark:text-green-400 bg-green-100 text-black",
+            )}
+          >
+            {/* <StatusIcon
+              size={10}
+              className={cn(
+                cfg.variant !== "default" && cfg.className,
+                cfg.variant === "default" && "text-black dark:text-green-400",
+              )}
+            /> */}
             {cfg.label}
           </Badge>
         </div>
 
         {/* Active progress bar */}
         {isActive && (
-          <Progress value={undefined} className="mt-2 h-1"
-            style={{ "--tw-bg-opacity": "0.15" } as React.CSSProperties} />
+          <Progress
+            value={undefined}
+            className="mt-2 h-1"
+            style={{ "--tw-bg-opacity": "0.15" } as React.CSSProperties}
+          />
         )}
 
         {/* Error message */}
         {status === "FAILED" && item.errorMessage && (
-          <p className="mt-1 flex items-center gap-1 leading-snug"
-            style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-error))" }}>
+          <p
+            className="mt-1 flex items-center gap-1 leading-snug"
+            style={{
+              fontSize: "var(--text-xs)",
+              color: "rgb(var(--color-error))",
+            }}
+          >
             <AlertCircle size={11} className="flex-shrink-0" />
             {item.errorMessage}
           </p>
@@ -257,8 +378,13 @@ export function TiktokImportPanel({ lang }: Props) {
   const apolloClient = useApolloClient();
 
   // ── Auth / connect status ──────────────────────────────────────────────────
-  const { data: statusData, loading: statusLoading, refetch: refetchStatus } =
-    useQuery(GetTiktokConnectStatusDocument, { fetchPolicy: "cache-and-network" });
+  const {
+    data: statusData,
+    loading: statusLoading,
+    refetch: refetchStatus,
+  } = useQuery(GetTiktokConnectStatusDocument, {
+    fetchPolicy: "cache-and-network",
+  });
 
   const isTiktokConnected = statusData?.me?.authProviders?.tiktok === true;
 
@@ -267,21 +393,30 @@ export function TiktokImportPanel({ lang }: Props) {
   const [pages, setPages] = useState<TiktokVideo[][]>([]);
   const [cursor, setCursor] = useState<string | undefined>(undefined);
 
-  const { data: videosData, loading: videosLoading, refetch: refetchVideos } =
-    useQuery(GetMyTiktokVideosDocument, {
-      variables: { cursor },
-      skip: !isTiktokConnected,
-      fetchPolicy: "network-only",
-      notifyOnNetworkStatusChange: true,
-    });
+  const {
+    data: videosData,
+    loading: videosLoading,
+    refetch: refetchVideos,
+  } = useQuery(GetMyTiktokVideosDocument, {
+    variables: { cursor },
+    skip: !isTiktokConnected,
+    fetchPolicy: "network-only",
+    notifyOnNetworkStatusChange: true,
+  });
 
   // Accumulate pages as new data arrives
   useEffect(() => {
     if (!videosData) return;
     const page = videosData.myTiktokVideos.videos;
     // cursor === undefined means first page — reset; otherwise append
-    setPages((prev) => (cursor === undefined && prev.length > 0 ? [page] : [...prev, page]));
-  }, [videosData]); // eslint-disable-line react-hooks/exhaustive-deps
+    // schedule the state update to avoid calling setState synchronously inside the effect
+    const t = setTimeout(() => {
+      setPages((prev) =>
+        cursor === undefined && prev.length > 0 ? [page] : [...prev, page],
+      );
+    }, 0);
+    return () => clearTimeout(t);
+  }, [videosData, cursor]);
 
   const allVideos = pages.flat();
   const hasMore = videosData?.myTiktokVideos.hasMore ?? false;
@@ -356,8 +491,8 @@ export function TiktokImportPanel({ lang }: Props) {
     Record<string, ImportStatus>
   >({});
 
-  const hasActiveImports = imports.some(
-    (i) => ACTIVE_STATUSES.includes(liveStatuses[i.id] ?? i.status),
+  const hasActiveImports = imports.some((i) =>
+    ACTIVE_STATUSES.includes(liveStatuses[i.id] ?? i.status),
   );
 
   useEffect(() => {
@@ -432,27 +567,52 @@ export function TiktokImportPanel({ lang }: Props) {
     );
   }
 
-  const notImportedVideos = allVideos.filter((v) => !importedUrls.has(v.shareUrl));
+  const notImportedVideos = allVideos.filter(
+    (v) => !importedUrls.has(v.shareUrl),
+  );
 
   return (
     <div className="flex flex-col gap-0">
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between px-4 pt-4 pb-3">
         <div>
-          <p className="font-bold" style={{ fontSize: "var(--text-md)", color: "rgb(var(--color-text))" }}>
+          <p
+            className="font-bold"
+            style={{
+              fontSize: "var(--text-md)",
+              color: "rgb(var(--color-text))",
+            }}
+          >
             TikTok Import
           </p>
-          <p style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}>
-            {allVideos.length > 0 ? `${allVideos.length} video${allVideos.length !== 1 ? "s" : ""} · ${notImportedVideos.length} not yet imported` : "Browse your videos"}
+          <p
+            style={{
+              fontSize: "var(--text-xs)",
+              color: "rgb(var(--color-text-muted))",
+            }}
+          >
+            {allVideos.length > 0
+              ? `${allVideos.length} video${allVideos.length !== 1 ? "s" : ""} · ${notImportedVideos.length} not yet imported`
+              : "Browse your videos"}
           </p>
         </div>
         <button
-          onClick={() => { setPages([]); setCursor(undefined); refetchVideos(); }}
+          onClick={() => {
+            setPages([]);
+            setCursor(undefined);
+            refetchVideos();
+          }}
           className="flex h-8 w-8 items-center justify-center rounded-full transition-colors active:opacity-60"
-          style={{ backgroundColor: "rgb(var(--color-bg-subtle))", color: "rgb(var(--color-text-muted))" }}
+          style={{
+            backgroundColor: "rgb(var(--color-bg-subtle))",
+            color: "rgb(var(--color-text-muted))",
+          }}
           title="Refresh"
         >
-          <RefreshCw size={14} className={videosLoading ? "animate-spin" : ""} />
+          <RefreshCw
+            size={14}
+            className={videosLoading ? "animate-spin" : ""}
+          />
         </button>
       </div>
 
@@ -468,8 +628,14 @@ export function TiktokImportPanel({ lang }: Props) {
           )}
           style={{
             fontSize: "var(--text-xs)",
-            borderColor: view === "pick" ? "rgb(var(--brand-primary))" : "rgb(var(--color-border))",
-            backgroundColor: view === "pick" ? "rgb(var(--brand-primary))" : "rgb(var(--color-bg-elevated))",
+            borderColor:
+              view === "pick"
+                ? "rgb(var(--brand-primary))"
+                : "rgb(var(--color-border))",
+            backgroundColor:
+              view === "pick"
+                ? "rgb(var(--brand-primary))"
+                : "rgb(var(--color-bg-elevated))",
             color: view === "pick" ? "#fff" : "rgb(var(--color-text-muted))",
           }}
         >
@@ -483,16 +649,24 @@ export function TiktokImportPanel({ lang }: Props) {
           )}
           style={{
             fontSize: "var(--text-xs)",
-            borderColor: view === "queue" ? "rgb(var(--brand-primary))" : "rgb(var(--color-border))",
-            backgroundColor: view === "queue" ? "rgb(var(--brand-primary))" : "rgb(var(--color-bg-elevated))",
+            borderColor:
+              view === "queue"
+                ? "rgb(var(--brand-primary))"
+                : "rgb(var(--color-border))",
+            backgroundColor:
+              view === "queue"
+                ? "rgb(var(--brand-primary))"
+                : "rgb(var(--color-bg-elevated))",
             color: view === "queue" ? "#fff" : "rgb(var(--color-text-muted))",
           }}
         >
           <Upload size={13} strokeWidth={2.2} />
           Import Queue
           {activeCount > 0 && (
-            <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-white"
-              style={{ backgroundColor: "rgb(var(--brand-primary))" }}>
+            <span
+              className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-white"
+              style={{ backgroundColor: "rgb(var(--brand-primary))" }}
+            >
               {activeCount}
             </span>
           )}
@@ -501,20 +675,44 @@ export function TiktokImportPanel({ lang }: Props) {
 
       {/* ── Import result toast ──────────────────────────────────────────── */}
       {importResult && (
-        <div className="mx-4 mb-3 flex items-start gap-2 rounded-xl border px-3 py-2.5"
-          style={{ backgroundColor: "rgb(var(--color-success) / 0.08)", borderColor: "rgb(var(--color-success) / 0.3)" }}>
-          <CheckCircle2 size={16} className="mt-0.5 flex-shrink-0" style={{ color: "rgb(var(--color-success))" }} />
+        <div
+          className="mx-4 mb-3 flex items-start gap-2 rounded-xl border px-3 py-2.5"
+          style={{
+            backgroundColor: "rgb(var(--color-success) / 0.08)",
+            borderColor: "rgb(var(--color-success) / 0.3)",
+          }}
+        >
+          <CheckCircle2
+            size={16}
+            className="mt-0.5 shrink-0"
+            style={{ color: "rgb(var(--color-success))" }}
+          />
           <div>
-            <p className="font-semibold" style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text))" }}>
-              {importResult.queued} video{importResult.queued !== 1 ? "s" : ""} queued for import
+            <p
+              className="font-semibold"
+              style={{
+                fontSize: "var(--text-sm)",
+                color: "rgb(var(--color-text))",
+              }}
+            >
+              {importResult.queued} video{importResult.queued !== 1 ? "s" : ""}{" "}
+              queued for import
             </p>
             {importResult.skipped > 0 && (
-              <p style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}>
+              <p
+                style={{
+                  fontSize: "var(--text-xs)",
+                  color: "rgb(var(--color-text-muted))",
+                }}
+              >
                 {importResult.skipped} already imported, skipped
               </p>
             )}
           </div>
-          <button onClick={() => setImportResult(null)} className="ml-auto flex-shrink-0 opacity-50 hover:opacity-100">
+          <button
+            onClick={() => setImportResult(null)}
+            className="ml-auto shrink-0 opacity-50 hover:opacity-100"
+          >
             <XCircle size={14} />
           </button>
         </div>
@@ -528,24 +726,47 @@ export function TiktokImportPanel({ lang }: Props) {
             <div className="flex items-center gap-2">
               {selected.size > 0 ? (
                 <>
-                  <span className="font-semibold" style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text))" }}>
+                  <span
+                    className="font-semibold"
+                    style={{
+                      fontSize: "var(--text-sm)",
+                      color: "rgb(var(--color-text))",
+                    }}
+                  >
                     {selected.size} selected
                   </span>
-                  <button onClick={clearSelection}
+                  <button
+                    onClick={clearSelection}
                     className="rounded-md px-2 py-0.5 font-medium transition-opacity active:opacity-60"
-                    style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))", backgroundColor: "rgb(var(--color-bg-subtle))" }}>
+                    style={{
+                      fontSize: "var(--text-xs)",
+                      color: "rgb(var(--color-text-muted))",
+                      backgroundColor: "rgb(var(--color-bg-subtle))",
+                    }}
+                  >
                     Clear
                   </button>
                 </>
               ) : (
-                <span style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text-muted))" }}>
+                <span
+                  style={{
+                    fontSize: "var(--text-sm)",
+                    color: "rgb(var(--color-text-muted))",
+                  }}
+                >
                   Tap to select
                 </span>
               )}
             </div>
-            <button onClick={toggleSelectAll} disabled={notImportedVideos.length === 0}
+            <button
+              onClick={toggleSelectAll}
+              disabled={notImportedVideos.length === 0}
               className="font-semibold transition-opacity disabled:opacity-30"
-              style={{ fontSize: "var(--text-sm)", color: "rgb(var(--brand-primary))" }}>
+              style={{
+                fontSize: "var(--text-sm)",
+                color: "rgb(var(--brand-primary))",
+              }}
+            >
               {allSelected ? "Deselect all" : "Select all"}
             </button>
           </div>
@@ -554,16 +775,34 @@ export function TiktokImportPanel({ lang }: Props) {
           {videosLoading && allVideos.length === 0 ? (
             <div className="grid grid-cols-3 gap-1 px-4">
               {Array.from({ length: 9 }).map((_, i) => (
-                <Skeleton key={i} className="rounded-xl" style={{ aspectRatio: "9/16" }} />
+                <Skeleton
+                  key={i}
+                  className="rounded-xl"
+                  style={{ aspectRatio: "9/16" }}
+                />
               ))}
             </div>
           ) : allVideos.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 py-14 text-center px-6">
-              <Video size={32} style={{ color: "rgb(var(--color-text-placeholder))" }} />
-              <p className="font-semibold" style={{ fontSize: "var(--text-base)", color: "rgb(var(--color-text))" }}>
+              <Video
+                size={32}
+                style={{ color: "rgb(var(--color-text-placeholder))" }}
+              />
+              <p
+                className="font-semibold"
+                style={{
+                  fontSize: "var(--text-base)",
+                  color: "rgb(var(--color-text))",
+                }}
+              >
                 No videos found
               </p>
-              <p style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text-muted))" }}>
+              <p
+                style={{
+                  fontSize: "var(--text-sm)",
+                  color: "rgb(var(--color-text-muted))",
+                }}
+              >
                 Your TikTok videos will appear here once loaded.
               </p>
             </div>
@@ -594,7 +833,9 @@ export function TiktokImportPanel({ lang }: Props) {
                 onClick={() => setCursor(nextCursor ?? undefined)}
                 className="gap-1.5"
               >
-                {videosLoading ? <Loader2 size={13} className="animate-spin" /> : null}
+                {videosLoading ? (
+                  <Loader2 size={13} className="animate-spin" />
+                ) : null}
                 Load more
               </Button>
             </div>
@@ -618,7 +859,8 @@ export function TiktokImportPanel({ lang }: Props) {
                   backgroundColor: "rgb(var(--color-bg-elevated) / 0.88)",
                   backdropFilter: "blur(16px) saturate(180%)",
                   WebkitBackdropFilter: "blur(16px) saturate(180%)",
-                  boxShadow: "0 -2px 24px rgba(0,0,0,0.08), 0 8px 32px rgba(0,0,0,0.08)",
+                  boxShadow:
+                    "0 -2px 24px rgba(0,0,0,0.08), 0 8px 32px rgba(0,0,0,0.08)",
                   border: "1px solid rgb(var(--color-border))",
                 }}
               >
@@ -652,16 +894,37 @@ export function TiktokImportPanel({ lang }: Props) {
       {view === "queue" && (
         <div className="px-4 pb-4">
           {imports.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed py-14 text-center"
-              style={{ borderColor: "rgb(var(--color-border))" }}>
-              <Upload size={28} style={{ color: "rgb(var(--color-text-placeholder))" }} />
-              <p className="font-semibold" style={{ fontSize: "var(--text-base)", color: "rgb(var(--color-text))" }}>
+            <div
+              className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed py-14 text-center"
+              style={{ borderColor: "rgb(var(--color-border))" }}
+            >
+              <Upload
+                size={28}
+                style={{ color: "rgb(var(--color-text-placeholder))" }}
+              />
+              <p
+                className="font-semibold"
+                style={{
+                  fontSize: "var(--text-base)",
+                  color: "rgb(var(--color-text))",
+                }}
+              >
                 No imports yet
               </p>
-              <p style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text-muted))" }}>
+              <p
+                style={{
+                  fontSize: "var(--text-sm)",
+                  color: "rgb(var(--color-text-muted))",
+                }}
+              >
                 Select videos on the My Videos tab and tap Import.
               </p>
-              <Button variant="outline" size="sm" onClick={() => setView("pick")} className="mt-1 gap-1.5">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setView("pick")}
+                className="mt-1 gap-1.5"
+              >
                 <Video size={13} /> Browse videos
               </Button>
             </div>
@@ -672,8 +935,11 @@ export function TiktokImportPanel({ lang }: Props) {
                 .slice()
                 .sort((a, b) => {
                   const statusOrder: Record<DownloadStatus, number> = {
-                    UPLOADING: 0, PROCESSING: 1,
-                    PENDING: 2, FAILED: 3, COMPLETED: 4,
+                    UPLOADING: 0,
+                    PROCESSING: 1,
+                    PENDING: 2,
+                    FAILED: 3,
+                    COMPLETED: 4,
                   };
                   const sa = liveStatuses[a.id] ?? a.status;
                   const sb = liveStatuses[b.id] ?? b.status;

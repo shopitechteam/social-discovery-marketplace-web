@@ -20,6 +20,12 @@ const TOGGLE_SAVE = gql`
   }
 `;
 
+const REPORT_CONTENT = gql`
+  mutation ReportContent($contentId: String!) {
+    reportContent(contentId: $contentId)
+  }
+`;
+
 interface Options {
   /** Call before like/comment/save — return false to abort (not authed). */
   requireAuth?: (intent?: { contentId?: string; action?: "like" | "comment" | "save" }) => boolean;
@@ -70,6 +76,7 @@ export function useInteractions(post: ContentCardFieldsFragment, options?: Optio
   const viewFired = useRef(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [toggleSaveMutation] = useMutation(TOGGLE_SAVE) as any;
+  const [reportMutation] = useMutation(REPORT_CONTENT);
 
   useEffect(() => {
     setLiked(post.isLikedByMe ?? false);
@@ -154,5 +161,9 @@ export function useInteractions(post: ContentCardFieldsFragment, options?: Optio
     writeSaveToCache(client, post.id, isSaved, count);
   }
 
-  return { liked, likeCount, handleLike, saved, saveCount, handleSave, handleShare, fireView, syncSaved };
+  async function handleReport() {
+    await reportMutation({ variables: { contentId: post.id } });
+  }
+
+  return { liked, likeCount, handleLike, saved, saveCount, handleSave, handleShare, fireView, syncSaved, handleReport };
 }

@@ -46,6 +46,7 @@ export type CreateFlowState = {
   visibilityMode: "public" | "friends_only" | "private";
   allowDownload: boolean;
   hdEnabled: boolean;
+  postOnTiktok: boolean;
   scheduledPublishAt: Date | null;
   location: DraftLocation | null;
   isSubmitting: boolean;
@@ -68,6 +69,7 @@ type CreateFlowActions = {
   setVisibilityMode: (mode: "public" | "friends_only" | "private") => void;
   setAllowDownload: (v: boolean) => void;
   setHdEnabled: (v: boolean) => void;
+  setPostOnTiktok: (v: boolean) => void;
   setScheduledPublishAt: (date: Date | null) => void;
   setLocation: (loc: DraftLocation | null) => void;
   setIsSubmitting: (v: boolean) => void;
@@ -90,6 +92,7 @@ const DEFAULT_STATE: CreateFlowState = {
   visibilityMode: "public",
   allowDownload: false,
   hdEnabled: false,
+  postOnTiktok: false,
   scheduledPublishAt: null,
   location: null,
   isSubmitting: false,
@@ -135,6 +138,7 @@ export const useCreateStore = create<CreateFlowState & CreateFlowActions>()(
       setVisibilityMode: (visibilityMode) => set({ visibilityMode }),
       setAllowDownload: (allowDownload) => set({ allowDownload }),
       setHdEnabled: (hdEnabled) => set({ hdEnabled }),
+      setPostOnTiktok: (postOnTiktok) => set({ postOnTiktok }),
       setScheduledPublishAt: (scheduledPublishAt) => set({ scheduledPublishAt }),
       setLocation: (location) => set({ location }),
       setIsSubmitting: (isSubmitting) => set({ isSubmitting }),
@@ -161,6 +165,7 @@ export const useCreateStore = create<CreateFlowState & CreateFlowActions>()(
         visibilityMode: s.visibilityMode,
         allowDownload: s.allowDownload,
         hdEnabled: s.hdEnabled,
+        postOnTiktok: s.postOnTiktok,
         scheduledPublishAt: s.scheduledPublishAt,
         location: s.location,
       }),

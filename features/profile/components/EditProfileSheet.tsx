@@ -37,10 +37,31 @@ type Field = {
 
 const fields: Field[] = [
   { name: "firstName", label: "First name", placeholder: "Ada", maxLength: 50 },
-  { name: "lastName", label: "Last name", placeholder: "Lovelace", maxLength: 50 },
-  { name: "username", label: "Username", placeholder: "ada.lovelace", maxLength: 30 },
-  { name: "bio", label: "Bio", placeholder: "Tell your story...", maxLength: 160, multiline: true },
-  { name: "website", label: "Website", placeholder: "yoursite.com", maxLength: 100 },
+  {
+    name: "lastName",
+    label: "Last name",
+    placeholder: "Lovelace",
+    maxLength: 50,
+  },
+  {
+    name: "username",
+    label: "Username",
+    placeholder: "ada.lovelace",
+    maxLength: 30,
+  },
+  {
+    name: "bio",
+    label: "Bio",
+    placeholder: "Tell your story...",
+    maxLength: 160,
+    multiline: true,
+  },
+  {
+    name: "website",
+    label: "Website",
+    placeholder: "yoursite.com",
+    maxLength: 100,
+  },
 ];
 
 function getInitialForm(user: ProfileUserFieldsFragment): FormValues {
@@ -82,7 +103,9 @@ export function EditProfileSheet({ user, open, onClose }: Props) {
 
     setUsernameState("checking");
     usernameTimer.current = setTimeout(async () => {
-      const { data } = await checkUsername({ variables: { username: normalized } });
+      const { data } = await checkUsername({
+        variables: { username: normalized },
+      });
       setUsernameState(data?.checkUsername.available ? "available" : "taken");
     }, 500);
   }
@@ -91,11 +114,14 @@ export function EditProfileSheet({ user, open, onClose }: Props) {
     if (usernameState === "taken") return;
 
     const input: Record<string, string> = {};
-    if (form.firstName !== (user.profile?.firstName ?? "")) input.firstName = form.firstName;
-    if (form.lastName !== (user.profile?.lastName ?? "")) input.lastName = form.lastName;
+    if (form.firstName !== (user.profile?.firstName ?? ""))
+      input.firstName = form.firstName;
+    if (form.lastName !== (user.profile?.lastName ?? ""))
+      input.lastName = form.lastName;
     if (form.username !== (user.username ?? "")) input.username = form.username;
     if (form.bio !== (user.profile?.bio ?? "")) input.bio = form.bio;
-    if (form.website !== (user.profile?.website ?? "")) input.website = form.website;
+    if (form.website !== (user.profile?.website ?? ""))
+      input.website = form.website;
 
     if (!Object.keys(input).length) {
       onClose();
@@ -132,7 +158,7 @@ export function EditProfileSheet({ user, open, onClose }: Props) {
       }}
     >
       <DrawerContent
-        className="mx-auto w-full max-w-[430px] gap-0 overflow-hidden rounded-t-lg border p-0 focus:outline-none"
+        className="mx-auto w-full max-w-107.5 gap-0 overflow-hidden rounded-t-lg border p-0 focus:outline-none"
         style={{
           backgroundColor: "rgb(var(--color-bg-elevated))",
           borderColor: "rgb(var(--color-border))",
@@ -179,7 +205,9 @@ export function EditProfileSheet({ user, open, onClose }: Props) {
           </div>
         </DrawerHeader>
 
-        <div style={{ height: 1, backgroundColor: "rgb(var(--color-border))" }} />
+        <div
+          style={{ height: 1, backgroundColor: "rgb(var(--color-border))" }}
+        />
 
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 py-4">
           {fields.map((field) => {

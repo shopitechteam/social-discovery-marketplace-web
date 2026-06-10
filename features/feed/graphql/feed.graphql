@@ -41,6 +41,7 @@ fragment ContentCardFields on Content {
   createdAt
   creator {
     id
+    username
     isFollowedByMe
     followerCount
     profile {
