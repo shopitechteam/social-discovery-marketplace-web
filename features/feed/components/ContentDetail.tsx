@@ -3,7 +3,6 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Download, Bookmark } from "lucide-react";
-import { SaveCollectionSheet } from "./SaveCollectionSheet";
 import { gql } from "@apollo/client";
 import {
   Drawer,
@@ -446,7 +445,6 @@ export function ContentDetail({ id, lang }: Props) {
   const toggleVideoMuted = useFeedPreferencesStore((s) => s.toggleVideoMuted);
   const isDesktop = useIsDesktop();
   const [showCommentDrawer, setShowCommentDrawer] = useState(false);
-  const [showSaveSheet, setShowSaveSheet] = useState(false);
   const resolvedSaved =
     (post as typeof post & { isSavedByMe?: boolean })?.isSavedByMe ?? false;
   const resolvedSaveCount = post?.stats?.saves ?? 0;
@@ -832,7 +830,7 @@ export function ContentDetail({ id, lang }: Props) {
     <div className="hidden md:flex items-center gap-3 px-4 py-3 border-b border-default">
       {/* Save */}
       <button
-        onClick={() => setShowSaveSheet(true)}
+        onClick={() => handleSave()}
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all"
         style={{
           borderColor: resolvedSaved
@@ -1299,7 +1297,7 @@ export function ContentDetail({ id, lang }: Props) {
             >
               {/* Save */}
               <button
-                onClick={() => setShowSaveSheet(true)}
+                onClick={() => handleSave()}
                 className="flex flex-col items-center gap-1.5"
               >
                 <div className="w-[52px] h-[52px] rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center">
@@ -1534,15 +1532,6 @@ export function ContentDetail({ id, lang }: Props) {
         </div>
       )}
 
-      {/* ── Save collection sheet ─────────────────────────────────────────── */}
-      <SaveCollectionSheet
-        open={showSaveSheet && !!post}
-        contentId={post?.id ?? ""}
-        lang={lang}
-        onSave={(collectionId) => handleSave(collectionId)}
-        onUnsave={(collectionId) => handleSave(collectionId)}
-        onClose={() => setShowSaveSheet(false)}
-      />
     </div>
   );
 }

@@ -44,7 +44,6 @@ import { useFollow } from "../hooks/useFollow";
 import { BufferSpinner } from "./BufferSpinner";
 import { usePageFocused } from "../hooks/usePageFocused";
 import toBase64 from "@/lib/utils";
-import { SaveCollectionSheet } from "./SaveCollectionSheet";
 
 interface Props {
   post: ContentCardFieldsFragment;
@@ -585,13 +584,12 @@ function ImageMedia({
 export function PostCard({ post, lang, priority }: Props) {
   const router = useRouter();
   const { requireAuth } = useAuthGuard(lang);
-  const { saved, saveCount, handleShare, fireView, syncSaved } =
+  const { saved, saveCount, handleSave, handleShare, fireView } =
     useInteractions(post, {
       requireAuth,
     });
   const cardRef = useRef<HTMLElement>(null);
   const [expanded, setExpanded] = useState(false);
-  const [showSaveSheet, setShowSaveSheet] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
 
   // Fire viewContent only when the card is at least 50% visible
@@ -818,10 +816,7 @@ export function PostCard({ post, lang, priority }: Props) {
       <div className="flex items-center gap-2 px-3 pb-3 pt-1">
         {/* Save pill — outlined, active = filled primary */}
         <button
-          onClick={() => {
-            if (!requireAuth({ contentId: post.id, action: "save" })) return;
-            setShowSaveSheet(true);
-          }}
+          onClick={() => handleSave()}
           className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-full border text-xs font-semibold transition-all active:scale-95"
           style={{
             borderColor: saved
@@ -930,15 +925,6 @@ export function PostCard({ post, lang, priority }: Props) {
         </button>
       </div>
 
-      {/* ── Save collection sheet ───────────────────────────────────────── */}
-      <SaveCollectionSheet
-        open={showSaveSheet}
-        contentId={post.id}
-        lang={lang}
-        onSave={() => syncSaved(true, saveCount + 1)}
-        onUnsave={() => syncSaved(false, Math.max(0, saveCount - 1))}
-        onClose={() => setShowSaveSheet(false)}
-      />
     </article>
   );
 }
