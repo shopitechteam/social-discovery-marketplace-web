@@ -22,9 +22,10 @@ export function FeedPage({ lang }: Props) {
   // If the user returns from auth with ?tab=following, honour it
   useEffect(() => {
     const t = searchParams.get("tab") as Tab | null;
-    if (t && t !== tab) setTab(t);
-  // only re-run when the search params change, not when tab changes internally
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (t && t !== tab) void setTab(t);
+    // only re-run when the search params change, not when tab changes internally
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   function handleTabChange(next: Tab) {

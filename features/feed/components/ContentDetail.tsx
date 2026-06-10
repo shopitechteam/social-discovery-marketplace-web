@@ -480,6 +480,7 @@ export function ContentDetail({ id, lang }: Props) {
     [],
   );
   const [captionExpanded, setCaptionExpanded] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const commentsRef = useRef<HTMLDivElement>(null);
 
@@ -541,19 +542,33 @@ export function ContentDetail({ id, lang }: Props) {
     }
   }
 
-  function handleDownload() {
+  async function handleDownload() {
     if (!post || typeof document === "undefined") return;
     const src = downloadSrc(post);
     if (!src) return;
 
-    const a = document.createElement("a");
-    a.href = src;
-    a.download = post.title || "shopi-post";
-    a.target = "_blank";
-    a.rel = "noreferrer";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+    setIsDownloading(true);
+    try {
+      const res = await fetch(src);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = post.title || "shopi-post";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      const a = document.createElement("a");
+      a.href = src;
+      a.download = post.title || "shopi-post";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } finally {
+      setIsDownloading(false);
+    }
   }
 
   // ── Comment submit ─────────────────────────────────────────────────────────
@@ -897,10 +912,23 @@ export function ContentDetail({ id, lang }: Props) {
       {post.allowDownload && (
         <button
           onClick={handleDownload}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-default text-muted-foreground hover:border-primary hover:text-primary transition-all text-xs font-semibold"
+          disabled={isDownloading}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-default text-muted-foreground hover:border-primary hover:text-primary transition-all text-xs font-semibold disabled:opacity-60"
         >
-          <Download className="w-4 h-4" strokeWidth={1.8} />
-          Download
+          {isDownloading ? (
+            <>
+              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+              </svg>
+              Downloading…
+            </>
+          ) : (
+            <>
+              <Download className="w-4 h-4" strokeWidth={1.8} />
+              Download
+            </>
+          )}
         </button>
       )}
       {/* Message */}
@@ -1364,13 +1392,21 @@ export function ContentDetail({ id, lang }: Props) {
               {post.allowDownload && (
                 <button
                   onClick={handleDownload}
-                  className="flex flex-col items-center gap-1.5"
+                  disabled={isDownloading}
+                  className="flex flex-col items-center gap-1.5 disabled:opacity-60"
                 >
                   <div className="w-[52px] h-[52px] rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center">
-                    <Download className="w-7 h-7 text-white" strokeWidth={1.8} />
+                    {isDownloading ? (
+                      <svg className="w-7 h-7 text-white animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                      </svg>
+                    ) : (
+                      <Download className="w-7 h-7 text-white" strokeWidth={1.8} />
+                    )}
                   </div>
                   <span className="text-white text-xs font-semibold drop-shadow">
-                    Download
+                    {isDownloading ? "Downloading…" : "Download"}
                   </span>
                 </button>
               )}

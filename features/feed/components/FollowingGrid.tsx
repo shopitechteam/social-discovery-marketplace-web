@@ -16,7 +16,7 @@ function LoginWall({ lang }: { lang: string }) {
   const returnTo = encodeURIComponent(`/${lang}/feed?tab=following`);
 
   return (
-    <div className="flex min-h-[60svh] flex-col items-center justify-center px-6 text-center gap-5">
+    <div className="flex min-h-[93svh] fixed top-0 left-0 w-full right-0 bottom-0 no-bar flex-col items-center justify-center px-6 text-center gap-5">
       <div
         className="w-16 h-16 rounded-full flex items-center justify-center"
         style={{ backgroundColor: "rgb(var(--brand-primary) / 0.1)" }}

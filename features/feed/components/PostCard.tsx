@@ -1006,19 +1006,15 @@ export function PostCard({ post, lang, priority }: Props) {
       <div className="flex items-center justify-between px-4 pt-2.5 pb-1">
         <div className="flex items-center gap-3 text-muted-foreground text-xs font-medium">
           {saveCount > 0 && <span>{fmt(saveCount)} saved</span>}
-          {(post.stats?.views ?? 0) > 0 && (
-            <span>· Trending in {post.location?.county ?? "your area"}</span>
-          )}
+          {(post.stats?.shares ?? 0) > 0 && <span>{saveCount > 0 ? "· " : ""}{fmt(post.stats!.shares!)} shares</span>}
+          {(post.stats?.views ?? 0) > 0 && <span>· {fmt(post.stats!.views!)} views</span>}
         </div>
-        {post.price && (
+        {post.price && post.price.amount > 0 && (
           <span
             className="text-base font-bold"
             style={{ color: "rgb(var(--color-text))" }}
           >
-            {post.price.currency}{" "}
-            {post.price.amount === 0
-              ? "Free"
-              : post.price.amount.toLocaleString()}
+            {post.price.currency} {post.price.amount.toLocaleString()}
           </span>
         )}
       </div>
