@@ -9,13 +9,7 @@
 
 import DesktopFeed from "./DesktopFeed";
 
-export function DesktopContentRedirect({
-  lang,
-  id: _id,
-}: {
-  lang: string;
-  id: string;
-}) {
+export function DesktopContentRedirect() {
   return (
     <div className="hidden md:block">
       <DesktopFeed />
