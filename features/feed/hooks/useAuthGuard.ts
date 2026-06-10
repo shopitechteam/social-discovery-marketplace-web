@@ -8,7 +8,7 @@ const INTENT_KEY = "shopi-auth-intent";
 export interface AuthIntent {
   scrollY: number;
   contentId?: string;
-  action?: "like" | "comment";
+  action?: "like" | "comment" | "save";
 }
 
 /**

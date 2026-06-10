@@ -719,7 +719,7 @@ export function StepReady({ lang }: StepReadyProps) {
                 alt={title}
                 fill
                 sizes="100vw"
-                className="object-cover"
+                className="object-contain"
                 unoptimized={shouldUnoptimizeMedia(coverSrc)}
               />
             ) : (
@@ -808,7 +808,7 @@ export function StepReady({ lang }: StepReadyProps) {
                     alt={title}
                     fill
                     sizes="100vw"
-                    className="object-cover"
+                    className="object-contain"
                     unoptimized={shouldUnoptimizeMedia(coverSrc)}
                   />
                 ) : (

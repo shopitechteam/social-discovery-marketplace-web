@@ -24,7 +24,15 @@ import {
   useId,
   useMemo,
 } from "react";
-import { MapPin } from "lucide-react";
+import { Download, MapPin, Bookmark, Plus } from "lucide-react";
+import { gql } from "@apollo/client";
+import { useQuery, useMutation } from "@apollo/client/react";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Shimmer, {
@@ -40,7 +48,6 @@ import { VideoProgressBar } from "./VideoProgressBar";
 import { useInteractions } from "../hooks/useInteractions";
 import { useAuthGuard } from "../hooks/useAuthGuard";
 import { useFollow } from "../hooks/useFollow";
-import { CommentsDrawer } from "./CommentsDrawer";
 import { BufferSpinner } from "./BufferSpinner";
 import { usePageFocused } from "../hooks/usePageFocused";
 import toBase64 from "@/lib/utils";
@@ -370,6 +377,30 @@ function mediaSrc(
   );
 }
 
+function downloadSrc(post: ContentCardFieldsFragment): string | null {
+  const first = post.media?.[0];
+  if (!first) return null;
+
+  if (post.type === "VIDEO") {
+    const playbackId = first.muxMeta?.playbackId;
+    return (
+      first.url ??
+      (playbackId ? `https://stream.mux.com/${playbackId}.m3u8` : null)
+    );
+  }
+
+  const preferredVariant = post.hdEnabled ? "original" : "large";
+  return (
+    first.r2Variants?.find((v) => v.variant === preferredVariant)?.url ??
+    first.r2Variants?.find((v) => v.variant === "large")?.url ??
+    first.r2Variants?.find((v) => v.variant === "medium")?.url ??
+    first.r2Variants?.[0]?.url ??
+    first.imageUrl ??
+    first.thumbnailUrl ??
+    null
+  );
+}
+
 // ── Image media block ─────────────────────────────────────────────────────────
 
 function ImageMedia({
@@ -554,34 +585,214 @@ function ImageMedia({
   );
 }
 
-// ── Action button ─────────────────────────────────────────────────────────────
+// ── GraphQL for collections ───────────────────────────────────────────────────
 
-function ActionBtn({
-  icon,
-  label,
-  count,
-  active,
-  onClick,
+const GET_MY_COLLECTIONS = gql`
+  query GetMyCollectionsSheet {
+    myCollections {
+      id
+      name
+      color
+      itemCount
+    }
+  }
+`;
+
+const CREATE_COLLECTION = gql`
+  mutation CreateCollectionSheet($name: String!, $color: String) {
+    createCollection(name: $name, color: $color) {
+      id
+      name
+      color
+      itemCount
+    }
+  }
+`;
+
+const ADD_SAVE_TO_COLLECTION = gql`
+  mutation AddSaveToCollectionSheet(
+    $contentId: String!
+    $collectionId: String!
+  ) {
+    addSaveToCollection(contentId: $contentId, collectionId: $collectionId)
+  }
+`;
+
+type CollectionItem = {
+  id: string;
+  name: string;
+  color?: string | null;
+  itemCount: number;
+};
+
+// ── SaveCollectionSheet (shadcn Drawer) ───────────────────────────────────────
+
+function SaveCollectionSheet({
+  open,
+  contentId,
+  saved,
+  onSave,
+  onClose,
 }: {
-  icon: React.ReactNode;
-  label: string;
-  count?: number;
-  active?: boolean;
-  onClick?: () => void;
+  open: boolean;
+  contentId: string;
+  saved: boolean;
+  onSave: (collectionId?: string) => void;
+  onClose: () => void;
 }) {
+  const [newName, setNewName] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [addingTo, setAddingTo] = useState<string | null>(null);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, refetch } = (useQuery as any)(GET_MY_COLLECTIONS, {
+    fetchPolicy: "cache-and-network",
+    skip: !open,
+  }) as {
+    data?: { myCollections: CollectionItem[] };
+    refetch: () => Promise<unknown>;
+  };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [createCollection] = useMutation(CREATE_COLLECTION) as any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [addSaveToCollection] = useMutation(ADD_SAVE_TO_COLLECTION) as any;
+
+  const collections: CollectionItem[] = data?.myCollections ?? [];
+
+  async function handleCreate() {
+    const trimmed = newName.trim();
+    if (!trimmed) return;
+    const { data: res } = await createCollection({
+      variables: { name: trimmed },
+    });
+    const newCol = res?.createCollection as CollectionItem | undefined;
+    setNewName("");
+    setCreating(false);
+    await refetch();
+    if (newCol) onSave(newCol.id);
+  }
+
+  async function handlePickCollection(col: CollectionItem) {
+    setAddingTo(col.id);
+    try {
+      if (saved) {
+        await addSaveToCollection({
+          variables: { contentId, collectionId: col.id },
+        });
+        onClose();
+      } else {
+        onSave(col.id);
+      }
+    } finally {
+      setAddingTo(null);
+    }
+  }
+
   return (
-    <button
-      onClick={onClick}
-      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg hover:bg-surface active:bg-surface transition-colors text-xs font-medium"
-      style={{
-        color: active
-          ? "rgb(var(--brand-primary))"
-          : "rgb(var(--color-text-muted))",
-      }}
-    >
-      {icon}
-      <span>{count !== undefined && count > 0 ? fmt(count) : label}</span>
-    </button>
+    <Drawer open={open} onOpenChange={(v) => !v && onClose()}>
+      <DrawerContent>
+        <DrawerHeader className="text-left px-5 pt-2 pb-3">
+          <DrawerTitle className="text-base font-semibold">
+            Save to collection
+          </DrawerTitle>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Keep what you love, organised
+          </p>
+        </DrawerHeader>
+
+        <div className="px-4 max-h-[60dvh] overflow-y-auto pb-2 space-y-1">
+          {/* New collection */}
+          {creating ? (
+            <div className="flex items-center gap-2 py-2">
+              <input
+                autoFocus
+                className="flex-1 bg-surface rounded-xl px-3 py-2.5 text-sm text-default placeholder:text-muted-foreground outline-none border border-border focus:border-primary"
+                placeholder="Collection name…"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+              />
+              <button
+                onClick={handleCreate}
+                disabled={!newName.trim()}
+                className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40"
+                style={{ backgroundColor: "rgb(var(--brand-primary))" }}
+              >
+                Create
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setCreating(true)}
+              className="flex items-center gap-3 w-full py-3 text-left"
+            >
+              <div
+                className="w-12 h-12 rounded-xl border-2 border-dashed flex items-center justify-center flex-shrink-0"
+                style={{ borderColor: "rgb(var(--brand-primary) / 0.5)" }}
+              >
+                <Plus
+                  className="w-5 h-5"
+                  style={{ color: "rgb(var(--brand-primary))" }}
+                />
+              </div>
+              <span
+                className="font-medium text-sm"
+                style={{ color: "rgb(var(--brand-primary))" }}
+              >
+                New collection
+              </span>
+            </button>
+          )}
+
+          {/* Existing collections */}
+          {collections.map((col) => (
+            <button
+              key={col.id}
+              onClick={() => handlePickCollection(col)}
+              disabled={addingTo === col.id}
+              className="flex items-center gap-3 w-full py-2.5 text-left rounded-xl hover:bg-surface transition-colors"
+            >
+              {/* Icon: first letter on primary or black bg */}
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-white font-bold text-lg"
+                style={{
+                  backgroundColor: col.color ?? "rgb(var(--brand-primary))",
+                }}
+              >
+                {(col.name ?? "").charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm text-default truncate">
+                  {col.name}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {col.itemCount} items
+                </p>
+              </div>
+              {addingTo === col.id ? (
+                <div
+                  className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin"
+                  style={{ borderColor: "rgb(var(--brand-primary))" }}
+                />
+              ) : (
+                <div className="w-5 h-5 rounded-full border-2 border-border" />
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Done */}
+        <div className="px-4 pt-3 pb-6">
+          <button
+            onClick={onClose}
+            className="w-full py-3.5 rounded-2xl font-semibold text-sm text-white"
+            style={{ backgroundColor: "rgb(var(--brand-primary))" }}
+          >
+            Done
+          </button>
+        </div>
+      </DrawerContent>
+    </Drawer>
   );
 }
 
@@ -590,12 +801,11 @@ function ActionBtn({
 export function PostCard({ post, lang, priority }: Props) {
   const router = useRouter();
   const { requireAuth } = useAuthGuard(lang);
-  const { liked, likeCount, handleLike, handleShare } = useInteractions(post, {
+  const { saved, saveCount, handleSave, handleShare } = useInteractions(post, {
     requireAuth,
   });
   const [expanded, setExpanded] = useState(false);
-  const [showComments, setShowComments] = useState(false);
-  const [commentCount, setCommentCount] = useState(post.stats?.comments ?? 0);
+  const [showSaveSheet, setShowSaveSheet] = useState(false);
 
   const creator = post.creator;
   // creator is a FieldResolver — it may arrive slightly after the content item.
@@ -611,20 +821,12 @@ export function PostCard({ post, lang, priority }: Props) {
   // isMyContent is resolved server-side — no client-side ID comparison needed
   const isOwnPost = post.isMyContent ?? false;
 
-  const {
-    following,
-    toggle: handleFollow,
-  } = useFollow({
+  const { following, toggle: handleFollow } = useFollow({
     userId: creator?.id ?? post.creatorId,
     initialFollowing: creator?.isFollowedByMe ?? false,
     initialFollowerCount: creator?.followerCount ?? 0,
     lang,
   });
-
-  function handleCommentClick() {
-    if (!requireAuth({ contentId: post.id, action: "comment" })) return;
-    setShowComments(true);
-  }
 
   const caption = post.caption ?? "";
   const isLong = caption.length > 160;
@@ -633,6 +835,20 @@ export function PostCard({ post, lang, priority }: Props) {
 
   function handleOpen() {
     router.push(`/${lang}/content/${post.id}`);
+  }
+
+  function handleDownload() {
+    const src = downloadSrc(post);
+    if (!src || typeof document === "undefined") return;
+
+    const a = document.createElement("a");
+    a.href = src;
+    a.download = `${post.title || "shopi-post"}`;
+    a.target = "_blank";
+    a.rel = "noreferrer";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
   }
 
   return (
@@ -690,7 +906,11 @@ export function PostCard({ post, lang, priority }: Props) {
               "Following"
             ) : (
               <>
-                <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+                <svg
+                  className="w-3.5 h-3.5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
                   <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" />
                 </svg>
                 Follow
@@ -732,7 +952,10 @@ export function PostCard({ post, lang, priority }: Props) {
         {post.hashtags && post.hashtags.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-1.5">
             {post.hashtags.slice(0, 5).map((tag) => (
-              <span key={tag} className="text-muted-foreground text-sm font-medium">
+              <span
+                key={tag}
+                className="text-muted-foreground text-sm font-medium"
+              >
                 #{tag}
               </span>
             ))}
@@ -749,139 +972,126 @@ export function PostCard({ post, lang, priority }: Props) {
         )}
       </div>
 
-      {/* ── Stats + price ──────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between px-4 py-2">
-        {/* Engagement summary (like FB — "62 · 28 comments") */}
-        <div className="flex items-center gap-2 text-muted-foreground text-xs">
-          {likeCount > 0 && (
-            <span className="flex items-center gap-0.5">
-              <span className="text-sm">❤️</span> {fmt(likeCount)}
-            </span>
-          )}
-          {(post.stats?.comments ?? 0) > 0 && (
-            <span>{fmt(post.stats!.comments)} comments</span>
-          )}
+      {/* ── Stats row ──────────────────────────────────────────────────── */}
+      <div className="flex items-center justify-between px-4 pt-2.5 pb-1">
+        <div className="flex items-center gap-3 text-muted-foreground text-xs font-medium">
+          {saveCount > 0 && <span>{fmt(saveCount)} saved</span>}
           {(post.stats?.views ?? 0) > 0 && (
-            <span>· {fmt(post.stats!.views)} views</span>
+            <span>· Trending in {post.location?.county ?? "your area"}</span>
           )}
         </div>
-        {/* Price */}
         {post.price && (
-          <span className="text-primary font-bold text-sm">
+          <span
+            className="text-xs font-bold"
+            style={{ color: "rgb(var(--color-text))" }}
+          >
+            {post.price.currency}{" "}
             {post.price.amount === 0
               ? "Free"
-              : `${post.price.currency} ${post.price.amount.toLocaleString()}`}
-            {post.price.negotiable && (
-              <span className="text-muted-foreground font-normal text-xs ml-1">
-                · neg
-              </span>
-            )}
+              : post.price.amount.toLocaleString()}
           </span>
         )}
       </div>
 
-      {/* ── Divider ────────────────────────────────────────────────────── */}
-      <div className="h-px mx-4 bg-border" />
+      {/* ── Action bar — 4 pill buttons matching design ─────────────────── */}
+      <div className="flex items-center gap-2 px-3 pb-3 pt-1">
+        {/* Save pill — outlined, active = filled primary */}
+        <button
+          onClick={() => {
+            if (!requireAuth({ contentId: post.id, action: "save" })) return;
+            setShowSaveSheet(true);
+          }}
+          className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-full border text-xs font-semibold transition-all active:scale-95"
+          style={{
+            borderColor: saved
+              ? "rgb(var(--brand-primary))"
+              : "rgb(var(--color-border))",
+            color: saved
+              ? "rgb(var(--brand-primary))"
+              : "rgb(var(--color-text-default))",
+            backgroundColor: saved
+              ? "rgb(var(--brand-primary) / 0.08)"
+              : "transparent",
+          }}
+        >
+          <Bookmark
+            className="w-4 h-4"
+            fill={saved ? "rgb(var(--brand-primary))" : "none"}
+            strokeWidth={1.8}
+          />
+          <span>{saveCount > 0 ? fmt(saveCount) : "Save"}</span>
+        </button>
 
-      {/* ── Action bar ─────────────────────────────────────────────────── */}
-      <div className="flex items-center px-2 pb-1">
-        <ActionBtn
-          onClick={() => handleLike()}
-          active={liked}
-          icon={
-            <svg
-              className="w-[18px] h-[18px] transition-all"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                fill={liked ? "rgb(var(--brand-primary))" : "none"}
-                stroke={liked ? "rgb(var(--brand-primary))" : "currentColor"}
-                strokeWidth={liked ? 0 : 1.8}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          }
-          label="Like"
-          count={likeCount}
-        />
-        <ActionBtn
-          onClick={handleCommentClick}
-          icon={
-            <svg
-              className="w-4.5 h-4.5"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.8}
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-              />
-            </svg>
-          }
-          label="Comment"
-          count={commentCount}
-        />
-        <ActionBtn
-          onClick={() => handleShare()}
-          icon={
-            <svg
-              className="w-[18px] h-[18px]"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.8}
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-              />
-            </svg>
-          }
-          label="Share"
-        />
-        <ActionBtn
+        {/* Download pill — outlined like Save */}
+        {post.allowDownload && (
+          <button
+            onClick={handleDownload}
+            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-full border border-border text-xs font-semibold transition-all active:scale-95"
+          >
+            <Download className="w-4 h-4" strokeWidth={1.8} />
+            <span>Download</span>
+          </button>
+        )}
+
+        {/* Share pill — outlined */}
+        <button
+          onClick={handleShare}
+          className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-full border border-border text-xs font-semibold text-default transition-all active:scale-95"
+        >
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.8}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+            />
+          </svg>
+          <span>
+            {(post.stats?.shares ?? 0) > 0
+              ? fmt(post.stats!.shares ?? 0)
+              : "Share"}
+          </span>
+        </button>
+
+        {/* Message pill — soft gray, grows to fill remaining space */}
+        <button
           onClick={handleOpen}
-          icon={
-            <svg
-              className="w-[18px] h-[18px]"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.8}
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M2.458 12C3.732 5.943 7.523 3 12 3c4.478 0 8.268 2.943 9.542 9-1.274 6.057-5.064 9-9.542 9-4.477 0-8.268-2.943-9.542-9z"
-              />
-            </svg>
-          }
-          label="View"
-        />
+          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-xs font-semibold text-white transition-all active:scale-95"
+          style={{ backgroundColor: "rgb(150 150 150)" }}
+        >
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.8}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+            />
+          </svg>
+          Message
+        </button>
       </div>
 
-      {/* ── Comments drawer ─────────────────────────────────────────────── */}
-      {showComments && (
-        <CommentsDrawer
-          contentId={post.id}
-          contentCreatorId={post.creatorId}
-          onClose={() => setShowComments(false)}
-          onCommentAdded={() => setCommentCount((c) => c + 1)}
-        />
-      )}
+      {/* ── Save collection sheet ───────────────────────────────────────── */}
+      <SaveCollectionSheet
+        open={showSaveSheet}
+        contentId={post.id}
+        saved={saved}
+        onSave={(collectionId) => {
+          handleSave(collectionId);
+          setShowSaveSheet(false);
+        }}
+        onClose={() => setShowSaveSheet(false)}
+      />
     </article>
   );
 }

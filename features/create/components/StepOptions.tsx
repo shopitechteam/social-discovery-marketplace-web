@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation } from "@apollo/client/react";
 import { useCreateStore } from "@/stores/create";
 import {
   AutosaveDraftDocument,
   AdvanceDraftStepDocument,
-  VisibilityMode,
 } from "@/types/__generated__/graphql";
+import type { VisibilityMode } from "@/types/__generated__/graphql";
 import { getMediaPreviewSrc } from "@/features/create/utils/mediaPreview";
 
 type Visibility = "public" | "friends_only" | "private";
@@ -22,6 +22,18 @@ const VISIBILITY_OPTIONS: {
   { value: "friends_only", label: "Friends only",  icon: "👥", desc: "Only people you follow" },
   { value: "private",      label: "Only me",       icon: "🔒", desc: "Only visible to you" },
 ];
+
+function toVisibilityMode(mode: Visibility): VisibilityMode {
+  switch (mode) {
+    case "friends_only":
+      return "FRIENDS_ONLY";
+    case "private":
+      return "PRIVATE";
+    case "public":
+    default:
+      return "PUBLIC";
+  }
+}
 
 export function StepOptions() {
   const {
@@ -47,6 +59,25 @@ export function StepOptions() {
   const [autosave] = useMutation(AutosaveDraftDocument);
   const [advanceStep] = useMutation(AdvanceDraftStepDocument);
 
+  useEffect(() => {
+    if (!draftId) return;
+
+    const timer = setTimeout(() => {
+      autosave({
+        variables: {
+          id: draftId,
+          input: {
+            visibilityMode: toVisibilityMode(visibilityMode),
+            allowDownload,
+            hdEnabled,
+          },
+        },
+      }).catch(() => undefined);
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [allowDownload, autosave, draftId, hdEnabled, visibilityMode]);
+
   async function handleNext() {
     if (!draftId) return;
     setError(null);
@@ -61,7 +92,7 @@ export function StepOptions() {
           id: draftId,
           input: {
             price: { amount: parsedPrice, currency, negotiable: false },
-            visibilityMode: visibilityMode.toUpperCase() as VisibilityMode,
+            visibilityMode: toVisibilityMode(visibilityMode),
             allowDownload,
             hdEnabled,
           },
@@ -189,7 +220,7 @@ export function StepOptions() {
             {cover.type === "video" && cover.localUri ? (
               <video
                 src={cover.localUri}
-                className="absolute inset-0 w-full h-full object-cover"
+                className="absolute inset-0 w-full h-full object-contain"
                 muted
                 playsInline
                 preload="metadata"
@@ -199,7 +230,7 @@ export function StepOptions() {
               <img
                 src={coverSrc}
                 alt=""
-                className="absolute inset-0 w-full h-full object-cover"
+                className="absolute inset-0 w-full h-full object-contain"
               />
             ) : (
               <div className="absolute inset-0" style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }} />

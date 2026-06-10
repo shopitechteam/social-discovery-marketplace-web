@@ -41,6 +41,20 @@ function mapContentType(
   return null;
 }
 
+function getAssetPreviewUrl(asset: {
+  r2Variants?: Array<{ variant: string; url: string }> | null;
+  thumbnailUrl?: string | null;
+}): string | undefined {
+  return (
+    asset.r2Variants?.find((v) => v.variant === "original")?.url ??
+    asset.r2Variants?.find((v) => v.variant === "large")?.url ??
+    asset.r2Variants?.find((v) => v.variant === "medium")?.url ??
+    asset.r2Variants?.[0]?.url ??
+    asset.thumbnailUrl ??
+    undefined
+  );
+}
+
 export function CreateFlow({ lang }: CreateFlowProps) {
   const store = useCreateStore();
   const {
@@ -108,14 +122,13 @@ export function CreateFlow({ lang }: CreateFlowProps) {
             .then(({ data }) => {
               const a = data?.mediaAsset;
               if (!a) return;
-              const url =
-                a.r2Variants?.find((v) => v.variant === "medium")?.url ??
-                a.thumbnailUrl ??
-                undefined;
+              const url = getAssetPreviewUrl(a);
               updateMediaItem(item.id, {
                 status: a.status === "READY" ? "ready" : a.status === "FAILED" ? "error" : "processing",
                 localUri: url ?? item.localUri,
                 thumbnailUrl: a.thumbnailUrl ?? undefined,
+                r2Variants: a.r2Variants ?? undefined,
+                muxPlaybackId: a.muxMeta?.playbackId ?? item.muxPlaybackId,
                 errorMessage: a.errorMessage ?? undefined,
               });
             })
@@ -174,16 +187,15 @@ export function CreateFlow({ lang }: CreateFlowProps) {
             .then(({ data: ad }) => {
               const a = ad?.mediaAsset;
               if (!a || cancelled) return;
-              const url =
-                a.r2Variants?.find((v) => v.variant === "medium")?.url ??
-                a.thumbnailUrl ??
-                undefined;
+              const url = getAssetPreviewUrl(a);
               addMediaItem({
                 id,
                 localUri: url ?? "",
                 type,
                 status: a.status === "READY" ? "ready" : a.status === "FAILED" ? "error" : "processing",
                 thumbnailUrl: a.thumbnailUrl ?? undefined,
+                r2Variants: a.r2Variants ?? undefined,
+                muxPlaybackId: a.muxMeta?.playbackId ?? undefined,
                 errorMessage: a.errorMessage ?? undefined,
               });
             })

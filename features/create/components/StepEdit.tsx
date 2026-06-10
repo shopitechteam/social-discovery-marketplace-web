@@ -57,6 +57,8 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
 
   // ── Title (autosize textarea) ──────────────────────────────────────────────
   const [titleValue, setTitleValue] = useState(title);
+  const [titleError, setTitleError] = useState<string | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
   const titleRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     autosize(titleRef.current);
@@ -131,10 +133,18 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
 
   async function onNext(values: EditFormValues) {
     if (!draftId) {
-      setError("Draft not read33y ye— please wait a moment and try again.");
+      setError("Draft is not ready yet - please wait a moment and try again.");
       return;
     }
     setError(null);
+    setTitleError(null);
+
+    const trimmedTitle = titleValue.trim();
+    if (!trimmedTitle) {
+      setTitleError("Add a title before moving to settings.");
+      titleRef.current?.focus();
+      return;
+    }
 
     // Wait for any items still in "uploading" status — those haven't been
     // attached to the draft yet (attach happens after the R2 PUT completes).
@@ -155,47 +165,93 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
       setError("Upload is taking too long — please try again.");
       return;
     }
+    const attachedMedia = useCreateStore.getState().mediaItems;
+    if (attachedMedia.length === 0) {
+      setError("Add at least one photo or video before continuing.");
+      return;
+    }
+    if (attachedMedia.every((m) => m.status === "error")) {
+      setError("Your upload failed. Please go back and choose media again.");
+      return;
+    }
+    if (!location) {
+      setLocationError("Add a location before moving to settings.");
+      return;
+    }
 
-    const parsedPrice = priceInput.trim() ? parseFloat(priceInput) : 0;
+    const parsedPrice = priceInput.trim() ? Number(priceInput) : 0;
+    if (!Number.isFinite(parsedPrice) || parsedPrice < 0) {
+      setError("Price must be 0 or more.");
+      return;
+    }
+
     const finalIsFree = parsedPrice === 0;
     setPrice(parsedPrice, finalIsFree);
 
-    // Final autosave (including price + location)
-    await autosaveMutation({
-      variables: {
-        id: draftId,
-        input: {
-          title: titleValue,
-          caption: values.caption,
-          hashtags: tags,
-          price: { amount: parsedPrice, currency, negotiable: false },
-          location: location
-            ? {
-                placeName: location.placeName,
-                formattedAddress: location.formattedAddress,
-                placeId: location.placeId,
-                latitude: location.latitude,
-                longitude: location.longitude,
-                county: location.county,
-                subregion: location.subregion,
-              }
-            : undefined,
+    try {
+      // Final autosave (including price + location)
+      const { error: saveError } = await autosaveMutation({
+        variables: {
+          id: draftId,
+          input: {
+            title: trimmedTitle,
+            caption: values.caption,
+            hashtags: tags,
+            price: { amount: parsedPrice, currency, negotiable: false },
+            location: location
+              ? {
+                  placeName: location.placeName,
+                  formattedAddress: location.formattedAddress,
+                  placeId: location.placeId,
+                  latitude: location.latitude,
+                  longitude: location.longitude,
+                  county: location.county,
+                  subregion: location.subregion,
+                }
+              : undefined,
+          },
         },
-      },
-    });
+      });
+      if (saveError) {
+        setError(saveError.message ?? "Could not save details");
+        return;
+      }
 
-    setTitle(titleValue);
-    setCaption(values.caption);
-    setHashtags(tags);
+      setTitle(trimmedTitle);
+      setCaption(values.caption);
+      setHashtags(tags);
 
-    const { error: stepError } = await advanceStep({
-      variables: { id: draftId },
-    });
-    if (stepError) {
-      setError(stepError.message ?? "Could not advance step");
-      return;
+      let serverStep: string | undefined;
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const { data: stepData, error: stepError } = await advanceStep({
+          variables: { id: draftId },
+        });
+        if (stepError) {
+          setError(stepError.message ?? "Could not advance step");
+          return;
+        }
+        serverStep = stepData?.advanceDraftStep?.currentStep as string | undefined;
+        if (serverStep === "PUBLISHING_OPTIONS" || serverStep === "READY") {
+          setStep("options");
+          return;
+        }
+        if (serverStep !== "EDITING") break;
+      }
+
+      setError(
+        serverStep === "MEDIA_UPLOAD"
+          ? "Your media is still attaching. Please wait a moment and try again."
+          : "Please complete the required details before continuing.",
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (/title/i.test(message)) {
+        setTitleError("Add a title before moving to settings.");
+        titleRef.current?.focus();
+        return;
+      }
+      setError(message);
     }
-    setStep("options");
   }
 
   // Show first media item immediately (blob) regardless of upload status
@@ -213,18 +269,35 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
         ref={titleRef}
         value={titleValue}
         onChange={(e) => {
-          if (e.target.value.length <= MAX_TITLE) setTitleValue(e.target.value);
+          if (e.target.value.length <= MAX_TITLE) {
+            setTitleValue(e.target.value);
+            if (e.target.value.trim()) setTitleError(null);
+          }
         }}
         placeholder="Add a title…"
         rows={1}
         className="w-full bg-transparent outline-none resize-none placeholder:text-base font-semibold leading-snug"
+        aria-invalid={!!titleError}
         style={{
           fontSize: "var(--text-md)",
-          color: "rgb(var(--color-text))",
+          color: titleError
+            ? "rgb(var(--color-error))"
+            : "rgb(var(--color-text))",
           caretColor: "rgb(var(--brand-primary))",
           overflow: "hidden",
         }}
       />
+      {titleError && (
+        <span
+          className="mt-1 font-medium"
+          style={{
+            fontSize: "var(--text-xs)",
+            color: "rgb(var(--color-error))",
+          }}
+        >
+          {titleError}
+        </span>
+      )}
       <span
         className="mt-1"
         style={{
@@ -445,9 +518,27 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
       </label>
       <LocationPicker
         value={location}
-        onSelect={(loc) => setLocation(loc)}
-        onClear={() => setLocation(null)}
+        onSelect={(loc) => {
+          setLocation(loc);
+          setLocationError(null);
+        }}
+        onClear={() => {
+          setLocation(null);
+          setLocationError("Add a location before moving to settings.");
+        }}
       />
+      {locationError && (
+        <p
+          className="font-medium"
+          style={{
+            fontSize: "var(--text-xs)",
+            color: "rgb(var(--color-error))",
+            marginTop: 6,
+          }}
+        >
+          {locationError}
+        </p>
+      )}
       <p
         style={{
           fontSize: "var(--text-xs)",
@@ -501,7 +592,7 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
             alt=""
             fill
             sizes="100vw"
-            className="object-cover"
+            className="object-contain"
             unoptimized={shouldUnoptimizeMedia(coverSrc)}
           />
         ) : (
@@ -671,7 +762,7 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
                   alt=""
                   fill
                   sizes="80px"
-                  className="object-cover"
+                  className="object-contain"
                   unoptimized={shouldUnoptimizeMedia(coverSrc)}
                 />
               ) : (

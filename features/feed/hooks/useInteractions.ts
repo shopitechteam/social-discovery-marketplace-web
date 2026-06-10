@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useMutation, useApolloClient } from "@apollo/client/react";
+import { gql } from "@apollo/client";
 import {
   ToggleLikeDocument,
   ViewContentDocument,
@@ -9,14 +10,21 @@ import {
 } from "@/types/__generated__/graphql";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 
+const TOGGLE_SAVE = gql`
+  mutation ToggleSave($contentId: String!, $collectionId: String) {
+    toggleSave(contentId: $contentId, collectionId: $collectionId) {
+      saved
+      saveCount
+      collectionId
+    }
+  }
+`;
+
 interface Options {
-  /** Call before like/comment — return false to abort (not authed). */
-  requireAuth?: (intent?: { contentId?: string; action?: "like" | "comment" }) => boolean;
+  /** Call before like/comment/save — return false to abort (not authed). */
+  requireAuth?: (intent?: { contentId?: string; action?: "like" | "comment" | "save" }) => boolean;
 }
 
-/** Write like state back into the Apollo cache so every component reading
- *  the same Content object (feed cards, detail page, trending strip) updates
- *  immediately without a refetch. */
 function writeLikeToCache(
   client: ReturnType<typeof useApolloClient>,
   contentId: string,
@@ -33,22 +41,41 @@ function writeLikeToCache(
   });
 }
 
+function writeSaveToCache(
+  client: ReturnType<typeof useApolloClient>,
+  contentId: string,
+  saved: boolean,
+  saveCount: number,
+) {
+  client.cache.modify({
+    id: client.cache.identify({ __typename: "Content", id: contentId }),
+    fields: {
+      isSavedByMe: () => saved,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      stats: (existing: any) => ({ ...existing, saves: saveCount }),
+    },
+  });
+}
+
 export function useInteractions(post: ContentCardFieldsFragment, options?: Options) {
-  // Local state is the optimistic layer; the cache is the source of truth
   const [liked, setLiked] = useState(post.isLikedByMe ?? false);
   const [likeCount, setLikeCount] = useState(post.stats?.likes ?? 0);
+  const [saved, setSaved] = useState((post as ContentCardFieldsFragment & { isSavedByMe?: boolean }).isSavedByMe ?? false);
+  const [saveCount, setSaveCount] = useState(post.stats?.saves ?? 0);
   const client = useApolloClient();
 
   const [toggleLikeMutation] = useMutation(ToggleLikeDocument);
   const [viewMutation] = useMutation(ViewContentDocument);
   const [shareMutation] = useMutation(ShareContentDocument);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [toggleSaveMutation] = useMutation(TOGGLE_SAVE) as any;
 
-  // Keep local state in sync if the cache updates from another component
-  // (e.g. user likes in detail page, comes back to feed)
   useEffect(() => {
     setLiked(post.isLikedByMe ?? false);
     setLikeCount(post.stats?.likes ?? 0);
-  }, [post.isLikedByMe, post.stats?.likes]);
+    setSaved((post as ContentCardFieldsFragment & { isSavedByMe?: boolean }).isSavedByMe ?? false);
+    setSaveCount(post.stats?.saves ?? 0);
+  }, [post.isLikedByMe, post.stats?.likes, (post as ContentCardFieldsFragment & { isSavedByMe?: boolean }).isSavedByMe, post.stats?.saves]);
 
   // Fire viewContent once on mount (fire-and-forget)
   useEffect(() => {
@@ -58,15 +85,13 @@ export function useInteractions(post: ContentCardFieldsFragment, options?: Optio
 
   async function handleLike() {
     if (options?.requireAuth) {
-      const authed = options.requireAuth({ contentId: post.id, action: "like" });
-      if (!authed) return;
+      if (!options.requireAuth({ contentId: post.id, action: "like" })) return;
     }
 
     const wasLiked = liked;
     const newLiked = !wasLiked;
     const newCount = likeCount + (wasLiked ? -1 : 1);
 
-    // Optimistic update — local state + cache
     setLiked(newLiked);
     setLikeCount(newCount);
     writeLikeToCache(client, post.id, newLiked, newCount);
@@ -74,16 +99,43 @@ export function useInteractions(post: ContentCardFieldsFragment, options?: Optio
     try {
       const { data } = await toggleLikeMutation({ variables: { contentId: post.id } });
       if (data?.toggleLike) {
-        // Sync with server truth
         setLiked(data.toggleLike.liked);
         setLikeCount(data.toggleLike.likeCount);
         writeLikeToCache(client, post.id, data.toggleLike.liked, data.toggleLike.likeCount);
       }
     } catch {
-      // Rollback
       setLiked(wasLiked);
       setLikeCount(likeCount);
       writeLikeToCache(client, post.id, wasLiked, likeCount);
+    }
+  }
+
+  async function handleSave(collectionId?: string) {
+    if (options?.requireAuth) {
+      if (!options.requireAuth({ contentId: post.id, action: "save" })) return;
+    }
+
+    const wasSaved = saved;
+    const newSaved = !wasSaved;
+    const newCount = saveCount + (wasSaved ? -1 : 1);
+
+    setSaved(newSaved);
+    setSaveCount(newCount);
+    writeSaveToCache(client, post.id, newSaved, newCount);
+
+    try {
+      const { data } = await toggleSaveMutation({
+        variables: { contentId: post.id, collectionId: collectionId ?? null },
+      });
+      if (data?.toggleSave) {
+        setSaved(data.toggleSave.saved);
+        setSaveCount(data.toggleSave.saveCount);
+        writeSaveToCache(client, post.id, data.toggleSave.saved, data.toggleSave.saveCount);
+      }
+    } catch {
+      setSaved(wasSaved);
+      setSaveCount(saveCount);
+      writeSaveToCache(client, post.id, wasSaved, saveCount);
     }
   }
 
@@ -94,5 +146,5 @@ export function useInteractions(post: ContentCardFieldsFragment, options?: Optio
     }
   }
 
-  return { liked, likeCount, handleLike, handleShare };
+  return { liked, likeCount, handleLike, saved, saveCount, handleSave, handleShare };
 }

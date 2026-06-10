@@ -9,6 +9,13 @@ export type MediaItem = {
   type: "image" | "video";
   status: "uploading" | "processing" | "ready" | "error";
   thumbnailUrl?: string;
+  r2Variants?: Array<{
+    variant: string;
+    url: string;
+    width?: number;
+    height?: number;
+    sizeBytes?: number | null;
+  }>;
   muxPlaybackId?: string;
   errorMessage?: string;
 };

@@ -25,6 +25,8 @@
  */
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { Download, Bookmark, Plus, X } from "lucide-react";
+import { gql } from "@apollo/client";
 import {
   Drawer,
   DrawerContent,
@@ -42,7 +44,6 @@ import {
   GetContentDocument,
   GetCommentsDocument,
   AddCommentDocument,
-  ToggleLikeDocument,
   ShareContentDocument,
   ViewContentDocument,
 } from "@/types/__generated__/graphql";
@@ -60,6 +61,7 @@ import { VideoProgressBar } from "./VideoProgressBar";
 import { usePageFocused } from "../hooks/usePageFocused";
 
 type CommentItem = NonNullable<GetCommentsQuery["comments"]["items"]>[number];
+type DetailPost = NonNullable<GetContentQuery["content"]>;
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -163,11 +165,7 @@ function CommentRow({
 
 // ─── MobileImageCarousel ──────────────────────────────────────────────────────
 
-type MediaItem = NonNullable<
-  NonNullable<
-    import("@/types/__generated__/graphql").GetContentQuery["content"]
-  >["media"]
->[number];
+type MediaItem = NonNullable<DetailPost["media"]>[number];
 
 function MobileImageCarousel({
   media,
@@ -233,6 +231,30 @@ function MobileImageCarousel({
         );
       })}
     </div>
+  );
+}
+
+function downloadSrc(post: DetailPost): string | null {
+  const first = post.media?.[0];
+  if (!first) return null;
+
+  if (post.type === "VIDEO") {
+    const playbackId = first.muxMeta?.playbackId;
+    return (
+      first.url ??
+      (playbackId ? `https://stream.mux.com/${playbackId}.m3u8` : null)
+    );
+  }
+
+  const preferredVariant = post.hdEnabled ? "original" : "large";
+  return (
+    first.r2Variants?.find((v) => v.variant === preferredVariant)?.url ??
+    first.r2Variants?.find((v) => v.variant === "large")?.url ??
+    first.r2Variants?.find((v) => v.variant === "medium")?.url ??
+    first.r2Variants?.[0]?.url ??
+    first.imageUrl ??
+    first.thumbnailUrl ??
+    null
   );
 }
 
@@ -424,10 +446,19 @@ export function ContentDetail({ id, lang }: Props) {
 
   // ── Mutations ──────────────────────────────────────────────────────────────
   const client = useApolloClient();
-  const [toggleLikeMutation] = useMutation(ToggleLikeDocument);
   const [addCommentMutation] = useMutation(AddCommentDocument);
   const [shareMutation] = useMutation(ShareContentDocument);
   const [viewMutation] = useMutation(ViewContentDocument);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [toggleSaveMutation] = useMutation(gql`
+    mutation ToggleSaveDetail($contentId: String!, $collectionId: String) {
+      toggleSave(contentId: $contentId, collectionId: $collectionId) {
+        saved
+        saveCount
+        collectionId
+      }
+    }
+  `) as any;
 
   // ── Local state ────────────────────────────────────────────────────────────
   const post = data?.content;
@@ -436,9 +467,9 @@ export function ContentDetail({ id, lang }: Props) {
   const toggleVideoMuted = useFeedPreferencesStore((s) => s.toggleVideoMuted);
   const isDesktop = useIsDesktop();
   const [showCommentDrawer, setShowCommentDrawer] = useState(false);
-  // Read liked/count straight from the Apollo cache (post updates reactively)
-  const resolvedLiked = post?.isLikedByMe ?? false;
-  const resolvedLikeCount = post?.stats?.likes ?? 0;
+  const [showSaveSheet, setShowSaveSheet] = useState(false);
+  const resolvedSaved = (post as (typeof post) & { isSavedByMe?: boolean })?.isSavedByMe ?? false;
+  const resolvedSaveCount = post?.stats?.saves ?? 0;
   const [commentCountOverride, setCommentCountOverride] = useState<
     number | null
   >(null);
@@ -471,38 +502,32 @@ export function ContentDetail({ id, lang }: Props) {
     viewMutation({ variables: { contentId: id } }).catch(() => {});
   }, [id, viewMutation]);
 
-  // ── Cache writer — keeps feed cards + detail in sync ──────────────────────
-  function writeLikeToCache(liked: boolean, likeCount: number) {
+  // ── Cache writer — keeps feed cards + detail in sync ─────────────────────
+  function writeSaveToCache(saved: boolean, saveCount: number) {
     client.cache.modify({
       id: client.cache.identify({ __typename: "Content", id }),
       fields: {
-        isLikedByMe: () => liked,
+        isSavedByMe: () => saved,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        stats: (existing: any) => ({ ...existing, likes: likeCount }),
+        stats: (existing: any) => ({ ...existing, saves: saveCount }),
       },
     });
   }
 
-  // ── Like handler ───────────────────────────────────────────────────────────
-  async function handleLike() {
-    if (!requireAuth({ contentId: id, action: "like" })) return;
-    const wasLiked = resolvedLiked;
-    const newLiked = !wasLiked;
-    const newCount = resolvedLikeCount + (wasLiked ? -1 : 1);
-
-    // Optimistic update straight into the cache
-    writeLikeToCache(newLiked, newCount);
-
+  // ── Save handler ───────────────────────────────────────────────────────────
+  async function handleSave(collectionId?: string) {
+    if (!requireAuth({ contentId: id, action: "save" })) return;
+    const wasSaved = resolvedSaved;
+    const newSaved = !wasSaved;
+    const newCount = resolvedSaveCount + (wasSaved ? -1 : 1);
+    writeSaveToCache(newSaved, newCount);
     try {
-      const { data: res } = await toggleLikeMutation({
-        variables: { contentId: id },
+      const { data: res } = await toggleSaveMutation({
+        variables: { contentId: id, collectionId: collectionId ?? null },
       });
-      if (res?.toggleLike) {
-        writeLikeToCache(res.toggleLike.liked, res.toggleLike.likeCount);
-      }
+      if (res?.toggleSave) writeSaveToCache(res.toggleSave.saved, res.toggleSave.saveCount);
     } catch {
-      // Rollback
-      writeLikeToCache(wasLiked, resolvedLikeCount);
+      writeSaveToCache(wasSaved, resolvedSaveCount);
     }
   }
 
@@ -514,6 +539,21 @@ export function ContentDetail({ id, lang }: Props) {
         .share({ title: post.title, url: window.location.href })
         .catch(() => {});
     }
+  }
+
+  function handleDownload() {
+    if (!post || typeof document === "undefined") return;
+    const src = downloadSrc(post);
+    if (!src) return;
+
+    const a = document.createElement("a");
+    a.href = src;
+    a.download = post.title || "shopi-post";
+    a.target = "_blank";
+    a.rel = "noreferrer";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
   }
 
   // ── Comment submit ─────────────────────────────────────────────────────────
@@ -789,40 +829,26 @@ export function ContentDetail({ id, lang }: Props) {
     </div>
   );
 
-  // Desktop inline action row (like/comment counts + share + message buttons)
+  // Desktop inline action row
   const DesktopActions = (
     <div className="hidden md:flex items-center gap-3 px-4 py-3 border-b border-default">
-      {/* Like */}
+      {/* Save */}
       <button
-        onClick={handleLike}
+        onClick={() => setShowSaveSheet(true)}
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all"
         style={{
-          borderColor: resolvedLiked
-            ? "rgb(var(--brand-primary))"
-            : "rgb(var(--color-border))",
-          color: resolvedLiked
-            ? "rgb(var(--brand-primary))"
-            : "rgb(var(--color-text-muted))",
-          backgroundColor: resolvedLiked
-            ? "rgb(var(--brand-primary) / 0.06)"
-            : "transparent",
+          borderColor: resolvedSaved ? "rgb(var(--brand-primary))" : "rgb(var(--color-border))",
+          color: resolvedSaved ? "rgb(var(--brand-primary))" : "rgb(var(--color-text-muted))",
+          backgroundColor: resolvedSaved ? "rgb(var(--brand-primary) / 0.06)" : "transparent",
         }}
       >
-        <svg
+        <Bookmark
           className="w-4 h-4"
-          viewBox="0 0 24 24"
-          fill={resolvedLiked ? "currentColor" : "none"}
-          stroke="currentColor"
-          strokeWidth={resolvedLiked ? 0 : 1.8}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-          />
-        </svg>
+          fill={resolvedSaved ? "currentColor" : "none"}
+          strokeWidth={1.8}
+        />
         <span className="text-xs font-semibold">
-          {resolvedLikeCount > 0 ? `${fmt(resolvedLikeCount)} Likes` : "Like"}
+          {resolvedSaveCount > 0 ? `${fmt(resolvedSaveCount)} Saved` : "Save"}
         </span>
       </button>
       {/* Comment count */}
@@ -868,6 +894,15 @@ export function ContentDetail({ id, lang }: Props) {
         </svg>
         Share
       </button>
+      {post.allowDownload && (
+        <button
+          onClick={handleDownload}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-default text-muted-foreground hover:border-primary hover:text-primary transition-all text-xs font-semibold"
+        >
+          <Download className="w-4 h-4" strokeWidth={1.8} />
+          Download
+        </button>
+      )}
       {/* Message */}
       <button
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-white transition-all"
@@ -1230,30 +1265,21 @@ export function ContentDetail({ id, lang }: Props) {
                 bottom: "max(env(safe-area-inset-bottom, 0px) + 140px, 160px)",
               }}
             >
-              {/* Like */}
+              {/* Save */}
               <button
-                onClick={handleLike}
+                onClick={() => setShowSaveSheet(true)}
                 className="flex flex-col items-center gap-1.5"
               >
-                <div className="w-13 h-13 w-[52px] h-[52px] rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center">
-                  <svg
+                <div className="w-[52px] h-[52px] rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center">
+                  <Bookmark
                     className="w-7 h-7 transition-all"
-                    viewBox="0 0 24 24"
-                    fill={resolvedLiked ? "rgb(var(--brand-primary))" : "none"}
-                    stroke={
-                      resolvedLiked ? "rgb(var(--brand-primary))" : "white"
-                    }
+                    fill={resolvedSaved ? "rgb(var(--brand-primary))" : "none"}
+                    stroke={resolvedSaved ? "rgb(var(--brand-primary))" : "white"}
                     strokeWidth={1.8}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                    />
-                  </svg>
+                  />
                 </div>
                 <span className="text-white text-xs font-semibold drop-shadow">
-                  {resolvedLikeCount > 0 ? fmt(resolvedLikeCount) : "Like"}
+                  {resolvedSaveCount > 0 ? fmt(resolvedSaveCount) : "Save"}
                 </span>
               </button>
 
@@ -1334,6 +1360,20 @@ export function ContentDetail({ id, lang }: Props) {
                   Share
                 </span>
               </button>
+
+              {post.allowDownload && (
+                <button
+                  onClick={handleDownload}
+                  className="flex flex-col items-center gap-1.5"
+                >
+                  <div className="w-[52px] h-[52px] rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center">
+                    <Download className="w-7 h-7 text-white" strokeWidth={1.8} />
+                  </div>
+                  <span className="text-white text-xs font-semibold drop-shadow">
+                    Download
+                  </span>
+                </button>
+              )}
             </div>
 
             {/* Overlay: title + description + creator bottom-left */}
@@ -1433,6 +1473,175 @@ export function ContentDetail({ id, lang }: Props) {
           </Drawer>
         </div>
       )}
+
+      {/* ── Save collection sheet ─────────────────────────────────────────── */}
+      {showSaveSheet && post && (
+        <DetailSaveSheet
+          contentId={post.id}
+          saved={resolvedSaved}
+          onSave={(collectionId) => {
+            handleSave(collectionId);
+            setShowSaveSheet(false);
+          }}
+          onClose={() => setShowSaveSheet(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── DetailSaveSheet ───────────────────────────────────────────────────────────
+
+const GET_MY_COLLECTIONS_DETAIL = gql`
+  query GetMyCollectionsDetail {
+    myCollections {
+      id
+      name
+      color
+      itemCount
+    }
+  }
+`;
+
+const CREATE_COLLECTION_DETAIL = gql`
+  mutation CreateCollectionDetail($name: String!, $color: String) {
+    createCollection(name: $name, color: $color) {
+      id
+      name
+      color
+      itemCount
+    }
+  }
+`;
+
+const COLLECTION_COLORS_DETAIL = [
+  "#e07a5f", "#c9a84c", "#3d8b6e", "#4a90d9", "#7c5cbf", "#3aafa9",
+];
+
+type ColItem = { id: string; name: string; color?: string | null; itemCount: number };
+
+function DetailSaveSheet({
+  contentId,
+  saved,
+  onSave,
+  onClose,
+}: {
+  contentId: string;
+  saved: boolean;
+  onSave: (collectionId?: string) => void;
+  onClose: () => void;
+}) {
+  const [newName, setNewName] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [selectedColor, setSelectedColor] = useState(COLLECTION_COLORS_DETAIL[0]);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, refetch } = (useQuery as any)(GET_MY_COLLECTIONS_DETAIL, {
+    fetchPolicy: "cache-and-network",
+  }) as { data?: { myCollections: ColItem[] }; refetch: () => Promise<unknown> };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [createCollection] = useMutation(CREATE_COLLECTION_DETAIL) as any;
+
+  const collections: ColItem[] = data?.myCollections ?? [];
+
+  async function handleCreate() {
+    const trimmed = newName.trim();
+    if (!trimmed) return;
+    const { data: res } = await createCollection({ variables: { name: trimmed, color: selectedColor } });
+    const newCol = res?.createCollection as ColItem | undefined;
+    setNewName("");
+    setCreating(false);
+    await refetch();
+    if (newCol) onSave(newCol.id);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-lg bg-elevated rounded-t-2xl shadow-2xl overflow-hidden">
+        <div className="flex justify-center pt-2.5 pb-1">
+          <div className="w-10 h-1 rounded-full bg-border" />
+        </div>
+        <div className="flex items-center justify-between px-5 pb-3">
+          <div>
+            <p className="font-semibold text-base text-default">Save to collection</p>
+            <p className="text-xs text-muted-foreground">Keep what you love, organised</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-surface text-muted-foreground">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="px-4 max-h-[55dvh] overflow-y-auto pb-4 space-y-1">
+          {creating ? (
+            <div className="flex items-center gap-2 py-2">
+              <div className="flex gap-1">
+                {COLLECTION_COLORS_DETAIL.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => setSelectedColor(c)}
+                    className="w-6 h-6 rounded-full border-2 transition-all"
+                    style={{ backgroundColor: c, borderColor: selectedColor === c ? "#fff" : "transparent", outline: selectedColor === c ? `2px solid ${c}` : "none" }}
+                  />
+                ))}
+              </div>
+              <input
+                autoFocus
+                className="flex-1 bg-surface rounded-xl px-3 py-2 text-sm text-default placeholder:text-muted-foreground outline-none border border-border focus:border-primary"
+                placeholder="Collection name…"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+              />
+              <button
+                onClick={handleCreate}
+                disabled={!newName.trim()}
+                className="px-3 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-40"
+                style={{ backgroundColor: "rgb(var(--brand-primary))" }}
+              >
+                Create
+              </button>
+            </div>
+          ) : (
+            <button onClick={() => setCreating(true)} className="flex items-center gap-3 w-full py-3 text-left">
+              <div className="w-12 h-12 rounded-xl border-2 border-dashed border-primary/50 flex items-center justify-center flex-shrink-0">
+                <Plus className="w-5 h-5" style={{ color: "rgb(var(--brand-primary))" }} />
+              </div>
+              <span className="font-medium text-sm" style={{ color: "rgb(var(--brand-primary))" }}>New collection</span>
+            </button>
+          )}
+
+          {collections.map((col) => (
+            <button
+              key={col.id}
+              onClick={() => { onSave(col.id); onClose(); }}
+              className="flex items-center gap-3 w-full py-2.5 text-left rounded-xl hover:bg-surface transition-colors px-2 -mx-2"
+            >
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-white font-bold text-lg"
+                style={{ backgroundColor: col.color ?? "rgb(var(--brand-primary))" }}
+              >
+                {(col.name ?? "").charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm text-default truncate">{col.name}</p>
+                <p className="text-xs text-muted-foreground">{col.itemCount} items</p>
+              </div>
+              <div className="w-5 h-5 rounded-full border-2 border-border" />
+            </button>
+          ))}
+        </div>
+
+        <div className="px-4 pt-2 pb-4">
+          <button
+            onClick={() => { onSave(undefined); onClose(); }}
+            className="w-full py-3.5 rounded-xl font-semibold text-sm"
+            style={{ backgroundColor: saved ? "rgb(var(--color-surface))" : "rgb(var(--brand-primary))", color: saved ? "rgb(var(--color-text-muted))" : "#fff" }}
+          >
+            {saved ? "Done" : "Save without collection"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

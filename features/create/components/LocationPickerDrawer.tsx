@@ -70,6 +70,13 @@ interface LocationResult {
   coordinates?: { lat: number; lng: number } | null;
 }
 
+interface ReverseGeocodeResult {
+  countyName?: string | null;
+  subCountyName?: string | null;
+  wardName?: string | null;
+  coordinates?: { lat: number; lng: number } | null;
+}
+
 // ─── GQL ─────────────────────────────────────────────────────────────────────
 
 const NEARBY_PAGE: TypedDocumentNode<
@@ -124,6 +131,23 @@ const RESOLVE_PLACE: TypedDocumentNode<
   }
 `;
 
+const REVERSE_GEOCODE: TypedDocumentNode<
+  { reverseGeocode: { matched: boolean; location: ReverseGeocodeResult } },
+  { lat: number; lng: number }
+> = gql`
+  query CreateLocationReverseGeocode($lat: Float!, $lng: Float!) {
+    reverseGeocode(lat: $lat, lng: $lng) {
+      matched
+      location {
+        countyName
+        subCountyName
+        wardName
+        coordinates { lat lng }
+      }
+    }
+  }
+`;
+
 // ─── Haversine distance (metres) ─────────────────────────────────────────────
 
 function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -161,6 +185,9 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [resolving, setResolving] = useState(false);
+  type CurrentLocationStatus = "idle" | "loading" | "denied" | "error";
+  const [currentLocationStatus, setCurrentLocationStatus] =
+    useState<CurrentLocationStatus>("idle");
 
   // Nearby
   type NearbyStatus = "idle" | "loading" | "loadingMore" | "done" | "denied" | "error";
@@ -191,6 +218,7 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
   const [fetchWardsPaged] = useLazyQuery(WARDS_PAGED, { fetchPolicy: "network-only" });
   const [fetchWardSearch] = useLazyQuery(WARD_SEARCH, { fetchPolicy: "network-only" });
   const [fetchResolve] = useLazyQuery(RESOLVE_PLACE, { fetchPolicy: "cache-first" });
+  const [fetchReverseGeocode] = useLazyQuery(REVERSE_GEOCODE, { fetchPolicy: "network-only" });
 
   // ── Lifecycle ────────────────────────────────────────────────────────────
 
@@ -215,6 +243,7 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
 
   function resetAll() {
     setQuery(""); setSelectedId(null); setTab("nearby");
+    setCurrentLocationStatus("idle");
     setNearbyItems([]); setNearbyStatus("idle"); setNearbyRadiusMeters(2000); setNearbyHasMore(true);
     setWards([]); setWardCursor(null); setWardHasMore(true); setWardStatus("idle");
     gpsRef.current = null; nearbyItemsRef.current = [];
@@ -438,6 +467,50 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
     onOpenChange(false);
   }
 
+  function handleUseCurrentLocation() {
+    setCurrentLocationStatus("loading");
+    requestGps(async (granted, code) => {
+      if (!granted || !gpsRef.current) {
+        setCurrentLocationStatus(code === 1 ? "denied" : "error");
+        return;
+      }
+
+      const gps = gpsRef.current;
+      try {
+        const { data } = await fetchReverseGeocode({
+          variables: { lat: gps.lat, lng: gps.lng },
+        });
+        const loc = data?.reverseGeocode?.location;
+        const placeName =
+          loc?.wardName ?? loc?.subCountyName ?? loc?.countyName ?? "Current location";
+        const formattedAddress =
+          [loc?.wardName, loc?.subCountyName, loc?.countyName]
+            .filter(Boolean)
+            .join(", ") || "Current location";
+
+        confirmLocation({
+          placeName,
+          formattedAddress,
+          placeId: `current:${gps.lat.toFixed(5)},${gps.lng.toFixed(5)}`,
+          latitude: loc?.coordinates?.lat ?? gps.lat,
+          longitude: loc?.coordinates?.lng ?? gps.lng,
+          county: loc?.countyName ?? undefined,
+          subregion: loc?.subCountyName ?? undefined,
+        });
+      } catch {
+        confirmLocation({
+          placeName: "Current location",
+          formattedAddress: "Current location",
+          placeId: `current:${gps.lat.toFixed(5)},${gps.lng.toFixed(5)}`,
+          latitude: gps.lat,
+          longitude: gps.lng,
+        });
+      } finally {
+        setCurrentLocationStatus("idle");
+      }
+    });
+  }
+
   // ── Scroll handlers ──────────────────────────────────────────────────────
 
   function handleNearbyScroll(e: React.UIEvent<HTMLDivElement>) {
@@ -557,6 +630,55 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
               )}
             </button>
           ))}
+        </div>
+
+        <div className="px-4 pt-3 flex-shrink-0">
+          <button
+            type="button"
+            onClick={handleUseCurrentLocation}
+            disabled={currentLocationStatus === "loading" || resolving}
+            className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left active:opacity-70 disabled:opacity-70"
+            style={{
+              backgroundColor: "rgb(var(--brand-primary) / 0.08)",
+              border: "1px solid rgb(var(--brand-primary) / 0.18)",
+              color: "rgb(var(--color-text))",
+            }}
+          >
+            <span
+              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{
+                backgroundColor: "rgb(var(--brand-primary) / 0.12)",
+                color: "rgb(var(--brand-primary))",
+              }}
+            >
+              {currentLocationStatus === "loading" ? (
+                <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
+                  <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                </svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+                  <path d="m4.93 4.93 2.12 2.12M16.95 16.95l2.12 2.12M19.07 4.93l-2.12 2.12M7.05 16.95l-2.12 2.12" />
+                </svg>
+              )}
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold" style={{ fontSize: "var(--text-sm)" }}>
+                {currentLocationStatus === "loading"
+                  ? "Finding your location..."
+                  : "Use my current location"}
+              </p>
+              <p className="mt-0.5" style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}>
+                {currentLocationStatus === "denied"
+                  ? "Location permission is blocked. You can still search below."
+                  : currentLocationStatus === "error"
+                    ? "Could not get GPS. Try again or search below."
+                    : "Share your GPS location for this post"}
+              </p>
+            </div>
+          </button>
         </div>
 
         {/* Search — All tab */}
