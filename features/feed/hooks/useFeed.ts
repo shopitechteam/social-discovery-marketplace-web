@@ -12,26 +12,20 @@ import {
 const PAGE_SIZE = 6;
 
 // How long (ms) before a cached feed is considered stale and worth re-fetching.
-const STALE_MS = 60_000; // 1 minute
+const STALE_MS = 3 * 60_000; // 3 minutes before background refresh
 
 export function useForYouFeed() {
   const { data, loading, error, fetchMore, refetch } = useQuery(
     ForYouFeedDocument,
     {
       variables: { limit: PAGE_SIZE },
-      // Serve from cache immediately; refetch in background only when stale.
-      // Avoid notifyOnNetworkStatusChange so background fetches don't trigger
-      // extra renders that cause images to flicker.
       fetchPolicy: "cache-and-network",
       nextFetchPolicy: "cache-first",
     },
   );
 
-  // Stale-while-revalidate: refetch in the background only if data is old.
-  // This avoids the re-render that causes all images to flicker when the user
-  // navigates back to the feed from a content detail page.
-  // eslint-disable-next-line react-hooks/purity
-  const lastFetchedAt = useRef<number>(Date.now());
+  // Background refresh only after STALE_MS — keeps back-nav instant with no flicker.
+  const lastFetchedAt = useRef<number>(0);
   const hasMounted = useRef(false);
   useEffect(() => {
     if (hasMounted.current) {

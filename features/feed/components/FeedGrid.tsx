@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useLayoutEffect, useRef } from "react";
 import { PostCard } from "./PostCard";
 import { useForYouFeed } from "../hooks/useFeed";
 import { FeedPaginationSkeleton, FeedSkeleton } from "./FeedSkeleton";
@@ -23,16 +23,36 @@ export function FeedGrid({ lang }: Props) {
     rootMargin: "1400px",
   });
 
-  // Restore scroll position when returning from auth (after like/comment redirect)
-  useEffect(() => {
+  // Restore scroll when returning from PDP or auth — wait until DOM has enough height
+  const scrollRestored = useRef(false);
+  useLayoutEffect(() => {
+    if (scrollRestored.current || items.length === 0) return;
+
     const intent = consumeAuthIntent();
-    if (!intent || intent.scrollY === 0) return;
-    // Wait for feed items to render before scrolling
-    const raf = requestAnimationFrame(() => {
-      window.scrollTo({ top: intent.scrollY, behavior: "instant" });
-    });
-    return () => cancelAnimationFrame(raf);
-  }, []);
+    const savedScroll = sessionStorage.getItem("feed-scroll");
+    const target = intent?.scrollY
+      ? intent.scrollY
+      : savedScroll
+        ? parseInt(savedScroll, 10)
+        : 0;
+
+    if (savedScroll) sessionStorage.removeItem("feed-scroll");
+    if (!target) return;
+
+    scrollRestored.current = true;
+
+    // Retry until page is tall enough to scroll to the target position
+    let attempts = 0;
+    function tryScroll() {
+      if (document.body.scrollHeight >= target || attempts > 20) {
+        window.scrollTo({ top: target, behavior: "instant" });
+        return;
+      }
+      attempts++;
+      requestAnimationFrame(tryScroll);
+    }
+    requestAnimationFrame(tryScroll);
+  }, [items.length]);
 
   if (loading && items.length === 0) return <FeedSkeleton />;
 

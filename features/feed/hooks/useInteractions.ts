@@ -60,7 +60,7 @@ function writeSaveToCache(
 export function useInteractions(post: ContentCardFieldsFragment, options?: Options) {
   const [liked, setLiked] = useState(post.isLikedByMe ?? false);
   const [likeCount, setLikeCount] = useState(post.stats?.likes ?? 0);
-  const [saved, setSaved] = useState((post as ContentCardFieldsFragment & { isSavedByMe?: boolean }).isSavedByMe ?? false);
+  const [saved, setSaved] = useState(post.isSavedByMe ?? false);
   const [saveCount, setSaveCount] = useState(post.stats?.saves ?? 0);
   const client = useApolloClient();
 
@@ -74,9 +74,9 @@ export function useInteractions(post: ContentCardFieldsFragment, options?: Optio
   useEffect(() => {
     setLiked(post.isLikedByMe ?? false);
     setLikeCount(post.stats?.likes ?? 0);
-    setSaved((post as ContentCardFieldsFragment & { isSavedByMe?: boolean }).isSavedByMe ?? false);
+    setSaved(post.isSavedByMe ?? false);
     setSaveCount(post.stats?.saves ?? 0);
-  }, [post.isLikedByMe, post.stats?.likes, (post as ContentCardFieldsFragment & { isSavedByMe?: boolean }).isSavedByMe, post.stats?.saves]);
+  }, [post.isLikedByMe, post.stats?.likes, post.isSavedByMe, post.stats?.saves]);
 
   // Call this when the post scrolls into view — fires at most once per mount
   function fireView() {

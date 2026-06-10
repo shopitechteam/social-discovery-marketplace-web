@@ -263,7 +263,7 @@ function ContentVideo({
   thumbnailUrl,
   muted,
   onToggleMuted,
-  fit = "contain",
+  fit,
   fill = false,
   showMuteButton = false,
   showSpinner = false,
@@ -305,7 +305,7 @@ function ContentVideo({
     };
   }, [hlsUrl, muted, videoRef]);
 
-  const objectClass = fit === "cover" ? "object-cover" : "object-contain";
+  const objectClass = "object-contain";
   const videoClassName = fill
     ? `absolute inset-0 w-full h-full ${objectClass}`
     : `max-w-full max-h-full ${objectClass}`;
@@ -325,7 +325,7 @@ function ContentVideo({
   }
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center">
+    <div className="relative w-full h-full flex items-center justify-center bg-black">
       {thumbnailUrl && (
         // eslint-disable-next-line @next/next/no-img-element
         <img

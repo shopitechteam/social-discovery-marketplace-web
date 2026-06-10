@@ -106,7 +106,9 @@ export function BottomNav({ lang = "en" }: { lang: string }) {
           // Active if the pathname segment after lang matches this tab's path
           const isActive =
             tab.key === "feed"
-              ? pathname === `/${lang}` || pathname.startsWith(`/${lang}/feed`)
+              ? pathname === `/${lang}` ||
+                pathname.startsWith(`/${lang}/feed`) ||
+                pathname.startsWith(`/${lang}/collections/`)
               : pathname.startsWith(`/${lang}/${tab.path}`);
 
           return (
