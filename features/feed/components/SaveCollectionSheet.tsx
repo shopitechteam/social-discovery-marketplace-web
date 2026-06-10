@@ -78,11 +78,9 @@ type Props = {
   contentId: string;
   onSave: (collectionId?: string) => void;
   onClose: () => void;
-  // Toggle mode (PostCard): provide both of these
+  // Toggle mode (PostCard + ContentDetail): provide both of these
   onUnsave?: (collectionId?: string) => void;
   lang?: string;
-  // Simple mode (ContentDetail): provide this
-  saved?: boolean;
 };
 
 export function SaveCollectionSheet({
@@ -92,7 +90,6 @@ export function SaveCollectionSheet({
   onClose,
   onUnsave,
   lang,
-  saved,
 }: Props) {
   const router = useRouter();
   const [newName, setNewName] = useState("");
@@ -319,14 +316,9 @@ export function SaveCollectionSheet({
               onClose();
             }}
             className="w-full py-4 rounded-2xl font-semibold text-base text-white"
-            style={{
-              backgroundColor: !toggleMode && saved
-                ? "rgb(var(--color-surface))"
-                : "rgb(var(--brand-primary))",
-              color: !toggleMode && saved ? "rgb(var(--color-text-muted))" : "#fff",
-            }}
+            style={{ backgroundColor: "rgb(var(--brand-primary))" }}
           >
-            {toggleMode ? "Done" : saved ? "Done" : "Save without collection"}
+            {savedInIds.size > 0 ? "Done" : "Close"}
           </button>
         </div>
       </DrawerContent>

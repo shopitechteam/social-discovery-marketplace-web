@@ -114,7 +114,10 @@ function VideoPlayer({
     const vid = videoRef.current;
     if (!vid) return;
     if (isActive && pageFocused) {
-      vid.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
+      vid
+        .play()
+        .then(() => setPlaying(true))
+        .catch(() => setPlaying(false));
     } else {
       vid.pause();
       if (!isActive) vid.currentTime = 0;
@@ -141,14 +144,19 @@ function VideoPlayer({
       rafRef.current = requestAnimationFrame(tick);
     }
     rafRef.current = requestAnimationFrame(tick);
-    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
   }, [playing]);
 
   function togglePlay() {
     const vid = videoRef.current;
     if (!vid) return;
     if (vid.paused) {
-      vid.play().then(() => setPlaying(true)).catch(() => {});
+      vid
+        .play()
+        .then(() => setPlaying(true))
+        .catch(() => {});
     } else {
       vid.pause();
       setPlaying(false);
@@ -196,14 +204,20 @@ function VideoPlayer({
         className="absolute inset-0 w-full h-full object-contain"
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
-        onLoadedMetadata={(e) => setDuration((e.target as HTMLVideoElement).duration)}
+        onLoadedMetadata={(e) =>
+          setDuration((e.target as HTMLVideoElement).duration)
+        }
       />
 
       {/* Pause indicator */}
       {!playing && isActive && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="w-16 h-16 rounded-full bg-black/50 flex items-center justify-center">
-            <svg className="w-7 h-7 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="w-7 h-7 text-white ml-1"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path d="M8 5v14l11-7z" />
             </svg>
           </div>
@@ -217,12 +231,28 @@ function VideoPlayer({
         aria-label={muted ? "Unmute" : "Mute"}
       >
         {muted ? (
-          <svg className="w-4 h-4 text-white" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z" clipRule="evenodd" />
+          <svg
+            className="w-4 h-4 text-white"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z"
+              clipRule="evenodd"
+            />
           </svg>
         ) : (
-          <svg className="w-4 h-4 text-white" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.146 5.146a5 5 0 010 9.708v-1.717a3.001 3.001 0 000-6.274V5.146zm2.829-2.83a9 9 0 010 15.37l-.708-1.225a7 7 0 000-12.92l.708-1.225z" clipRule="evenodd" />
+          <svg
+            className="w-4 h-4 text-white"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.146 5.146a5 5 0 010 9.708v-1.717a3.001 3.001 0 000-6.274V5.146zm2.829-2.83a9 9 0 010 15.37l-.708-1.225a7 7 0 000-12.92l.708-1.225z"
+              clipRule="evenodd"
+            />
           </svg>
         )}
       </button>
@@ -256,15 +286,24 @@ function VideoPlayer({
           className="relative w-full cursor-pointer flex items-end"
           style={{ height: 24 }}
           onClick={seekTo}
-          onMouseDown={(e) => { setSeeking(true); seekTo(e); }}
-          onMouseMove={(e) => { if (seeking) seekTo(e); }}
+          onMouseDown={(e) => {
+            setSeeking(true);
+            seekTo(e);
+          }}
+          onMouseMove={(e) => {
+            if (seeking) seekTo(e);
+          }}
           onMouseUp={() => setSeeking(false)}
           onMouseLeave={() => setSeeking(false)}
         >
           {/* Track background */}
           <div
             className="w-full rounded-full overflow-visible relative"
-            style={{ height: seeking ? 4 : 3, transition: "height 0.15s", backgroundColor: "rgba(255,255,255,0.30)" }}
+            style={{
+              height: seeking ? 4 : 3,
+              transition: "height 0.15s",
+              backgroundColor: "rgba(255,255,255,0.30)",
+            }}
           >
             {/* Filled portion */}
             <div
@@ -322,14 +361,22 @@ function PostSlide({
   const [captionExpanded, setCaptionExpanded] = useState(false);
 
   const { requireAuth } = useAuthGuard(lang);
-  const { liked, likeCount, handleLike, handleShare } = useInteractions(post, { requireAuth });
+  const { liked, likeCount, handleLike, handleShare } = useInteractions(post, {
+    requireAuth,
+  });
 
   const creator = post.creator;
   const creatorName = creator?.profile?.firstName
     ? `${creator.profile.firstName}${creator.profile.lastName ? " " + creator.profile.lastName : ""}`
-    : creator === null ? `Seller ${post.creatorId.slice(-6)}` : "";
+    : creator === null
+      ? `Seller ${post.creatorId.slice(-6)}`
+      : "";
 
-  const { following, toggle: handleFollow, loading: followLoading } = useFollow({
+  const {
+    following,
+    toggle: handleFollow,
+    loading: followLoading,
+  } = useFollow({
     userId: creator?.id ?? post.creatorId,
     initialFollowing: creator?.isFollowedByMe ?? false,
     initialFollowerCount: creator?.followerCount ?? 0,
@@ -340,17 +387,21 @@ function PostSlide({
   const mux = media?.muxMeta;
   const isVideo = post.type === "VIDEO" && !!mux?.playbackId;
 
-  const imageMedia = [...(post.media ?? [])].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  const imageMedia = [...(post.media ?? [])].sort(
+    (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
+  );
   const [imgIdx, setImgIdx] = useState(0);
   const imgSrc =
-    imageMedia[imgIdx]?.r2Variants?.find(v => v.variant === "large")?.url ??
+    imageMedia[imgIdx]?.r2Variants?.find((v) => v.variant === "large")?.url ??
     imageMedia[imgIdx]?.r2Variants?.[0]?.url ??
     imageMedia[imgIdx]?.imageUrl ??
-    imageMedia[imgIdx]?.thumbnailUrl ?? "";
+    imageMedia[imgIdx]?.thumbnailUrl ??
+    "";
 
   const caption = post.caption ?? "";
   const isLongCaption = caption.length > 100;
-  const displayCaption = isLongCaption && !captionExpanded ? caption.slice(0, 100) + "…" : caption;
+  const displayCaption =
+    isLongCaption && !captionExpanded ? caption.slice(0, 100) + "…" : caption;
 
   // Notify parent when this slide is 60% in view → becomes active
   useEffect(() => {
@@ -382,181 +433,319 @@ function PostSlide({
       >
         {/* Card + action buttons as a row */}
         <div className="flex items-end gap-3">
-        {/* Card */}
-        <div
-          className="relative rounded-2xl overflow-hidden shadow-2xl"
-          style={{
-            height: "calc(100vh - 48px)",
-            aspectRatio: isVideo ? (mux?.aspectRatio === "16:9" ? "16/9" : "9/16") : "9/16",
-            maxWidth: "min(68vh, 560px)",
-            width: "100%",
-            backgroundColor: "rgb(var(--color-bg))",
-          }}
-        >
-          {isVideo ? (
-            <VideoPlayer playbackId={mux!.playbackId!} isActive={isActive} />
-          ) : imgSrc ? (
-            <Image src={imgSrc} alt={post.title} fill sizes="65vw" className="object-contain" priority={isActive} />
-          ) : (
-            <div className="absolute inset-0 bg-surface flex items-center justify-center">
-              <svg className="w-16 h-16 text-muted-foreground/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </div>
-          )}
-
-          {/* Multi-image navigation */}
-          {!isVideo && imageMedia.length > 1 && (
-            <>
-              {imgIdx > 0 && (
-                <button onClick={() => setImgIdx(i => i - 1)} className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white z-10 hover:bg-black/70 transition-colors">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
-                </button>
-              )}
-              {imgIdx < imageMedia.length - 1 && (
-                <button onClick={() => setImgIdx(i => i + 1)} className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white z-10 hover:bg-black/70 transition-colors">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
-                </button>
-              )}
-              <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5 z-10">
-                {imageMedia.map((_, i) => (
-                  <button key={i} onClick={() => setImgIdx(i)} className={["rounded-full transition-all", i === imgIdx ? "w-4 h-1.5 bg-white" : "w-1.5 h-1.5 bg-white/50"].join(" ")} />
-                ))}
+          {/* Card */}
+          <div
+            className="relative rounded-2xl overflow-hidden shadow-2xl"
+            style={{
+              height: "calc(100vh - 48px)",
+              aspectRatio: isVideo
+                ? mux?.aspectRatio === "16:9"
+                  ? "16/9"
+                  : "9/16"
+                : "9/16",
+              maxWidth: "min(68vh, 560px)",
+              width: "100%",
+              backgroundColor: "rgb(var(--color-bg))",
+            }}
+          >
+            {isVideo ? (
+              <VideoPlayer playbackId={mux!.playbackId!} isActive={isActive} />
+            ) : imgSrc ? (
+              <Image
+                src={imgSrc}
+                alt={post.title}
+                fill
+                sizes="65vw"
+                className="object-contain"
+                priority={isActive}
+              />
+            ) : (
+              <div className="absolute inset-0 bg-surface flex items-center justify-center">
+                <svg
+                  className="w-16 h-16 text-muted-foreground/20"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
               </div>
-            </>
-          )}
+            )}
 
-          {/* Bottom overlay: creator info + text */}
-          <div className="absolute bottom-0 left-0 right-0 px-4 pb-5 pt-20 bg-linear-to-t from-black/80 via-black/25 to-transparent pointer-events-none z-10 rounded-b-2xl">
-            {/* Creator row */}
-            <div className="flex items-center gap-2 mb-2 pointer-events-auto">
-              <div className="w-8 h-8 rounded-full overflow-hidden bg-white/20 shrink-0 ring-2 ring-white/30">
-                {creator?.profile?.avatar ? (
-                  <div className="relative w-full h-full">
-                    <Image src={creator.profile.avatar} alt={creatorName} fill sizes="32px" className="object-cover" />
-                  </div>
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-primary to-secondary">
-                    <span className="text-white text-[10px] font-bold">{post.creatorId.slice(-2).toUpperCase()}</span>
-                  </div>
-                )}
-              </div>
-              <span className="text-white font-semibold text-xs drop-shadow">{creatorName}</span>
-              <span className="text-white/60 text-[11px]">· {timeAgo(post.createdAt)}</span>
-            </div>
-            {/* Title */}
-            <p className="text-white font-bold text-sm leading-snug mb-1 drop-shadow">{post.title}</p>
-            {/* Caption */}
-            {caption && (
-              <p className="text-white/80 text-xs leading-relaxed pointer-events-auto">
-                {displayCaption}
-                {isLongCaption && (
-                  <button onClick={() => setCaptionExpanded(v => !v)} className="text-white font-bold ml-1 underline-offset-2">
-                    {captionExpanded ? "less" : "more"}
+            {/* Multi-image navigation */}
+            {!isVideo && imageMedia.length > 1 && (
+              <>
+                {imgIdx > 0 && (
+                  <button
+                    onClick={() => setImgIdx((i) => i - 1)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white z-10 hover:bg-black/70 transition-colors"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M15 19l-7-7 7-7"
+                      />
+                    </svg>
                   </button>
                 )}
-              </p>
-            )}
-            {/* Hashtags */}
-            {post.hashtags && post.hashtags.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-1.5">
-                {post.hashtags.slice(0, 4).map(tag => (
-                  <span key={tag} className="text-white/70 text-[11px] font-medium">#{tag}</span>
-                ))}
-              </div>
-            )}
-            {/* Price */}
-            {post.price && (
-              <p className="text-primary font-bold text-sm mt-2 drop-shadow">
-                {post.price.amount === 0 ? "Free" : `${post.price.currency} ${post.price.amount.toLocaleString()}`}
-                {post.price.negotiable && <span className="text-white/60 font-normal text-xs ml-1">· neg</span>}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* ── Action buttons — flex sibling, right of card ── */}
-        <div className="flex flex-col items-center gap-5 pb-14 self-end">
-          {/* Avatar + follow */}
-          <div className="flex flex-col items-center gap-1">
-            <div className="relative mb-1">
-              <div className="w-11 h-11 rounded-full overflow-hidden ring-2 ring-white/20">
-                {creator?.profile?.avatar ? (
-                  <div className="relative w-full h-full">
-                    <Image src={creator.profile.avatar} alt={creatorName} fill sizes="44px" className="object-cover" />
-                  </div>
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-primary to-secondary">
-                    <span className="text-white text-xs font-bold">{post.creatorId.slice(-2).toUpperCase()}</span>
-                  </div>
+                {imgIdx < imageMedia.length - 1 && (
+                  <button
+                    onClick={() => setImgIdx((i) => i + 1)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white z-10 hover:bg-black/70 transition-colors"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </button>
                 )}
+                <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5 z-10">
+                  {imageMedia.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setImgIdx(i)}
+                      className={[
+                        "rounded-full transition-all",
+                        i === imgIdx
+                          ? "w-4 h-1.5 bg-white"
+                          : "w-1.5 h-1.5 bg-white/50",
+                      ].join(" ")}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* Bottom overlay: creator info + text */}
+            <div className="absolute bottom-0 left-0 right-0 px-4 pb-5 pt-20 bg-linear-to-t from-black/80 via-black/25 to-transparent pointer-events-none z-10 rounded-b-2xl">
+              {/* Creator row */}
+              <div className="flex items-center gap-2 mb-2 pointer-events-auto">
+                <div className="w-8 h-8 rounded-full overflow-hidden bg-white/20 shrink-0 ring-2 ring-white/30">
+                  {creator?.profile?.avatar ? (
+                    <div className="relative w-full h-full">
+                      <Image
+                        src={creator.profile.avatar}
+                        alt={creatorName}
+                        fill
+                        sizes="32px"
+                        className="object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-primary to-secondary">
+                      <span className="text-white text-[10px] font-bold">
+                        {post.creatorId.slice(-2).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <span className="text-white font-semibold text-xs drop-shadow">
+                  {creatorName}
+                </span>
+                <span className="text-white/60 text-[11px]">
+                  · {timeAgo(post.createdAt)}
+                </span>
               </div>
-              {!(post.isMyContent ?? false) && (
-                <button
-                  onClick={handleFollow}
-                  disabled={followLoading}
-                  className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold transition-all disabled:opacity-60 shadow-md"
-                  style={{
-                    background: following ? "rgb(var(--color-bg-elevated))" : "rgb(var(--brand-primary))",
-                    color: following ? "rgb(var(--color-text-muted))" : "white",
-                    border: following ? "1px solid rgb(var(--color-border))" : "none",
-                  }}
-                >
-                  {followLoading ? "·" : following ? "✓" : "+"}
-                </button>
+              {/* Title */}
+              <p className="text-white font-bold text-sm leading-snug mb-1 drop-shadow">
+                {post.title}
+              </p>
+              {/* Caption */}
+              {caption && (
+                <p className="text-white/80 text-xs leading-relaxed pointer-events-auto">
+                  {displayCaption}
+                  {isLongCaption && (
+                    <button
+                      onClick={() => setCaptionExpanded((v) => !v)}
+                      className="text-white font-bold ml-1 underline-offset-2"
+                    >
+                      {captionExpanded ? "less" : "more"}
+                    </button>
+                  )}
+                </p>
+              )}
+              {/* Hashtags */}
+              {post.hashtags && post.hashtags.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1.5">
+                  {post.hashtags.slice(0, 4).map((tag) => (
+                    <span
+                      key={tag}
+                      className="text-white/70 text-[11px] font-medium"
+                    >
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {/* Price */}
+              {post.price && (
+                <p className="text-primary font-bold text-sm mt-2 drop-shadow">
+                  {post.price.amount === 0
+                    ? "Free"
+                    : `${post.price.currency} ${post.price.amount.toLocaleString()}`}
+                  {post.price.negotiable && (
+                    <span className="text-white/60 font-normal text-xs ml-1">
+                      · neg
+                    </span>
+                  )}
+                </p>
               )}
             </div>
           </div>
 
-          {/* Like */}
-          <SideBtn
-            onClick={() => handleLike()}
-            active={liked}
-            label={likeCount > 0 ? fmt(likeCount) : "Like"}
-            icon={
-              <svg className="w-6 h-6" viewBox="0 0 24 24"
-                fill={liked ? "rgb(var(--brand-primary))" : "white"}
-                stroke={liked ? "none" : "white"}
-                strokeWidth={liked ? 0 : 1.5}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-            }
-          />
+          {/* ── Action buttons — flex sibling, right of card ── */}
+          <div className="flex flex-col items-center gap-5 pb-14 self-end">
+            {/* Avatar + follow */}
+            <div className="flex flex-col items-center gap-1">
+              <div className="relative mb-1">
+                <div className="w-11 h-11 rounded-full overflow-hidden ring-2 ring-white/20">
+                  {creator?.profile?.avatar ? (
+                    <div className="relative w-full h-full">
+                      <Image
+                        src={creator.profile.avatar}
+                        alt={creatorName}
+                        fill
+                        sizes="44px"
+                        className="object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-primary to-secondary">
+                      <span className="text-white text-xs font-bold">
+                        {post.creatorId.slice(-2).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                {!(post.isMyContent ?? false) && (
+                  <button
+                    onClick={handleFollow}
+                    disabled={followLoading}
+                    className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold transition-all disabled:opacity-60 shadow-md"
+                    style={{
+                      background: following
+                        ? "rgb(var(--color-bg-elevated))"
+                        : "rgb(var(--brand-primary))",
+                      color: following
+                        ? "rgb(var(--color-text-muted))"
+                        : "white",
+                      border: following
+                        ? "1px solid rgb(var(--color-border))"
+                        : "none",
+                    }}
+                  >
+                    {followLoading ? "·" : following ? "✓" : "+"}
+                  </button>
+                )}
+              </div>
+            </div>
 
-          {/* Comment */}
-          <SideBtn
-            active
-            label={commentCount > 0 ? fmt(commentCount) : "Comment"}
-            icon={
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-              </svg>
-            }
-          />
+            {/* Like */}
+            <SideBtn
+              onClick={() => handleLike()}
+              active={liked}
+              label={likeCount > 0 ? fmt(likeCount) : "Like"}
+              icon={
+                <svg
+                  className="w-6 h-6"
+                  viewBox="0 0 24 24"
+                  fill={liked ? "rgb(var(--brand-primary))" : "white"}
+                  stroke={liked ? "none" : "white"}
+                  strokeWidth={liked ? 0 : 1.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                  />
+                </svg>
+              }
+            />
 
-          {/* Share */}
-          <SideBtn
-            onClick={() => handleShare()}
-            label="Share"
-            icon={
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-              </svg>
-            }
-          />
+            {/* Comment */}
+            <SideBtn
+              active
+              label={commentCount > 0 ? fmt(commentCount) : "Comment"}
+              icon={
+                <svg
+                  className="w-6 h-6 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                  />
+                </svg>
+              }
+            />
 
-          {/* Message */}
-          <SideBtn
-            label="Message"
-            icon={
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-            }
-          />
-        </div>
-        {/* end row wrapper */}
+            {/* Share */}
+            <SideBtn
+              onClick={() => handleShare()}
+              label="Share"
+              icon={
+                <svg
+                  className="w-6 h-6 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+                  />
+                </svg>
+              }
+            />
+
+            {/* Message */}
+            <SideBtn
+              label="Message"
+              icon={
+                <svg
+                  className="w-5 h-5 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  />
+                </svg>
+              }
+            />
+          </div>
+          {/* end row wrapper */}
         </div>
       </div>
 
@@ -575,8 +764,19 @@ function PostSlide({
           }}
           aria-label="Previous post"
         >
-          <svg className="w-4 h-4" style={{ color: "rgb(var(--color-text))" }} fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+          <svg
+            className="w-4 h-4"
+            style={{ color: "rgb(var(--color-text))" }}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2.5}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M5 15l7-7 7 7"
+            />
           </svg>
         </button>
         <button
@@ -589,8 +789,19 @@ function PostSlide({
           }}
           aria-label="Next post"
         >
-          <svg className="w-4 h-4" style={{ color: "rgb(var(--color-text))" }} fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          <svg
+            className="w-4 h-4"
+            style={{ color: "rgb(var(--color-text))" }}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2.5}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M19 9l-7 7-7-7"
+            />
           </svg>
         </button>
       </div>
@@ -607,7 +818,12 @@ function PostSlide({
         {/* Header */}
         <div className="flex items-center px-5 py-4 border-b border-default shrink-0">
           <span className="font-semibold text-default text-sm">
-            Comments{commentCount > 0 && <span className="text-muted-foreground font-normal ml-1.5">({fmt(commentCount)})</span>}
+            Comments
+            {commentCount > 0 && (
+              <span className="text-muted-foreground font-normal ml-1.5">
+                ({fmt(commentCount)})
+              </span>
+            )}
           </span>
         </div>
 
@@ -615,7 +831,7 @@ function PostSlide({
           contentId={post.id}
           contentCreatorId={post.creatorId}
           onClose={() => {}}
-          onCommentAdded={() => setCommentCount(c => c + 1)}
+          onCommentAdded={() => setCommentCount((c) => c + 1)}
           desktopInline
         />
       </div>
@@ -651,7 +867,7 @@ export function DesktopFeed({ lang }: { lang: string }) {
   useEffect(() => {
     const match = pathname.match(/\/content\/([^/]+)$/);
     if (!match || !items.length) return;
-    const idx = items.findIndex(p => p.id === match[1]);
+    const idx = items.findIndex((p) => p.id === match[1]);
     if (idx < 0) return;
     const container = containerRef.current;
     if (!container) return;
@@ -660,13 +876,16 @@ export function DesktopFeed({ lang }: { lang: string }) {
 
   const handleVisible = useCallback((id: string) => setActiveId(id), []);
 
-  const activeIdx = activeId ? items.findIndex(p => p.id === activeId) : 0;
+  const activeIdx = activeId ? items.findIndex((p) => p.id === activeId) : 0;
 
   function goTo(idx: number) {
     const container = containerRef.current;
     if (!container) return;
     const clamped = Math.max(0, Math.min(idx, items.length - 1));
-    container.scrollTo({ top: clamped * container.clientHeight, behavior: "instant" });
+    container.scrollTo({
+      top: clamped * container.clientHeight,
+      behavior: "instant",
+    });
   }
 
   if (loading && items.length === 0) {
@@ -710,7 +929,10 @@ export function DesktopFeed({ lang }: { lang: string }) {
           className="h-screen snap-start animate-pulse"
           style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
         >
-          <div className="flex h-full items-center justify-center" style={{ marginRight: COMMENTS_WIDTH }}>
+          <div
+            className="flex h-full items-center justify-center"
+            style={{ marginRight: COMMENTS_WIDTH }}
+          >
             <div className="h-[calc(100vh-48px)] w-[min(68vh,560px)] rounded-2xl bg-muted" />
           </div>
         </div>
