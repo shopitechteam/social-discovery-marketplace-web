@@ -13,7 +13,7 @@ export default async function ContentDetailPage({ params }: Props) {
   return (
     <>
       {/* Desktop: redirect to feed which scroll-snaps to this post via URL */}
-      <DesktopContentRedirect lang={lang} id={id} />
+      <DesktopContentRedirect />
       {/* Mobile: full detail page */}
       <div className="md:hidden">
         <ContentDetail id={id} lang={lang} />
