@@ -8,7 +8,6 @@ import type { CreateStep } from "@/stores/create";
 import { StepEdit } from "./StepEdit";
 import { StepMediaReview } from "./StepMediaReview";
 import { StepOptions } from "./StepOptions";
-import { StepReady } from "./StepReady";
 import { useRouter } from "next/navigation";
 import { GetDraftDocument, GetMediaAssetDocument } from "@/types/__generated__/graphql";
 import type { DraftStep, ContentType } from "@/types/__generated__/graphql";
@@ -27,7 +26,9 @@ function mapDraftStep(apiStep: DraftStep): CreateStep {
     case "PUBLISHING_OPTIONS":
       return "options";
     case "READY":
-      return "ready";
+      // Preview step removed — a draft left at READY resumes on the settings
+      // step, where the user posts directly.
+      return "options";
     default:
       return "edit";
   }
@@ -237,18 +238,13 @@ export function CreateFlow({ lang }: CreateFlowProps) {
   // ── Redirecting (no draftId or step === "pick") ───────────────────────────
   if (step === "pick") return null;
 
-  // ── Ready step — full-screen layout ──────────────────────────────────────
-  if (step === "ready") {
-    return <StepReady lang={lang} />;
-  }
-
   return (
     <div className="md:fixed md:inset-0 md:z-50 md:flex md:items-center md:justify-center md:bg-black/50 md:backdrop-blur-sm">
       <div className="create-flow-card flex flex-col bg-app w-full md:rounded-2xl md:shadow-2xl md:overflow-hidden">
         <div className="flex-1 flex flex-col">
           {step === "media" && <StepMediaReview onBack={handleBack} />}
           {step === "edit" && <StepEdit onBack={handleBack} />}
-          {step === "options" && <StepOptions />}
+          {step === "options" && <StepOptions lang={lang} />}
         </div>
       </div>
     </div>

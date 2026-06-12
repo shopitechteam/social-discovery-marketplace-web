@@ -1,16 +1,30 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { gql } from "@apollo/client";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { useCreateStore } from "@/stores/create";
 import {
   AutosaveDraftDocument,
   AdvanceDraftStepDocument,
+  PublishDraftDocument,
   TiktokConnectUrlDocument,
   MeDocument,
 } from "@/types/__generated__/graphql";
 import type { VisibilityMode } from "@/types/__generated__/graphql";
 import { getMediaPreviewSrc } from "@/features/create/utils/mediaPreview";
+
+const POST_TO_TIKTOK = gql`
+  mutation PostToTiktokOptions($contentId: String!) {
+    postToTiktok(contentId: $contentId)
+  }
+`;
+
+interface StepOptionsProps {
+  lang: string;
+}
 
 type Visibility = "public" | "friends_only" | "private";
 
@@ -37,7 +51,7 @@ function toVisibilityMode(mode: Visibility): VisibilityMode {
   }
 }
 
-export function StepOptions() {
+export function StepOptions({ lang }: StepOptionsProps) {
   const {
     draftId,
     price,
@@ -57,9 +71,14 @@ export function StepOptions() {
     setStep,
     setError,
     error,
+    reset,
   } = useCreateStore();
 
+  const router = useRouter();
   const [advancing, setAdvancing] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [published, setPublished] = useState(false);
+  const [tiktokReconnectNeeded, setTiktokReconnectNeeded] = useState(false);
   const [connectingTiktok, setConnectingTiktok] = useState(false);
 
   const { data: meData, refetch: refetchMe } = useQuery(MeDocument, { fetchPolicy: "cache-and-network" });
@@ -67,6 +86,8 @@ export function StepOptions() {
 
   const [autosave] = useMutation(AutosaveDraftDocument);
   const [advanceStep] = useMutation(AdvanceDraftStepDocument);
+  const [publishDraft] = useMutation(PublishDraftDocument);
+  const [postToTiktok] = useMutation(POST_TO_TIKTOK) as any;
   const [getTiktokConnectUrl] = useMutation(TiktokConnectUrlDocument);
 
   async function handleTiktokToggle() {
@@ -120,10 +141,15 @@ export function StepOptions() {
     return () => clearTimeout(timer);
   }, [allowDownload, autosave, draftId, hdEnabled, visibilityMode]);
 
-  async function handleNext() {
-    if (!draftId) return;
+  /**
+   * Post: save settings, advance the draft to READY (the backend requires READY
+   * before publish), then publish — all without a separate preview screen.
+   * Optionally cross-posts to TikTok for videos.
+   */
+  async function handlePost() {
+    if (!draftId || publishing || advancing) return;
     setError(null);
-    setAdvancing(true);
+    setPublishing(true);
 
     const parsedPrice = price ?? 0;
 
@@ -145,31 +171,81 @@ export function StepOptions() {
         return;
       }
 
-      // 2. Advance step — trust what the server returns
+      // 2. Advance PUBLISHING_OPTIONS → READY (required before publish)
       const { data: stepData, error: stepError } = await advanceStep({
         variables: { id: draftId },
       });
       if (stepError) {
-        setError(stepError.message ?? "Could not advance step");
+        setError(stepError.message ?? "Could not finalize post");
+        return;
+      }
+      const serverStep = stepData?.advanceDraftStep?.currentStep as string | undefined;
+      if (serverStep !== "READY") {
+        setError("Please complete all required fields before posting.");
         return;
       }
 
-      // Cast to string so we're not tied to the codegen-narrowed union
-      const serverStep = stepData?.advanceDraftStep?.currentStep as string | undefined;
-      const stepMap: Record<string, "edit" | "options" | "ready" | "media" | "pick"> = {
-        EDITING: "edit",
-        MEDIA_UPLOAD: "media",
-        PUBLISHING_OPTIONS: "options",
-        READY: "ready",
-      };
-      if (serverStep && stepMap[serverStep]) {
-        setStep(stepMap[serverStep]);
-        if (serverStep !== "READY") {
-          setError("Please complete all required fields before proceeding.");
+      // 3. Publish
+      const { data: pubData, error: publishError } = await publishDraft({
+        variables: { id: draftId },
+      });
+      if (publishError) {
+        setError(publishError.message ?? "Failed to publish");
+        return;
+      }
+      if (!pubData?.publishDraft) return;
+
+      const contentId = pubData.publishDraft.id as string;
+      setPublished(true);
+
+      // 4. Optional TikTok cross-post
+      if (postOnTiktok && contentId) {
+        try {
+          const tiktokResult = await postToTiktok({ variables: { contentId } });
+          const tiktokErrors = tiktokResult?.errors ?? [];
+          const needsReconnect = tiktokErrors.some((e: { message?: string }) =>
+            (e.message ?? "").includes("TIKTOK_RECONNECT_REQUIRED"),
+          );
+          if (needsReconnect) {
+            setTiktokReconnectNeeded(true);
+            return; // hold on the success screen so user can reconnect
+          }
+        } catch {
+          // network error — still redirect normally
         }
       }
+
+      setTimeout(() => {
+        reset();
+        router.push(`/${lang}/feed`);
+      }, 1500);
     } catch (err) {
       setError(String(err));
+    } finally {
+      setPublishing(false);
+    }
+  }
+
+  /** Save draft (autosave already keeps it current) and exit to the feed. */
+  async function handleSaveDraft() {
+    if (publishing) return;
+    setAdvancing(true);
+    try {
+      if (draftId) {
+        await autosave({
+          variables: {
+            id: draftId,
+            input: {
+              price: { amount: price ?? 0, currency, negotiable: false },
+              visibilityMode: toVisibilityMode(visibilityMode),
+              allowDownload,
+              hdEnabled,
+            },
+          },
+        }).catch(() => undefined);
+      }
+      reset();
+      router.push(`/${lang}/feed`);
     } finally {
       setAdvancing(false);
     }
@@ -177,6 +253,72 @@ export function StepOptions() {
 
   const cover = mediaItems[0];
   const coverSrc = getMediaPreviewSrc(cover);
+
+  // ── Published success ──────────────────────────────────────────────────────
+  if (published) {
+    return (
+      <div className="flex flex-col h-full items-center justify-center gap-5 px-6 pb-16">
+        <div
+          className="w-20 h-20 rounded-full flex items-center justify-center"
+          style={{
+            background: "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)))",
+            boxShadow: "0 8px 32px rgb(var(--brand-primary) / 0.4)",
+          }}
+        >
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+            <path d="M5 13l4 4L19 7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+        <div className="text-center">
+          <h2 className="font-bold mb-1" style={{ fontSize: "var(--text-xl)", color: "rgb(var(--color-text))" }}>
+            Published! 🎉
+          </h2>
+          <p style={{ fontSize: "var(--text-base)", color: "rgb(var(--color-text-muted))" }}>
+            Your post is live on the feed
+          </p>
+        </div>
+
+        {tiktokReconnectNeeded && (
+          <div
+            className="w-full max-w-xs rounded-xl px-4 py-3 text-center"
+            style={{ backgroundColor: "rgb(var(--color-bg-subtle))", border: "1px solid rgb(var(--color-border))" }}
+          >
+            <p className="font-semibold text-sm mb-1" style={{ color: "rgb(var(--color-text))" }}>
+              TikTok cross-post needs reconnect
+            </p>
+            <p className="text-xs mb-3" style={{ color: "rgb(var(--color-text-muted))" }}>
+              Your TikTok connection needs the posting permission. Reconnect once and it will work automatically next time.
+            </p>
+            <button
+              onClick={async () => {
+                try {
+                  const { data: urlData } = await getTiktokConnectUrl({ variables: { returnUrl: undefined } });
+                  const url = urlData?.tiktokConnectUrl;
+                  if (url) window.open(url, "tiktok-connect", "width=520,height=680");
+                } catch {
+                  /* ignore */
+                }
+              }}
+              className="text-xs font-semibold px-4 py-2 rounded-full"
+              style={{ backgroundColor: "rgb(var(--brand-primary))", color: "white" }}
+            >
+              Reconnect TikTok
+            </button>
+            <button
+              onClick={() => {
+                reset();
+                router.push(`/${lang}/feed`);
+              }}
+              className="block mx-auto mt-2 text-xs font-medium"
+              style={{ color: "rgb(var(--color-text-muted))" }}
+            >
+              Go to feed
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   // ── Shared form sections ──────────────────────────────────────────────────
 
@@ -339,19 +481,8 @@ export function StepOptions() {
           >
             Settings
           </h2>
-          <button
-            onClick={handleNext}
-            disabled={advancing}
-            className="font-semibold px-4 py-1.5 rounded-full"
-            style={{
-              backgroundColor: "rgb(var(--brand-primary))",
-              color: "white",
-              fontSize: "var(--text-sm)",
-              opacity: advancing ? 0.6 : 1,
-            }}
-          >
-            {advancing ? "…" : "Review"}
-          </button>
+          {/* Spacer to keep the title centered (Post/Draft live in the bottom bar) */}
+          <div style={{ width: 50 }} />
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 pb-8 flex flex-col gap-5">
@@ -373,12 +504,68 @@ export function StepOptions() {
             </div>
           )}
         </div>
+
+        {/* ── Fixed bottom action bar: Draft (outline) + Post (primary) ── */}
+        <div
+          className="flex gap-3 px-4 pt-3 shrink-0"
+          style={{
+            borderTop: "1px solid rgb(var(--color-border))",
+            paddingBottom: "calc(env(safe-area-inset-bottom) + 16px)",
+          }}
+        >
+          <button
+            onClick={handleSaveDraft}
+            disabled={advancing || publishing}
+            className="flex-1 h-12 rounded-2xl font-semibold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+            style={{
+              backgroundColor: "transparent",
+              border: "1.5px solid rgb(var(--color-border-strong))",
+              color: "rgb(var(--color-text))",
+              fontSize: "var(--text-base)",
+              opacity: advancing || publishing ? 0.6 : 1,
+            }}
+          >
+            {advancing ? <MiniSpinnerDark /> : "Draft"}
+          </button>
+          <button
+            onClick={handlePost}
+            disabled={publishing || advancing}
+            className="flex-1 h-12 rounded-2xl font-semibold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+            style={{
+              backgroundColor: "rgb(var(--brand-primary))",
+              color: "white",
+              fontSize: "var(--text-base)",
+              boxShadow: publishing ? "none" : "0 6px 20px rgb(var(--brand-primary) / 0.4)",
+              opacity: publishing ? 0.8 : 1,
+            }}
+          >
+            {publishing ? <MiniSpinner /> : "Post"}
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
+
+function MiniSpinner() {
+  return (
+    <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="10" stroke="white" strokeOpacity="0.3" strokeWidth="3" />
+      <path d="M12 2a10 10 0 0 1 10 10" stroke="white" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function MiniSpinnerDark() {
+  return (
+    <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.2" strokeWidth="3" />
+      <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
