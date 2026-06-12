@@ -7,6 +7,7 @@ import {
   House,
   MessageCircle,
   Plus,
+  Search,
   UserRound,
   type LucideIcon,
 } from "lucide-react";
@@ -28,8 +29,8 @@ const tabs: Tab[] = [
   {
     key: "explore",
     path: "explore",
-    label: "Explore",
-    icon: Compass,
+    label: "Discover",
+    icon: Search,
   },
   {
     key: "upload",
