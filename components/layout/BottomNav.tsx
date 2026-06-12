@@ -137,7 +137,7 @@ export function BottomNav({ lang = "en" }: { lang: string }) {
                 fillOpacity={isActive ? 0.18 : 0}
               />
               <p
-                className="text-[11px] leading-6"
+                className="text-xs leading-6"
                 style={{
                   fontWeight: isActive ? 600 : 400,
                   letterSpacing: isActive ? "0.01em" : "normal",
