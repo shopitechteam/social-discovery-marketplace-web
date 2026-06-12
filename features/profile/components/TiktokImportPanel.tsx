@@ -20,14 +20,13 @@ import type { TiktokImportUpdatedPayload } from "@/lib/socket";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  AlertCircle,
   CheckCircle2,
   Clock,
   ExternalLink,
   Loader2,
+  Play,
   RefreshCw,
   Tv2,
   Upload,
@@ -35,6 +34,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { HlsVideoDialog } from "./HlsVideoDialog";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -267,106 +267,98 @@ function VideoCard({
   );
 }
 
-function ImportRow({
+/**
+ * Queue tile — same visual design as the My Videos VideoCard, minus the select
+ * checkbox. Shows a status badge; when the import has a playable video it shows
+ * a play affordance and opens the HLS preview dialog on click.
+ */
+function QueueVideoCard({
   item,
   liveStatus,
+  onPlay,
 }: {
   item: TiktokImport;
   liveStatus?: ImportStatus;
+  onPlay: (item: TiktokImport) => void;
 }) {
   const status = liveStatus ?? item.status;
   const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.PENDING;
-  const StatusIcon = cfg.icon;
-  const isActive = ACTIVE_STATUSES.includes(status);
+  const playable = Boolean(item.hlsUrl || item.muxPlaybackId);
 
   return (
     <div
-      className="flex items-start gap-3 rounded-xl border p-3"
+      onClick={() => playable && onPlay(item)}
+      className={cn(
+        "group relative overflow-hidden rounded-xl border transition-all duration-150",
+        playable ? "cursor-pointer" : "cursor-default",
+      )}
       style={{
-        borderColor:
-          status === "FAILED"
-            ? "rgb(var(--color-error) / 0.35)"
-            : "rgb(var(--color-border))",
+        borderColor: "rgb(var(--color-border))",
         backgroundColor: "rgb(var(--color-bg-elevated))",
       }}
     >
       {/* Thumbnail */}
-      <div
-        className="relative h-16 w-10 shrink-0 overflow-hidden rounded-lg"
-        style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
-      >
+      <div className="relative" style={{ aspectRatio: "9/16" }}>
         {item.thumbnailUrl ? (
           <Image
             src={item.thumbnailUrl}
             alt={item.title ?? ""}
             fill
             className="object-cover"
+            sizes="(max-width: 430px) 33vw, 140px"
             unoptimized
           />
         ) : (
-          <div className="flex h-full items-center justify-center">
-            <Video
-              size={16}
-              style={{ color: "rgb(var(--color-text-placeholder))" }}
-            />
+          <div
+            className="flex h-full w-full items-center justify-center"
+            style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
+          >
+            <Video size={20} style={{ color: "rgb(var(--color-text-placeholder))" }} />
           </div>
         )}
-      </div>
 
-      {/* Info */}
-      <div className="min-w-0 flex-1">
-        <p
-          className="truncate font-medium"
-          style={{
-            fontSize: "var(--text-sm)",
-            color: "rgb(var(--color-text))",
-          }}
-        >
-          {item.title ?? "Untitled"}
-        </p>
+        {/* Play affordance for playable items */}
+        {playable && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/15 opacity-0 transition-opacity group-hover:opacity-100">
+            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-black/55">
+              <Play size={20} fill="currentColor" strokeWidth={0} className="ml-0.5 text-white" />
+            </span>
+          </div>
+        )}
 
-        <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+        {/* Status badge — top-left */}
+        <div className="absolute left-1.5 top-1.5">
           <Badge
             variant={cfg.variant === "default" ? "secondary" : cfg.variant}
             className={cn(
-              "gap-1 py-0.5 text-xs font-semibold",
-              cfg.variant !== "default" &&
-                " dark:bg-green-900/30 dark:text-green-400 bg-green-100 text-black",
+              "gap-1 px-1.5 py-0 text-xs font-semibold",
+              cfg.variant === "default" &&
+                "bg-green-100 text-black dark:bg-green-900/30 dark:text-green-400",
             )}
           >
-            {/* <StatusIcon
-              size={10}
-              className={cn(
-                cfg.variant !== "default" && cfg.className,
-                cfg.variant === "default" && "text-black dark:text-green-400",
-              )}
-            /> */}
             {cfg.label}
           </Badge>
         </div>
+      </div>
 
-        {/* Active progress bar */}
-        {isActive && (
-          <Progress
-            value={undefined}
-            className="mt-2 h-1"
-            style={{ "--tw-bg-opacity": "0.15" } as React.CSSProperties}
-          />
-        )}
-
-        {/* Error message */}
-        {status === "FAILED" && item.errorMessage && (
-          <p
-            className="mt-1 flex items-center gap-1 leading-snug"
-            style={{
-              fontSize: "var(--text-xs)",
-              color: "rgb(var(--color-error))",
-            }}
-          >
-            <AlertCircle size={11} className="flex-shrink-0" />
-            {item.errorMessage}
-          </p>
-        )}
+      {/* Title */}
+      <div className="p-2">
+        <p
+          className="line-clamp-2 leading-tight"
+          style={{
+            fontSize: "var(--text-xs)",
+            color: "rgb(var(--color-text))",
+            fontWeight: 500,
+          }}
+        >
+          {item.title || "Untitled"}
+        </p>
+        <p
+          className="mt-0.5"
+          style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}
+        >
+          {formatDate(item.createdAt)}
+        </p>
       </div>
     </div>
   );
@@ -550,6 +542,14 @@ export function TiktokImportPanel({ lang }: Props) {
   const activeCount = imports.filter((i) =>
     ACTIVE_STATUSES.includes(liveStatuses[i.id] ?? i.status),
   ).length;
+
+  // Queue video preview dialog
+  const [previewItem, setPreviewItem] = useState<TiktokImport | null>(null);
+  const previewHls =
+    previewItem?.hlsUrl ??
+    (previewItem?.muxPlaybackId
+      ? `https://stream.mux.com/${previewItem.muxPlaybackId}.m3u8`
+      : null);
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -962,7 +962,7 @@ export function TiktokImportPanel({ lang }: Props) {
               </Button>
             </div>
           ) : (
-            <div className="flex flex-col gap-2">
+            <div className="grid grid-cols-3 gap-1">
               {/* Active first */}
               {imports
                 .slice()
@@ -979,16 +979,26 @@ export function TiktokImportPanel({ lang }: Props) {
                   return (statusOrder[sa] ?? 9) - (statusOrder[sb] ?? 9);
                 })
                 .map((item) => (
-                  <ImportRow
+                  <QueueVideoCard
                     key={item.id}
                     item={item}
                     liveStatus={liveStatuses[item.id]}
+                    onPlay={setPreviewItem}
                   />
                 ))}
             </div>
           )}
         </div>
       )}
+
+      {/* Queue video preview dialog */}
+      <HlsVideoDialog
+        open={previewItem !== null}
+        onOpenChange={(o) => !o && setPreviewItem(null)}
+        hlsUrl={previewHls}
+        poster={previewItem?.thumbnailUrl}
+        title={previewItem?.title}
+      />
     </div>
   );
 }

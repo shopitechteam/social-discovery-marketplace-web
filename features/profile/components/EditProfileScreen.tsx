@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Check, ChevronLeft, Loader2, X } from "lucide-react";
+import { Camera, Check, ChevronLeft, Loader2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { HTMLAttributes } from "react";
 import { useRouter } from "next/navigation";
@@ -15,6 +15,7 @@ import {
   useMyProfile,
   useUpdateProfile,
 } from "../hooks/useMyProfile";
+import { useAvatarUpload } from "../hooks/useAvatarUpload";
 
 type FormValues = {
   firstName: string;
@@ -172,19 +173,28 @@ function EditProfileForm({
   const [checkUsername] = useCheckUsername();
   const setUser = useAuthStore((s) => s.setUser);
 
+  // Avatar: local override (CDN url returned by the upload endpoint). null until
+  // the user picks a new picture.
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { upload: uploadAvatar, uploading: avatarUploading, error: avatarError } =
+    useAvatarUpload();
+
   const initial = getInitialForm(user);
-  const hasChanges = fields.some((field) => form[field.name] !== initial[field.name]);
+  const fieldsChanged = fields.some((field) => form[field.name] !== initial[field.name]);
+  const hasChanges = fieldsChanged || avatarUrl !== null;
   const usernameInvalid =
     form.username !== initial.username && form.username.trim().length < 3;
   const saveDisabled =
     !hasChanges ||
     loading ||
+    avatarUploading ||
     usernameInvalid ||
     usernameState === "checking" ||
     usernameState === "taken";
 
   const displayName = getDisplayName(user, form);
-  const avatar = user.profile?.avatar;
+  const avatar = avatarUrl ?? user.profile?.avatar;
   const initials =
     [form.firstName[0], form.lastName[0]].filter(Boolean).join("").toUpperCase() ||
     "?";
@@ -214,6 +224,15 @@ function EditProfileForm({
     }, 500);
   }
 
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    // Reset the input so picking the same file again still fires onChange
+    e.target.value = "";
+    if (!file) return;
+    const url = await uploadAvatar(file);
+    if (url) setAvatarUrl(url);
+  }
+
   async function handleSave() {
     if (saveDisabled) return;
 
@@ -223,6 +242,7 @@ function EditProfileForm({
     if (form.username !== initial.username) input.username = form.username;
     if (form.bio !== initial.bio) input.bio = form.bio;
     if (form.website !== initial.website) input.website = form.website;
+    if (avatarUrl !== null) input.avatar = avatarUrl;
 
     const { data } = await updateProfile({ variables: { input } });
     if (!data?.updateProfile) return;
@@ -293,14 +313,18 @@ function EditProfileForm({
 
       <main className="px-4 pt-5" style={{ paddingBottom: "calc(var(--safe-bottom) + 1rem)" }}>
         <div className="mb-6 flex items-center gap-4">
-          <div
-            className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full border"
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={avatarUploading}
+            className="group relative h-20 w-20 shrink-0 overflow-hidden rounded-full border transition-opacity active:opacity-80"
             style={{
               background: avatar
                 ? "rgb(var(--color-bg-subtle))"
                 : "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)) 62%, rgb(var(--brand-accent)))",
               borderColor: "rgb(var(--color-bg-elevated))",
             }}
+            aria-label="Change profile picture"
           >
             {avatar ? (
               <Image
@@ -322,16 +346,40 @@ function EditProfileForm({
                 </span>
               </div>
             )}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p
-              className="truncate font-bold"
-              style={{ color: "rgb(var(--color-text))", fontSize: "var(--text-lg)" }}
+            {/* Camera / uploading overlay */}
+            <span
+              className="absolute inset-0 flex items-center justify-center transition-opacity"
+              style={{
+                backgroundColor: "rgba(0,0,0,0.4)",
+                opacity: avatarUploading ? 1 : undefined,
+              }}
             >
-              {displayName}
-            </p>
+              {avatarUploading ? (
+                <Loader2 size={22} className="animate-spin text-white" />
+              ) : (
+                <Camera size={22} strokeWidth={2.2} className="text-white opacity-0 transition-opacity group-hover:opacity-100" />
+              )}
+            </span>
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleAvatarChange}
+          />
+          <div className="min-w-0 flex-1">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={avatarUploading}
+              className="font-semibold"
+              style={{ color: "rgb(var(--brand-primary))", fontSize: "var(--text-sm)" }}
+            >
+              {avatarUploading ? "Uploading…" : "Change photo"}
+            </button>
             <p
-              className="truncate"
+              className="mt-0.5 truncate"
               style={{
                 color: "rgb(var(--color-text-muted))",
                 fontSize: "var(--text-sm)",
@@ -339,6 +387,11 @@ function EditProfileForm({
             >
               @{form.username || "username"}
             </p>
+            {avatarError && (
+              <p style={{ color: "rgb(var(--color-error))", fontSize: "var(--text-xs)" }}>
+                {avatarError}
+              </p>
+            )}
           </div>
         </div>
 

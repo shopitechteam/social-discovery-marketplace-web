@@ -13,6 +13,7 @@ export function FeedHeader({ activeTab, onTabChange }: Props) {
     { id: "for-you", label: "For You" },
     { id: "following", label: "Following" },
     { id: "nearby", label: "Nearby" },
+    // { id: "ask-shopi", label: "Ask Shopi" },
   ];
 
   return (
@@ -51,7 +52,7 @@ export function FeedHeader({ activeTab, onTabChange }: Props) {
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
-            className={`flex-1 border-b-2 pt-1 pb-2.5 text-base font-semibold transition-colors ${
+            className={`flex-1 border-b-2 pt-1 pb-2.5 text-[14.5px] font-semibold transition-colors ${
               activeTab === tab.id
                 ? "border-primary text-primary"
                 : "border-transparent text-muted-foreground hover:text-foreground"
