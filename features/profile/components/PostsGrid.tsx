@@ -3,8 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import {
+  Bookmark,
   Eye,
-  Heart,
   Image as ImageIcon,
   MessageCircle,
   Play,
@@ -87,7 +87,7 @@ function PostThumbnail({
           src={thumb}
           alt={post.title}
           fill
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
+          className="object-contain transition-transform duration-500 group-hover:scale-105"
           sizes="(max-width: 430px) 32vw, (max-width: 1024px) 22vw, 180px"
           priority={priority}
           loading={priority ? "eager" : "lazy"}
@@ -151,7 +151,7 @@ function PostThumbnail({
         </h3>
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <StatChip icon={Eye} value={post.stats.views} />
-          <StatChip icon={Heart} value={post.stats.likes} />
+          <StatChip icon={Bookmark} value={post.stats.saves} />
           <span className="hidden sm:inline-flex">
             <StatChip icon={MessageCircle} value={0} />
           </span>

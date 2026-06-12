@@ -6,9 +6,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
+  Bookmark,
   ExternalLink,
   Eye,
-  Heart,
   Image as ImageIcon,
   Link2,
   Play,
@@ -107,7 +107,7 @@ function PostTile({
           src={thumb}
           alt={post.title}
           fill
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
+          className="object-contain transition-transform duration-500 group-hover:scale-105"
           sizes="(max-width: 640px) 32vw, 200px"
           placeholder="blur"
           blurDataURL={SHIMMER_PORTRAIT}
@@ -242,8 +242,8 @@ function PostTile({
             className="inline-flex items-center gap-1 font-semibold text-white"
             style={{ fontSize: "var(--text-xs)" }}
           >
-            <Heart size={11} strokeWidth={2.2} />
-            {formatCompact(post.stats.likes)}
+            <Bookmark size={11} strokeWidth={2.2} />
+            {formatCompact(post.stats.saves)}
           </span>
         </div>
       </div>
