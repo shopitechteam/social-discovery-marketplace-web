@@ -946,7 +946,7 @@ export function PostCard({ post, lang, priority }: Props) {
                 e.stopPropagation();
                 void handleCopyLink();
               }}
-              className="flex w-full tex-sm items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold text-default hover:bg-surface transition-colors"
+              className="flex w-full text-sm items-center gap-3 px-4 py-3 rounded-xl  font-semibold text-default hover:bg-surface transition-colors"
             >
               <Link2
                 className="w-4 h-4 shrink-0 text-muted-foreground"
@@ -965,7 +965,7 @@ export function PostCard({ post, lang, priority }: Props) {
                   toast.success("Report submitted"),
                 );
               }}
-              className="flex tex-sm w-full items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold text-default hover:bg-surface transition-colors"
+              className="flex text-sm w-full items-center gap-3 px-4 py-3 rounded-xl  font-semibold text-default hover:bg-surface transition-colors"
             >
               <Flag
                 className="w-4 h-4 shrink-0 text-muted-foreground"
