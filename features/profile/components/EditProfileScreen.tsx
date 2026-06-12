@@ -342,51 +342,16 @@ function EditProfileForm({
           </div>
         </div>
 
-        <div
-          className="rounded-xl border divide-y overflow-hidden"
-          style={{
-            borderColor: "rgb(var(--color-border))",
-            backgroundColor: "rgb(var(--color-bg-elevated))",
-          }}
-        >
-          {/* Name row — side by side */}
-          <div className="grid grid-cols-2 divide-x" style={{ borderColor: "rgb(var(--color-border))" }}>
-            {(["firstName", "lastName"] as const).map((name) => {
-              const field = fields.find((f) => f.name === name)!;
-              return (
-                <div key={name} className="px-4 pt-3 pb-3">
-                  <label
-                    htmlFor={`edit-profile-${name}`}
-                    className="block font-semibold uppercase mb-1"
-                    style={{ color: "rgb(var(--color-text-muted))", fontSize: "var(--text-xs)" }}
-                  >
-                    {field.label}
-                  </label>
-                  <input
-                    id={`edit-profile-${name}`}
-                    type="text"
-                    value={form[name]}
-                    onChange={(e) => setForm((c) => ({ ...c, [name]: e.target.value }))}
-                    placeholder={field.placeholder}
-                    maxLength={field.maxLength}
-                    className="w-full bg-transparent outline-none font-medium placeholder:text-[rgb(var(--color-text-placeholder))]"
-                    style={{ color: "rgb(var(--color-text))", fontSize: "var(--text-md)" }}
-                  />
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Remaining fields */}
-          {fields.filter((f) => f.name !== "firstName" && f.name !== "lastName").map((field) => {
+        <div className="space-y-4">
+          {fields.map((field) => {
             const value = form[field.name];
             const isUsername = field.name === "username";
 
             return (
-              <div key={field.name} className="px-4 pt-3 pb-3">
+              <div key={field.name} className="space-y-1.5">
                 <label
                   htmlFor={`edit-profile-${field.name}`}
-                  className="block font-semibold uppercase mb-1"
+                  className="font-semibold uppercase"
                   style={{ color: "rgb(var(--color-text-muted))", fontSize: "var(--text-xs)" }}
                 >
                   {field.label}
@@ -401,11 +366,16 @@ function EditProfileForm({
                       placeholder={field.placeholder}
                       maxLength={field.maxLength}
                       rows={4}
-                      className="w-full bg-transparent outline-none resize-none font-medium placeholder:opacity-40 leading-relaxed"
-                      style={{ color: "rgb(var(--color-text))", fontSize: "var(--text-md)" }}
+                      className="w-full resize-none rounded-lg border px-3 py-2.5 font-medium leading-relaxed outline-none transition-colors placeholder:opacity-40 focus:border-[rgb(var(--color-border))]"
+                      style={{
+                        backgroundColor: "rgb(var(--color-bg-elevated))",
+                        borderColor: "rgb(var(--color-border))",
+                        color: "rgb(var(--color-text))",
+                        fontSize: "var(--text-md)",
+                      }}
                     />
                     <p
-                      className="text-right mt-1"
+                      className="text-right"
                       style={{ color: "rgb(var(--color-text-muted))", fontSize: "var(--text-xs)" }}
                     >
                       {value.length}/{field.maxLength}
@@ -413,10 +383,10 @@ function EditProfileForm({
                   </>
                 ) : (
                   <>
-                    <div className="relative flex items-center">
+                    <div className="relative">
                       {isUsername && (
                         <span
-                          className="pointer-events-none mr-0.5"
+                          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2"
                           style={{ color: "rgb(var(--color-text-muted))", fontSize: "var(--text-md)" }}
                         >
                           @
@@ -434,11 +404,22 @@ function EditProfileForm({
                         }
                         placeholder={field.placeholder}
                         maxLength={field.maxLength}
-                        className="flex-1 bg-transparent outline-none font-medium placeholder:opacity-40"
-                        style={{ color: "rgb(var(--color-text))", fontSize: "var(--text-md)" }}
+                        className="h-12 w-full rounded-lg border px-3 font-medium outline-none transition-colors placeholder:opacity-40"
+                        style={{
+                          backgroundColor: "rgb(var(--color-bg-elevated))",
+                          borderColor:
+                            isUsername && usernameState === "taken"
+                              ? "rgb(var(--color-error))"
+                              : isUsername && usernameState === "available"
+                                ? "rgb(var(--color-success))"
+                                : "rgb(var(--color-border))",
+                          color: "rgb(var(--color-text))",
+                          fontSize: "var(--text-md)",
+                          paddingLeft: isUsername ? "1.9rem" : undefined,
+                        }}
                       />
                       {isUsername && usernameState !== "idle" && (
-                        <div className="ml-2 shrink-0">
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
                           {usernameState === "checking" && (
                             <Loader2 size={15} className="animate-spin" style={{ color: "rgb(var(--color-text-muted))" }} />
                           )}
@@ -453,7 +434,6 @@ function EditProfileForm({
                     </div>
                     {isUsername && (
                       <p
-                        className="mt-1"
                         style={{
                           color:
                             usernameState === "taken" || usernameInvalid
@@ -465,12 +445,12 @@ function EditProfileForm({
                         }}
                       >
                         {usernameInvalid
-                          ? "At least 3 characters"
+                          ? "Username must be at least 3 characters"
                           : usernameState === "taken"
                             ? "That username is taken"
                             : usernameState === "available"
                               ? "Username is available"
-                              : "Letters, numbers, . and _"}
+                              : "Letters, numbers, dots and underscores"}
                       </p>
                     )}
                   </>
