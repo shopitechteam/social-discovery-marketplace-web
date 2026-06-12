@@ -8,7 +8,7 @@ import {
   LogOut,
   Palette,
   Plus,
-  Settings
+  Settings,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { TikTokIcon } from "@/components/ui/TikTokIcon";
@@ -22,7 +22,7 @@ type TabIcon = React.ComponentType<{
 import {
   useMyProfile,
   useMyPosts,
-  useMyAnalytics
+  useMyAnalytics,
 } from "../hooks/useMyProfile";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProfileHeader } from "./ProfileHeader";
@@ -94,7 +94,7 @@ function ProfileSkeleton() {
               className="rounded-lg"
               style={{
                 aspectRatio: "9/16",
-                backgroundColor: "rgb(var(--color-bg-subtle))"
+                backgroundColor: "rgb(var(--color-bg-subtle))",
               }}
             />
           ))}
@@ -119,7 +119,7 @@ export function ProfileView({ lang }: Props) {
   const {
     data: postsData,
     loading: postsLoading,
-    fetchMore
+    fetchMore,
   } = useMyPosts(postsLimit);
   const { data: analyticsData, loading: analyticsLoading } = useMyAnalytics(
     tab === "analytics",
@@ -143,10 +143,10 @@ export function ProfileView({ lang }: Props) {
         return {
           myPosts: {
             ...fetchMoreResult.myPosts,
-            posts: [...prev.myPosts.posts, ...fetchMoreResult.myPosts.posts]
-          }
+            posts: [...prev.myPosts.posts, ...fetchMoreResult.myPosts.posts],
+          },
         };
-      }
+      },
     });
   }
 
@@ -155,7 +155,11 @@ export function ProfileView({ lang }: Props) {
       className="min-h-screen"
       style={{ backgroundColor: "rgb(var(--color-bg))" }}
     >
-      <ProfileHeader user={user} editHref={`/${lang}/profile/edit`} lang={lang} />
+      <ProfileHeader
+        user={user}
+        editHref={`/${lang}/profile/edit`}
+        lang={lang}
+      />
 
       <div
         className="sticky top-0 z-20 border-b"
@@ -163,7 +167,7 @@ export function ProfileView({ lang }: Props) {
           backgroundColor: "rgb(var(--color-bg) / 0.94)",
           borderColor: "rgb(var(--color-border))",
           backdropFilter: "blur(14px) saturate(150%)",
-          WebkitBackdropFilter: "blur(14px) saturate(150%)"
+          WebkitBackdropFilter: "blur(14px) saturate(150%)",
         }}
       >
         <div
@@ -188,8 +192,8 @@ export function ProfileView({ lang }: Props) {
                 style={{
                   color: active
                     ? "rgb(var(--color-text))"
-                    : "rgb(var(--color-text-muted))"
-                  }}
+                    : "rgb(var(--color-text-muted))",
+                }}
               >
                 <Icon size={24} strokeWidth={2.2} />
                 {active && (
@@ -254,20 +258,26 @@ export function ProfileView({ lang }: Props) {
                     backgroundColor: "rgb(var(--color-bg-elevated))",
                     borderColor: "rgb(var(--color-border))",
                     color: "rgb(var(--brand-primary))",
-                    boxShadow: "var(--shadow-sm)"
+                    boxShadow: "var(--shadow-sm)",
                   }}
                 >
                   <ChartColumn size={26} strokeWidth={2} />
                 </div>
                 <h2
                   className="font-bold"
-                  style={{ fontSize: "var(--text-lg)", color: "rgb(var(--color-text))" }}
+                  style={{
+                    fontSize: "var(--text-lg)",
+                    color: "rgb(var(--color-text))",
+                  }}
                 >
                   No analytics yet
                 </h2>
                 <p
                   className="mt-2 max-w-sm leading-snug"
-                  style={{ fontSize: "var(--text-base)", color: "rgb(var(--color-text-muted))" }}
+                  style={{
+                    fontSize: "var(--text-base)",
+                    color: "rgb(var(--color-text-muted))",
+                  }}
                 >
                   Post your first video and analytics will appear here once it
                   gets views.
@@ -275,9 +285,12 @@ export function ProfileView({ lang }: Props) {
                 <Link
                   href={`/${lang}/upload`}
                   className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-lg px-4 font-semibold text-white active:opacity-80"
-                  style={{ fontSize: "var(--text-sm)", background:
+                  style={{
+                    fontSize: "var(--text-sm)",
+                    background:
                       "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)))",
-                    boxShadow: "0 10px 24px rgb(var(--brand-primary) / 0.24)" }}
+                    boxShadow: "0 10px 24px rgb(var(--brand-primary) / 0.24)",
+                  }}
                 >
                   <Plus size={16} strokeWidth={2.4} />
                   New post
@@ -302,13 +315,19 @@ function SettingsPanel({ lang }: { lang: string }) {
         <div className="mb-4">
           <h2
             className="font-bold leading-tight"
-            style={{ fontSize: "var(--text-lg)", color: "rgb(var(--color-text))" }}
+            style={{
+              fontSize: "var(--text-lg)",
+              color: "rgb(var(--color-text))",
+            }}
           >
             Settings
           </h2>
           <p
             className="mt-1"
-            style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text-muted))" }}
+            style={{
+              fontSize: "var(--text-sm)",
+              color: "rgb(var(--color-text-muted))",
+            }}
           >
             Account preferences
           </p>
@@ -319,7 +338,7 @@ function SettingsPanel({ lang }: { lang: string }) {
           style={{
             backgroundColor: "rgb(var(--color-bg-elevated))",
             borderColor: "rgb(var(--color-border))",
-            boxShadow: "var(--shadow-sm)"
+            boxShadow: "var(--shadow-sm)",
           }}
         >
           <SettingsRow
@@ -354,7 +373,7 @@ function SettingsRow({
   label,
   description,
   children,
-  tone
+  tone,
 }: {
   icon: LucideIcon;
   label: string;
@@ -368,7 +387,7 @@ function SettingsRow({
         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
         style={{
           backgroundColor: `rgb(var(${tone}) / 0.12)`,
-          color: `rgb(var(${tone}))`
+          color: `rgb(var(${tone}))`,
         }}
       >
         <Icon size={18} strokeWidth={2.2} />
@@ -376,13 +395,19 @@ function SettingsRow({
       <div className="min-w-0 flex-1">
         <p
           className="font-bold leading-tight"
-          style={{ fontSize: "var(--text-base)", color: "rgb(var(--color-text))" }}
+          style={{
+            fontSize: "var(--text-base)",
+            color: "rgb(var(--color-text))",
+          }}
         >
           {label}
         </p>
         <p
           className="mt-1"
-          style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text-muted))" }}
+          style={{
+            fontSize: "var(--text-sm)",
+            color: "rgb(var(--color-text-muted))",
+          }}
         >
           {description}
         </p>

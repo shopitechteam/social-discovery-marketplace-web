@@ -14,7 +14,11 @@ interface TikTokIconProps extends Omit<SVGProps<SVGSVGElement>, "ref"> {
  * inline SVG that follows the same `size` / `className` API as lucide-react
  * icons (currentColor fill) so it drops into icon slots cleanly.
  */
-export function TikTokIcon({ size = 24, className, ...props }: TikTokIconProps) {
+export function TikTokIcon({
+  size = 26,
+  className = "h-8 mt-1 w-8",
+  ...props
+}: TikTokIconProps) {
   return (
     <svg
       width={size}
