@@ -112,55 +112,52 @@ function ConnectGate({ lang }: { lang: string }) {
   }
 
   return (
-    <div
-      className="flex flex-col items-center justify-center gap-5 rounded-xl border border-dashed py-14 px-6 text-center"
-      style={{ borderColor: "rgb(var(--color-border))" }}
-    >
-      <div
-        className="flex h-16 w-16 items-center justify-center rounded-2xl"
-        style={{
-          background: "linear-gradient(135deg, #010101 0%, #69C9D0 100%)",
-        }}
-      >
-        <Tv2 className="text-white" size={28} />
-      </div>
-      <div>
-        <p
-          className="font-bold"
+    <section className="px-4 py-12">
+      <div className="mx-auto flex min-h-80 max-w-xl flex-col items-center justify-center text-center">
+        <div
+          className="mb-4 flex h-16 w-16 items-center justify-center rounded-lg border"
           style={{
-            fontSize: "var(--text-lg)",
-            color: "rgb(var(--color-text))",
+            backgroundColor: "rgb(var(--color-bg-elevated))",
+            borderColor: "rgb(var(--color-border))",
+            color: "rgb(var(--brand-primary))",
+            boxShadow: "var(--shadow-sm)",
           }}
         >
+          <Tv2 size={26} strokeWidth={2} />
+        </div>
+        <h2
+          className="font-bold"
+          style={{ color: "rgb(var(--color-text))", fontSize: "var(--text-lg)" }}
+        >
           Connect TikTok
-        </p>
+        </h2>
         <p
-          className="mt-1 max-w-xs leading-snug"
-          style={{
-            fontSize: "var(--text-sm)",
-            color: "rgb(var(--color-text-muted))",
-          }}
+          className="mt-2 max-w-sm leading-snug"
+          style={{ color: "rgb(var(--color-text-muted))", fontSize: "var(--text-base)" }}
         >
           Link your TikTok account to browse and import your videos into Shopi.
         </p>
+        <Button
+          onClick={handleConnect}
+          disabled={loading}
+          className="mt-5 gap-2 px-6 font-semibold text-white"
+          style={{
+            background: "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)))",
+            boxShadow: "0 10px 24px rgb(var(--brand-primary) / 0.24)",
+            fontSize: "var(--text-sm)",
+            height: 40,
+            borderRadius: "var(--radius-md)",
+          }}
+        >
+          {loading ? (
+            <Loader2 size={15} className="animate-spin" />
+          ) : (
+            <ExternalLink size={15} />
+          )}
+          Connect TikTok
+        </Button>
       </div>
-      <Button
-        onClick={handleConnect}
-        disabled={loading}
-        className="gap-2 px-6 font-semibold"
-        style={{
-          background: "linear-gradient(135deg, #010101 0%, #69C9D0 100%)",
-          color: "#fff",
-        }}
-      >
-        {loading ? (
-          <Loader2 size={15} className="animate-spin" />
-        ) : (
-          <ExternalLink size={15} />
-        )}
-        Connect TikTok
-      </Button>
-    </div>
+    </section>
   );
 }
 
@@ -617,7 +614,16 @@ export function TiktokImportPanel({ lang }: Props) {
       </div>
 
       {/* ── Tab switcher ────────────────────────────────────────────────── */}
-      <div className="flex gap-2 px-4 pb-3">
+      <div
+        className="sticky z-10 flex gap-2 px-4 pb-3 pt-1"
+        style={{
+          top: 48,
+          backgroundColor: "rgb(var(--color-bg) / 0.94)",
+          backdropFilter: "blur(14px) saturate(150%)",
+          WebkitBackdropFilter: "blur(14px) saturate(150%)",
+          borderBottom: "1px solid rgb(var(--color-border))",
+        }}
+      >
         <button
           onClick={() => setView("pick")}
           className={cn(
@@ -869,9 +875,9 @@ export function TiktokImportPanel({ lang }: Props) {
                   disabled={importing}
                   className="w-full gap-2 font-semibold"
                   style={{
-                    background: `linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)))`,
+                    background: "#000",
                     color: "#fff",
-                    boxShadow: "0 4px 16px rgb(var(--brand-primary) / 0.4)",
+                    boxShadow: "0 4px 16px rgba(0,0,0,0.25)",
                     height: 48,
                     fontSize: "var(--text-md)",
                     borderRadius: "var(--radius-full)",

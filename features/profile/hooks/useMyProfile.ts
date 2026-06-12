@@ -9,7 +9,6 @@ import {
   UpdateMyProfileDocument,
   CheckUsernameAvailabilityDocument,
 } from "@/types/__generated__/graphql";
-import type { UpdateProfileInput } from "@/types/__generated__/graphql";
 
 export function useMyProfile() {
   return useQuery(GetMyProfileDocument, { fetchPolicy: "cache-and-network" });
@@ -22,8 +21,11 @@ export function useMyPosts(limit = 18) {
   });
 }
 
-export function useMyAnalytics() {
-  return useQuery(GetMyAnalyticsDocument, { fetchPolicy: "cache-and-network" });
+export function useMyAnalytics(enabled = true) {
+  return useQuery(GetMyAnalyticsDocument, {
+    fetchPolicy: "cache-and-network",
+    skip: !enabled,
+  });
 }
 
 export function useUpdateProfile() {

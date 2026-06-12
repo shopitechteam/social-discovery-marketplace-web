@@ -9,6 +9,9 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useUpdateProfile, useCheckUsername } from "../hooks/useMyProfile";
 import type { ProfileUserFieldsFragment } from "@/types/__generated__/graphql";
 import { useAuthStore } from "@/stores/auth";
@@ -153,35 +156,38 @@ export function EditProfileSheet({ user, open, onClose }: Props) {
   return (
     <Drawer
       open={open}
+      fixed
+      shouldScaleBackground={false}
       onOpenChange={(nextOpen) => {
         if (!nextOpen) onClose();
       }}
     >
       <DrawerContent
-        className="mx-auto w-full max-w-107.5 gap-0 overflow-hidden rounded-t-lg border p-0 focus:outline-none"
+        className="mx-auto flex h-[88svh] w-full max-w-[430px] flex-col gap-0 overflow-hidden rounded-t-lg border p-0 focus:outline-none"
         style={{
           backgroundColor: "rgb(var(--color-bg-elevated))",
           borderColor: "rgb(var(--color-border))",
           boxShadow: "var(--shadow-lg)",
-          maxHeight: "88svh",
-          paddingBottom: "var(--safe-bottom)",
         }}
       >
-        <DrawerHeader className="px-5 pb-3 pt-3 text-center">
+        <DrawerHeader className="shrink-0 px-4 pb-3 pt-3 text-center">
           <DrawerDescription className="sr-only">
             Edit your profile name, username, bio, and website.
           </DrawerDescription>
           <div className="flex items-center justify-between gap-3">
-            <button
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
               onClick={onClose}
-              className="rounded-lg px-2 py-1 font-semibold active:opacity-75"
+              className="h-9 px-2 font-semibold"
               style={{
                 color: "rgb(var(--color-text-muted))",
                 fontSize: "var(--text-sm)",
               }}
             >
               Cancel
-            </button>
+            </Button>
             <DrawerTitle
               className="font-bold"
               style={{
@@ -191,25 +197,33 @@ export function EditProfileSheet({ user, open, onClose }: Props) {
             >
               Edit profile
             </DrawerTitle>
-            <button
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
               onClick={handleSave}
               disabled={loading || usernameState === "taken"}
-              className="rounded-lg px-2 py-1 font-semibold transition-opacity active:opacity-75 disabled:opacity-40"
+              className="h-9 px-2 font-semibold"
               style={{
                 color: "rgb(var(--brand-primary))",
                 fontSize: "var(--text-sm)",
               }}
             >
               {loading ? "Saving..." : "Save"}
-            </button>
+            </Button>
           </div>
         </DrawerHeader>
 
         <div
+          className="shrink-0"
           style={{ height: 1, backgroundColor: "rgb(var(--color-border))" }}
         />
 
-        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 py-4">
+        <div
+          data-vaul-no-drag
+          className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-4 py-4"
+          style={{ paddingBottom: "calc(var(--safe-bottom) + 1rem)" }}
+        >
           {fields.map((field) => {
             const value = form[field.name];
             const isUsername = field.name === "username";
@@ -227,7 +241,7 @@ export function EditProfileSheet({ user, open, onClose }: Props) {
                 </label>
 
                 {field.multiline ? (
-                  <textarea
+                  <Textarea
                     value={value}
                     onChange={(event) =>
                       setForm((current) => ({
@@ -238,12 +252,9 @@ export function EditProfileSheet({ user, open, onClose }: Props) {
                     placeholder={field.placeholder}
                     maxLength={field.maxLength}
                     rows={3}
-                    className="resize-none rounded-lg px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary"
+                    className="min-h-24 resize-none border-border bg-surface text-[length:var(--text-md)] shadow-none"
                     style={{
-                      backgroundColor: "rgb(var(--color-bg-subtle))",
-                      border: "1px solid rgb(var(--color-border))",
                       color: "rgb(var(--color-text))",
-                      fontSize: "var(--text-sm)",
                     }}
                   />
                 ) : (
@@ -259,7 +270,7 @@ export function EditProfileSheet({ user, open, onClose }: Props) {
                         @
                       </span>
                     )}
-                    <input
+                    <Input
                       type={field.name === "website" ? "url" : "text"}
                       value={value}
                       onChange={(event) =>
@@ -272,9 +283,8 @@ export function EditProfileSheet({ user, open, onClose }: Props) {
                       }
                       placeholder={field.placeholder}
                       maxLength={field.maxLength}
-                      className="w-full rounded-lg px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary"
+                      className="h-11 border-border bg-surface text-[length:var(--text-md)] shadow-none"
                       style={{
-                        backgroundColor: "rgb(var(--color-bg-subtle))",
                         border: `1px solid ${
                           isUsername && usernameState === "taken"
                             ? "rgb(var(--color-error))"
@@ -283,7 +293,6 @@ export function EditProfileSheet({ user, open, onClose }: Props) {
                               : "rgb(var(--color-border))"
                         }`,
                         color: "rgb(var(--color-text))",
-                        fontSize: "var(--text-sm)",
                         paddingLeft: isUsername ? "1.75rem" : undefined,
                       }}
                     />

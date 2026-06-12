@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import {
   ChartColumn,
   LayoutGrid,
   LogOut,
   Palette,
+  Plus,
   Settings,
   Tv2,
 } from "lucide-react";
@@ -32,41 +34,41 @@ function ProfileSkeleton() {
       style={{ backgroundColor: "rgb(var(--color-bg))" }}
     >
       <div className="border-b" style={{ borderColor: "rgb(var(--color-border))" }}>
-        <div className="mx-auto max-w-6xl px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
-          <div className="grid gap-5 lg:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)]">
-            <div className="flex gap-4">
-              <div
-                className="h-20 w-20 rounded-full sm:h-24 sm:w-24"
-                style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
-              />
-              <div className="min-w-0 flex-1 pt-1">
-                <div
-                  className="mb-3 h-7 w-32 rounded-lg"
-                  style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
-                />
-                <div
-                  className="mb-2 h-5 w-56 max-w-full rounded-lg"
-                  style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
-                />
-                <div
-                  className="h-4 w-36 rounded-lg"
-                  style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
-                />
-              </div>
-            </div>
+        <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6 lg:px-8 lg:py-6">
+          <div className="flex gap-4">
             <div
-              className="h-40 rounded-lg"
+              className="h-20 w-20 rounded-full sm:h-24 sm:w-24"
               style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
             />
-          </div>
-          <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:gap-3">
-            {Array.from({ length: 4 }).map((_, index) => (
+            <div className="min-w-0 flex-1 pt-1">
               <div
-                key={index}
-                className="h-28 rounded-lg"
+                className="mb-2 h-6 w-32 rounded-md"
                 style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
               />
-            ))}
+              <div
+                className="mb-3 h-4 w-28 rounded-md"
+                style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
+              />
+              <div className="grid grid-cols-4 gap-1.5">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <div
+                    key={index}
+                    className="h-12 rounded-md"
+                    style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="mt-4 space-y-2">
+            <div
+              className="h-4 w-full max-w-sm rounded-md"
+              style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
+            />
+            <div
+              className="h-4 w-40 rounded-md"
+              style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
+            />
           </div>
         </div>
       </div>
@@ -102,7 +104,9 @@ export function ProfileView({ lang }: Props) {
 
   const { data: profileData, loading: profileLoading } = useMyProfile();
   const { data: postsData, loading: postsLoading, fetchMore } = useMyPosts(postsLimit);
-  const { data: analyticsData, loading: analyticsLoading } = useMyAnalytics();
+  const { data: analyticsData, loading: analyticsLoading } = useMyAnalytics(
+    tab === "analytics",
+  );
 
   if (profileLoading && !profileData) return <ProfileSkeleton />;
 
@@ -153,13 +157,17 @@ export function ProfileView({ lang }: Props) {
       <div
         className="sticky top-0 z-20 border-b"
         style={{
-          backgroundColor: "rgb(var(--color-bg) / 0.9)",
+          backgroundColor: "rgb(var(--color-bg) / 0.94)",
           borderColor: "rgb(var(--color-border))",
           backdropFilter: "blur(14px) saturate(150%)",
           WebkitBackdropFilter: "blur(14px) saturate(150%)",
         }}
       >
-        <div className="mx-auto flex w-full max-w-6xl gap-1 px-4 py-2 sm:px-6 lg:px-8">
+        <div
+          className="mx-auto grid h-12 w-full max-w-6xl grid-cols-4 px-2 sm:px-6 lg:px-8"
+          role="tablist"
+          aria-label="Profile sections"
+        >
           {tabConfig.map((item) => {
             const active = tab === item.key;
             const Icon = item.icon;
@@ -167,25 +175,26 @@ export function ProfileView({ lang }: Props) {
             return (
               <button
                 key={item.key}
+                type="button"
+                role="tab"
+                aria-selected={active}
                 onClick={() => setTab(item.key)}
-                aria-pressed={active}
-                className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-lg border font-semibold transition-transform active:scale-[0.98]"
+                className="relative flex h-12 min-w-0 flex-col items-center justify-center gap-0.5 font-semibold transition-opacity active:opacity-60"
                 style={{
-                  backgroundColor: active
-                    ? "rgb(var(--brand-primary))"
-                    : "rgb(var(--color-bg-elevated) / 0.72)",
-                  borderColor: active
-                    ? "rgb(var(--brand-primary))"
-                    : "rgb(var(--color-border))",
                   color: active
-                    ? "rgb(var(--color-text-on-brand))"
+                    ? "rgb(var(--color-text))"
                     : "rgb(var(--color-text-muted))",
-                  boxShadow: active ? "0 8px 20px rgb(var(--brand-primary) / 0.22)" : "none",
                   fontSize: "var(--text-xs)",
                 }}
               >
                 <Icon size={15} strokeWidth={2.2} />
-                <span>{item.label}</span>
+                <span className="truncate">{item.label}</span>
+                {active && (
+                  <span
+                    className="absolute bottom-0 h-0.5 w-8 rounded-full"
+                    style={{ backgroundColor: "rgb(var(--color-text))" }}
+                  />
+                )}
               </button>
             );
           })}
@@ -216,7 +225,47 @@ export function ProfileView({ lang }: Props) {
             </div>
           ) : analyticsData?.myAnalytics ? (
             <AnalyticsPanel data={analyticsData.myAnalytics} lang={lang} />
-          ) : null}
+          ) : (
+            <section className="px-4 py-12 sm:px-6 lg:px-8">
+              <div className="mx-auto flex min-h-80 max-w-xl flex-col items-center justify-center text-center">
+                <div
+                  className="mb-4 flex h-16 w-16 items-center justify-center rounded-lg border"
+                  style={{
+                    backgroundColor: "rgb(var(--color-bg-elevated))",
+                    borderColor: "rgb(var(--color-border))",
+                    color: "rgb(var(--brand-primary))",
+                    boxShadow: "var(--shadow-sm)",
+                  }}
+                >
+                  <ChartColumn size={26} strokeWidth={2} />
+                </div>
+                <h2
+                  className="font-bold"
+                  style={{ color: "rgb(var(--color-text))", fontSize: "var(--text-lg)" }}
+                >
+                  No analytics yet
+                </h2>
+                <p
+                  className="mt-2 max-w-sm leading-snug"
+                  style={{ color: "rgb(var(--color-text-muted))", fontSize: "var(--text-base)" }}
+                >
+                  Post your first video and analytics will appear here once it gets views.
+                </p>
+                <Link
+                  href={`/${lang}/upload`}
+                  className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-lg px-4 font-semibold text-white active:opacity-80"
+                  style={{
+                    background: "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)))",
+                    boxShadow: "0 10px 24px rgb(var(--brand-primary) / 0.24)",
+                    fontSize: "var(--text-sm)",
+                  }}
+                >
+                  <Plus size={16} strokeWidth={2.4} />
+                  New post
+                </Link>
+              </div>
+            </section>
+          )}
         </>
       )}
 
