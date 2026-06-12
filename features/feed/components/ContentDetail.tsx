@@ -241,7 +241,6 @@ function ContentVideo({
   thumbnailUrl,
   muted,
   onToggleMuted,
-  fit,
   fill = false,
   showMuteButton = false,
   showSpinner = false,
@@ -252,7 +251,6 @@ function ContentVideo({
   thumbnailUrl?: string | null;
   muted: boolean;
   onToggleMuted?: () => void;
-  fit?: "contain" | "cover";
   fill?: boolean;
   showMuteButton?: boolean;
   showSpinner?: boolean;
@@ -478,7 +476,6 @@ export function ContentDetail({ id, lang }: Props) {
   `);
   const [shareMutation] = useMutation(ShareContentDocument);
   const [viewMutation] = useMutation(ViewContentDocument);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [toggleSaveMutation] = useMutation(gql`
     mutation ToggleSaveDetail($contentId: String!, $collectionId: String) {
       toggleSave(contentId: $contentId, collectionId: $collectionId) {
@@ -556,7 +553,6 @@ export function ContentDetail({ id, lang }: Props) {
       id: client.cache.identify({ __typename: "Content", id }),
       fields: {
         isSavedByMe: () => saved,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         stats: (existing: any) => ({ ...existing, saves: saveCount }),
       },
     });
@@ -1003,29 +999,34 @@ export function ContentDetail({ id, lang }: Props) {
           )}
         </button>
       )}
-      {/* Message */}
-      <button
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-white transition-all"
-        style={{
-          background:
-            "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary, var(--brand-primary))))",
-        }}
-      >
-        <svg
-          className="w-4 h-4"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={1.8}
-          viewBox="0 0 24 24"
+      {!isOwnPost && (
+        <button
+          onClick={() => {
+            if (!requireAuth({ contentId: id, action: "comment" })) return;
+            router.push(`/${lang}/notifications?contentId=${id}`);
+          }}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-white transition-all"
+          style={{
+            background:
+              "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary, var(--brand-primary))))",
+          }}
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-          />
-        </svg>
-        Message Seller
-      </button>
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.8}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+            />
+          </svg>
+          Message Seller
+        </button>
+      )}
     </div>
   );
 
@@ -1609,4 +1610,3 @@ export function ContentDetail({ id, lang }: Props) {
     </div>
   );
 }
-

@@ -13,11 +13,20 @@ export const WS_EVENTS = {
   TIKTOK_IMPORT_UPDATED: 'tiktok:import:updated',
   STORY_READY:  'story:ready',
   STORY_FAILED: 'story:failed',
+  DM_MESSAGE_CREATED: 'dm:message:created',
+  DM_MESSAGE_UPDATED: 'dm:message:updated',
+  DM_CONVERSATION_UPDATED: 'dm:conversation:updated',
+  DM_PRESENCE_UPDATED: 'dm:presence:updated',
+  DM_TYPING_UPDATED: 'dm:typing:updated',
 } as const;
 
 export const WS_CLIENT_EVENTS = {
   WATCH_DRAFT:   'watch:draft',
   UNWATCH_DRAFT: 'unwatch:draft',
+  JOIN_CONVERSATION: 'join:conversation',
+  LEAVE_CONVERSATION: 'leave:conversation',
+  START_TYPING: 'typing:start',
+  STOP_TYPING: 'typing:stop',
 } as const;
 
 export interface MediaReadyPayload {
@@ -57,4 +66,64 @@ export interface TiktokImportUpdatedPayload {
   thumbnailUrl?: string;
   title?: string;
   errorMessage?: string;
+}
+
+export interface DirectMessageMediaSnapshot {
+  mediaAssetId: string;
+  type: 'image' | 'video';
+  status: 'pending' | 'uploading' | 'processing' | 'ready' | 'failed' | 'orphaned';
+  thumbnailUrl?: string;
+  url?: string;
+  muxPlaybackId?: string;
+  displayWidth?: number;
+  displayHeight?: number;
+  aspectRatio?: string;
+  duration?: number;
+  errorMessage?: string;
+}
+
+export interface DirectMessageCreatedPayload {
+  conversationId: string;
+  messageId: string;
+  contentId: string;
+  senderId: string;
+  recipientId: string;
+  type: 'text' | 'image' | 'video';
+  text?: string;
+  media?: DirectMessageMediaSnapshot;
+  createdAt: string;
+  deliveredAt?: string;
+  readAt?: string;
+}
+
+export interface DirectMessageUpdatedPayload {
+  kind: 'delivery' | 'read' | 'media';
+  conversationId: string;
+  messageIds: string[];
+  deliveredAt?: string;
+  readAt?: string;
+  media?: DirectMessageMediaSnapshot;
+}
+
+export interface DirectConversationUpdatedPayload {
+  conversationId: string;
+  contentId: string;
+  lastMessageId?: string;
+  lastMessageText?: string;
+  lastMessageType?: 'text' | 'image' | 'video';
+  lastMessageSenderId?: string;
+  lastMessageAt?: string;
+  myUnreadCount: number;
+}
+
+export interface DirectPresenceUpdatedPayload {
+  userId: string;
+  isOnline: boolean;
+  lastSeenAt?: string;
+}
+
+export interface DirectTypingUpdatedPayload {
+  conversationId: string;
+  userId: string;
+  isTyping: boolean;
 }

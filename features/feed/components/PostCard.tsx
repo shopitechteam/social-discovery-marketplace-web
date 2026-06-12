@@ -29,7 +29,6 @@ import {
   MapPin,
   Bookmark,
   Link2,
-  EyeOff,
   Flag,
   MoreHorizontal,
 } from "lucide-react";
@@ -737,12 +736,6 @@ export function PostCard({ post, lang, priority }: Props) {
       copyLink(contentId: $contentId)
     }
   `);
-  const [trackCreatorMessaged] = useMutation(gql`
-    mutation CreatorMessaged($contentId: String!) {
-      creatorMessaged(contentId: $contentId)
-    }
-  `);
-
   // Fire viewContent only when the card is at least 50% visible
   useEffect(() => {
     const el = cardRef.current;
@@ -1136,34 +1129,31 @@ export function PostCard({ post, lang, priority }: Props) {
           </span>
         </button>
 
-        {/* Message pill — soft gray, grows to fill remaining space */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            if (!requireAuth({ contentId: post.id })) return;
-            trackCreatorMessaged({ variables: { contentId: post.id } }).catch(
-              () => {},
-            );
-            toast.success("Creator contacted");
-          }}
-          className="flex-1 bg-primary/90 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-xs font-semibold text-[#f1f1f1] transition-all active:scale-95"
-          // style={{ backgroundColor: "rgb(150 150 150)" }}
-        >
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={1.8}
-            viewBox="0 0 24 24"
+        {!isOwnPost && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!requireAuth({ contentId: post.id })) return;
+              router.push(`/${lang}/notifications?contentId=${post.id}`);
+            }}
+            className="flex-1 bg-primary/90 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-xs font-semibold text-[#f1f1f1] transition-all active:scale-95"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-            />
-          </svg>
-          Message
-        </button>
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.8}
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+              />
+            </svg>
+            Message
+          </button>
+        )}
       </div>
     </article>
   );
