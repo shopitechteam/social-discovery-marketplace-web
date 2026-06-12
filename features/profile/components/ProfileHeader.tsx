@@ -22,13 +22,7 @@ function getWebsiteHref(website: string) {
   return website.startsWith("http") ? website : `https://${website}`;
 }
 
-function StatTile({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function StatTile({ label, value }: { label: string; value: string }) {
   return (
     <div
       className="min-w-0 rounded-md border px-2 py-2 text-center"
@@ -154,9 +148,18 @@ export function ProfileHeader({ user, onEditClick }: Props) {
 
               <div className="mt-3 grid grid-cols-4 gap-1.5">
                 <StatTile label="Posts" value={formatCompact(user.postCount)} />
-                <StatTile label="Followers" value={formatCompact(user.followerCount)} />
-                <StatTile label="Views" value={formatCompact(user.totalViews)} />
-                <StatTile label="Likes" value={formatCompact(user.totalLikes)} />
+                <StatTile
+                  label="Followers"
+                  value={formatCompact(user.followerCount)}
+                />
+                <StatTile
+                  label="Views"
+                  value={formatCompact(user.totalViews)}
+                />
+                <StatTile
+                  label="Likes"
+                  value={formatCompact(user.totalLikes)}
+                />
               </div>
             </div>
           </div>

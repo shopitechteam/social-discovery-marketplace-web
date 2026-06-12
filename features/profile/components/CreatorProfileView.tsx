@@ -55,7 +55,12 @@ function StatPill({ label, value }: { label: string; value: string }) {
       >
         {value}
       </span>
-      <span style={{ color: "rgb(var(--color-text-muted))", fontSize: "var(--text-xs)" }}>
+      <span
+        style={{
+          color: "rgb(var(--color-text-muted))",
+          fontSize: "var(--text-xs)",
+        }}
+      >
         {label}
       </span>
     </div>
@@ -107,7 +112,10 @@ function PostTile({
         />
       ) : (
         <div className="flex h-full w-full items-center justify-center">
-          <ImageIcon size={24} style={{ color: "rgb(var(--color-text-placeholder))" }} />
+          <ImageIcon
+            size={24}
+            style={{ color: "rgb(var(--color-text-placeholder))" }}
+          />
         </div>
       )}
 
@@ -115,7 +123,8 @@ function PostTile({
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: "linear-gradient(to top, rgba(0,0,0,0.7), transparent 50%, rgba(0,0,0,0.2))",
+          background:
+            "linear-gradient(to top, rgba(0,0,0,0.7), transparent 50%, rgba(0,0,0,0.2))",
         }}
       />
 
@@ -141,7 +150,10 @@ function PostTile({
       <div className="absolute right-2 top-2 z-20 opacity-0 transition-opacity group-hover:opacity-100">
         <div className="relative">
           <button
-            onClick={(e) => { e.preventDefault(); setMenuOpen((v) => !v); }}
+            onClick={(e) => {
+              e.preventDefault();
+              setMenuOpen((v) => !v);
+            }}
             className="inline-flex h-7 w-7 items-center justify-center rounded-lg border text-white"
             style={{
               backgroundColor: "rgba(0,0,0,0.5)",
@@ -152,7 +164,10 @@ function PostTile({
           >
             <span className="flex flex-col items-center gap-0.5">
               {[0, 1, 2].map((i) => (
-                <span key={i} className="block h-0.5 w-0.5 rounded-full bg-white" />
+                <span
+                  key={i}
+                  className="block h-0.5 w-0.5 rounded-full bg-white"
+                />
               ))}
             </span>
           </button>
@@ -168,23 +183,40 @@ function PostTile({
               <Link
                 href={`/${lang}/content/${post.id}`}
                 className="flex items-center gap-2 px-3 py-2 font-medium transition-colors hover:bg-surface"
-                style={{ color: "rgb(var(--color-text))", fontSize: "var(--text-sm)" }}
+                style={{
+                  color: "rgb(var(--color-text))",
+                  fontSize: "var(--text-sm)",
+                }}
               >
                 <Eye size={14} />
                 View
               </Link>
               <button
-                onClick={(e) => { e.preventDefault(); onShare(post); setMenuOpen(false); }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  onShare(post);
+                  setMenuOpen(false);
+                }}
                 className="flex w-full items-center gap-2 px-3 py-2 font-medium transition-colors hover:bg-surface"
-                style={{ color: "rgb(var(--color-text))", fontSize: "var(--text-sm)" }}
+                style={{
+                  color: "rgb(var(--color-text))",
+                  fontSize: "var(--text-sm)",
+                }}
               >
                 <Share2 size={14} />
                 Share
               </button>
               <button
-                onClick={(e) => { e.preventDefault(); onCopyLink(post); setMenuOpen(false); }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  onCopyLink(post);
+                  setMenuOpen(false);
+                }}
                 className="flex w-full items-center gap-2 px-3 py-2 font-medium transition-colors hover:bg-surface"
-                style={{ color: "rgb(var(--color-text))", fontSize: "var(--text-sm)" }}
+                style={{
+                  color: "rgb(var(--color-text))",
+                  fontSize: "var(--text-sm)",
+                }}
               >
                 <Link2 size={14} />
                 Copy link
@@ -197,11 +229,17 @@ function PostTile({
       {/* stats */}
       <div className="absolute inset-x-0 bottom-0 z-0 p-2 pointer-events-none">
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1 font-semibold text-white" style={{ fontSize: "var(--text-xs)" }}>
+          <span
+            className="inline-flex items-center gap-1 font-semibold text-white"
+            style={{ fontSize: "var(--text-xs)" }}
+          >
             <Eye size={11} strokeWidth={2.2} />
             {formatCompact(post.stats.views)}
           </span>
-          <span className="inline-flex items-center gap-1 font-semibold text-white" style={{ fontSize: "var(--text-xs)" }}>
+          <span
+            className="inline-flex items-center gap-1 font-semibold text-white"
+            style={{ fontSize: "var(--text-xs)" }}
+          >
             <Heart size={11} strokeWidth={2.2} />
             {formatCompact(post.stats.likes)}
           </span>
@@ -225,20 +263,31 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
   const firstName = user.profile?.firstName ?? "";
   const lastName = user.profile?.lastName ?? "";
   const displayName =
-    [firstName, lastName].filter(Boolean).join(" ") || user.username || "Creator";
+    [firstName, lastName].filter(Boolean).join(" ") ||
+    user.username ||
+    "Creator";
   const initials =
     [firstName[0], lastName[0]].filter(Boolean).join("").toUpperCase() || "?";
   const avatar = user.profile?.avatar;
   const hasTikTok = Boolean(user.tiktokOpenId);
 
-  const { following, followerCount, toggle: toggleFollow, loading: followLoading } = useFollow({
+  const {
+    following,
+    followerCount,
+    toggle: toggleFollow,
+    loading: followLoading,
+  } = useFollow({
     userId: user.id,
     initialFollowing: user.isFollowedByMe ?? false,
     initialFollowerCount: user.followerCount ?? 0,
     lang,
   });
 
-  const { data, loading: postsLoading, fetchMore } = useQuery(GetUserPostsDocument, {
+  const {
+    data,
+    loading: postsLoading,
+    fetchMore,
+  } = useQuery(GetUserPostsDocument, {
     variables: { userId: user.id, limit: 18 },
     notifyOnNetworkStatusChange: true,
   });
@@ -256,7 +305,12 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
     if (!el) return;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !postsLoading && !fetchingMore.current) {
+        if (
+          entries[0].isIntersecting &&
+          hasMore &&
+          !postsLoading &&
+          !fetchingMore.current
+        ) {
           fetchingMore.current = true;
           fetchMore({
             variables: { userId: user.id, limit: 18, afterId: nextCursor },
@@ -266,7 +320,10 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
               return {
                 userPosts: {
                   ...fetchMoreResult.userPosts,
-                  posts: [...prev.userPosts.posts, ...fetchMoreResult.userPosts.posts],
+                  posts: [
+                    ...prev.userPosts.posts,
+                    ...fetchMoreResult.userPosts.posts,
+                  ],
                 },
               };
             },
@@ -279,35 +336,47 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
     return () => observer.disconnect();
   }, [hasMore, postsLoading, nextCursor, fetchMore, user.id]);
 
-  const handleShare = useCallback((post: ProfilePostFieldsFragment) => {
-    const url = `${window.location.origin}/${lang}/content/${post.id}`;
-    if (navigator.share) {
-      navigator.share({ title: post.title, url }).catch(() => {});
-    } else {
-      navigator.clipboard.writeText(url).catch(() => {});
-    }
-  }, [lang]);
+  const handleShare = useCallback(
+    (post: ProfilePostFieldsFragment) => {
+      const url = `${window.location.origin}/${lang}/content/${post.id}`;
+      if (navigator.share) {
+        navigator.share({ title: post.title, url }).catch(() => {});
+      } else {
+        navigator.clipboard.writeText(url).catch(() => {});
+      }
+    },
+    [lang],
+  );
 
-  const handleCopyLink = useCallback((post: ProfilePostFieldsFragment) => {
-    const url = `${window.location.origin}/${lang}/content/${post.id}`;
-    navigator.clipboard.writeText(url).catch(() => {});
-  }, [lang]);
+  const handleCopyLink = useCallback(
+    (post: ProfilePostFieldsFragment) => {
+      const url = `${window.location.origin}/${lang}/content/${post.id}`;
+      navigator.clipboard.writeText(url).catch(() => {});
+    },
+    [lang],
+  );
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "rgb(var(--color-bg))" }}>
+    <div
+      className="min-h-screen"
+      style={{ backgroundColor: "rgb(var(--color-bg))" }}
+    >
       {/* ── Hero header ── */}
       <div
         style={{
-          background: "linear-gradient(160deg, rgb(var(--brand-primary) / 0.08) 0%, rgb(var(--color-bg)) 60%)",
+          background:
+            "linear-gradient(160deg, rgb(var(--brand-primary) / 0.08) 0%, rgb(var(--color-bg)) 60%)",
         }}
       >
         <div className="mx-auto max-w-2xl px-4 pb-6 pt-4 sm:px-6">
-
           {/* Back button */}
           <button
             onClick={() => router.back()}
             className="mb-4 inline-flex items-center gap-1.5 font-semibold transition-opacity active:opacity-60"
-            style={{ color: "rgb(var(--color-text))", fontSize: "var(--text-sm)" }}
+            style={{
+              color: "rgb(var(--color-text))",
+              fontSize: "var(--text-sm)",
+            }}
             aria-label="Go back"
           >
             <ArrowLeft size={18} strokeWidth={2.2} />
@@ -339,7 +408,10 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center">
-                  <span className="select-none font-bold text-white" style={{ fontSize: "var(--text-xl)" }}>
+                  <span
+                    className="select-none font-bold text-white"
+                    style={{ fontSize: "var(--text-xl)" }}
+                  >
                     {initials}
                   </span>
                 </div>
@@ -351,7 +423,10 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
               <div className="flex flex-wrap items-center gap-2">
                 <h1
                   className="truncate font-bold"
-                  style={{ color: "rgb(var(--color-text))", fontSize: "var(--text-xl)" }}
+                  style={{
+                    color: "rgb(var(--color-text))",
+                    fontSize: "var(--text-xl)",
+                  }}
                 >
                   {displayName}
                 </h1>
@@ -376,7 +451,13 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
                 )}
               </div>
               {user.username && (
-                <p className="mt-0.5" style={{ color: "rgb(var(--color-text-muted))", fontSize: "var(--text-sm)" }}>
+                <p
+                  className="mt-0.5"
+                  style={{
+                    color: "rgb(var(--color-text-muted))",
+                    fontSize: "var(--text-sm)",
+                  }}
+                >
                   @{user.username}
                 </p>
               )}
@@ -399,7 +480,11 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
                       "Following"
                     ) : (
                       <>
-                        <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+                        <svg
+                          className="w-3.5 h-3.5"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
                           <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" />
                         </svg>
                         Follow
@@ -423,7 +508,11 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
                   >
                     <Video size={14} strokeWidth={2.2} />
                     TikTok
-                    <ExternalLink size={12} strokeWidth={2} style={{ color: "rgb(var(--color-text-muted))" }} />
+                    <ExternalLink
+                      size={12}
+                      strokeWidth={2}
+                      style={{ color: "rgb(var(--color-text-muted))" }}
+                    />
                   </a>
                 )}
               </div>
@@ -434,18 +523,29 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
           {user.profile?.bio && (
             <p
               className="mt-4 leading-snug"
-              style={{ color: "rgb(var(--color-text))", fontSize: "var(--text-sm)", maxWidth: "36rem" }}
+              style={{
+                color: "rgb(var(--color-text))",
+                fontSize: "var(--text-sm)",
+                maxWidth: "36rem",
+              }}
             >
               {user.profile.bio}
             </p>
           )}
           {user.profile?.website && (
             <a
-              href={user.profile.website.startsWith("http") ? user.profile.website : `https://${user.profile.website}`}
+              href={
+                user.profile.website.startsWith("http")
+                  ? user.profile.website
+                  : `https://${user.profile.website}`
+              }
               target="_blank"
               rel="noopener noreferrer"
               className="mt-1 inline-flex items-center gap-1.5 font-semibold"
-              style={{ color: "rgb(var(--brand-accent))", fontSize: "var(--text-sm)" }}
+              style={{
+                color: "rgb(var(--brand-accent))",
+                fontSize: "var(--text-sm)",
+              }}
             >
               <ExternalLink size={13} strokeWidth={2.2} />
               {user.profile.website.replace(/^https?:\/\//, "")}
@@ -462,9 +562,18 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
             }}
           >
             <StatPill label="Followers" value={formatCompact(followerCount)} />
-            <div className="h-8 w-px" style={{ backgroundColor: "rgb(var(--color-border))" }} />
-            <StatPill label="Following" value={formatCompact(user.followingCount)} />
-            <div className="h-8 w-px" style={{ backgroundColor: "rgb(var(--color-border))" }} />
+            <div
+              className="h-8 w-px"
+              style={{ backgroundColor: "rgb(var(--color-border))" }}
+            />
+            <StatPill
+              label="Following"
+              value={formatCompact(user.followingCount)}
+            />
+            <div
+              className="h-8 w-px"
+              style={{ backgroundColor: "rgb(var(--color-border))" }}
+            />
             <StatPill label="Posts" value={formatCompact(user.postCount)} />
           </div>
         </div>
@@ -473,10 +582,21 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
       {/* ── Content grid ── */}
       <div className="mx-auto max-w-2xl px-4 pb-12 sm:px-6">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-bold" style={{ color: "rgb(var(--color-text))", fontSize: "var(--text-base)" }}>
+          <h2
+            className="font-bold"
+            style={{
+              color: "rgb(var(--color-text))",
+              fontSize: "var(--text-base)",
+            }}
+          >
             Posts
           </h2>
-          <span style={{ color: "rgb(var(--color-text-muted))", fontSize: "var(--text-sm)" }}>
+          <span
+            style={{
+              color: "rgb(var(--color-text-muted))",
+              fontSize: "var(--text-sm)",
+            }}
+          >
             {posts.length} shown
           </span>
         </div>
@@ -484,7 +604,11 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
         {postsLoading && posts.length === 0 ? (
           <div className="grid grid-cols-3 gap-2">
             {Array.from({ length: 9 }).map((_, i) => (
-              <div key={i} className="relative overflow-hidden rounded-xl" style={{ aspectRatio: "9/16" }}>
+              <div
+                key={i}
+                className="relative overflow-hidden rounded-xl"
+                style={{ aspectRatio: "9/16" }}
+              >
                 {/* thumbnail area */}
                 <Skeleton className="absolute inset-0" />
                 {/* type badge */}
@@ -503,11 +627,24 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div
               className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl border"
-              style={{ backgroundColor: "rgb(var(--color-bg-elevated))", borderColor: "rgb(var(--color-border))" }}
+              style={{
+                backgroundColor: "rgb(var(--color-bg-elevated))",
+                borderColor: "rgb(var(--color-border))",
+              }}
             >
-              <Play size={22} strokeWidth={1.8} style={{ color: "rgb(var(--brand-primary))" }} />
+              <Play
+                size={22}
+                strokeWidth={1.8}
+                style={{ color: "rgb(var(--brand-primary))" }}
+              />
             </div>
-            <p className="font-semibold" style={{ color: "rgb(var(--color-text))", fontSize: "var(--text-base)" }}>
+            <p
+              className="font-semibold"
+              style={{
+                color: "rgb(var(--color-text))",
+                fontSize: "var(--text-base)",
+              }}
+            >
               No posts yet
             </p>
           </div>
@@ -532,7 +669,11 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
             {postsLoading && posts.length > 0 && (
               <div className="mt-2 grid grid-cols-3 gap-2">
                 {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="relative overflow-hidden rounded-xl" style={{ aspectRatio: "9/16" }}>
+                  <div
+                    key={i}
+                    className="relative overflow-hidden rounded-xl"
+                    style={{ aspectRatio: "9/16" }}
+                  >
                     <Skeleton className="absolute inset-0" />
                     <div className="absolute left-2 top-2">
                       <Skeleton className="h-6 w-6 rounded-lg" />

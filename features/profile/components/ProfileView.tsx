@@ -12,7 +12,11 @@ import {
   Tv2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { useMyProfile, useMyPosts, useMyAnalytics } from "../hooks/useMyProfile";
+import {
+  useMyProfile,
+  useMyPosts,
+  useMyAnalytics,
+} from "../hooks/useMyProfile";
 import { ProfileHeader } from "./ProfileHeader";
 import { PostsGrid } from "./PostsGrid";
 import { AnalyticsPanel } from "./AnalyticsPanel";
@@ -33,7 +37,10 @@ function ProfileSkeleton() {
       className="min-h-screen animate-pulse"
       style={{ backgroundColor: "rgb(var(--color-bg))" }}
     >
-      <div className="border-b" style={{ borderColor: "rgb(var(--color-border))" }}>
+      <div
+        className="border-b"
+        style={{ borderColor: "rgb(var(--color-border))" }}
+      >
         <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6 lg:px-8 lg:py-6">
           <div className="flex gap-4">
             <div
@@ -103,7 +110,11 @@ export function ProfileView({ lang }: Props) {
   const [postsLimit] = useState(18);
 
   const { data: profileData, loading: profileLoading } = useMyProfile();
-  const { data: postsData, loading: postsLoading, fetchMore } = useMyPosts(postsLimit);
+  const {
+    data: postsData,
+    loading: postsLoading,
+    fetchMore,
+  } = useMyPosts(postsLimit);
   const { data: analyticsData, loading: analyticsLoading } = useMyAnalytics(
     tab === "analytics",
   );
@@ -241,21 +252,29 @@ export function ProfileView({ lang }: Props) {
                 </div>
                 <h2
                   className="font-bold"
-                  style={{ color: "rgb(var(--color-text))", fontSize: "var(--text-lg)" }}
+                  style={{
+                    color: "rgb(var(--color-text))",
+                    fontSize: "var(--text-lg)",
+                  }}
                 >
                   No analytics yet
                 </h2>
                 <p
                   className="mt-2 max-w-sm leading-snug"
-                  style={{ color: "rgb(var(--color-text-muted))", fontSize: "var(--text-base)" }}
+                  style={{
+                    color: "rgb(var(--color-text-muted))",
+                    fontSize: "var(--text-base)",
+                  }}
                 >
-                  Post your first video and analytics will appear here once it gets views.
+                  Post your first video and analytics will appear here once it
+                  gets views.
                 </p>
                 <Link
                   href={`/${lang}/upload`}
                   className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-lg px-4 font-semibold text-white active:opacity-80"
                   style={{
-                    background: "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)))",
+                    background:
+                      "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)))",
                     boxShadow: "0 10px 24px rgb(var(--brand-primary) / 0.24)",
                     fontSize: "var(--text-sm)",
                   }}
@@ -290,7 +309,10 @@ function SettingsPanel({ lang }: { lang: string }) {
         <div className="mb-4">
           <h2
             className="font-bold leading-tight"
-            style={{ color: "rgb(var(--color-text))", fontSize: "var(--text-lg)" }}
+            style={{
+              color: "rgb(var(--color-text))",
+              fontSize: "var(--text-lg)",
+            }}
           >
             Settings
           </h2>
@@ -322,7 +344,9 @@ function SettingsPanel({ lang }: { lang: string }) {
             <ThemeToggle />
           </SettingsRow>
 
-          <div style={{ height: 1, backgroundColor: "rgb(var(--color-border))" }} />
+          <div
+            style={{ height: 1, backgroundColor: "rgb(var(--color-border))" }}
+          />
 
           <SettingsRow
             icon={LogOut}
@@ -365,7 +389,10 @@ function SettingsRow({
       <div className="min-w-0 flex-1">
         <p
           className="font-bold leading-tight"
-          style={{ color: "rgb(var(--color-text))", fontSize: "var(--text-base)" }}
+          style={{
+            color: "rgb(var(--color-text))",
+            fontSize: "var(--text-base)",
+          }}
         >
           {label}
         </p>

@@ -48,13 +48,7 @@ function getPostThumb(post: ProfilePostFieldsFragment) {
   );
 }
 
-function StatChip({
-  icon: Icon,
-  value,
-}: {
-  icon: typeof Eye;
-  value: number;
-}) {
+function StatChip({ icon: Icon, value }: { icon: typeof Eye; value: number }) {
   return (
     <span className="inline-flex items-center gap-1 font-semibold text-white">
       <Icon size={12} strokeWidth={2.3} aria-hidden />
