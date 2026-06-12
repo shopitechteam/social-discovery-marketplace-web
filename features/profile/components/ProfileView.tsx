@@ -151,7 +151,7 @@ export function ProfileView({ lang }: Props) {
           "linear-gradient(180deg, rgb(var(--color-bg)) 0%, rgb(var(--color-bg-subtle)) 100%)",
       }}
     >
-      <ProfileHeader user={user} editHref={`/${lang}/profile/edit`} />
+      <ProfileHeader user={user} editHref={`/${lang}/profile/edit`} lang={lang} />
 
       <div
         className="sticky top-0 z-20 border-b"

@@ -212,6 +212,14 @@ function VideoMedia({
       const duration = video.duration || 0;
       const watched = video.currentTime || duration;
       const completionRate = duration > 0 ? Math.min(watched / duration, 1) : 1;
+      if (!Number.isFinite(video.duration) || video.duration <= 0) {
+        // Metadata not yet loaded — completionRate falls back to 1 and won't
+        // reflect real watch ratio. Surface it so it's catchable in dev.
+        console.warn(
+          `[PostCard] video 'ended' fired without a valid duration for content ${post.id} ` +
+            `(duration=${video.duration}); completionRate defaulted to ${completionRate}.`,
+        );
+      }
       endedCountRef.current += 1;
       const type =
         endedCountRef.current === 1 ? "VIDEO_COMPLETED" : "VIDEO_REPLAYED";

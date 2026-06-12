@@ -15,14 +15,16 @@ import {
   Share2,
   Video,
 } from "lucide-react";
-import { useQuery } from "@apollo/client/react";
+import { useQuery, useMutation } from "@apollo/client/react";
 import { SHIMMER_AVATAR, SHIMMER_PORTRAIT } from "@/lib/shimmer";
 import {
   GetUserPostsDocument,
+  RecordProfileVisitDocument,
   type ProfileUserFieldsFragment,
   type ProfilePostFieldsFragment,
 } from "@/types/__generated__/graphql";
 import { useFollow } from "@/features/feed/hooks/useFollow";
+import { useAuthStore } from "@/stores/auth";
 import { Skeleton } from "@/components/ui/skeleton";
 
 function formatCompact(value: number | null | undefined) {
@@ -282,6 +284,17 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
     initialFollowerCount: user.followerCount ?? 0,
     lang,
   });
+
+  // Record a profile visit once per mount. Requires login (so we can attribute
+  // the visit to a real user) and skips the user's own profile. Fire-and-forget.
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated());
+  const [recordProfileVisit] = useMutation(RecordProfileVisitDocument);
+  const visitTrackedRef = useRef(false);
+  useEffect(() => {
+    if (isOwnProfile || !isAuthenticated || visitTrackedRef.current || !user.id) return;
+    visitTrackedRef.current = true;
+    recordProfileVisit({ variables: { userId: user.id } }).catch(() => {});
+  }, [user.id, isOwnProfile, isAuthenticated, recordProfileVisit]);
 
   const {
     data,

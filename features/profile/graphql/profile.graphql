@@ -113,6 +113,44 @@ mutation UpdateMyProfile($input: UpdateProfileInput!) {
   }
 }
 
+mutation RecordProfileVisit($userId: String!) {
+  recordProfileVisit(userId: $userId)
+}
+
+# ── Profile visitors ("who viewed your profile") ──────────────────────────────
+
+fragment VisitorFields on User {
+  id
+  username
+  profile {
+    firstName
+    lastName
+    avatar
+  }
+  isFollowedByMe
+  isFollowingMe
+}
+
+query MyProfileVisitorsPreview($limit: Int) {
+  myProfileVisitorsPreview(limit: $limit) {
+    totalCount
+    recent {
+      ...VisitorFields
+    }
+  }
+}
+
+query MyProfileVisitors($limit: Int, $after: String) {
+  myProfileVisitors(limit: $limit, after: $after) {
+    totalCount
+    hasMore
+    nextCursor
+    visitors {
+      ...VisitorFields
+    }
+  }
+}
+
 # ── TikTok import ─────────────────────────────────────────────────────────────
 
 query GetMyTiktokVideos($cursor: String) {

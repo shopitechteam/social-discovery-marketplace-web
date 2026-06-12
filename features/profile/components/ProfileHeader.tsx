@@ -6,10 +6,12 @@ import { ExternalLink, PenLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SHIMMER_AVATAR } from "@/lib/shimmer";
 import type { ProfileUserFieldsFragment } from "@/types/__generated__/graphql";
+import { ProfileViewsCluster } from "./ProfileViewsCluster";
 
 interface Props {
   user: ProfileUserFieldsFragment;
   editHref: string;
+  lang: string;
 }
 
 function formatCompact(value: number | null | undefined) {
@@ -54,7 +56,7 @@ function StatTile({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function ProfileHeader({ user, editHref }: Props) {
+export function ProfileHeader({ user, editHref, lang }: Props) {
   const firstName = user.profile?.firstName ?? "";
   const lastName = user.profile?.lastName ?? "";
   const displayName =
@@ -146,6 +148,10 @@ export function ProfileHeader({ user, editHref }: Props) {
                     Edit
                   </Link>
                 </Button>
+              </div>
+
+              <div className="mt-3">
+                <ProfileViewsCluster lang={lang} />
               </div>
 
               <div className="mt-3 grid grid-cols-4 gap-1.5">

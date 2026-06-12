@@ -71,6 +71,7 @@ interface LocationResult {
 }
 
 interface ReverseGeocodeResult {
+  googlePlaceId?: string | null;
   placeName?: string | null;
   formattedAddress?: string | null;
   countyName?: string | null;
@@ -141,6 +142,7 @@ const REVERSE_GEOCODE: TypedDocumentNode<
     reverseGeocode(lat: $lat, lng: $lng) {
       matched
       location {
+        googlePlaceId
         placeName
         formattedAddress
         countyName
@@ -174,6 +176,14 @@ function radiusLabel(r: number): string {
   return r >= 1000 ? `${r / 1000} km` : `${r} m`;
 }
 
+function firstText(...values: Array<string | null | undefined>): string | undefined {
+  return values.find((value) => value?.trim())?.trim();
+}
+
+function gpsFallbackLabel(lat: number, lng: number): string {
+  return `Current location (${lat.toFixed(5)}, ${lng.toFixed(5)})`;
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 type Tab = "nearby" | "all";
@@ -184,12 +194,45 @@ interface Props {
   onSelect: (loc: DraftLocation) => void;
 }
 
+function RadioCircle({ checked }: { checked: boolean }) {
+  return (
+    <span
+      className="flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors"
+      style={{
+        borderColor: checked ? "rgb(var(--brand-primary))" : "rgb(var(--color-border-strong))",
+        backgroundColor: checked ? "rgb(var(--brand-primary))" : "transparent",
+      }}
+    >
+      {checked && <span className="w-2 h-2 rounded-full bg-white" />}
+    </span>
+  );
+}
+
+function Spinner({ small }: { small?: boolean }) {
+  const s = small ? 14 : 24;
+  return (
+    <svg className="animate-spin" width={s} height={s} viewBox="0 0 24 24" fill="none" style={{ color: "rgb(var(--brand-primary))" }}>
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
+      <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function LoadMoreRow({ label }: { label: string }) {
+  return (
+    <div className="flex items-center justify-center gap-2 py-5" style={{ color: "rgb(var(--color-text-muted))", fontSize: "var(--text-xs)" }}>
+      <Spinner small />
+      <span>{label}</span>
+    </div>
+  );
+}
+
 export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
   const [tab, setTab] = useState<Tab>("nearby");
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [resolving, setResolving] = useState(false);
-  type CurrentLocationStatus = "idle" | "loading" | "denied" | "error";
+  type CurrentLocationStatus = "idle" | "loading" | "denied" | "unavailable" | "lookupError" | "error";
   const [currentLocationStatus, setCurrentLocationStatus] =
     useState<CurrentLocationStatus>("idle");
 
@@ -204,6 +247,7 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
   const nearbyHasMoreRef = useRef(true);
   const nearbyItemsRef = useRef<NearbyPlace[]>([]); // mirrors nearbyItems for use in async callbacks
   const gpsRef = useRef<{ lat: number; lng: number } | null>(null);
+  const [gpsPosition, setGpsPosition] = useState<{ lat: number; lng: number } | null>(null);
   const nearbyLoadedRef = useRef(false);
   const nearbyLoadingRef = useRef(false);
 
@@ -224,33 +268,13 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
   const [fetchResolve] = useLazyQuery(RESOLVE_PLACE, { fetchPolicy: "cache-first" });
   const [fetchReverseGeocode] = useLazyQuery(REVERSE_GEOCODE, { fetchPolicy: "network-only" });
 
-  // ── Lifecycle ────────────────────────────────────────────────────────────
-
-  useEffect(() => {
-    if (!open) { setTimeout(resetAll, 300); return; }
-    if (tab === "nearby") startNearby();
-    if (tab === "all") {
-      // Silently grab GPS for geo-sort, then load wards regardless
-      requestGps(() => {}); // fire and forget — gpsRef will be set by the time loadWards runs; denial is fine here
-      loadWards(null);
-    }
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (!open) return;
-    if (tab === "nearby" && !nearbyLoadedRef.current) startNearby();
-    if (tab === "all" && !wardsLoadedRef.current) {
-      requestGps(() => {}); // fire and forget — denial is fine, geo-sort is optional
-      loadWards(null);
-    }
-  }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
-
   function resetAll() {
     setQuery(""); setSelectedId(null); setTab("nearby");
     setCurrentLocationStatus("idle");
     setNearbyItems([]); setNearbyStatus("idle"); setNearbyRadiusMeters(2000); setNearbyHasMore(true);
     setWards([]); setWardCursor(null); setWardHasMore(true); setWardStatus("idle");
     gpsRef.current = null; nearbyItemsRef.current = [];
+    setGpsPosition(null);
     nearbyLoadedRef.current = false; nearbyLoadingRef.current = false;
     nearbyHasMoreRef.current = true; radiusIndexRef.current = 0;
     wardsLoadedRef.current = false; wardLoadingRef.current = false;
@@ -265,7 +289,9 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
     if (gpsRef.current) { cb(true); return; }
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        gpsRef.current = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        const nextGps = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        gpsRef.current = nextGps;
+        setGpsPosition(nextGps);
         cb(true);
       },
       (err) => { cb(false, err.code); },
@@ -292,7 +318,9 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
           gpsRef.current = null; // clear so requestGps re-attempts
           navigator.geolocation.getCurrentPosition(
             (pos) => {
-              gpsRef.current = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+              const nextGps = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+              gpsRef.current = nextGps;
+              setGpsPosition(nextGps);
               radiusIndexRef.current = 0;
               nearbyItemsRef.current = [];
               fetchNearbyBatch(0);
@@ -408,7 +436,7 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
     } finally {
       setWardStatus("done");
     }
-  }, [fetchWardSearch]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fetchWardSearch]);
 
   function handleQueryChange(e: React.ChangeEvent<HTMLInputElement>) {
     const v = e.target.value;
@@ -483,6 +511,11 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
   }
 
   function handleUseCurrentLocation() {
+    if (typeof window !== "undefined" && !window.isSecureContext) {
+      setCurrentLocationStatus("unavailable");
+      return;
+    }
+
     setCurrentLocationStatus("loading");
     requestGps(async (granted, code) => {
       if (!granted || !gpsRef.current) {
@@ -496,35 +529,46 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
           variables: { lat: gps.lat, lng: gps.lng },
         });
         const loc = data?.reverseGeocode?.location;
-        const placeName =
-          loc?.placeName ??
-          loc?.wardName ??
-          loc?.subCountyName ??
-          loc?.countyName ??
-          "Current location";
-        const formattedAddress =
-          loc?.formattedAddress ??
-          ([loc?.wardName, loc?.subCountyName, loc?.countyName].filter(Boolean).join(", ") || "Current location");
+        const fallbackLabel = gpsFallbackLabel(gps.lat, gps.lng);
+        const regionAddress = [loc?.wardName, loc?.subCountyName, loc?.countyName]
+          .filter(Boolean)
+          .join(", ");
+        const hasResolvedLocation = Boolean(firstText(
+          loc?.placeName,
+          loc?.wardName,
+          loc?.subCountyName,
+          loc?.countyName,
+          loc?.formattedAddress,
+        ));
+        if (!loc || !hasResolvedLocation) {
+          setCurrentLocationStatus("lookupError");
+          return;
+        }
+
+        const placeName = firstText(
+          loc?.placeName,
+          loc?.wardName,
+          loc?.subCountyName,
+          loc?.countyName,
+          loc?.formattedAddress,
+        ) ?? fallbackLabel;
+        const formattedAddress = firstText(
+          loc?.formattedAddress,
+          regionAddress,
+          placeName,
+        ) ?? fallbackLabel;
 
         confirmLocation({
           placeName,
           formattedAddress,
-          placeId: `current:${gps.lat.toFixed(5)},${gps.lng.toFixed(5)}`,
+          placeId: loc?.googlePlaceId ?? `current:${gps.lat.toFixed(5)},${gps.lng.toFixed(5)}`,
           latitude: loc?.coordinates?.lat ?? gps.lat,
           longitude: loc?.coordinates?.lng ?? gps.lng,
           county: loc?.countyName ?? undefined,
           subregion: loc?.subCountyName ?? undefined,
         });
       } catch {
-        confirmLocation({
-          placeName: "Current location",
-          formattedAddress: "Current location",
-          placeId: `current:${gps.lat.toFixed(5)},${gps.lng.toFixed(5)}`,
-          latitude: gps.lat,
-          longitude: gps.lng,
-        });
-      } finally {
-        setCurrentLocationStatus("idle");
+        setCurrentLocationStatus("lookupError");
       }
     });
   }
@@ -542,20 +586,6 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
   }
 
   // ── Render helpers ───────────────────────────────────────────────────────
-
-  function RadioCircle({ checked }: { checked: boolean }) {
-    return (
-      <span
-        className="flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors"
-        style={{
-          borderColor: checked ? "rgb(var(--brand-primary))" : "rgb(var(--color-border-strong))",
-          backgroundColor: checked ? "rgb(var(--brand-primary))" : "transparent",
-        }}
-      >
-        {checked && <span className="w-2 h-2 rounded-full bg-white" />}
-      </span>
-    );
-  }
 
   function Row({
     id, primary, secondary, region, onPick,
@@ -588,24 +618,38 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
     );
   }
 
-  function Spinner({ small }: { small?: boolean }) {
-    const s = small ? 14 : 24;
-    return (
-      <svg className="animate-spin" width={s} height={s} viewBox="0 0 24 24" fill="none" style={{ color: "rgb(var(--brand-primary))" }}>
-        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
-        <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-      </svg>
-    );
-  }
+  // ── Lifecycle ────────────────────────────────────────────────────────────
 
-  function LoadMoreRow({ label }: { label: string }) {
-    return (
-      <div className="flex items-center justify-center gap-2 py-5" style={{ color: "rgb(var(--color-text-muted))", fontSize: "var(--text-xs)" }}>
-        <Spinner small />
-        <span>{label}</span>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (!open) {
+      const resetTimer = setTimeout(resetAll, 300);
+      return () => clearTimeout(resetTimer);
+    }
+
+    const loadTimer = setTimeout(() => {
+      if (tab === "nearby") startNearby();
+      if (tab === "all") {
+        // Silently grab GPS for geo-sort, then load wards regardless
+        requestGps(() => {}); // fire and forget; gpsRef will be set by the time loadWards runs if granted
+        loadWards(null);
+      }
+    }, 0);
+
+    return () => clearTimeout(loadTimer);
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!open) return;
+    const loadTimer = setTimeout(() => {
+      if (tab === "nearby" && !nearbyLoadedRef.current) startNearby();
+      if (tab === "all" && !wardsLoadedRef.current) {
+        requestGps(() => {}); // fire and forget; denial is fine, geo-sort is optional
+        loadWards(null);
+      }
+    }, 0);
+
+    return () => clearTimeout(loadTimer);
+  }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── JSX ──────────────────────────────────────────────────────────────────
 
@@ -691,6 +735,10 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
               <p className="mt-0.5" style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}>
                 {currentLocationStatus === "denied"
                   ? "Location permission is blocked. You can still search below."
+                  : currentLocationStatus === "unavailable"
+                    ? "Location needs HTTPS or localhost. You can still search below."
+                  : currentLocationStatus === "lookupError"
+                    ? "Could not name this location. Search below instead."
                   : currentLocationStatus === "error"
                     ? "Could not get GPS. Try again or search below."
                     : "Share your GPS location for this post"}
@@ -815,7 +863,7 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
             )}
 
             {nearbyItems.map((p) => {
-              const gps = gpsRef.current;
+              const gps = gpsPosition;
               const dist = gps && p.lat != null && p.lng != null
                 ? formatDist(haversine(gps.lat, gps.lng, p.lat, p.lng))
                 : undefined;
