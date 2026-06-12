@@ -31,24 +31,18 @@ function StatTile({ label, value }: { label: string; value: string }) {
       className="min-w-0 rounded-md border px-2 py-2 text-center"
       style={{
         backgroundColor: "rgb(var(--color-bg-elevated) / 0.78)",
-        borderColor: "rgb(var(--color-border))",
+        borderColor: "rgb(var(--color-border))"
       }}
     >
       <p
         className="truncate font-bold leading-none"
-        style={{
-          color: "rgb(var(--color-text))",
-          fontSize: "var(--text-base)",
-        }}
+        style={{ fontSize: "var(--text-base)", color: "rgb(var(--color-text))" }}
       >
         {value}
       </p>
       <p
         className="mt-1 truncate font-semibold leading-tight"
-        style={{
-          color: "rgb(var(--color-text-muted))",
-          fontSize: "var(--text-xs)",
-        }}
+        style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}
       >
         {label}
       </p>
@@ -72,7 +66,7 @@ export function ProfileHeader({ user, editHref, lang }: Props) {
         // Match the creator profile hero gradient for consistency
         background:
           "linear-gradient(160deg, rgb(var(--brand-primary) / 0.08) 0%, rgb(var(--color-bg)) 60%)",
-        borderColor: "rgb(var(--color-border))",
+        borderColor: "rgb(var(--color-border))"
       }}
     >
       <div className="mx-auto w-full max-w-6xl px-4 py-4 sm:px-6 lg:px-8 lg:py-6">
@@ -84,7 +78,7 @@ export function ProfileHeader({ user, editHref, lang }: Props) {
                 background: avatar
                   ? "rgb(var(--color-bg-subtle))"
                   : "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)) 62%, rgb(var(--brand-accent)))",
-                borderColor: "rgb(var(--color-bg-elevated))",
+                borderColor: "rgb(var(--color-bg-elevated))"
               }}
             >
               {avatar ? (
@@ -101,8 +95,7 @@ export function ProfileHeader({ user, editHref, lang }: Props) {
                 <div className="flex h-full w-full items-center justify-center">
                   <span
                     className="select-none font-bold text-white"
-                    style={{ fontSize: "var(--text-lg)" }}
-                  >
+                   style={{ fontSize: "var(--text-lg)" }}>
                     {initials}
                   </span>
                 </div>
@@ -114,20 +107,14 @@ export function ProfileHeader({ user, editHref, lang }: Props) {
                 <div className="min-w-0">
                   <h1
                     className="truncate font-bold leading-tight"
-                    style={{
-                      color: "rgb(var(--color-text))",
-                      fontSize: "var(--text-lg)",
-                    }}
+                    style={{ fontSize: "var(--text-lg)", color: "rgb(var(--color-text))" }}
                   >
                     {displayName}
                   </h1>
                   {user.username && (
                     <p
                       className="truncate"
-                      style={{
-                        color: "rgb(var(--color-text-muted))",
-                        fontSize: "var(--text-sm)",
-                      }}
+                      style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text-muted))" }}
                     >
                       @{user.username}
                     </p>
@@ -138,12 +125,9 @@ export function ProfileHeader({ user, editHref, lang }: Props) {
                   variant="outline"
                   size="sm"
                   className="h-9 shrink-0 rounded-md px-3 font-semibold"
-                  style={{
-                    backgroundColor: "rgb(var(--color-bg-elevated))",
+                  style={{ fontSize: "var(--text-sm)", backgroundColor: "rgb(var(--color-bg-elevated))",
                     borderColor: "rgb(var(--color-border-strong))",
-                    color: "rgb(var(--color-text))",
-                    fontSize: "var(--text-sm)",
-                  }}
+                    color: "rgb(var(--color-text))" }}
                 >
                   <Link href={editHref}>
                     <PenLine size={16} strokeWidth={2.2} />
@@ -179,10 +163,7 @@ export function ProfileHeader({ user, editHref, lang }: Props) {
               {user.profile?.bio && (
                 <p
                   className="max-w-3xl leading-snug"
-                  style={{
-                    color: "rgb(var(--color-text))",
-                    fontSize: "var(--text-sm)",
-                  }}
+                  style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text))" }}
                 >
                   {user.profile.bio}
                 </p>
@@ -194,10 +175,7 @@ export function ProfileHeader({ user, editHref, lang }: Props) {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex w-fit items-center gap-1.5 font-semibold"
-                  style={{
-                    color: "rgb(var(--brand-accent))",
-                    fontSize: "var(--text-sm)",
-                  }}
+                  style={{ fontSize: "var(--text-sm)", color: "rgb(var(--brand-accent))" }}
                 >
                   <ExternalLink size={14} strokeWidth={2.2} />
                   {user.profile.website.replace(/^https?:\/\//, "")}
@@ -207,11 +185,8 @@ export function ProfileHeader({ user, editHref, lang }: Props) {
           )}
 
           <div className="hidden items-center gap-4 sm:flex">
-            <span
-              style={{
-                color: "rgb(var(--color-text-muted))",
-                fontSize: "var(--text-sm)",
-              }}
+            <span 
+              style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text-muted))" }}
             >
               {formatCompact(user.followingCount)} following
             </span>

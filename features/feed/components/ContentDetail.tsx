@@ -110,7 +110,7 @@ function CommentRow({
       <div
         className={`w-8 h-8 rounded-full bg-gradient-to-br ${avatarColors(comment.creatorId)} flex items-center justify-center flex-shrink-0 mt-0.5`}
       >
-        <span className="text-white text-[10px] font-bold">
+        <span className="text-white text-xs font-bold">
           {initials(comment.creatorId)}
         </span>
       </div>
@@ -124,15 +124,15 @@ function CommentRow({
           </p>
         </div>
         <div className="flex items-center gap-3 mt-1 px-1">
-          <span className="text-[11px] text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             {timeAgo(comment.createdAt)}
           </span>
           {(comment.likeCount ?? 0) > 0 && (
-            <span className="text-[11px] text-muted-foreground flex items-center gap-0.5">
+            <span className="text-xs text-muted-foreground flex items-center gap-0.5">
               ❤️ {comment.likeCount}
             </span>
           )}
-          <button className="text-[11px] font-semibold text-muted-foreground hover:text-primary transition-colors">
+          <button className="text-xs font-semibold text-muted-foreground hover:text-primary transition-colors">
             Reply
           </button>
         </div>
@@ -807,7 +807,7 @@ export function ContentDetail({ id, lang }: Props) {
         ) : (
           <div className="h-3.5 w-28 rounded-full bg-surface animate-pulse" />
         )}
-        <p className="text-[11px] text-muted-foreground mt-0.5">
+        <p className="text-xs text-muted-foreground mt-0.5">
           {timeAgo(post.createdAt)}
         </p>
       </div>
@@ -1070,7 +1070,7 @@ export function ContentDetail({ id, lang }: Props) {
       style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)" }}
     >
       <div
-        className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white text-[10px] font-bold bg-gradient-to-br ${avatarColors(currentUser?.id ?? "00")}`}
+        className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold bg-gradient-to-br ${avatarColors(currentUser?.id ?? "00")}`}
       >
         {currentUser?.id ? initials(currentUser.id) : "?"}
       </div>

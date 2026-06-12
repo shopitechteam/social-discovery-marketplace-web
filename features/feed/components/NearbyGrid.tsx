@@ -294,7 +294,7 @@ export function NearbyGrid({ lang }: Props) {
           </span>
           <button
             onClick={requestLocation}
-            className="ml-auto text-[11px] text-primary font-medium"
+            className="ml-auto text-xs text-primary font-medium"
           >
             Refresh
           </button>

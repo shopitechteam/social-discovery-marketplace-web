@@ -97,7 +97,7 @@ export function VideoProgressBar({
       onClick={(e) => e.stopPropagation()}
     >
       {showTime && (
-        <div className="mx-3 mb-1 flex items-center justify-between text-[11px] font-medium tabular-nums text-white/80 drop-shadow pointer-events-none">
+        <div className="mx-3 mb-1 flex items-center justify-between text-xs font-medium tabular-nums text-white/80 drop-shadow pointer-events-none">
           <span ref={timeRef}>0:00</span>
           <span>{fmtTime(duration)}</span>
         </div>

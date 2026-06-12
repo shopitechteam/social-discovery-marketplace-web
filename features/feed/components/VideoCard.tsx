@@ -126,7 +126,7 @@ export function VideoCard({ post, lang, priority }: Props) {
 
         {/* ── Duration badge ────────────────────────────────────────── */}
         {durationFmt && (
-          <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-[10px] font-semibold px-1.5 py-0.5 rounded-md">
+          <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-xs font-semibold px-1.5 py-0.5 rounded-md">
             {durationFmt}
           </div>
         )}

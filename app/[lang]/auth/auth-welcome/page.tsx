@@ -31,7 +31,7 @@ export default async function WelcomePage({
       {/* Email CTA */}
       <Link
         href={`/${lang}/auth/register${qs}`}
-        className="w-full flex items-center justify-center h-13 rounded-2xl font-semibold text-[15px] text-white active:opacity-80 transition-opacity"
+        className="w-full flex items-center justify-center h-13 rounded-2xl font-semibold text-base text-white active:opacity-80 transition-opacity"
         style={{
           background:
             "linear-gradient(95deg, rgb(var(--brand-primary)), rgb(var(--brand-primary) / 0.82))",
@@ -103,11 +103,11 @@ export default async function WelcomePage({
             >
               <div className="absolute inset-0 bg-linear-to-b from-white/10 to-transparent" />
               <div className="absolute top-3 left-3">
-                <span className="text-white/70 text-[10px] font-semibold tracking-wide uppercase">Trending</span>
+                <span className="text-white/70 text-xs font-semibold tracking-wide uppercase">Trending</span>
               </div>
               <div className="absolute bottom-3 left-3 flex items-center gap-2">
                 <div className="w-6 h-6 rounded-full bg-white/25 flex items-center justify-center">
-                  <span className="text-white text-[10px] font-bold">K</span>
+                  <span className="text-white text-xs font-bold">K</span>
                 </div>
                 <span className="text-white/80 text-xs font-medium">@kali</span>
               </div>
@@ -122,11 +122,11 @@ export default async function WelcomePage({
             >
               <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent" />
               <div className="absolute top-2.5 right-2.5 bg-white/20 backdrop-blur-sm rounded-full px-2 py-0.5">
-                <span className="text-white text-[9px] font-bold">New</span>
+                <span className="text-white text-xs font-bold">New</span>
               </div>
               <div className="absolute bottom-3 left-3 flex items-center gap-2">
                 <div className="w-6 h-6 rounded-full bg-white/25 flex items-center justify-center">
-                  <span className="text-white text-[10px] font-bold">M</span>
+                  <span className="text-white text-xs font-bold">M</span>
                 </div>
                 <span className="text-white/80 text-xs font-medium">@marco</span>
               </div>
@@ -141,11 +141,11 @@ export default async function WelcomePage({
             >
               <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent" />
               <div className="absolute top-3 left-3 bg-black/20 backdrop-blur-sm rounded-full px-2.5 py-1">
-                <span className="text-white text-[10px] font-bold">🔥 Trending</span>
+                <span className="text-white text-xs font-bold">🔥 Trending</span>
               </div>
               <div className="absolute top-3 right-3 bg-white/20 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">
-                <span className="text-white text-[10px]">♥</span>
-                <span className="text-white text-[10px] font-bold">42K</span>
+                <span className="text-white text-xs">♥</span>
+                <span className="text-white text-xs font-bold">42K</span>
               </div>
               <div className="absolute bottom-3 left-3 flex items-center gap-2">
                 <div className="w-7 h-7 rounded-full bg-white/25 flex items-center justify-center ring-2 ring-white/30">
@@ -156,10 +156,10 @@ export default async function WelcomePage({
             </div>
           </div>
 
-          <h1 className="text-[26px] font-bold text-default font-display text-center leading-[1.2] tracking-tight">
+          <h1 className="text-2xl font-bold text-default font-display text-center leading-[1.2] tracking-tight">
             Discover what people near you are selling
           </h1>
-          <p className="mt-2 text-[13px] text-muted text-center leading-relaxed">
+          <p className="mt-2 text-sm text-muted text-center leading-relaxed">
             Pick how you want to sign up.
           </p>
         </div>
@@ -174,7 +174,7 @@ export default async function WelcomePage({
           <h1 className="text-[28px] text-center font-bold text-default font-display leading-tight tracking-tight">
             Join Shopi today
           </h1>
-          <p className="mt-2 text-[15px] text-center text-muted leading-relaxed">
+          <p className="mt-2 text-base text-center text-muted leading-relaxed">
             Discover what people near you are selling
           </p>
         </div>

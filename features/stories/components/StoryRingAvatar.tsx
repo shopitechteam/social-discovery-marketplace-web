@@ -92,7 +92,7 @@ export function StoryRingAvatar({
       </div>
 
       {/* Username label */}
-      <span className="text-[10px] text-default text-center leading-tight max-w-[56px] truncate">
+      <span className="text-xs text-default text-center leading-tight max-w-[56px] truncate">
         {isOwn
           ? "Your story"
           : displayUser?.profile?.firstName ?? "User"}

@@ -8,7 +8,7 @@ import { ArrowLeft } from "lucide-react";
 import { useQuery } from "@apollo/client/react";
 import {
   MyProfileVisitorsDocument,
-  type VisitorFieldsFragment,
+  type VisitorFieldsFragment
 } from "@/types/__generated__/graphql";
 import { useFollow } from "@/features/feed/hooks/useFollow";
 import { SHIMMER_AVATAR } from "@/lib/shimmer";
@@ -32,7 +32,7 @@ function initialsOf(v: VisitorFieldsFragment): string {
 function VisitorRow({
   visitor,
   lang,
-  resolvingFollowState,
+  resolvingFollowState
 }: {
   visitor: VisitorFieldsFragment;
   lang: string;
@@ -43,7 +43,7 @@ function VisitorRow({
   const { following, toggle, loading } = useFollow({
     userId: visitor.id,
     initialFollowing: visitor.isFollowedByMe ?? false,
-    lang,
+    lang
   });
 
   const avatar = visitor.profile?.avatar;
@@ -69,7 +69,7 @@ function VisitorRow({
             background: avatar
               ? "rgb(var(--color-bg-subtle))"
               : "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)) 62%, rgb(var(--brand-accent)))",
-            borderColor: "rgb(var(--color-bg-elevated))",
+            borderColor: "rgb(var(--color-bg-elevated))"
           }}
         >
           {avatar ? (
@@ -94,14 +94,14 @@ function VisitorRow({
         <div className="min-w-0 flex-1">
           <p
             className="truncate font-semibold leading-tight"
-            style={{ color: "rgb(var(--color-text))", fontSize: "var(--text-sm)" }}
+            style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text))" }}
           >
             {name}
           </p>
           {visitor.username && (
             <p
               className="truncate leading-tight"
-              style={{ color: "rgb(var(--color-text-muted))", fontSize: "var(--text-xs)" }}
+              style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}
             >
               @{visitor.username}
             </p>
@@ -117,14 +117,11 @@ function VisitorRow({
           onClick={toggle}
           disabled={loading}
           className="h-8 shrink-0 rounded-full px-4 font-semibold transition-opacity active:opacity-70 disabled:opacity-50"
-          style={{
-            fontSize: "var(--text-xs)",
-            backgroundColor: following
+          style={{ fontSize: "var(--text-xs)", backgroundColor: following
               ? "rgb(var(--color-bg-elevated))"
               : "rgb(var(--brand-primary))",
             color: following ? "rgb(var(--color-text))" : "#fff",
-            border: following ? "1px solid rgb(var(--color-border-strong))" : "none",
-          }}
+            border: following ? "1px solid rgb(var(--color-border-strong))" : "none" }}
         >
           {label}
         </button>
@@ -153,11 +150,14 @@ interface Props {
 /** "Who viewed your profile" — paginated, infinite-scroll list. Owner-only. */
 export function ProfileVisitorsView({ lang }: Props) {
   const router = useRouter();
-  const { data, loading, fetchMore } = useQuery(MyProfileVisitorsDocument, {
-    variables: { limit: PAGE_SIZE },
-    notifyOnNetworkStatusChange: true,
-    fetchPolicy: "cache-and-network",
-  });
+  const { data, loading, networkStatus, fetchMore } = useQuery(
+    MyProfileVisitorsDocument,
+    {
+      variables: { limit: PAGE_SIZE },
+      notifyOnNetworkStatusChange: true,
+      fetchPolicy: "cache-and-network"
+    },
+  );
 
   const result = data?.myProfileVisitors;
   const visitors = result?.visitors ?? [];
@@ -166,11 +166,10 @@ export function ProfileVisitorsView({ lang }: Props) {
   const total = result?.totalCount ?? 0;
 
   // Until the first network response lands, follow-state isn't authoritative
-  // (cache-and-network can render cached rows first). Show a skeleton on the
-  // follow button so we don't flash "Follow" for users we already follow.
-  const followStateResolved = useRef(false);
-  if (!loading && data) followStateResolved.current = true;
-  const resolvingFollowState = !followStateResolved.current;
+  // (cache-and-network can render cached rows first). networkStatus === 1 is the
+  // initial in-flight fetch — show a skeleton on the follow button until it
+  // resolves so we don't flash "Follow" for users we already follow.
+  const resolvingFollowState = !data || networkStatus === 1;
 
   const sentinelRef = useRef<HTMLDivElement>(null);
   const fetchingMore = useRef(false);
@@ -189,10 +188,10 @@ export function ProfileVisitorsView({ lang }: Props) {
             visitors: [
               ...prev.myProfileVisitors.visitors,
               ...fetchMoreResult.myProfileVisitors.visitors,
-            ],
-          },
+            ]
+          }
         };
-      },
+      }
     }).catch(() => {
       fetchingMore.current = false;
     });
@@ -221,7 +220,7 @@ export function ProfileVisitorsView({ lang }: Props) {
         style={{
           backgroundColor: "rgb(var(--color-bg) / 0.94)",
           borderColor: "rgb(var(--color-border))",
-          backdropFilter: "blur(8px)",
+          backdropFilter: "blur(8px)"
         }}
       >
         <button
@@ -236,14 +235,14 @@ export function ProfileVisitorsView({ lang }: Props) {
         <div className="min-w-0">
           <h1
             className="font-bold leading-tight"
-            style={{ color: "rgb(var(--color-text))", fontSize: "var(--text-base)" }}
+            style={{ fontSize: "var(--text-base)", color: "rgb(var(--color-text))" }}
           >
             Profile views
           </h1>
           {!initialLoading && (
             <p
               className="leading-tight"
-              style={{ color: "rgb(var(--color-text-muted))", fontSize: "var(--text-xs)" }}
+              style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}
             >
               {total} {total === 1 ? "viewer" : "viewers"}
             </p>
@@ -270,13 +269,13 @@ export function ProfileVisitorsView({ lang }: Props) {
         <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
           <p
             className="font-semibold"
-            style={{ color: "rgb(var(--color-text))", fontSize: "var(--text-base)" }}
+            style={{ fontSize: "var(--text-base)", color: "rgb(var(--color-text))" }}
           >
             No profile views yet
           </p>
           <p
             className="mt-1"
-            style={{ color: "rgb(var(--color-text-muted))", fontSize: "var(--text-sm)" }}
+            style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text-muted))" }}
           >
             When logged-in users view your profile, they&apos;ll show up here.
           </p>

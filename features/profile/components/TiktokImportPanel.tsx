@@ -322,7 +322,7 @@ function ImportRow({
           <Badge
             variant={cfg.variant === "default" ? "secondary" : cfg.variant}
             className={cn(
-              "gap-1 py-0.5 text-[10px] font-semibold",
+              "gap-1 py-0.5 text-xs font-semibold",
               cfg.variant !== "default" &&
                 " dark:bg-green-900/30 dark:text-green-400 bg-green-100 text-black",
             )}
@@ -686,7 +686,7 @@ export function TiktokImportPanel({ lang }: Props) {
           Import Queue
           {activeCount > 0 && (
             <span
-              className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-white"
+              className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs font-bold text-white"
               style={{ backgroundColor: "rgb(var(--brand-primary))" }}
             >
               {activeCount}

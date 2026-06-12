@@ -162,7 +162,7 @@ export function TrendingStrip({ lang, county }: Props) {
         <h2 className="text-sm font-bold text-default flex items-center gap-1.5">
           <span>🔥</span> Trending
         </h2>
-        <span className="text-[11px] text-muted-foreground">
+        <span className="text-xs text-muted-foreground">
           {county ?? "Nationwide"}
         </span>
       </div>

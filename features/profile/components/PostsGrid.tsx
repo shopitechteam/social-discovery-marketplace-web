@@ -9,7 +9,7 @@ import {
   MessageCircle,
   Play,
   Plus,
-  Upload,
+  Upload
 } from "lucide-react";
 import { SHIMMER_PORTRAIT } from "@/lib/shimmer";
 import type { ProfilePostFieldsFragment } from "@/types/__generated__/graphql";
@@ -52,7 +52,7 @@ function StatChip({ icon: Icon, value }: { icon: typeof Eye; value: number }) {
   return (
     <span className="inline-flex items-center gap-1 font-semibold text-white">
       <Icon size={12} strokeWidth={2.3} aria-hidden />
-      <span style={{ fontSize: "var(--text-xs)" }}>{formatCompact(value)}</span>
+      <span  style={{ fontSize: "var(--text-xs)" }}>{formatCompact(value)}</span>
     </span>
   );
 }
@@ -60,7 +60,7 @@ function StatChip({ icon: Icon, value }: { icon: typeof Eye; value: number }) {
 function PostThumbnail({
   post,
   lang,
-  priority,
+  priority
 }: {
   post: ProfilePostFieldsFragment;
   lang: string;
@@ -78,7 +78,7 @@ function PostThumbnail({
         aspectRatio: "9/16",
         backgroundColor: "rgb(var(--color-bg-subtle))",
         borderColor: "rgb(var(--color-border))",
-        boxShadow: "var(--shadow-sm)",
+        boxShadow: "var(--shadow-sm)"
       }}
       aria-label={post.title}
     >
@@ -109,7 +109,7 @@ function PostThumbnail({
         className="absolute inset-0 opacity-95 transition-opacity group-hover:opacity-100"
         style={{
           background:
-            "linear-gradient(to top, rgba(0,0,0,0.76), rgba(0,0,0,0.08) 52%, rgba(0,0,0,0.32))",
+            "linear-gradient(to top, rgba(0,0,0,0.76), rgba(0,0,0,0.08) 52%, rgba(0,0,0,0.32))"
         }}
       />
 
@@ -119,7 +119,7 @@ function PostThumbnail({
           style={{
             backgroundColor: "rgba(0,0,0,0.45)",
             borderColor: "rgba(255,255,255,0.2)",
-            backdropFilter: "blur(10px)",
+            backdropFilter: "blur(10px)"
           }}
         >
           {isVideo ? (
@@ -131,11 +131,8 @@ function PostThumbnail({
         {createdAt && (
           <span
             className="hidden rounded-lg px-2 py-1 font-semibold text-white md:inline-flex"
-            style={{
-              backgroundColor: "rgba(0,0,0,0.38)",
-              backdropFilter: "blur(10px)",
-              fontSize: "var(--text-xs)",
-            }}
+            style={{ fontSize: "var(--text-xs)", backgroundColor: "rgba(0,0,0,0.38)",
+              backdropFilter: "blur(10px)" }}
           >
             {createdAt}
           </span>
@@ -145,8 +142,7 @@ function PostThumbnail({
       <div className="absolute inset-x-0 bottom-0 p-2.5">
         <h3
           className="mb-2 hidden font-semibold leading-snug text-white md:line-clamp-2"
-          style={{ fontSize: "var(--text-sm)" }}
-        >
+         style={{ fontSize: "var(--text-sm)" }}>
           {post.title}
         </h3>
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -166,7 +162,7 @@ export function PostsGrid({
   hasMore,
   onLoadMore,
   loading,
-  lang,
+  lang
 }: Props) {
   if (posts.length === 0 && !loading) {
     return (
@@ -178,38 +174,29 @@ export function PostsGrid({
               backgroundColor: "rgb(var(--color-bg-elevated))",
               borderColor: "rgb(var(--color-border))",
               color: "rgb(var(--brand-primary))",
-              boxShadow: "var(--shadow-sm)",
+              boxShadow: "var(--shadow-sm)"
             }}
           >
             <Upload size={26} strokeWidth={2} />
           </div>
           <h2
             className="font-bold"
-            style={{
-              color: "rgb(var(--color-text))",
-              fontSize: "var(--text-lg)",
-            }}
+            style={{ fontSize: "var(--text-lg)", color: "rgb(var(--color-text))" }}
           >
             No posts yet
           </h2>
           <p
             className="mt-2 max-w-sm leading-snug"
-            style={{
-              color: "rgb(var(--color-text-muted))",
-              fontSize: "var(--text-base)",
-            }}
+            style={{ fontSize: "var(--text-base)", color: "rgb(var(--color-text-muted))" }}
           >
             Create your first showcase and it will appear here.
           </p>
           <Link
             href={`/${lang}/upload`}
             className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-lg px-4 font-semibold text-white active:opacity-80"
-            style={{
-              background:
+            style={{ fontSize: "var(--text-sm)", background:
                 "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)))",
-              boxShadow: "0 10px 24px rgb(var(--brand-primary) / 0.24)",
-              fontSize: "var(--text-sm)",
-            }}
+              boxShadow: "0 10px 24px rgb(var(--brand-primary) / 0.24)" }}
           >
             <Plus size={16} strokeWidth={2.4} />
             New post
@@ -226,19 +213,13 @@ export function PostsGrid({
           <div className="min-w-0">
             <h2
               className="font-bold leading-tight"
-              style={{
-                color: "rgb(var(--color-text))",
-                fontSize: "var(--text-base)",
-              }}
+              style={{ fontSize: "var(--text-base)", color: "rgb(var(--color-text))" }}
             >
               Content library
             </h2>
             <p
               className="mt-1"
-              style={{
-                color: "rgb(var(--color-text-muted))",
-                fontSize: "var(--text-sm)",
-              }}
+              style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text-muted))" }}
             >
               {posts.length} {posts.length === 1 ? "post" : "posts"}
             </p>
@@ -246,12 +227,9 @@ export function PostsGrid({
           <Link
             href={`/${lang}/upload`}
             className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border px-3 font-semibold active:opacity-75"
-            style={{
-              backgroundColor: "rgb(var(--color-bg-elevated))",
+            style={{ fontSize: "var(--text-sm)", backgroundColor: "rgb(var(--color-bg-elevated))",
               borderColor: "rgb(var(--color-border))",
-              color: "rgb(var(--color-text))",
-              fontSize: "var(--text-sm)",
-            }}
+              color: "rgb(var(--color-text))" }}
           >
             <Plus size={15} strokeWidth={2.4} />
             New
@@ -275,12 +253,9 @@ export function PostsGrid({
               onClick={onLoadMore}
               disabled={loading}
               className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border px-5 font-semibold active:opacity-75 disabled:opacity-50"
-              style={{
-                backgroundColor: "rgb(var(--color-bg-elevated))",
+              style={{ fontSize: "var(--text-sm)", backgroundColor: "rgb(var(--color-bg-elevated))",
                 borderColor: "rgb(var(--color-border))",
-                color: "rgb(var(--color-text))",
-                fontSize: "var(--text-sm)",
-              }}
+                color: "rgb(var(--color-text))" }}
             >
                   {loading ? "Loading…" : "Load more"}
             </button>

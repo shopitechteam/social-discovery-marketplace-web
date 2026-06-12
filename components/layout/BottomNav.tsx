@@ -136,16 +136,16 @@ export function BottomNav({ lang = "en" }: { lang: string }) {
                 fill={isActive ? "currentColor" : "none"}
                 fillOpacity={isActive ? 0.18 : 0}
               />
-              <span
+              <p
+                className="text-xs"
                 style={{
-                  fontSize: "var(--text-xs)",
                   fontWeight: isActive ? 600 : 400,
                   letterSpacing: isActive ? "0.01em" : "normal",
                   lineHeight: 1,
                 }}
               >
                 {tab.label}
-              </span>
+              </p>
             </Link>
           );
         })}

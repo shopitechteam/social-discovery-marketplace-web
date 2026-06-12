@@ -300,7 +300,7 @@ export function StoryViewer({
               <p className="text-white text-sm font-semibold leading-tight truncate drop-shadow">
                 {name}
               </p>
-              <p className="text-white/60 text-[11px]">{timeAgo(String(story.createdAt))}</p>
+              <p className="text-white/60 text-xs">{timeAgo(String(story.createdAt))}</p>
             </div>
           </div>
         </div>

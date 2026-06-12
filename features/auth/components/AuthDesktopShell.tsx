@@ -17,13 +17,13 @@ export function CardStack() {
       >
         <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent" />
         <div className="absolute top-3 left-3">
-          <span className="text-white/70 text-[10px] font-semibold tracking-wide uppercase">
+          <span className="text-white/70 text-xs font-semibold tracking-wide uppercase">
             Trending
           </span>
         </div>
         <div className="absolute bottom-4 left-3 flex items-center gap-2">
           <div className="w-6 h-6 rounded-full bg-white/25 flex items-center justify-center">
-            <span className="text-white text-[10px] font-bold">K</span>
+            <span className="text-white text-xs font-bold">K</span>
           </div>
           <span className="text-white/80 text-xs font-medium">@kali</span>
         </div>
@@ -39,11 +39,11 @@ export function CardStack() {
       >
         <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent" />
         <div className="absolute top-3 right-3 bg-white/20 backdrop-blur-sm rounded-full px-2 py-0.5">
-          <span className="text-white text-[9px] font-bold">New</span>
+          <span className="text-white text-xs font-bold">New</span>
         </div>
         <div className="absolute bottom-4 left-3 flex items-center gap-2">
           <div className="w-6 h-6 rounded-full bg-white/25 flex items-center justify-center">
-            <span className="text-white text-[10px] font-bold">M</span>
+            <span className="text-white text-xs font-bold">M</span>
           </div>
           <span className="text-white/80 text-xs font-medium">@marco.s</span>
         </div>
@@ -59,15 +59,15 @@ export function CardStack() {
       >
         <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent" />
         <div className="absolute top-4 left-4 bg-black/20 backdrop-blur-sm rounded-full px-2.5 py-0.5">
-          <span className="text-white text-[10px] font-bold">🔥 Trending</span>
+          <span className="text-white text-xs font-bold">🔥 Trending</span>
         </div>
         <div className="absolute top-4 right-4 bg-white/20 backdrop-blur-sm rounded-full px-2 py-0.5 flex items-center gap-1">
-          <span className="text-white text-[10px]">♥</span>
-          <span className="text-white text-[10px] font-bold">42K</span>
+          <span className="text-white text-xs">♥</span>
+          <span className="text-white text-xs font-bold">42K</span>
         </div>
         <div className="absolute bottom-4 left-4 flex items-center gap-2">
           <div className="w-7 h-7 rounded-full bg-white/25 flex items-center justify-center ring-2 ring-white/30">
-            <span className="text-white text-[11px] font-bold">N</span>
+            <span className="text-white text-xs font-bold">N</span>
           </div>
           <span className="text-white/90 text-xs font-semibold block">@nia</span>
         </div>
@@ -130,7 +130,7 @@ export function AuthDesktopShell({
               <h2 className="text-[42px] xl:text-[52px] font-bold text-white leading-[1.1] tracking-tight font-display">
                 Shop what your<br />friends love.
               </h2>
-              <p className="mt-4 text-[17px] text-white/75 leading-relaxed max-w-sm">
+              <p className="mt-4 text-lg text-white/75 leading-relaxed max-w-sm">
                 Discover, share and buy with creators you trust.
                 Built for the social-first generation.
               </p>
@@ -138,7 +138,7 @@ export function AuthDesktopShell({
           </div>
 
           {/* Footer */}
-          <div className="relative z-10 flex gap-5 text-[13px] text-white/50">
+          <div className="relative z-10 flex gap-5 text-sm text-white/50">
             <Link href={`/${lang}/terms`} className="hover:text-white/80 transition-colors">Terms</Link>
             <Link href={`/${lang}/privacy`} className="hover:text-white/80 transition-colors">Privacy</Link>
             <Link href={`/${lang}/about`} className="hover:text-white/80 transition-colors">About</Link>

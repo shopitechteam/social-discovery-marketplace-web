@@ -112,7 +112,7 @@ export function ProfileViewsCluster({ lang }: Props) {
         </div>
         <span
           className="font-semibold"
-          style={{ color: "rgb(var(--color-text-muted))", fontSize: "var(--text-xs)" }}
+          style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}
         >
           Profile views
         </span>
@@ -161,7 +161,7 @@ export function ProfileViewsCluster({ lang }: Props) {
       )}
       <span
         className="font-semibold"
-        style={{ color: "rgb(var(--color-text))", fontSize: "var(--text-xs)" }}
+        style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text))" }}
       >
         {formatCompact(total)} profile {total === 1 ? "view" : "views"}
       </span>

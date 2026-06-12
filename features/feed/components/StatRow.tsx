@@ -15,8 +15,8 @@ function fmt(n: number): string {
 
 export function StatRow({ likes, comments, views, inverted }: StatRowProps) {
   const cls = inverted
-    ? "text-white/80 text-[11px]"
-    : "text-muted-foreground text-[11px]";
+    ? "text-white/80 text-xs"
+    : "text-muted-foreground text-xs";
 
   return (
     <div className={`flex items-center gap-3 ${cls}`}>

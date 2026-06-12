@@ -107,22 +107,24 @@
    Use these everywhere — never raw px or Tailwind's text-* directly.
    All sizes tuned for ~390px viewport (iPhone 14 reference).
 
-   --text-xs    10px  captions, timestamps, badges
-   --text-sm    12px  secondary labels, helper text
-   --text-base  14px  body copy, list items             ← default
-   --text-md    16px  primary labels, input text
+   Aligned with Tailwind's default scale so the whole app matches the feed.
+
+   --text-xs    12px  captions, timestamps, badges
+   --text-sm    14px  secondary labels, helper text
+   --text-base  16px  body copy, list items             ← default
+   --text-md    18px  primary labels, input text
    --text-lg    18px  section headings, card titles
-   --text-xl    22px  screen titles, hero text
-   --text-2xl   28px  display / splash numbers
+   --text-xl    20px  screen titles, hero text
+   --text-2xl   24px  display / splash numbers
 ──────────────────────────────────────────────────────────────────── */
 :root {
-  --text-xs: 0.625rem; /* 10px */
-  --text-sm: 0.75rem; /* 12px */
-  --text-base: 0.875rem; /* 14px */
-  --text-md: 1rem; /* 16px */
+  --text-xs: 0.75rem; /* 12px */
+  --text-sm: 0.875rem; /* 14px */
+  --text-base: 1rem; /* 16px */
+  --text-md: 1.125rem; /* 18px */
   --text-lg: 1.125rem; /* 18px */
-  --text-xl: 1.375rem; /* 22px */
-  --text-2xl: 1.75rem; /* 28px */
+  --text-xl: 1.25rem; /* 20px */
+  --text-2xl: 1.5rem; /* 24px */
 
   /* Leading (line-height) companions */
   --leading-tight: 1.25;
@@ -139,13 +141,13 @@
 /* ─── Desktop type scale override (≥1024px) ────────────────────── */
 @media (min-width: 1024px) {
   :root {
-    --text-xs: 0.6875rem;  /* 11px */
-    --text-sm: 0.8125rem;  /* 13px */
-    --text-base: 0.9375rem; /* 15px */
-    --text-md: 1.0625rem;  /* 17px */
-    --text-lg: 1.1875rem;  /* 19px */
+    --text-xs: 0.8125rem;  /* 13px */
+    --text-sm: 0.9375rem;  /* 15px */
+    --text-base: 1.0625rem; /* 17px */
+    --text-md: 1.1875rem;  /* 19px */
+    --text-lg: 1.25rem;    /* 20px */
     --text-xl: 1.5rem;     /* 24px */
-    --text-2xl: 2rem;      /* 32px */
+    --text-2xl: 1.75rem;   /* 28px */
   }
 }
 

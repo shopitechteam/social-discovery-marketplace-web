@@ -68,7 +68,7 @@ function getDisplayName(c: { creatorId: string; author?: { profile?: { firstName
 // Small "Creator" badge — shown when the commenter is the content's creator
 function CreatorBadge() {
   return (
-    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold leading-none bg-primary/10 text-primary border border-primary/20 flex-shrink-0">
+    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-bold leading-none bg-primary/10 text-primary border border-primary/20 flex-shrink-0">
       Creator
     </span>
   );
@@ -93,7 +93,7 @@ function Avatar({ comment }: { comment: CommentItem | ReplyItem }) {
   }
   return (
     <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${color} flex items-center justify-center flex-shrink-0`}>
-      <span className="text-white text-[10px] font-bold">{getInitials(comment)}</span>
+      <span className="text-white text-xs font-bold">{getInitials(comment)}</span>
     </div>
   );
 }
@@ -137,7 +137,7 @@ function ReplyRow({
         <div className="flex items-center flex-wrap gap-1.5 mb-0.5">
           <span className="text-xs font-semibold text-default truncate max-w-[120px]">{getDisplayName(reply)}</span>
           {contentCreatorId && reply.creatorId === contentCreatorId && <CreatorBadge />}
-          <span className="text-[10px] text-muted-foreground">{timeAgo(reply.createdAt)}</span>
+          <span className="text-xs text-muted-foreground">{timeAgo(reply.createdAt)}</span>
         </div>
         <p className="text-sm text-default leading-snug">{reply.text}</p>
       </div>
@@ -148,7 +148,7 @@ function ReplyRow({
           <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
         </svg>
         {likeCount > 0 && (
-          <span className={`text-[9px] leading-none ${liked ? "text-red-500" : "text-muted-foreground"}`}>
+          <span className={`text-xs leading-none ${liked ? "text-red-500" : "text-muted-foreground"}`}>
             {formatCount(likeCount)}
           </span>
         )}
@@ -209,7 +209,7 @@ function CommentRow({
           <div className="flex items-center flex-wrap gap-1.5 mb-0.5">
             <span className="text-xs font-semibold text-default truncate max-w-[140px]">{getDisplayName(comment)}</span>
             {contentCreatorId && comment.creatorId === contentCreatorId && <CreatorBadge />}
-            <span className="text-[10px] text-muted-foreground flex-shrink-0">{timeAgo(comment.createdAt)}</span>
+            <span className="text-xs text-muted-foreground flex-shrink-0">{timeAgo(comment.createdAt)}</span>
           </div>
           <p className="text-sm text-default leading-snug">{comment.text}</p>
 
@@ -217,14 +217,14 @@ function CommentRow({
           <div className="flex items-center gap-4 mt-1.5">
             <button
               onClick={() => onReply(comment)}
-              className="text-[11px] text-muted-foreground font-medium hover:text-default transition-colors"
+              className="text-xs text-muted-foreground font-medium hover:text-default transition-colors"
             >
               Reply
             </button>
             {replyCount > 0 && (
               <button
                 onClick={() => setShowReplies((v) => !v)}
-                className="text-[11px] text-primary font-medium"
+                className="text-xs text-primary font-medium"
               >
                 {showReplies ? "Hide replies" : `View ${replyCount} ${replyCount === 1 ? "reply" : "replies"}`}
               </button>
@@ -239,7 +239,7 @@ function CommentRow({
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
           </svg>
           {likeCount > 0 && (
-            <span className={`text-[10px] leading-none ${liked ? "text-red-500" : "text-muted-foreground"}`}>
+            <span className={`text-xs leading-none ${liked ? "text-red-500" : "text-muted-foreground"}`}>
               {formatCount(likeCount)}
             </span>
           )}
@@ -265,7 +265,7 @@ function CommentRow({
           {/* Reply input shortcut */}
           <button
             onClick={() => onReply(comment)}
-            className="w-full text-left pl-11 pr-4 py-2 text-[11px] text-primary font-medium"
+            className="w-full text-left pl-11 pr-4 py-2 text-xs text-primary font-medium"
           >
             + Add a reply…
           </button>

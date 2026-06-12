@@ -366,7 +366,7 @@ function VideoMedia({
       )}
       {/* Duration badge */}
       {durationFmt && (
-        <div className="absolute bottom-5 right-2 bg-black/70 text-white text-[11px] font-semibold px-1.5 py-0.5 rounded-md">
+        <div className="absolute bottom-5 right-2 bg-black/70 text-white text-xs font-semibold px-1.5 py-0.5 rounded-md">
           {durationFmt}
         </div>
       )}
@@ -880,7 +880,7 @@ export function PostCard({ post, lang, priority }: Props) {
             <div className="h-3.5 w-24 rounded-full bg-surface animate-pulse" />
           )}
           {(post.location?.placeName || post.location?.county) && (
-            <p className="flex items-center gap-0.5 text-muted-foreground text-[11px] mt-0.5 leading-tight">
+            <p className="flex items-center gap-0.5 text-muted-foreground text-xs mt-0.5 leading-tight">
               <MapPin className="w-3 h-3 shrink-0" />
               <span className="truncate">
                 {[post.location.placeName, post.location.county]
@@ -889,7 +889,7 @@ export function PostCard({ post, lang, priority }: Props) {
               </span>
             </p>
           )}
-          <p className="text-muted-foreground text-[11px] mt-0.5">
+          <p className="text-muted-foreground text-xs mt-0.5">
             {timeAgo(post.createdAt)}
           </p>
         </div>
@@ -899,7 +899,7 @@ export function PostCard({ post, lang, priority }: Props) {
           <button
             onClick={handleFollow}
             className={[
-              "flex items-center gap-1 text-[13px] font-semibold px-3 py-1.5 rounded-full transition-all active:scale-95",
+              "flex items-center gap-1 text-sm font-semibold px-3 py-1.5 rounded-full transition-all active:scale-95",
               following
                 ? "text-muted-foreground bg-surface"
                 : "text-primary bg-primary/10 hover:bg-primary/20",
@@ -979,11 +979,11 @@ export function PostCard({ post, lang, priority }: Props) {
 
       {/* ── Text content ───────────────────────────────────────────────── */}
       <div className="px-4 pb-2.5">
-        <p className="font-semibold text-default text-[15px] leading-snug mb-1">
+        <p className="font-semibold text-default text-sm leading-snug mb-1">
           {post.title}
         </p>
         {caption && (
-          <p className="text-default text-[14.5px] leading-7">
+          <p className="text-default text-sm leading-7">
             {displayCaption}
             {isLong && (
               <button

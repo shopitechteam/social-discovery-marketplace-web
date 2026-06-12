@@ -259,7 +259,7 @@ export function RegisterForm({ from, lang, footer }: RegisterFormProps) {
         <button
           type="submit"
           disabled={isStep2Loading}
-          className="h-14 rounded-2xl bg-primary text-white font-semibold text-[16px] transition-all disabled:opacity-60 active:scale-[0.98]"
+          className="h-14 rounded-2xl bg-primary text-white font-semibold text-base transition-all disabled:opacity-60 active:scale-[0.98]"
         >
           {isStep2Loading ? (
             <span className="flex items-center justify-center gap-2">
@@ -415,7 +415,7 @@ export function RegisterForm({ from, lang, footer }: RegisterFormProps) {
       <button
         type="submit"
         disabled={isStep1Loading}
-        className="h-14 rounded-2xl bg-primary text-white font-semibold text-[16px] transition-all disabled:opacity-60 active:scale-[0.98]"
+        className="h-14 rounded-2xl bg-primary text-white font-semibold text-base transition-all disabled:opacity-60 active:scale-[0.98]"
       >
         {isStep1Loading ? (
           <span className="flex items-center justify-center gap-2">

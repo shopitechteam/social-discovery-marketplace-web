@@ -140,7 +140,7 @@ export function CollectionDetail({ lang, collectionId, from }: { lang: string; c
 
                 {/* Price badge */}
                 {item.price && item.price.amount > 0 && (
-                  <div className="absolute bottom-8 left-1.5 bg-black/60 rounded-md px-1.5 py-0.5 text-white text-[10px] font-semibold">
+                  <div className="absolute bottom-8 left-1.5 bg-black/60 rounded-md px-1.5 py-0.5 text-white text-xs font-semibold">
                     {item.price.currency} {item.price.amount.toLocaleString()}
                   </div>
                 )}

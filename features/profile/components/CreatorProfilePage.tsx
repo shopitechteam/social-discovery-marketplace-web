@@ -14,7 +14,7 @@ export function CreatorProfilePage({ username, lang }: Props) {
   const currentUserId = useAuthStore((s) => s.user?.id);
 
   const { data, loading } = useQuery(GetUserProfileDocument, {
-    variables: { username },
+    variables: { username }
   });
 
   if (loading) {
@@ -57,7 +57,7 @@ export function CreatorProfilePage({ username, lang }: Props) {
                 className="animate-pulse rounded-xl"
                 style={{
                   aspectRatio: "9/16",
-                  backgroundColor: "rgb(var(--color-bg-subtle))",
+                  backgroundColor: "rgb(var(--color-bg-subtle))"
                 }}
               />
             ))}
@@ -73,11 +73,8 @@ export function CreatorProfilePage({ username, lang }: Props) {
         className="flex min-h-screen items-center justify-center"
         style={{ backgroundColor: "rgb(var(--color-bg))" }}
       >
-        <p
-          style={{
-            color: "rgb(var(--color-text-muted))",
-            fontSize: "var(--text-base)",
-          }}
+        <p 
+          style={{ fontSize: "var(--text-base)", color: "rgb(var(--color-text-muted))" }}
         >
           Creator not found.
         </p>

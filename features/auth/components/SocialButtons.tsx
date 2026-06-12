@@ -42,7 +42,7 @@ export function SocialButtons({ lang, from, verb = "Continue" }: Props) {
         disabled={loading}
         onClick={handleApple}
         aria-label={`${verb} with Apple`}
-        className="w-full flex items-center justify-center gap-3 h-13 rounded-2xl bg-white text-black font-semibold text-[15px] active:opacity-80 transition-opacity disabled:opacity-50 shadow-sm"
+        className="w-full flex items-center justify-center gap-3 h-13 rounded-2xl bg-white text-black font-semibold text-base active:opacity-80 transition-opacity disabled:opacity-50 shadow-sm"
       >
         <AppleIcon />
         <span>{verb} with Apple</span>
@@ -54,7 +54,7 @@ export function SocialButtons({ lang, from, verb = "Continue" }: Props) {
         disabled={loading}
         onClick={handleGoogle}
         aria-label={`${verb} with Google`}
-        className="w-full flex items-center justify-center gap-3 h-13 rounded-2xl bg-elevated border border-border text-default font-semibold text-[15px] active:opacity-80 transition-opacity disabled:opacity-50"
+        className="w-full flex items-center justify-center gap-3 h-13 rounded-2xl bg-elevated border border-border text-default font-semibold text-base active:opacity-80 transition-opacity disabled:opacity-50"
       >
         <GoogleIcon />
         <span>{verb} with Google</span>

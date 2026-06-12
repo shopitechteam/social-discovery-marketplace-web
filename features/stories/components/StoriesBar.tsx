@@ -108,14 +108,14 @@ function AddStoryCard({
                 <path d="M7 1v12M1 7h12" stroke="white" strokeWidth="2" strokeLinecap="round" />
               </svg>
             </div>
-            <span className="text-[10px] font-semibold text-primary leading-none">
+            <span className="text-xs font-semibold text-primary leading-none">
               {initial !== "+" ? initial : ""}
             </span>
           </>
         )}
       </div>
       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-1 pt-4 pb-1.5">
-        <p className="text-white text-[9px] font-medium text-center truncate leading-tight">
+        <p className="text-white text-xs font-medium text-center truncate leading-tight">
           {isUploading ? "Uploading…" : "Add story"}
         </p>
       </div>
@@ -159,7 +159,7 @@ function StoryCard({ ring, onClick }: { ring: StoryRing; onClick: () => void }) 
           {avatar ? (
             <Image src={avatar} alt={name} width={32} height={32} className="w-full h-full object-cover" />
           ) : (
-            <div className="w-full h-full bg-primary/80 flex items-center justify-center text-white text-[10px] font-bold">{name[0]}</div>
+            <div className="w-full h-full bg-primary/80 flex items-center justify-center text-white text-xs font-bold">{name[0]}</div>
           )}
         </div>
       </div>
@@ -170,11 +170,11 @@ function StoryCard({ ring, onClick }: { ring: StoryRing; onClick: () => void }) 
       )}
       {count > 1 && (
         <div className="absolute top-1.5 left-1.5 bg-black/50 rounded-full px-1 py-0.5 pointer-events-none">
-          <span className="text-white text-[9px] font-bold">{count}</span>
+          <span className="text-white text-xs font-bold">{count}</span>
         </div>
       )}
       <div className="absolute bottom-0 left-0 right-0 px-1 pb-1.5 pointer-events-none">
-        <p className="text-white text-[10px] font-semibold text-center truncate leading-tight">{name}</p>
+        <p className="text-white text-xs font-semibold text-center truncate leading-tight">{name}</p>
       </div>
     </button>
   );
@@ -241,7 +241,7 @@ export function StoriesBar({ lang: _lang }: Props) {
             <span>📖</span> Stories
           </h2>
           {rings.length > 0 && (
-            <span className="text-[11px] text-muted-foreground">{rings.length} active</span>
+            <span className="text-xs text-muted-foreground">{rings.length} active</span>
           )}
         </div>
 
