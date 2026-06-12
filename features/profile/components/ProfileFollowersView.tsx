@@ -5,51 +5,16 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { gql, type TypedDocumentNode } from "@apollo/client";
 import { useQuery } from "@apollo/client/react";
-import type { VisitorFieldsFragment } from "@/types/__generated__/graphql";
+import {
+  MyFollowersDocument,
+  type VisitorFieldsFragment,
+} from "@/types/__generated__/graphql";
 import { useFollow } from "@/features/feed/hooks/useFollow";
 import { SHIMMER_AVATAR } from "@/lib/shimmer";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const PAGE_SIZE = 20;
-
-interface MyFollowersData {
-  myFollowers: {
-    totalCount: number;
-    hasMore: boolean;
-    nextCursor: string | null;
-    users: VisitorFieldsFragment[];
-  };
-}
-
-interface MyFollowersVars {
-  limit?: number;
-  after?: string;
-}
-
-// Shares the VisitorFields shape (id, username, profile, follow-state). Inline +
-// typed so it works regardless of codegen state; field set matches MyFollowers.
-const MY_FOLLOWERS: TypedDocumentNode<MyFollowersData, MyFollowersVars> = gql`
-  query MyFollowers($limit: Int, $after: String) {
-    myFollowers(limit: $limit, after: $after) {
-      totalCount
-      hasMore
-      nextCursor
-      users {
-        id
-        username
-        profile {
-          firstName
-          lastName
-          avatar
-        }
-        isFollowedByMe
-        isFollowingMe
-      }
-    }
-  }
-`;
 
 function displayNameOf(v: VisitorFieldsFragment): string {
   const name = [v.profile?.firstName, v.profile?.lastName].filter(Boolean).join(" ");
@@ -186,7 +151,7 @@ interface Props {
 /** "Followers" — users who follow me. Paginated, infinite-scroll. Owner-only. */
 export function ProfileFollowersView({ lang }: Props) {
   const router = useRouter();
-  const { data, loading, networkStatus, fetchMore } = useQuery(MY_FOLLOWERS, {
+  const { data, loading, networkStatus, fetchMore } = useQuery(MyFollowersDocument, {
     variables: { limit: PAGE_SIZE },
     notifyOnNetworkStatusChange: true,
     fetchPolicy: "cache-and-network",

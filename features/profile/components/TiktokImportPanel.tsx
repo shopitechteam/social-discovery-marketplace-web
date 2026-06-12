@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
-import { gql, type TypedDocumentNode } from "@apollo/client";
 import { useQuery, useMutation, useApolloClient } from "@apollo/client/react";
 import {
   GetTiktokConnectStatusDocument,
   GetTiktokConnectUrlDocument,
   GetMyTiktokVideosDocument,
   GetMyTiktokImportsDocument,
+  GetMyTiktokImportsPagedDocument,
   BatchImportTiktokVideosDocument,
 } from "@/types/__generated__/graphql";
 import type {
@@ -42,39 +42,6 @@ type TiktokVideo = GetMyTiktokVideosQuery["myTiktokVideos"]["videos"][number];
 type TiktokImport = GetMyTiktokImportsQuery["myTiktokImports"][number];
 
 type ImportStatus = TiktokImport["status"];
-
-// Cursor-paginated import queue. Items share the TiktokImport shape. Inline +
-// typed so it works regardless of codegen state (field set matches the schema).
-interface ImportsPagedData {
-  myTiktokImportsPaged: {
-    hasMore: boolean;
-    nextCursor: string | null;
-    items: TiktokImport[];
-  };
-}
-interface ImportsPagedVars {
-  limit?: number;
-  after?: string;
-}
-const MY_TIKTOK_IMPORTS_PAGED: TypedDocumentNode<ImportsPagedData, ImportsPagedVars> = gql`
-  query GetMyTiktokImportsPaged($limit: Int, $after: String) {
-    myTiktokImportsPaged(limit: $limit, after: $after) {
-      hasMore
-      nextCursor
-      items {
-        id
-        url
-        status
-        title
-        thumbnailUrl
-        muxPlaybackId
-        hlsUrl
-        errorMessage
-        createdAt
-      }
-    }
-  }
-`;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -492,7 +459,7 @@ export function TiktokImportPanel({ lang }: Props) {
     loading: importsPagedLoading,
     refetch: refetchImportsPaged,
     fetchMore: fetchMoreImports,
-  } = useQuery(MY_TIKTOK_IMPORTS_PAGED, {
+  } = useQuery(GetMyTiktokImportsPagedDocument, {
     variables: { limit: 21 },
     skip: !isTiktokConnected,
     fetchPolicy: "cache-and-network",
