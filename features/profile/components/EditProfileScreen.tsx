@@ -102,7 +102,7 @@ function EditProfileSkeleton({ lang }: { lang: string }) {
           className="flex h-10 w-10 items-center justify-center rounded-md"
           aria-label="Back to profile"
         >
-          <ChevronLeft size={23} aria-hidden />
+          <ChevronLeft size={38} strokeWidth={2.5} aria-hidden />
         </Link>
         <div
           className="h-5 w-24 rounded-md"
@@ -177,11 +177,16 @@ function EditProfileForm({
   // the user picks a new picture.
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { upload: uploadAvatar, uploading: avatarUploading, error: avatarError } =
-    useAvatarUpload();
+  const {
+    upload: uploadAvatar,
+    uploading: avatarUploading,
+    error: avatarError,
+  } = useAvatarUpload();
 
   const initial = getInitialForm(user);
-  const fieldsChanged = fields.some((field) => form[field.name] !== initial[field.name]);
+  const fieldsChanged = fields.some(
+    (field) => form[field.name] !== initial[field.name],
+  );
   const hasChanges = fieldsChanged || avatarUrl !== null;
   const usernameInvalid =
     form.username !== initial.username && form.username.trim().length < 3;
@@ -196,8 +201,10 @@ function EditProfileForm({
   const displayName = getDisplayName(user, form);
   const avatar = avatarUrl ?? user.profile?.avatar;
   const initials =
-    [form.firstName[0], form.lastName[0]].filter(Boolean).join("").toUpperCase() ||
-    "?";
+    [form.firstName[0], form.lastName[0]]
+      .filter(Boolean)
+      .join("")
+      .toUpperCase() || "?";
 
   useEffect(() => {
     return () => {
@@ -280,17 +287,20 @@ function EditProfileForm({
           asChild
           variant="ghost"
           size="icon"
-          className="h-10 w-10 rounded-md"
+          className="h-14 w-14 rounded-md"
           style={{ color: "rgb(var(--color-text))" }}
         >
           <Link href={`/${lang}/profile`} aria-label="Back to profile">
-            <ChevronLeft size={24} strokeWidth={2.3} />
+            <ChevronLeft size={38} strokeWidth={2.5} />
           </Link>
         </Button>
 
         <h1
           className="font-bold"
-          style={{ color: "rgb(var(--color-text))", fontSize: "var(--text-base)" }}
+          style={{
+            color: "rgb(var(--color-text))",
+            fontSize: "var(--text-base)",
+          }}
         >
           Edit profile
         </h1>
@@ -311,7 +321,10 @@ function EditProfileForm({
         </Button>
       </header>
 
-      <main className="px-4 pt-5" style={{ paddingBottom: "calc(var(--safe-bottom) + 1rem)" }}>
+      <main
+        className="px-4 pt-5"
+        style={{ paddingBottom: "calc(var(--safe-bottom) + 1rem)" }}
+      >
         <div className="mb-6 flex items-center gap-4">
           <button
             type="button"
@@ -357,7 +370,11 @@ function EditProfileForm({
               {avatarUploading ? (
                 <Loader2 size={22} className="animate-spin text-white" />
               ) : (
-                <Camera size={22} strokeWidth={2.2} className="text-white opacity-0 transition-opacity group-hover:opacity-100" />
+                <Camera
+                  size={22}
+                  strokeWidth={2.2}
+                  className="text-white opacity-0 transition-opacity group-hover:opacity-100"
+                />
               )}
             </span>
           </button>
@@ -374,7 +391,10 @@ function EditProfileForm({
               onClick={() => fileInputRef.current?.click()}
               disabled={avatarUploading}
               className="font-semibold"
-              style={{ color: "rgb(var(--brand-primary))", fontSize: "var(--text-sm)" }}
+              style={{
+                color: "rgb(var(--brand-primary))",
+                fontSize: "var(--text-sm)",
+              }}
             >
               {avatarUploading ? "Uploading…" : "Change photo"}
             </button>
@@ -388,7 +408,12 @@ function EditProfileForm({
               @{form.username || "username"}
             </p>
             {avatarError && (
-              <p style={{ color: "rgb(var(--color-error))", fontSize: "var(--text-xs)" }}>
+              <p
+                style={{
+                  color: "rgb(var(--color-error))",
+                  fontSize: "var(--text-xs)",
+                }}
+              >
                 {avatarError}
               </p>
             )}
@@ -404,8 +429,11 @@ function EditProfileForm({
               <div key={field.name} className="space-y-1.5">
                 <label
                   htmlFor={`edit-profile-${field.name}`}
-                  className="font-semibold uppercase"
-                  style={{ color: "rgb(var(--color-text-muted))", fontSize: "var(--text-xs)" }}
+                  className="font-semibold"
+                  style={{
+                    color: "rgb(var(--color-text-muted))",
+                    fontSize: "var(--text-xs)",
+                  }}
                 >
                   {field.label}
                 </label>
@@ -415,21 +443,26 @@ function EditProfileForm({
                     <textarea
                       id={`edit-profile-${field.name}`}
                       value={value}
-                      onChange={(e) => setForm((c) => ({ ...c, [field.name]: e.target.value }))}
+                      onChange={(e) =>
+                        setForm((c) => ({ ...c, [field.name]: e.target.value }))
+                      }
                       placeholder={field.placeholder}
                       maxLength={field.maxLength}
                       rows={4}
-                      className="w-full resize-none rounded-lg border px-3 py-2.5 font-medium leading-relaxed outline-none transition-colors placeholder:opacity-40 focus:border-[rgb(var(--color-border))]"
+                      className="w-full resize-none rounded-lg border px-3 py-2.5 text-sm placeholder:text-sm font-medium leading-relaxed outline-none transition-colors placeholder:opacity-40 focus:border-[rgb(var(--color-border))]"
                       style={{
                         backgroundColor: "rgb(var(--color-bg-elevated))",
                         borderColor: "rgb(var(--color-border))",
                         color: "rgb(var(--color-text))",
-                        fontSize: "var(--text-md)",
+                        fontSize: "var(--text-sm)",
                       }}
                     />
                     <p
                       className="text-right"
-                      style={{ color: "rgb(var(--color-text-muted))", fontSize: "var(--text-xs)" }}
+                      style={{
+                        color: "rgb(var(--color-text-muted))",
+                        fontSize: "var(--text-xs)",
+                      }}
                     >
                       {value.length}/{field.maxLength}
                     </p>
@@ -440,7 +473,10 @@ function EditProfileForm({
                       {isUsername && (
                         <span
                           className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2"
-                          style={{ color: "rgb(var(--color-text-muted))", fontSize: "var(--text-md)" }}
+                          style={{
+                            color: "rgb(var(--color-text-muted))",
+                            fontSize: "var(--text-md)",
+                          }}
                         >
                           @
                         </span>
@@ -453,11 +489,14 @@ function EditProfileForm({
                         onChange={(e) =>
                           isUsername
                             ? handleUsernameChange(e.target.value)
-                            : setForm((c) => ({ ...c, [field.name]: e.target.value }))
+                            : setForm((c) => ({
+                                ...c,
+                                [field.name]: e.target.value,
+                              }))
                         }
                         placeholder={field.placeholder}
                         maxLength={field.maxLength}
-                        className="h-12 w-full rounded-lg border px-3 font-medium outline-none transition-colors placeholder:opacity-40"
+                        className="h-12 w-full text-sm placeholder:text-sm rounded-lg border px-3 font-medium outline-none transition-colors placeholder:opacity-40"
                         style={{
                           backgroundColor: "rgb(var(--color-bg-elevated))",
                           borderColor:
@@ -467,20 +506,32 @@ function EditProfileForm({
                                 ? "rgb(var(--color-success))"
                                 : "rgb(var(--color-border))",
                           color: "rgb(var(--color-text))",
-                          fontSize: "var(--text-md)",
+                          fontSize: "var(--text-sm)",
                           paddingLeft: isUsername ? "1.9rem" : undefined,
                         }}
                       />
                       {isUsername && usernameState !== "idle" && (
                         <div className="absolute right-3 top-1/2 -translate-y-1/2">
                           {usernameState === "checking" && (
-                            <Loader2 size={15} className="animate-spin" style={{ color: "rgb(var(--color-text-muted))" }} />
+                            <Loader2
+                              size={15}
+                              className="animate-spin"
+                              style={{ color: "rgb(var(--color-text-muted))" }}
+                            />
                           )}
                           {usernameState === "available" && (
-                            <Check size={15} strokeWidth={2.5} style={{ color: "rgb(var(--color-success))" }} />
+                            <Check
+                              size={15}
+                              strokeWidth={2.5}
+                              style={{ color: "rgb(var(--color-success))" }}
+                            />
                           )}
                           {usernameState === "taken" && (
-                            <X size={15} strokeWidth={2.5} style={{ color: "rgb(var(--color-error))" }} />
+                            <X
+                              size={15}
+                              strokeWidth={2.5}
+                              style={{ color: "rgb(var(--color-error))" }}
+                            />
                           )}
                         </div>
                       )}

@@ -25,15 +25,17 @@ function getWebsiteHref(website: string) {
   return website.startsWith("http") ? website : `https://${website}`;
 }
 
-function StatTile({ label, value }: { label: string; value: string }) {
-  return (
-    <div
-      className="min-w-0 rounded-md border px-2 py-2 text-center"
-      style={{
-        backgroundColor: "rgb(var(--color-bg-elevated) / 0.78)",
-        borderColor: "rgb(var(--color-border))"
-      }}
-    >
+function StatTile({
+  label,
+  value,
+  href,
+}: {
+  label: string;
+  value: string;
+  href?: string;
+}) {
+  const inner = (
+    <>
       <p
         className="truncate font-bold leading-none"
         style={{ fontSize: "var(--text-base)", color: "rgb(var(--color-text))" }}
@@ -46,6 +48,25 @@ function StatTile({ label, value }: { label: string; value: string }) {
       >
         {label}
       </p>
+    </>
+  );
+
+  const className = "block min-w-0 rounded-md border px-2 py-2 text-center";
+  const style = {
+    backgroundColor: "rgb(var(--color-bg-elevated) / 0.78)",
+    borderColor: "rgb(var(--color-border))",
+  } as const;
+
+  if (href) {
+    return (
+      <Link href={href} className={`${className} transition-opacity active:opacity-70`} style={style}>
+        {inner}
+      </Link>
+    );
+  }
+  return (
+    <div className={className} style={style}>
+      {inner}
     </div>
   );
 }
@@ -145,6 +166,7 @@ export function ProfileHeader({ user, editHref, lang }: Props) {
                 <StatTile
                   label="Followers"
                   value={formatCompact(user.followerCount)}
+                  href={`/${lang}/profile/followers`}
                 />
                 <StatTile
                   label="Views"

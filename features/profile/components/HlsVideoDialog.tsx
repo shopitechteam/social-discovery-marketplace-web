@@ -78,12 +78,25 @@ export function HlsVideoDialog({ open, onOpenChange, hlsUrl, poster, title }: Pr
         {/* DialogContent renders its own close button (top-right) */}
         <DialogTitle className="sr-only">{title ?? "Video preview"}</DialogTitle>
 
+        {/* Close button — rendered above the video so it's always tappable */}
+        <button
+          type="button"
+          onClick={() => onOpenChange(false)}
+          className="absolute right-3 top-3 z-30 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white"
+          aria-label="Close"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+            <path d="M2 2l12 12M14 2L2 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+        </button>
+
         <div className="relative" style={{ aspectRatio: "9/16" }}>
           {/* Video */}
           <video
             ref={videoRef}
             poster={poster ?? undefined}
             playsInline
+            autoPlay
             muted={muted}
             loop
             className="h-full w-full bg-black object-contain"

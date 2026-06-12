@@ -151,6 +151,17 @@ query MyProfileVisitors($limit: Int, $after: String) {
   }
 }
 
+query MyFollowers($limit: Int, $after: String) {
+  myFollowers(limit: $limit, after: $after) {
+    totalCount
+    hasMore
+    nextCursor
+    users {
+      ...VisitorFields
+    }
+  }
+}
+
 # ── TikTok import ─────────────────────────────────────────────────────────────
 
 query GetMyTiktokVideos($cursor: String) {
@@ -179,6 +190,24 @@ query GetMyTiktokImports {
     hlsUrl
     errorMessage
     createdAt
+  }
+}
+
+query GetMyTiktokImportsPaged($limit: Int, $after: String) {
+  myTiktokImportsPaged(limit: $limit, after: $after) {
+    hasMore
+    nextCursor
+    items {
+      id
+      url
+      status
+      title
+      thumbnailUrl
+      muxPlaybackId
+      hlsUrl
+      errorMessage
+      createdAt
+    }
   }
 }
 

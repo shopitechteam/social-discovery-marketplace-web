@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
+import { gql, type TypedDocumentNode } from "@apollo/client";
 import { useQuery, useMutation, useApolloClient } from "@apollo/client/react";
 import {
   GetTiktokConnectStatusDocument,
@@ -13,7 +14,6 @@ import {
 import type {
   GetMyTiktokVideosQuery,
   GetMyTiktokImportsQuery,
-  DownloadStatus,
 } from "@/types/__generated__/graphql";
 import { getSocket, connectSocket, WS_EVENTS } from "@/lib/socket";
 import type { TiktokImportUpdatedPayload } from "@/lib/socket";
@@ -42,6 +42,39 @@ type TiktokVideo = GetMyTiktokVideosQuery["myTiktokVideos"]["videos"][number];
 type TiktokImport = GetMyTiktokImportsQuery["myTiktokImports"][number];
 
 type ImportStatus = TiktokImport["status"];
+
+// Cursor-paginated import queue. Items share the TiktokImport shape. Inline +
+// typed so it works regardless of codegen state (field set matches the schema).
+interface ImportsPagedData {
+  myTiktokImportsPaged: {
+    hasMore: boolean;
+    nextCursor: string | null;
+    items: TiktokImport[];
+  };
+}
+interface ImportsPagedVars {
+  limit?: number;
+  after?: string;
+}
+const MY_TIKTOK_IMPORTS_PAGED: TypedDocumentNode<ImportsPagedData, ImportsPagedVars> = gql`
+  query GetMyTiktokImportsPaged($limit: Int, $after: String) {
+    myTiktokImportsPaged(limit: $limit, after: $after) {
+      hasMore
+      nextCursor
+      items {
+        id
+        url
+        status
+        title
+        thumbnailUrl
+        muxPlaybackId
+        hlsUrl
+        errorMessage
+        createdAt
+      }
+    }
+  }
+`;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -385,40 +418,64 @@ export function TiktokImportPanel({ lang }: Props) {
   const isTiktokConnected = statusData?.me?.authProviders?.tiktok === true;
 
   // ── TikTok videos list ─────────────────────────────────────────────────────
-  // pages: accumulate pages client-side; cursor drives each fetch
-  const [pages, setPages] = useState<TiktokVideo[][]>([]);
-  const [cursor, setCursor] = useState<string | undefined>(undefined);
-
+  // Apollo accumulates pages via fetchMore (merge below). Infinite scroll drives
+  // each fetch — no manual page accumulator.
   const {
     data: videosData,
     loading: videosLoading,
     refetch: refetchVideos,
+    fetchMore: fetchMoreVideos,
   } = useQuery(GetMyTiktokVideosDocument, {
-    variables: { cursor },
+    variables: { cursor: undefined },
     skip: !isTiktokConnected,
-    fetchPolicy: "network-only",
     notifyOnNetworkStatusChange: true,
   });
 
-  // Accumulate pages as new data arrives
-  useEffect(() => {
-    if (!videosData) return;
-    const page = videosData.myTiktokVideos.videos;
-    // cursor === undefined means first page — reset; otherwise append
-    // schedule the state update to avoid calling setState synchronously inside the effect
-    const t = setTimeout(() => {
-      setPages((prev) =>
-        cursor === undefined && prev.length > 0 ? [page] : [...prev, page],
-      );
-    }, 0);
-    return () => clearTimeout(t);
-  }, [videosData, cursor]);
-
-  const allVideos = pages.flat();
+  const allVideos: TiktokVideo[] = videosData?.myTiktokVideos.videos ?? [];
   const hasMore = videosData?.myTiktokVideos.hasMore ?? false;
   const nextCursor = videosData?.myTiktokVideos.nextCursor ?? null;
+  const videosFetchingMore = useRef(false);
+
+  const loadMoreVideos = useCallback(() => {
+    if (!hasMore || !nextCursor || videosFetchingMore.current) return;
+    videosFetchingMore.current = true;
+    fetchMoreVideos({
+      variables: { cursor: nextCursor },
+      updateQuery(prev, { fetchMoreResult }) {
+        videosFetchingMore.current = false;
+        if (!fetchMoreResult) return prev;
+        return {
+          myTiktokVideos: {
+            ...fetchMoreResult.myTiktokVideos,
+            videos: [
+              ...prev.myTiktokVideos.videos,
+              ...fetchMoreResult.myTiktokVideos.videos,
+            ],
+          },
+        };
+      },
+    }).catch(() => {
+      videosFetchingMore.current = false;
+    });
+  }, [hasMore, nextCursor, fetchMoreVideos]);
+
+  const videosSentinelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = videosSentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) loadMoreVideos();
+      },
+      { rootMargin: "300px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [loadMoreVideos]);
 
   // ── Existing imports ───────────────────────────────────────────────────────
+  // This (capped) query powers cross-cutting concerns: the "already imported"
+  // dedup set for the pick grid, active-import polling, and live status updates.
   const { data: importsData, refetch: refetchImports } = useQuery(
     GetMyTiktokImportsDocument,
     { skip: !isTiktokConnected, fetchPolicy: "cache-and-network" },
@@ -428,6 +485,61 @@ export function TiktokImportPanel({ lang }: Props) {
 
   // Build set of already-imported shareUrls for quick look-up
   const importedUrls = new Set(imports.map((i) => i.url));
+
+  // Paginated query that drives the Import-queue grid display (infinite scroll).
+  const {
+    data: importsPagedData,
+    loading: importsPagedLoading,
+    refetch: refetchImportsPaged,
+    fetchMore: fetchMoreImports,
+  } = useQuery(MY_TIKTOK_IMPORTS_PAGED, {
+    variables: { limit: 21 },
+    skip: !isTiktokConnected,
+    fetchPolicy: "cache-and-network",
+    notifyOnNetworkStatusChange: true,
+  });
+
+  const queueItems = importsPagedData?.myTiktokImportsPaged.items ?? [];
+  const queueHasMore = importsPagedData?.myTiktokImportsPaged.hasMore ?? false;
+  const queueNextCursor = importsPagedData?.myTiktokImportsPaged.nextCursor ?? null;
+  const queueFetchingMore = useRef(false);
+
+  const loadMoreQueue = useCallback(() => {
+    if (!queueHasMore || !queueNextCursor || queueFetchingMore.current) return;
+    queueFetchingMore.current = true;
+    fetchMoreImports({
+      variables: { limit: 21, after: queueNextCursor },
+      updateQuery(prev, { fetchMoreResult }) {
+        queueFetchingMore.current = false;
+        if (!fetchMoreResult) return prev;
+        return {
+          myTiktokImportsPaged: {
+            ...fetchMoreResult.myTiktokImportsPaged,
+            items: [
+              ...prev.myTiktokImportsPaged.items,
+              ...fetchMoreResult.myTiktokImportsPaged.items,
+            ],
+          },
+        };
+      },
+    }).catch(() => {
+      queueFetchingMore.current = false;
+    });
+  }, [queueHasMore, queueNextCursor, fetchMoreImports]);
+
+  const queueSentinelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = queueSentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) loadMoreQueue();
+      },
+      { rootMargin: "300px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [loadMoreQueue]);
 
   // ── Selection state ────────────────────────────────────────────────────────
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -479,6 +591,8 @@ export function TiktokImportPanel({ lang }: Props) {
       });
       setSelected(new Set());
       refetchImports();
+      // Reset the queue's paginated list to its first page so new imports show
+      refetchImportsPaged({ limit: 21, after: undefined });
     }
   }
 
@@ -622,9 +736,7 @@ export function TiktokImportPanel({ lang }: Props) {
         </div>
         <button
           onClick={() => {
-            setPages([]);
-            setCursor(undefined);
-            refetchVideos();
+            refetchVideos({ cursor: undefined });
           }}
           className="flex h-8 w-8 items-center justify-center rounded-full transition-colors active:opacity-60"
           style={{
@@ -856,21 +968,15 @@ export function TiktokImportPanel({ lang }: Props) {
             </div>
           )}
 
-          {/* Load more */}
+          {/* Infinite scroll sentinel */}
+          <div ref={videosSentinelRef} className="h-px" />
           {hasMore && (
             <div className="flex justify-center px-4 pt-3 pb-1">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={videosLoading}
-                onClick={() => setCursor(nextCursor ?? undefined)}
-                className="gap-1.5"
-              >
-                {videosLoading ? (
-                  <Loader2 size={13} className="animate-spin" />
-                ) : null}
-                Load more
-              </Button>
+              <Loader2
+                size={18}
+                className="animate-spin"
+                style={{ color: "rgb(var(--color-text-muted))" }}
+              />
             </div>
           )}
 
@@ -926,7 +1032,7 @@ export function TiktokImportPanel({ lang }: Props) {
       {/* ── Queue view ───────────────────────────────────────────────────── */}
       {view === "queue" && (
         <div className="px-4 pb-4">
-          {imports.length === 0 ? (
+          {queueItems.length === 0 && !importsPagedLoading ? (
             <div
               className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed py-14 text-center"
               style={{ borderColor: "rgb(var(--color-border))" }}
@@ -962,23 +1068,9 @@ export function TiktokImportPanel({ lang }: Props) {
               </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-1">
-              {/* Active first */}
-              {imports
-                .slice()
-                .sort((a, b) => {
-                  const statusOrder: Record<DownloadStatus, number> = {
-                    UPLOADING: 0,
-                    PROCESSING: 1,
-                    PENDING: 2,
-                    FAILED: 3,
-                    COMPLETED: 4,
-                  };
-                  const sa = liveStatuses[a.id] ?? a.status;
-                  const sb = liveStatuses[b.id] ?? b.status;
-                  return (statusOrder[sa] ?? 9) - (statusOrder[sb] ?? 9);
-                })
-                .map((item) => (
+            <>
+              <div className="grid grid-cols-3 gap-1">
+                {queueItems.map((item) => (
                   <QueueVideoCard
                     key={item.id}
                     item={item}
@@ -986,7 +1078,20 @@ export function TiktokImportPanel({ lang }: Props) {
                     onPlay={setPreviewItem}
                   />
                 ))}
-            </div>
+              </div>
+
+              {/* Infinite scroll sentinel */}
+              <div ref={queueSentinelRef} className="h-px" />
+              {queueHasMore && (
+                <div className="flex justify-center pt-3">
+                  <Loader2
+                    size={18}
+                    className="animate-spin"
+                    style={{ color: "rgb(var(--color-text-muted))" }}
+                  />
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
