@@ -57,7 +57,8 @@ export function shouldHideBottomNav(pathname: string) {
     pathname.includes("/upload/create") ||
     pathname.includes("/upload/tiktok") ||
     pathname.includes("/content/") ||
-    /\/profile\/[^/]+$/.test(pathname)
+    /\/profile\/[^/]+$/.test(pathname) ||
+    pathname.includes("/notifications")
   );
 }
 
