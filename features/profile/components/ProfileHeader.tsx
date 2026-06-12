@@ -69,7 +69,9 @@ export function ProfileHeader({ user, editHref, lang }: Props) {
     <section
       className="relative overflow-hidden border-b"
       style={{
-        backgroundColor: "rgb(var(--color-bg))",
+        // Match the creator profile hero gradient for consistency
+        background:
+          "linear-gradient(160deg, rgb(var(--brand-primary) / 0.08) 0%, rgb(var(--color-bg)) 60%)",
         borderColor: "rgb(var(--color-border))",
       }}
     >

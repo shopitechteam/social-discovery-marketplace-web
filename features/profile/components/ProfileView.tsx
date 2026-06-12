@@ -146,10 +146,7 @@ export function ProfileView({ lang }: Props) {
   return (
     <div
       className="min-h-screen"
-      style={{
-        background:
-          "linear-gradient(180deg, rgb(var(--color-bg)) 0%, rgb(var(--color-bg-subtle)) 100%)",
-      }}
+      style={{ backgroundColor: "rgb(var(--color-bg))" }}
     >
       <ProfileHeader user={user} editHref={`/${lang}/profile/edit`} lang={lang} />
 

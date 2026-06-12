@@ -113,8 +113,12 @@ export const viewport: Viewport = {
   maximumScale: 1, // prevent iOS double-tap zoom
   userScalable: false,
   viewportFit: "cover",
+  // Status bar (theme-color) matches the page background so it blends into the
+  // top of pages — white in light mode, near-black in dark mode. Browsers don't
+  // support gradient status bars, and the profile hero gradient is ~bg at its
+  // top edge anyway, so this keeps the status bar consistent across pages.
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: siteConfig.themeColor },
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
     { media: "(prefers-color-scheme: dark)", color: "#0a0a0e" },
   ],
 };
