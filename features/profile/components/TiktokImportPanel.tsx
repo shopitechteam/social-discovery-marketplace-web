@@ -127,13 +127,19 @@ function ConnectGate({ lang }: { lang: string }) {
         </div>
         <h2
           className="font-bold"
-          style={{ color: "rgb(var(--color-text))", fontSize: "var(--text-lg)" }}
+          style={{
+            color: "rgb(var(--color-text))",
+            fontSize: "var(--text-lg)",
+          }}
         >
           Connect TikTok
         </h2>
         <p
           className="mt-2 max-w-sm leading-snug"
-          style={{ color: "rgb(var(--color-text-muted))", fontSize: "var(--text-base)" }}
+          style={{
+            color: "rgb(var(--color-text-muted))",
+            fontSize: "var(--text-base)",
+          }}
         >
           Link your TikTok account to browse and import your videos into Shopi.
         </p>
@@ -142,7 +148,8 @@ function ConnectGate({ lang }: { lang: string }) {
           disabled={loading}
           className="mt-5 gap-2 px-6 font-semibold text-white"
           style={{
-            background: "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)))",
+            background:
+              "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)))",
             boxShadow: "0 10px 24px rgb(var(--brand-primary) / 0.24)",
             fontSize: "var(--text-sm)",
             height: 40,
@@ -565,7 +572,11 @@ export function TiktokImportPanel({ lang }: Props) {
         {/* video grid */}
         <div className="grid grid-cols-3 gap-1 px-4">
           {Array.from({ length: 9 }).map((_, i) => (
-            <Skeleton key={i} className="rounded-xl" style={{ aspectRatio: "9/16" }} />
+            <Skeleton
+              key={i}
+              className="rounded-xl"
+              style={{ aspectRatio: "9/16" }}
+            />
           ))}
         </div>
       </div>
@@ -643,7 +654,7 @@ export function TiktokImportPanel({ lang }: Props) {
         <button
           onClick={() => setView("pick")}
           className={cn(
-            "flex h-8 flex-1 items-center justify-center gap-1.5 rounded-lg border font-semibold transition-all",
+            "flex h-10 flex-1 items-center justify-center gap-1.5 rounded-lg border font-semibold transition-all",
             view === "pick"
               ? "border-primary bg-primary text-white shadow-sm"
               : "border-border bg-background text-muted-foreground",
@@ -667,7 +678,7 @@ export function TiktokImportPanel({ lang }: Props) {
         <button
           onClick={() => setView("queue")}
           className={cn(
-            "relative flex h-8 flex-1 items-center justify-center gap-1.5 rounded-lg border font-semibold transition-all",
+            "relative flex h-10 flex-1 items-center justify-center gap-1.5 rounded-lg border font-semibold transition-all",
           )}
           style={{
             fontSize: "var(--text-xs)",

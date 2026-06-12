@@ -8,10 +8,17 @@ import {
   LogOut,
   Palette,
   Plus,
-  Settings,
-  Tv2
+  Settings
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { TikTokIcon } from "@/components/ui/TikTokIcon";
+
+// Icon may be a lucide icon or a custom SVG component (both take size/className)
+type TabIcon = React.ComponentType<{
+  size?: number;
+  className?: string;
+  strokeWidth?: number;
+}>;
 import {
   useMyProfile,
   useMyPosts,
@@ -97,10 +104,10 @@ function ProfileSkeleton() {
   );
 }
 
-const tabConfig: { key: Tab; label: string; icon: LucideIcon }[] = [
+const tabConfig: { key: Tab; label: string; icon: TabIcon }[] = [
   { key: "posts", label: "Posts", icon: LayoutGrid },
   { key: "analytics", label: "Analytics", icon: ChartColumn },
-  { key: "tiktok", label: "TikTok", icon: Tv2 },
+  { key: "tiktok", label: "TikTok", icon: TikTokIcon },
   { key: "settings", label: "Settings", icon: Settings },
 ];
 
@@ -174,17 +181,17 @@ export function ProfileView({ lang }: Props) {
                 type="button"
                 role="tab"
                 aria-selected={active}
+                aria-label={item.label}
+                title={item.label}
                 onClick={() => setTab(item.key)}
-                className="relative flex h-12 min-w-0 flex-col items-center justify-center gap-0.5 font-semibold transition-opacity active:opacity-60"
+                className="relative flex h-12 min-w-0 items-center justify-center transition-opacity active:opacity-60"
                 style={{
-                  fontSize: "var(--text-xs)",
                   color: active
                     ? "rgb(var(--color-text))"
                     : "rgb(var(--color-text-muted))"
                   }}
               >
-                <Icon size={15} strokeWidth={2.2} />
-                <span className="truncate">{item.label}</span>
+                <Icon size={24} strokeWidth={2.2} />
                 {active && (
                   <span
                     className="absolute bottom-0 h-0.5 w-8 rounded-full"
