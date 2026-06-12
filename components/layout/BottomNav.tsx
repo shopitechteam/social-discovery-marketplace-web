@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   Compass,
   House,
@@ -52,21 +52,23 @@ const tabs: Tab[] = [
   },
 ];
 
-export function shouldHideBottomNav(pathname: string) {
+export function shouldHideBottomNav(pathname: string, convoId?: string | null) {
   return (
     pathname.includes("/upload/create") ||
     pathname.includes("/upload/tiktok") ||
     pathname.includes("/content/") ||
     /\/profile\/[^/]+$/.test(pathname) ||
-    pathname.includes("/notifications")
+    convoId != null
   );
 }
 
 export function BottomNav({ lang = "en" }: { lang: string }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const convoId = searchParams.get("conversationId");
 
   // Hide on the full create flow, content detail, and creator profile pages
-  if (shouldHideBottomNav(pathname)) return null;
+  if (shouldHideBottomNav(pathname, convoId)) return null;
 
   return (
     <nav
