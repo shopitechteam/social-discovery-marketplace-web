@@ -51,17 +51,20 @@ const tabs: Tab[] = [
   },
 ];
 
-export function BottomNav({ lang = "en" }: { lang: string }) {
-  const pathname = usePathname();
-
-  // Hide on the full create flow, content detail, and creator profile pages
-  if (
+export function shouldHideBottomNav(pathname: string) {
+  return (
     pathname.includes("/upload/create") ||
     pathname.includes("/upload/tiktok") ||
     pathname.includes("/content/") ||
     /\/profile\/[^/]+$/.test(pathname)
-  )
-    return null;
+  );
+}
+
+export function BottomNav({ lang = "en" }: { lang: string }) {
+  const pathname = usePathname();
+
+  // Hide on the full create flow, content detail, and creator profile pages
+  if (shouldHideBottomNav(pathname)) return null;
 
   return (
     <nav

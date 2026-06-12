@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { ExternalLink, PenLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SHIMMER_AVATAR } from "@/lib/shimmer";
@@ -8,7 +9,7 @@ import type { ProfileUserFieldsFragment } from "@/types/__generated__/graphql";
 
 interface Props {
   user: ProfileUserFieldsFragment;
-  onEditClick: () => void;
+  editHref: string;
 }
 
 function formatCompact(value: number | null | undefined) {
@@ -53,7 +54,7 @@ function StatTile({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function ProfileHeader({ user, onEditClick }: Props) {
+export function ProfileHeader({ user, editHref }: Props) {
   const firstName = user.profile?.firstName ?? "";
   const lastName = user.profile?.lastName ?? "";
   const displayName =
@@ -129,10 +130,9 @@ export function ProfileHeader({ user, onEditClick }: Props) {
                   )}
                 </div>
                 <Button
-                  type="button"
+                  asChild
                   variant="outline"
                   size="sm"
-                  onClick={onEditClick}
                   className="h-9 shrink-0 rounded-md px-3 font-semibold"
                   style={{
                     backgroundColor: "rgb(var(--color-bg-elevated))",
@@ -141,8 +141,10 @@ export function ProfileHeader({ user, onEditClick }: Props) {
                     fontSize: "var(--text-sm)",
                   }}
                 >
-                  <PenLine size={16} strokeWidth={2.2} />
-                  Edit
+                  <Link href={editHref}>
+                    <PenLine size={16} strokeWidth={2.2} />
+                    Edit
+                  </Link>
                 </Button>
               </div>
 

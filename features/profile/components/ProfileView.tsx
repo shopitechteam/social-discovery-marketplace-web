@@ -17,10 +17,10 @@ import {
   useMyPosts,
   useMyAnalytics,
 } from "../hooks/useMyProfile";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ProfileHeader } from "./ProfileHeader";
 import { PostsGrid } from "./PostsGrid";
 import { AnalyticsPanel } from "./AnalyticsPanel";
-import { EditProfileSheet } from "./EditProfileSheet";
 import { TiktokImportPanel } from "./TiktokImportPanel";
 import { LogoutButton } from "@/features/auth/components/LogoutButton";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -106,7 +106,6 @@ const tabConfig: { key: Tab; label: string; icon: LucideIcon }[] = [
 
 export function ProfileView({ lang }: Props) {
   const [tab, setTab] = useState<Tab>("posts");
-  const [editOpen, setEditOpen] = useState(false);
   const [postsLimit] = useState(18);
 
   const { data: profileData, loading: profileLoading } = useMyProfile();
@@ -127,17 +126,6 @@ export function ProfileView({ lang }: Props) {
   const posts = postsData?.myPosts.posts ?? [];
   const hasMore = postsData?.myPosts.hasMore ?? false;
   const nextCursor = postsData?.myPosts.nextCursor;
-  const editSheetKey = editOpen
-    ? `open-${user.id}`
-    : [
-        "closed",
-        user.id,
-        user.username ?? "",
-        user.profile?.firstName ?? "",
-        user.profile?.lastName ?? "",
-        user.profile?.bio ?? "",
-        user.profile?.website ?? "",
-      ].join("|");
 
   function handleLoadMore() {
     if (!nextCursor) return;
@@ -163,7 +151,7 @@ export function ProfileView({ lang }: Props) {
           "linear-gradient(180deg, rgb(var(--color-bg)) 0%, rgb(var(--color-bg-subtle)) 100%)",
       }}
     >
-      <ProfileHeader user={user} onEditClick={() => setEditOpen(true)} />
+      <ProfileHeader user={user} editHref={`/${lang}/profile/edit`} />
 
       <div
         className="sticky top-0 z-20 border-b"
@@ -225,15 +213,32 @@ export function ProfileView({ lang }: Props) {
       {tab === "analytics" && (
         <>
           {analyticsLoading && !analyticsData ? (
-            <div className="flex justify-center py-12">
-              <div
-                className="h-7 w-7 animate-spin rounded-full border-2 border-t-transparent"
-                style={{
-                  borderColor: "rgb(var(--brand-primary))",
-                  borderTopColor: "transparent",
-                }}
-              />
-            </div>
+            <section className="px-4 py-5 sm:px-6 lg:px-8">
+              <div className="mx-auto w-full max-w-6xl flex flex-col gap-4">
+                {/* header row */}
+                <div className="flex items-end justify-between">
+                  <div className="flex flex-col gap-2">
+                    <Skeleton className="h-5 w-24 rounded-md" />
+                    <Skeleton className="h-3.5 w-16 rounded-md" />
+                  </div>
+                  <Skeleton className="h-9 w-40 rounded-lg" />
+                </div>
+                {/* metric cards */}
+                <div className="grid grid-cols-2 gap-2 lg:grid-cols-4 lg:gap-3">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <Skeleton key={i} className="h-28 rounded-lg" />
+                  ))}
+                </div>
+                {/* chart + sidebar */}
+                <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+                  <Skeleton className="h-64 rounded-lg" />
+                  <div className="flex flex-col gap-4">
+                    <Skeleton className="h-48 rounded-lg" />
+                    <Skeleton className="h-32 rounded-lg" />
+                  </div>
+                </div>
+              </div>
+            </section>
           ) : analyticsData?.myAnalytics ? (
             <AnalyticsPanel data={analyticsData.myAnalytics} lang={lang} />
           ) : (
@@ -291,13 +296,6 @@ export function ProfileView({ lang }: Props) {
       {tab === "tiktok" && <TiktokImportPanel lang={lang} />}
 
       {tab === "settings" && <SettingsPanel lang={lang} />}
-
-      <EditProfileSheet
-        key={editSheetKey}
-        user={user}
-        open={editOpen}
-        onClose={() => setEditOpen(false)}
-      />
     </div>
   );
 }

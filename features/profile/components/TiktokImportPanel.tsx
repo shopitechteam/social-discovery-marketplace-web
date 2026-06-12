@@ -548,10 +548,26 @@ export function TiktokImportPanel({ lang }: Props) {
 
   if (statusLoading && !statusData) {
     return (
-      <div className="p-4 flex flex-col gap-3">
-        {[1, 2, 3].map((i) => (
-          <Skeleton key={i} className="h-20 w-full rounded-xl" />
-        ))}
+      <div className="flex flex-col gap-0">
+        {/* header row */}
+        <div className="flex items-center justify-between px-4 pt-4 pb-3">
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-4 w-28 rounded-md" />
+            <Skeleton className="h-3 w-20 rounded-md" />
+          </div>
+          <Skeleton className="h-8 w-8 rounded-full" />
+        </div>
+        {/* tab switcher */}
+        <div className="flex gap-2 px-4 pb-3">
+          <Skeleton className="h-8 flex-1 rounded-lg" />
+          <Skeleton className="h-8 flex-1 rounded-lg" />
+        </div>
+        {/* video grid */}
+        <div className="grid grid-cols-3 gap-1 px-4">
+          {Array.from({ length: 9 }).map((_, i) => (
+            <Skeleton key={i} className="rounded-xl" style={{ aspectRatio: "9/16" }} />
+          ))}
+        </div>
       </div>
     );
   }

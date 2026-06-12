@@ -282,16 +282,7 @@ export function PostsGrid({
                 fontSize: "var(--text-sm)",
               }}
             >
-              {loading && (
-                <span
-                  className="h-4 w-4 animate-spin rounded-full border-2 border-t-transparent"
-                  style={{
-                    borderColor: "rgb(var(--brand-primary))",
-                    borderTopColor: "transparent",
-                  }}
-                />
-              )}
-              {loading ? "Loading" : "Load more"}
+                  {loading ? "Loading…" : "Load more"}
             </button>
           </div>
         )}
