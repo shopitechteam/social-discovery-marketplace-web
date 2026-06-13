@@ -470,8 +470,20 @@ export function ContentDetail({ id, lang }: Props) {
   const client = useApolloClient();
   const [addCommentMutation] = useMutation(AddCommentDocument);
   const [trackInteractionMutation] = useMutation(gql`
-    mutation TrackInteractionDetail($contentId: String!, $type: InteractionType!, $watchDuration: Float, $completionRate: Float) {
-      trackInteraction(input: { contentId: $contentId, type: $type, watchDuration: $watchDuration, completionRate: $completionRate })
+    mutation TrackInteractionDetail(
+      $contentId: String!
+      $type: InteractionType!
+      $watchDuration: Float
+      $completionRate: Float
+    ) {
+      trackInteraction(
+        input: {
+          contentId: $contentId
+          type: $type
+          watchDuration: $watchDuration
+          completionRate: $completionRate
+        }
+      )
     }
   `);
   const [shareMutation] = useMutation(ShareContentDocument);
@@ -533,7 +545,12 @@ export function ContentDetail({ id, lang }: Props) {
     (completionRate: number, watchDuration: number) => {
       if (shouldFire(id, "VIDEO_COMPLETED")) {
         trackInteractionMutation({
-          variables: { contentId: id, type: "VIDEO_COMPLETED", completionRate, watchDuration },
+          variables: {
+            contentId: id,
+            type: "VIDEO_COMPLETED",
+            completionRate,
+            watchDuration,
+          },
         }).catch(() => {});
       }
     },
@@ -1425,7 +1442,8 @@ export function ContentDetail({ id, lang }: Props) {
               {!isOwnPost && (
                 <button
                   onClick={() => {
-                    if (!requireAuth({ contentId: id, action: "comment" })) return;
+                    if (!requireAuth({ contentId: id, action: "comment" }))
+                      return;
                     router.push(`/${lang}/notifications?contentId=${id}`);
                   }}
                   className="flex flex-col items-center gap-1.5"
@@ -1636,7 +1654,6 @@ export function ContentDetail({ id, lang }: Props) {
           </Drawer>
         </div>
       )}
-
     </div>
   );
 }
