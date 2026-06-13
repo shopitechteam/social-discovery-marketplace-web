@@ -16,6 +16,7 @@ export const WS_EVENTS = {
   DM_MESSAGE_CREATED: 'dm:message:created',
   DM_MESSAGE_UPDATED: 'dm:message:updated',
   DM_CONVERSATION_UPDATED: 'dm:conversation:updated',
+  DM_CONVERSATION_REMOVED: 'dm:conversation:removed',
   DM_PRESENCE_UPDATED: 'dm:presence:updated',
   DM_TYPING_UPDATED: 'dm:typing:updated',
 } as const;
@@ -114,6 +115,13 @@ export interface DirectConversationUpdatedPayload {
   lastMessageSenderId?: string;
   lastMessageAt?: string;
   myUnreadCount: number;
+  blockedByMe?: boolean;
+  blockedByOther?: boolean;
+  canSendMessages?: boolean;
+}
+
+export interface DirectConversationRemovedPayload {
+  conversationId: string;
 }
 
 export interface DirectPresenceUpdatedPayload {

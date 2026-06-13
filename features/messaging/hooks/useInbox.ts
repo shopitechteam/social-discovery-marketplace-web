@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { getSocket } from "@/lib/socket";
 import {
   DirectConversationUpdatedPayload,
+  DirectConversationRemovedPayload,
   DirectMessageCreatedPayload,
   DirectMessageUpdatedPayload,
   DirectPresenceUpdatedPayload,
@@ -22,10 +23,13 @@ import type { Conversation, Message } from "../types";
 import {
   applyMessageUpdate,
   fromSocketMessage,
+  removeConversation,
   upsertConversation,
   upsertMessage,
 } from "../lib/helpers";
 import {
+  BLOCK_DIRECT_CONVERSATION,
+  DELETE_DIRECT_CONVERSATION,
   DIRECT_CONVERSATION,
   DIRECT_MESSAGES,
   ENSURE_DIRECT_CONVERSATION,
@@ -34,9 +38,11 @@ import {
   MY_UNREAD_CONVERSATION_COUNT,
   NOTIFY_IMAGE_UPLOADED,
   NOTIFY_VIDEO_UPLOADED,
+  REPORT_DIRECT_CONVERSATION,
   REQUEST_IMAGE_UPLOAD,
   REQUEST_VIDEO_UPLOAD,
   SEND_DIRECT_MESSAGE,
+  UNBLOCK_DIRECT_CONVERSATION,
 } from "../graphql/operations";
 
 const PAGE_SIZE = 40;
@@ -68,6 +74,8 @@ export function useInbox(lang: string) {
   const [composer, setComposer] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isConversationActionPending, setIsConversationActionPending] =
+    useState(false);
   const [typingUserId, setTypingUserId] = useState<string | null>(null);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [hasMoreOlder, setHasMoreOlder] = useState(true);
@@ -154,6 +162,10 @@ export function useInbox(lang: string) {
   const [notifyImageUploaded] = useMutation(NOTIFY_IMAGE_UPLOADED);
   const [requestVideoUpload] = useMutation(REQUEST_VIDEO_UPLOAD);
   const [notifyVideoUploaded] = useMutation(NOTIFY_VIDEO_UPLOADED);
+  const [deleteDirectConversation] = useMutation(DELETE_DIRECT_CONVERSATION);
+  const [blockDirectConversation] = useMutation(BLOCK_DIRECT_CONVERSATION);
+  const [unblockDirectConversation] = useMutation(UNBLOCK_DIRECT_CONVERSATION);
+  const [reportDirectConversation] = useMutation(REPORT_DIRECT_CONVERSATION);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -416,6 +428,27 @@ export function useInbox(lang: string) {
 
   useEffect(
     () =>
+      on<DirectConversationRemovedPayload>(
+        WS_EVENTS.DM_CONVERSATION_REMOVED,
+        (payload) => {
+          setConversations((prev) =>
+            removeConversation(prev, payload.conversationId),
+          );
+          if (activeConversationIdRef.current === payload.conversationId) {
+            setActiveConversation(null);
+            setSelectedConversationId(null);
+            setMessages([]);
+            setTypingUserId(null);
+            router.replace(`/${lang}/notifications`);
+          }
+          void refetchUnreadCount();
+        },
+      ),
+    [lang, on, refetchUnreadCount, router],
+  );
+
+  useEffect(
+    () =>
       on<DirectPresenceUpdatedPayload>(
         WS_EVENTS.DM_PRESENCE_UPDATED,
         (payload) => {
@@ -571,6 +604,14 @@ export function useInbox(lang: string) {
     const conversationId = selectedConversationIdRef.current;
     const text = composer.trim();
     if (!conversationId || !text) return;
+    if (selectedConversation?.canSendMessages === false) {
+      toast.error(
+        selectedConversation.blockedByMe
+          ? "You have blocked this user"
+          : "You can no longer send messages in this conversation",
+      );
+      return;
+    }
 
     setIsSending(true);
     const clientMessageId = crypto.randomUUID();
@@ -603,7 +644,12 @@ export function useInbox(lang: string) {
     } finally {
       setIsSending(false);
     }
-  }, [composer, refetchConversations, sendDirectMessage]);
+  }, [
+    composer,
+    refetchConversations,
+    selectedConversation,
+    sendDirectMessage,
+  ]);
 
   const runMediaUpload = useCallback(
     async (
@@ -741,6 +787,14 @@ export function useInbox(lang: string) {
       const myId = currentUser?.id;
       const conversationId = selectedConversationIdRef.current;
       if (!conversationId || !myId) return;
+      if (selectedConversation?.canSendMessages === false) {
+        toast.error(
+          selectedConversation.blockedByMe
+            ? "You have blocked this user"
+            : "You can no longer send messages in this conversation",
+        );
+        return;
+      }
 
       const textToSend = composer.trim() || undefined;
       const clientMessageId = crypto.randomUUID();
@@ -789,8 +843,7 @@ export function useInbox(lang: string) {
       composer,
       currentUser?.id,
       runMediaUpload,
-      selectedConversation?.contentId,
-      selectedConversation?.otherParticipant?.id,
+      selectedConversation,
     ],
   );
 
@@ -895,6 +948,182 @@ export function useInbox(lang: string) {
     if (conversations[0]) navigateToConversation(conversations[0].id);
   }, [conversations, navigateToConversation, requireAuth]);
 
+  const mergeConversationSnapshot = useCallback((conversation: Conversation) => {
+    setActiveConversation((prev) =>
+      prev?.id === conversation.id ? { ...prev, ...conversation } : prev,
+    );
+    setConversations((prev) => {
+      const existing = prev.find((item) => item.id === conversation.id);
+      if (!existing) return [conversation, ...prev];
+      return upsertConversation(prev, {
+        conversationId: conversation.id,
+        contentId: conversation.contentId,
+        lastMessageId: conversation.lastMessageId ?? undefined,
+        lastMessageText: conversation.lastMessageText ?? undefined,
+        lastMessageType:
+          (conversation.lastMessageType?.toLowerCase() as
+            | "text"
+            | "image"
+            | "video"
+            | undefined) ?? undefined,
+        lastMessageSenderId: conversation.lastMessageSenderId ?? undefined,
+        lastMessageAt: conversation.lastMessageAt ?? undefined,
+        myUnreadCount: conversation.myUnreadCount ?? 0,
+        blockedByMe: conversation.blockedByMe ?? undefined,
+        blockedByOther: conversation.blockedByOther ?? undefined,
+        canSendMessages: conversation.canSendMessages ?? undefined,
+      });
+    });
+  }, []);
+
+  const deleteSelectedConversation = useCallback(async () => {
+    const conversationId = selectedConversationIdRef.current;
+    if (!conversationId) return false;
+
+    setIsConversationActionPending(true);
+    try {
+      const { data } = await deleteDirectConversation({
+        variables: { conversationId },
+      });
+      const ok = (
+        data as { deleteDirectConversation?: boolean } | undefined
+      )?.deleteDirectConversation;
+      if (!ok) {
+        toast.error("Could not delete this conversation");
+        return false;
+      }
+
+      setConversations((prev) => removeConversation(prev, conversationId));
+      setActiveConversation(null);
+      setSelectedConversationId(null);
+      setMessages([]);
+      setTypingUserId(null);
+      router.replace(`/${lang}/notifications`);
+      void refetchUnreadCount();
+      toast.success("Conversation deleted");
+      return true;
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Could not delete this conversation",
+      );
+      return false;
+    } finally {
+      setIsConversationActionPending(false);
+    }
+  }, [
+    deleteDirectConversation,
+    lang,
+    refetchUnreadCount,
+    router,
+  ]);
+
+  const blockSelectedConversation = useCallback(async () => {
+    const conversationId = selectedConversationIdRef.current;
+    if (!conversationId) return false;
+
+    setIsConversationActionPending(true);
+    try {
+      const { data } = await blockDirectConversation({
+        variables: { conversationId },
+      });
+      const conversation = (
+        data as { blockDirectConversation?: Conversation } | undefined
+      )?.blockDirectConversation;
+      if (!conversation) {
+        toast.error("Could not block this user");
+        return false;
+      }
+
+      mergeConversationSnapshot(conversation);
+      void refetchConversations();
+      toast.success("User blocked");
+      return true;
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Could not block this user",
+      );
+      return false;
+    } finally {
+      setIsConversationActionPending(false);
+    }
+  }, [blockDirectConversation, mergeConversationSnapshot, refetchConversations]);
+
+  const unblockSelectedConversation = useCallback(async () => {
+    const conversationId = selectedConversationIdRef.current;
+    if (!conversationId) return false;
+
+    setIsConversationActionPending(true);
+    try {
+      const { data } = await unblockDirectConversation({
+        variables: { conversationId },
+      });
+      const conversation = (
+        data as { unblockDirectConversation?: Conversation } | undefined
+      )?.unblockDirectConversation;
+      if (!conversation) {
+        toast.error("Could not unblock this user");
+        return false;
+      }
+
+      mergeConversationSnapshot(conversation);
+      void refetchConversations();
+      toast.success("User unblocked");
+      return true;
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Could not unblock this user",
+      );
+      return false;
+    } finally {
+      setIsConversationActionPending(false);
+    }
+  }, [
+    mergeConversationSnapshot,
+    refetchConversations,
+    unblockDirectConversation,
+  ]);
+
+  const reportSelectedConversation = useCallback(
+    async (reason: string, details?: string) => {
+      const conversationId = selectedConversationIdRef.current;
+      if (!conversationId) return false;
+
+      setIsConversationActionPending(true);
+      try {
+        const { data } = await reportDirectConversation({
+          variables: {
+            input: {
+              conversationId,
+              reason,
+              details: details?.trim() || undefined,
+            },
+          },
+        });
+        const ok = (
+          data as { reportDirectConversation?: boolean } | undefined
+        )?.reportDirectConversation;
+        if (!ok) {
+          toast.error("Could not submit this report");
+          return false;
+        }
+        toast.success("Report submitted");
+        return true;
+      } catch (error) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Could not submit this report",
+        );
+        return false;
+      } finally {
+        setIsConversationActionPending(false);
+      }
+    },
+    [reportDirectConversation],
+  );
+
   return {
     // identity / auth
     currentUser,
@@ -915,6 +1144,7 @@ export function useInbox(lang: string) {
     ensuringConversation,
     isSending,
     isUploading,
+    isConversationActionPending,
     loadingOlder,
     hasMoreOlder,
     // actions
@@ -927,6 +1157,10 @@ export function useInbox(lang: string) {
     discardMessage,
     loadOlderMessages,
     handleContinue,
+    deleteSelectedConversation,
+    blockSelectedConversation,
+    unblockSelectedConversation,
+    reportSelectedConversation,
   };
 }
 

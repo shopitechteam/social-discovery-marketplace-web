@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { Loader2, Paperclip, Send } from "lucide-react";
+import { Paperclip, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -9,6 +9,7 @@ interface Props {
   composer: string;
   isSending: boolean;
   isUploading: boolean;
+  disabledReason?: string | null;
   requireAuth: () => boolean;
   onChange: (value: string) => void;
   onSendText: () => void;
@@ -20,6 +21,7 @@ export function Composer({
   composer,
   isSending,
   isUploading,
+  disabledReason,
   requireAuth,
   onChange,
   onSendText,
@@ -46,7 +48,7 @@ export function Composer({
             if (!requireAuth()) return;
             mediaInputRef.current?.click();
           }}
-          disabled={isUploading || isSending}
+          disabled={isUploading || isSending || Boolean(disabledReason)}
           aria-label="Attach photo or video"
         >
           <Paperclip size={15} />
@@ -56,8 +58,9 @@ export function Composer({
           <Input
             value={composer}
             onChange={(event) => onChange(event.target.value)}
-            placeholder="Message..."
+            placeholder={disabledReason || "Message..."}
             className="h-10 text-sm outline-none outline-0 focus:ring-1 focus:ring-gray-700 placeholder:text-sm rounded-full"
+            disabled={Boolean(disabledReason)}
             onKeyDown={(event) => {
               if (event.key === "Enter" && !event.shiftKey) {
                 event.preventDefault();
@@ -72,7 +75,12 @@ export function Composer({
           size="icon"
           className="h-9 w-9 rounded-full"
           onClick={onSendText}
-          disabled={isSending || isUploading || !composer.trim()}
+          disabled={
+            isSending ||
+            isUploading ||
+            Boolean(disabledReason) ||
+            !composer.trim()
+          }
         >
           {isSending || isUploading ? (
             <Send className="text-white disabled" size={18} />
@@ -88,6 +96,7 @@ export function Composer({
         type="file"
         accept="image/*,video/*"
         className="hidden"
+        disabled={Boolean(disabledReason)}
         onChange={(event) => {
           const file = event.target.files?.[0];
           if (file) {

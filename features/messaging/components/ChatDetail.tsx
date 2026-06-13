@@ -14,6 +14,7 @@ import {
 } from "../lib/helpers";
 import { MessageList } from "./MessageList";
 import { Composer } from "./Composer";
+import { ConversationActionsDrawer } from "./ConversationActionsDrawer";
 
 interface Props {
   lang: string;
@@ -29,6 +30,7 @@ interface Props {
   composer: string;
   isSending: boolean;
   isUploading: boolean;
+  isConversationActionPending: boolean;
   requireAuth: () => boolean;
   onBack: () => void;
   onComposerChange: (value: string) => void;
@@ -37,6 +39,13 @@ interface Props {
   onRetryMessage: (message: Message) => void;
   onDiscardMessage: (message: Message) => void;
   onLoadOlder: () => Promise<number>;
+  onDeleteConversation: () => Promise<boolean>;
+  onBlockConversation: () => Promise<boolean>;
+  onUnblockConversation: () => Promise<boolean>;
+  onReportConversation: (
+    reason: "SPAM" | "SCAM" | "HARASSMENT" | "OFF_TOPIC" | "OTHER",
+    details?: string,
+  ) => Promise<boolean>;
 }
 
 /** Right-hand chat pane: header, listing summary, messages, typing, composer. */
@@ -54,6 +63,7 @@ export function ChatDetail({
   composer,
   isSending,
   isUploading,
+  isConversationActionPending,
   requireAuth,
   onBack,
   onComposerChange,
@@ -62,6 +72,10 @@ export function ChatDetail({
   onRetryMessage,
   onDiscardMessage,
   onLoadOlder,
+  onDeleteConversation,
+  onBlockConversation,
+  onUnblockConversation,
+  onReportConversation,
 }: Props) {
   const router = useRouter();
   const contentSummary = selectedConversation?.content;
@@ -147,18 +161,31 @@ export function ChatDetail({
                 </p>
               </div>
 
-              {contentSummary ? (
-                <button
-                  type="button"
-                  onClick={() =>
-                    router.push(`/${lang}/content/${contentSummary.id}`)
-                  }
-                  className="rounded-full border px-3 py-1.5 text-xs font-semibold"
-                  style={{ borderColor: "rgb(var(--color-border))" }}
-                >
-                  View post
-                </button>
-              ) : null}
+              <div className="flex items-center gap-2">
+                {contentSummary ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      router.push(`/${lang}/content/${contentSummary.id}`)
+                    }
+                    className="rounded-full border px-3 py-1.5 text-xs font-semibold"
+                    style={{ borderColor: "rgb(var(--color-border))" }}
+                  >
+                    View post
+                  </button>
+                ) : null}
+
+                <ConversationActionsDrawer
+                  participantName={participantName(otherParticipant)}
+                  blockedByMe={selectedConversation?.blockedByMe}
+                  blockedByOther={selectedConversation?.blockedByOther}
+                  isPending={isConversationActionPending}
+                  onDeleteConversation={onDeleteConversation}
+                  onBlockConversation={onBlockConversation}
+                  onUnblockConversation={onUnblockConversation}
+                  onReportConversation={onReportConversation}
+                />
+              </div>
             </div>
 
             {contentSummary ? (
@@ -228,6 +255,15 @@ export function ChatDetail({
             composer={composer}
             isSending={isSending}
             isUploading={isUploading}
+            disabledReason={
+              selectedConversation?.blockedByMe
+                ? "You blocked this user"
+                : selectedConversation?.blockedByOther
+                  ? "This conversation is blocked"
+                  : selectedConversation?.canSendMessages === false
+                    ? "Messaging unavailable"
+                    : null
+            }
             requireAuth={requireAuth}
             onChange={onComposerChange}
             onSendText={onSendText}

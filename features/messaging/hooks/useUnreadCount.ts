@@ -5,6 +5,7 @@ import { useQuery } from "@apollo/client/react";
 import { useAuthStore } from "@/stores/auth";
 import { useSocket } from "@/hooks/useSocket";
 import {
+  DirectConversationRemovedPayload,
   DirectConversationUpdatedPayload,
   DirectMessageCreatedPayload,
   WS_EVENTS,
@@ -38,6 +39,15 @@ export function useUnreadConversationCount(): number {
 
   useEffect(
     () => on<DirectConversationUpdatedPayload>(WS_EVENTS.DM_CONVERSATION_UPDATED, () => void refetch()),
+    [on, refetch],
+  );
+
+  useEffect(
+    () =>
+      on<DirectConversationRemovedPayload>(
+        WS_EVENTS.DM_CONVERSATION_REMOVED,
+        () => void refetch(),
+      ),
     [on, refetch],
   );
 

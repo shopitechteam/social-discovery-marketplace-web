@@ -55,6 +55,9 @@ export type Conversation = {
   otherParticipant?: UserLite | null;
   otherParticipantOnline?: boolean | null;
   otherParticipantLastSeenAt?: string | null;
+  blockedByMe?: boolean | null;
+  blockedByOther?: boolean | null;
+  canSendMessages?: boolean | null;
   content?: ContentLite | null;
 };
 

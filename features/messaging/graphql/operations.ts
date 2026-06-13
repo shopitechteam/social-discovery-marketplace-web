@@ -15,10 +15,13 @@ export const MY_DIRECT_CONVERSATIONS = gql`
       lastMessageSenderId
       lastMessageAt
       messageCount
-      myUnreadCount
-      otherParticipantOnline
-      otherParticipantLastSeenAt
-      otherParticipant {
+    myUnreadCount
+    otherParticipantOnline
+    otherParticipantLastSeenAt
+    blockedByMe
+    blockedByOther
+    canSendMessages
+    otherParticipant {
         id
         username
         profile {
@@ -70,6 +73,9 @@ export const DIRECT_CONVERSATION = gql`
       myUnreadCount
       otherParticipantOnline
       otherParticipantLastSeenAt
+      blockedByMe
+      blockedByOther
+      canSendMessages
       otherParticipant {
         id
         username
@@ -164,6 +170,9 @@ export const ENSURE_DIRECT_CONVERSATION = gql`
       contentId
       messageCount
       myUnreadCount
+      blockedByMe
+      blockedByOther
+      canSendMessages
       otherParticipant {
         id
         username
@@ -253,6 +262,128 @@ export const MARK_DIRECT_CONVERSATION_READ = gql`
   }
 `;
 
+export const DELETE_DIRECT_CONVERSATION = gql`
+  mutation DeleteDirectConversationInbox($conversationId: String!) {
+    deleteDirectConversation(conversationId: $conversationId)
+  }
+`;
+
+export const BLOCK_DIRECT_CONVERSATION = gql`
+  mutation BlockDirectConversationInbox($conversationId: String!) {
+    blockDirectConversation(conversationId: $conversationId) {
+      id
+      contentId
+      lastMessageId
+      lastMessageText
+      lastMessageType
+      lastMessageSenderId
+      lastMessageAt
+      messageCount
+      myUnreadCount
+      blockedByMe
+      blockedByOther
+      canSendMessages
+      otherParticipantOnline
+      otherParticipantLastSeenAt
+      otherParticipant {
+        id
+        username
+        profile {
+          firstName
+          lastName
+          avatar
+        }
+      }
+      content {
+        id
+        title
+        price {
+          amount
+          currency
+        }
+        location {
+          placeName
+          county
+          subregion
+        }
+        media {
+          thumbnailUrl
+          imageUrl
+          muxMeta {
+            thumbnailUrl
+            playbackId
+          }
+          r2Variants {
+            url
+            variant
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const UNBLOCK_DIRECT_CONVERSATION = gql`
+  mutation UnblockDirectConversationInbox($conversationId: String!) {
+    unblockDirectConversation(conversationId: $conversationId) {
+      id
+      contentId
+      lastMessageId
+      lastMessageText
+      lastMessageType
+      lastMessageSenderId
+      lastMessageAt
+      messageCount
+      myUnreadCount
+      blockedByMe
+      blockedByOther
+      canSendMessages
+      otherParticipantOnline
+      otherParticipantLastSeenAt
+      otherParticipant {
+        id
+        username
+        profile {
+          firstName
+          lastName
+          avatar
+        }
+      }
+      content {
+        id
+        title
+        price {
+          amount
+          currency
+        }
+        location {
+          placeName
+          county
+          subregion
+        }
+        media {
+          thumbnailUrl
+          imageUrl
+          muxMeta {
+            thumbnailUrl
+            playbackId
+          }
+          r2Variants {
+            url
+            variant
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const REPORT_DIRECT_CONVERSATION = gql`
+  mutation ReportDirectConversationInbox($input: ReportDirectConversationInput!) {
+    reportDirectConversation(input: $input)
+  }
+`;
+
 export const REQUEST_IMAGE_UPLOAD = gql`
   mutation RequestImageUploadInbox($mimeType: String) {
     requestImageUpload(mimeType: $mimeType) {
@@ -286,5 +417,33 @@ export const NOTIFY_VIDEO_UPLOADED = gql`
       id
       status
     }
+  }
+`;
+
+export const MY_WEB_PUSH_STATUS = gql`
+  query MyWebPushStatusInbox {
+    myWebPushStatus {
+      isAvailable
+      isEnabled
+      activeSubscriptionCount
+      publicKey
+    }
+  }
+`;
+
+export const SAVE_WEB_PUSH_SUBSCRIPTION = gql`
+  mutation SaveWebPushSubscriptionInbox($input: SaveWebPushSubscriptionInput!) {
+    saveWebPushSubscription(input: $input) {
+      isAvailable
+      isEnabled
+      activeSubscriptionCount
+      publicKey
+    }
+  }
+`;
+
+export const REMOVE_WEB_PUSH_SUBSCRIPTION = gql`
+  mutation RemoveWebPushSubscriptionInbox($endpoint: String!) {
+    removeWebPushSubscription(endpoint: $endpoint)
   }
 `;

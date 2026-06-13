@@ -136,11 +136,21 @@ export function upsertConversation(
     lastMessageSenderId: payload.lastMessageSenderId,
     lastMessageAt: payload.lastMessageAt,
     myUnreadCount: payload.myUnreadCount,
+    blockedByMe: payload.blockedByMe ?? items[index].blockedByMe,
+    blockedByOther: payload.blockedByOther ?? items[index].blockedByOther,
+    canSendMessages: payload.canSendMessages ?? items[index].canSendMessages,
   };
 
   const next = [...items];
   next.splice(index, 1);
   return [updated, ...next];
+}
+
+export function removeConversation(
+  items: Conversation[],
+  conversationId: string,
+): Conversation[] {
+  return items.filter((conversation) => conversation.id !== conversationId);
 }
 
 export function upsertMessage(messages: Message[], incoming: Message): Message[] {

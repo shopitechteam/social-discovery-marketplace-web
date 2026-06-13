@@ -1,6 +1,7 @@
 "use client";
 
 import { useInbox } from "../hooks/useInbox";
+import { usePushNotifications } from "../hooks/usePushNotifications";
 import { ConversationList } from "./ConversationList";
 import { ChatDetail } from "./ChatDetail";
 
@@ -11,6 +12,7 @@ import { ChatDetail } from "./ChatDetail";
  */
 export function InboxScreen({ lang }: { lang: string }) {
   const inbox = useInbox(lang);
+  const pushNotifications = usePushNotifications(lang);
 
   // When a conversation is open the bottom nav is hidden, so the chat should use
   // the full viewport with no nav padding. On the list view keep the nav gap so
@@ -25,6 +27,13 @@ export function InboxScreen({ lang }: { lang: string }) {
         conversationsLoading={inbox.conversationsLoading}
         ensuringConversation={inbox.ensuringConversation}
         unreadThreads={inbox.unreadThreads}
+        pushSupported={pushNotifications.isSupported}
+        pushAvailable={pushNotifications.isAvailable}
+        pushEnabled={pushNotifications.isEnabled}
+        pushUpdating={pushNotifications.isUpdating}
+        onTogglePush={() => {
+          void pushNotifications.toggle();
+        }}
         onSelect={inbox.navigateToConversation}
       />
 
@@ -42,6 +51,7 @@ export function InboxScreen({ lang }: { lang: string }) {
         composer={inbox.composer}
         isSending={inbox.isSending}
         isUploading={inbox.isUploading}
+        isConversationActionPending={inbox.isConversationActionPending}
         requireAuth={inbox.requireAuth}
         onBack={inbox.handleBack}
         onComposerChange={inbox.handleComposerChange}
@@ -50,6 +60,10 @@ export function InboxScreen({ lang }: { lang: string }) {
         onRetryMessage={inbox.retryMessage}
         onDiscardMessage={inbox.discardMessage}
         onLoadOlder={inbox.loadOlderMessages}
+        onDeleteConversation={inbox.deleteSelectedConversation}
+        onBlockConversation={inbox.blockSelectedConversation}
+        onUnblockConversation={inbox.unblockSelectedConversation}
+        onReportConversation={inbox.reportSelectedConversation}
       />
     </div>
   );

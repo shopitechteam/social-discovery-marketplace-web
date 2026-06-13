@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Loader2, MessageCircle } from "lucide-react";
+import { Bell, BellOff, Loader2, MessageCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Conversation } from "../types";
 import {
@@ -19,6 +19,11 @@ interface Props {
   conversationsLoading: boolean;
   ensuringConversation: boolean;
   unreadThreads: number;
+  pushSupported: boolean;
+  pushAvailable: boolean;
+  pushEnabled: boolean;
+  pushUpdating: boolean;
+  onTogglePush: () => void;
   onSelect: (conversationId: string) => void;
 }
 
@@ -29,6 +34,11 @@ export function ConversationList({
   conversationsLoading,
   ensuringConversation,
   unreadThreads,
+  pushSupported,
+  pushAvailable,
+  pushEnabled,
+  pushUpdating,
+  onTogglePush,
   onSelect,
 }: Props) {
   return (
@@ -56,9 +66,36 @@ export function ConversationList({
                 : "Your conversations with sellers and buyers"}
             </p>
           </div>
-          {(conversationsLoading || ensuringConversation) && (
-            <Loader2 className="animate-spin text-muted" size={18} />
-          )}
+          <div className="flex items-center gap-2">
+            {pushSupported ? (
+              <button
+                type="button"
+                onClick={onTogglePush}
+                className="flex h-9 w-9 items-center justify-center rounded-full border"
+                style={{ borderColor: "rgb(var(--color-border))" }}
+                aria-label={pushEnabled ? "Disable message alerts" : "Enable message alerts"}
+                title={
+                  pushAvailable
+                    ? pushEnabled
+                      ? "Disable message alerts"
+                      : "Enable message alerts"
+                    : "Push alerts are not configured yet"
+                }
+              >
+                {pushUpdating ? (
+                  <Loader2 className="animate-spin text-muted" size={16} />
+                ) : pushEnabled ? (
+                  <Bell size={16} />
+                ) : (
+                  <BellOff size={16} className="text-muted" />
+                )}
+              </button>
+            ) : null}
+
+            {(conversationsLoading || ensuringConversation) && (
+              <Loader2 className="animate-spin text-muted" size={18} />
+            )}
+          </div>
         </div>
       </div>
 
