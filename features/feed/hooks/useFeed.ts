@@ -19,8 +19,8 @@ export function useForYouFeed() {
     ForYouFeedDocument,
     {
       variables: { limit: PAGE_SIZE },
-      // fetchPolicy: "cache-and-network",
-      //nextFetchPolicy: "cache-first",
+      fetchPolicy: "cache-and-network",
+      nextFetchPolicy: "cache-first",
     },
   );
 
