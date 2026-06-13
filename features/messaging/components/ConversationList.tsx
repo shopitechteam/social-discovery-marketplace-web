@@ -52,7 +52,7 @@ export function ConversationList({
         className="border-b px-4 py-4"
         style={{ borderColor: "rgb(var(--color-border))" }}
       >
-        <div className="flex items-center justify-between">
+        <div className="flex sticky top-0 left-0 right-0 items-center justify-between">
           <div>
             <h1
               className="font-semibold"
@@ -63,7 +63,7 @@ export function ConversationList({
             <p className="text-muted" style={{ fontSize: "var(--text-sm)" }}>
               {unreadThreads > 0
                 ? `${unreadThreads} unread thread${unreadThreads === 1 ? "" : "s"}`
-                : "Your conversations with sellers and buyers"}
+                : "Your conversations"}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -73,7 +73,11 @@ export function ConversationList({
                 onClick={onTogglePush}
                 className="flex h-9 w-9 items-center justify-center rounded-full border"
                 style={{ borderColor: "rgb(var(--color-border))" }}
-                aria-label={pushEnabled ? "Disable message alerts" : "Enable message alerts"}
+                aria-label={
+                  pushEnabled
+                    ? "Disable message alerts"
+                    : "Enable message alerts"
+                }
                 title={
                   pushAvailable
                     ? pushEnabled
@@ -99,7 +103,7 @@ export function ConversationList({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 pb-14 overflow-y-auto">
         {conversationsLoading && conversations.length === 0 ? (
           <div className="space-y-3 px-4 py-4">
             {Array.from({ length: 6 }).map((_, index) => (

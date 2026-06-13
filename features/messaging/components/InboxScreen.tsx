@@ -20,7 +20,7 @@ export function InboxScreen({ lang }: { lang: string }) {
   //const inConversation = Boolean(inbox.selectedConversationId);
 
   return (
-    <div className="mx-auto flex fixed top-0 left-0 right-0 bottom-0 w-full max-w-6xl flex-col md:grid md:min-h-[calc(100svh-var(--nav-height)-var(--safe-bottom))] md:grid-cols-[360px_minmax(0,1fr)]">
+    <div className="mx-auto flex fixed top-0 left-0 right-0 bottom-0 overflow-y-auto w-full max-w-6xl flex-col md:grid md:min-h-[calc(100svh-var(--nav-height)-var(--safe-bottom))] md:grid-cols-[360px_minmax(0,1fr)]">
       <ConversationList
         conversations={inbox.conversations}
         selectedConversationId={inbox.selectedConversationId}
