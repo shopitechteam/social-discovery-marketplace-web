@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
-  Compass,
   House,
   MessageCircle,
   Plus,
@@ -11,6 +10,7 @@ import {
   UserRound,
   type LucideIcon,
 } from "lucide-react";
+import { useUnreadConversationCount } from "@/features/messaging/hooks/useUnreadCount";
 
 type Tab = {
   key: string;
@@ -66,6 +66,7 @@ export function BottomNav({ lang = "en" }: { lang: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const convoId = searchParams.get("conversationId");
+  const unreadCount = useUnreadConversationCount();
 
   // Hide on the full create flow, content detail, and creator profile pages
   if (shouldHideBottomNav(pathname, convoId)) return null;
@@ -134,12 +135,29 @@ export function BottomNav({ lang = "en" }: { lang: string }) {
               }}
               aria-current={isActive ? "page" : undefined}
             >
-              <Icon
-                size={24}
-                strokeWidth={isActive ? 2.45 : 1.9}
-                fill={isActive ? "currentColor" : "none"}
-                fillOpacity={isActive ? 0.18 : 0}
-              />
+              <span className="relative">
+                <Icon
+                  size={24}
+                  strokeWidth={isActive ? 2.45 : 1.9}
+                  fill={isActive ? "currentColor" : "none"}
+                  fillOpacity={isActive ? 0.18 : 0}
+                />
+                {tab.key === "notifications" && unreadCount > 0 ? (
+                  <span
+                    className="absolute -right-2 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 font-bold text-white"
+                    style={{
+                      fontSize: "10px",
+                      lineHeight: 1,
+                      backgroundColor: "rgb(var(--brand-primary))",
+                      border: "1.5px solid rgb(var(--color-bg-elevated))",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.25)",
+                    }}
+                    aria-label={`${unreadCount} unread`}
+                  >
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                ) : null}
+              </span>
               <p
                 className="text-xs leading-6"
                 style={{

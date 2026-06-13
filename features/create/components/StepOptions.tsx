@@ -15,6 +15,7 @@ import {
 } from "@/types/__generated__/graphql";
 import type { VisibilityMode } from "@/types/__generated__/graphql";
 import { getMediaPreviewSrc } from "@/features/create/utils/mediaPreview";
+import { Celebration, SuccessBadge } from "./Celebration";
 
 const POST_TO_TIKTOK = gql`
   mutation PostToTiktokOptions($contentId: String!) {
@@ -257,65 +258,106 @@ export function StepOptions({ lang }: StepOptionsProps) {
   // ── Published success ──────────────────────────────────────────────────────
   if (published) {
     return (
-      <div className="flex flex-col h-full items-center justify-center gap-5 px-6 pb-16">
-        <div
-          className="w-20 h-20 rounded-full flex items-center justify-center"
-          style={{
-            background: "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)))",
-            boxShadow: "0 8px 32px rgb(var(--brand-primary) / 0.4)",
-          }}
-        >
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
-            <path d="M5 13l4 4L19 7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </div>
-        <div className="text-center">
-          <h2 className="font-bold mb-1" style={{ fontSize: "var(--text-xl)", color: "rgb(var(--color-text))" }}>
-            Published! 🎉
-          </h2>
-          <p style={{ fontSize: "var(--text-base)", color: "rgb(var(--color-text-muted))" }}>
-            Your post is live on the feed
-          </p>
-        </div>
+      <div className="h-full" style={{ backgroundColor: "rgb(var(--color-bg))" }}>
+        <Celebration>
+          <div className="flex flex-col items-center justify-center gap-5 px-6 text-center">
+            <SuccessBadge />
 
-        {tiktokReconnectNeeded && (
-          <div
-            className="w-full max-w-xs rounded-xl px-4 py-3 text-center"
-            style={{ backgroundColor: "rgb(var(--color-bg-subtle))", border: "1px solid rgb(var(--color-border))" }}
-          >
-            <p className="font-semibold text-sm mb-1" style={{ color: "rgb(var(--color-text))" }}>
-              TikTok cross-post needs reconnect
-            </p>
-            <p className="text-xs mb-3" style={{ color: "rgb(var(--color-text-muted))" }}>
-              Your TikTok connection needs the posting permission. Reconnect once and it will work automatically next time.
-            </p>
-            <button
-              onClick={async () => {
-                try {
-                  const { data: urlData } = await getTiktokConnectUrl({ variables: { returnUrl: undefined } });
-                  const url = urlData?.tiktokConnectUrl;
-                  if (url) window.open(url, "tiktok-connect", "width=520,height=680");
-                } catch {
-                  /* ignore */
-                }
-              }}
-              className="text-xs font-semibold px-4 py-2 rounded-full"
-              style={{ backgroundColor: "rgb(var(--brand-primary))", color: "white" }}
-            >
-              Reconnect TikTok
-            </button>
-            <button
-              onClick={() => {
-                reset();
-                router.push(`/${lang}/feed`);
-              }}
-              className="block mx-auto mt-2 text-xs font-medium"
-              style={{ color: "rgb(var(--color-text-muted))" }}
-            >
-              Go to feed
-            </button>
+            <div className="celebrate-text">
+              <h2
+                className="font-extrabold mb-1.5"
+                style={{ fontSize: "var(--text-2xl)", color: "rgb(var(--color-text))" }}
+              >
+                Posted! 🎉
+              </h2>
+              <p style={{ fontSize: "var(--text-base)", color: "rgb(var(--color-text-muted))" }}>
+                Your post is live on the feed
+              </p>
+            </div>
+
+            {!tiktokReconnectNeeded && (
+              <button
+                onClick={() => {
+                  reset();
+                  router.push(`/${lang}/feed`);
+                }}
+                className="celebrate-cta mt-1 h-11 rounded-full px-6 font-semibold active:scale-[0.97] transition-transform"
+                style={{
+                  backgroundColor: "rgb(var(--brand-primary))",
+                  color: "white",
+                  fontSize: "var(--text-base)",
+                  boxShadow: "0 8px 24px rgb(var(--brand-primary) / 0.4)",
+                }}
+              >
+                View feed
+              </button>
+            )}
+
+            {tiktokReconnectNeeded && (
+              <div
+                className="celebrate-text w-full max-w-xs rounded-2xl px-4 py-4 text-center"
+                style={{
+                  backgroundColor: "rgb(var(--color-bg-elevated))",
+                  border: "1px solid rgb(var(--color-border))",
+                  boxShadow: "var(--shadow-sm)",
+                }}
+              >
+                <p className="font-semibold mb-1" style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text))" }}>
+                  TikTok cross-post needs reconnect
+                </p>
+                <p className="mb-3" style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}>
+                  Your TikTok connection needs the posting permission. Reconnect once and it will work automatically next time.
+                </p>
+                <button
+                  onClick={async () => {
+                    try {
+                      const { data: urlData } = await getTiktokConnectUrl({ variables: { returnUrl: undefined } });
+                      const url = urlData?.tiktokConnectUrl;
+                      if (url) window.open(url, "tiktok-connect", "width=520,height=680");
+                    } catch {
+                      /* ignore */
+                    }
+                  }}
+                  className="font-semibold px-4 py-2 rounded-full"
+                  style={{ fontSize: "var(--text-xs)", backgroundColor: "rgb(var(--brand-primary))", color: "white" }}
+                >
+                  Reconnect TikTok
+                </button>
+                <button
+                  onClick={() => {
+                    reset();
+                    router.push(`/${lang}/feed`);
+                  }}
+                  className="block mx-auto mt-2 font-medium"
+                  style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}
+                >
+                  Go to feed
+                </button>
+              </div>
+            )}
           </div>
-        )}
+
+          <style jsx>{`
+            .celebrate-text,
+            .celebrate-cta {
+              opacity: 0;
+              animation: celebrate-rise 0.5s ease-out 0.5s forwards;
+            }
+            .celebrate-cta {
+              animation-delay: 0.7s;
+            }
+            @keyframes celebrate-rise {
+              from {
+                opacity: 0;
+                transform: translateY(10px);
+              }
+              to {
+                opacity: 1;
+                transform: translateY(0);
+              }
+            }
+          `}</style>
+        </Celebration>
       </div>
     );
   }

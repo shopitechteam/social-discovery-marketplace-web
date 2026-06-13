@@ -1,0 +1,208 @@
+"use client";
+
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, MessageCircle } from "lucide-react";
+import type { Conversation, Message, UserLite } from "../types";
+import {
+  avatarGradient,
+  conversationThumb,
+  initialsForUser,
+  lastSeenLabel,
+  money,
+  participantName,
+} from "../lib/helpers";
+import { MessageList } from "./MessageList";
+import { Composer } from "./Composer";
+
+interface Props {
+  lang: string;
+  selectedConversationId: string | null;
+  selectedConversation: Conversation | null;
+  messages: Message[];
+  currentUserId?: string | null;
+  typingUserId: string | null;
+  conversationLoading: boolean;
+  messagesLoading: boolean;
+  loadingOlder: boolean;
+  hasMoreOlder: boolean;
+  composer: string;
+  isSending: boolean;
+  isUploading: boolean;
+  requireAuth: () => boolean;
+  onBack: () => void;
+  onComposerChange: (value: string) => void;
+  onSendText: () => void;
+  onPickMedia: (file: File, kind: "image" | "video") => void;
+  onRetryMessage: (message: Message) => void;
+  onDiscardMessage: (message: Message) => void;
+  onLoadOlder: () => Promise<number>;
+}
+
+/** Right-hand chat pane: header, listing summary, messages, typing, composer. */
+export function ChatDetail({
+  lang,
+  selectedConversationId,
+  selectedConversation,
+  messages,
+  currentUserId,
+  typingUserId,
+  conversationLoading,
+  messagesLoading,
+  loadingOlder,
+  hasMoreOlder,
+  composer,
+  isSending,
+  isUploading,
+  requireAuth,
+  onBack,
+  onComposerChange,
+  onSendText,
+  onPickMedia,
+  onRetryMessage,
+  onDiscardMessage,
+  onLoadOlder,
+}: Props) {
+  const router = useRouter();
+  const contentSummary = selectedConversation?.content;
+  const otherParticipant: UserLite | null | undefined = selectedConversation?.otherParticipant;
+
+  return (
+    <section
+      className={`flex h-[100svh] min-h-0 flex-col md:h-[calc(100svh-var(--nav-height)-var(--safe-bottom))] ${
+        selectedConversationId ? "flex" : "hidden md:flex"
+      }`}
+    >
+      {!selectedConversationId ? (
+        <div className="hidden h-full items-center justify-center md:flex">
+          <div className="max-w-sm space-y-2 text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <MessageCircle size={24} />
+            </div>
+            <h2 className="font-semibold" style={{ fontSize: "var(--text-lg)" }}>
+              Pick a conversation
+            </h2>
+            <p className="text-muted" style={{ fontSize: "var(--text-sm)" }}>
+              Open a thread to reply, share media, and see when the other person is online.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div
+            className="shrink-0 border-b px-4 pb-3"
+            style={{
+              borderColor: "rgb(var(--color-border))",
+              backgroundColor: "rgb(var(--color-bg))",
+              paddingTop: "calc(env(safe-area-inset-top) + 0.75rem)",
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <button type="button" onClick={onBack} className="md:hidden" aria-label="Back to inbox">
+                <ArrowLeft size={20} />
+              </button>
+
+              {otherParticipant?.profile?.avatar ? (
+                <div className="relative h-10 w-10 overflow-hidden rounded-full">
+                  <Image
+                    src={otherParticipant.profile.avatar}
+                    alt={participantName(otherParticipant)}
+                    fill
+                    className="object-cover"
+                    sizes="40px"
+                  />
+                </div>
+              ) : (
+                <div
+                  className={`flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br ${avatarGradient(
+                    otherParticipant?.id ?? "0",
+                  )} text-sm font-semibold text-white`}
+                >
+                  {initialsForUser(otherParticipant)}
+                </div>
+              )}
+
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-semibold" style={{ fontSize: "var(--text-base)" }}>
+                  {participantName(otherParticipant)}
+                </p>
+                <p className="truncate text-muted" style={{ fontSize: "var(--text-xs)" }}>
+                  {lastSeenLabel(selectedConversation)}
+                </p>
+              </div>
+
+              {contentSummary ? (
+                <button
+                  type="button"
+                  onClick={() => router.push(`/${lang}/content/${contentSummary.id}`)}
+                  className="rounded-full border px-3 py-1.5 text-xs font-semibold"
+                  style={{ borderColor: "rgb(var(--color-border))" }}
+                >
+                  View post
+                </button>
+              ) : null}
+            </div>
+
+            {contentSummary ? (
+              <div
+                className="mt-3 flex items-center gap-3 rounded-2xl border p-3"
+                style={{
+                  backgroundColor: "rgb(var(--color-bg-subtle))",
+                  borderColor: "rgb(var(--color-border))",
+                }}
+              >
+                <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-white">
+                  {conversationThumb(selectedConversation) ? (
+                    <Image
+                      src={conversationThumb(selectedConversation)!}
+                      alt={contentSummary.title}
+                      fill
+                      className="object-cover"
+                      sizes="56px"
+                    />
+                  ) : null}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold" style={{ fontSize: "var(--text-sm)" }}>
+                    {contentSummary.title}
+                  </p>
+                  <p className="truncate text-muted" style={{ fontSize: "var(--text-xs)" }}>
+                    {money(contentSummary.price?.amount, contentSummary.price?.currency)}
+                  </p>
+                  <p className="truncate text-muted" style={{ fontSize: "var(--text-xs)" }}>
+                    {contentSummary.location?.placeName ||
+                      contentSummary.location?.subregion ||
+                      contentSummary.location?.county}
+                  </p>
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          <MessageList
+            messages={messages}
+            currentUserId={currentUserId}
+            typingUserId={typingUserId}
+            otherParticipantId={otherParticipant?.id}
+            initialLoading={(conversationLoading || messagesLoading) && messages.length === 0}
+            loadingOlder={loadingOlder}
+            hasMoreOlder={hasMoreOlder}
+            onLoadOlder={onLoadOlder}
+            onRetryMessage={onRetryMessage}
+            onDiscardMessage={onDiscardMessage}
+          />
+
+          <Composer
+            composer={composer}
+            isSending={isSending}
+            isUploading={isUploading}
+            requireAuth={requireAuth}
+            onChange={onComposerChange}
+            onSendText={onSendText}
+            onPickMedia={onPickMedia}
+          />
+        </>
+      )}
+    </section>
+  );
+}
