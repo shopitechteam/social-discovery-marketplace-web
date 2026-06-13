@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Message } from "../types";
@@ -70,12 +77,19 @@ export function MessageList({
 
   // Build render items: interleave day separators between messages.
   const items = useMemo(() => {
-    const out: Array<{ type: "sep"; key: string; label: string } | { type: "msg"; message: Message }> = [];
+    const out: Array<
+      | { type: "sep"; key: string; label: string }
+      | { type: "msg"; message: Message }
+    > = [];
     let lastDay = "";
     for (const m of messages) {
       const key = dayKey(m.createdAt);
       if (key !== lastDay) {
-        out.push({ type: "sep", key: `sep-${key}`, label: dayLabel(m.createdAt) });
+        out.push({
+          type: "sep",
+          key: `sep-${key}`,
+          label: dayLabel(m.createdAt),
+        });
         lastDay = key;
       }
       out.push({ type: "msg", message: m });
@@ -168,12 +182,8 @@ export function MessageList({
   if (initialLoading && messages.length === 0) {
     return (
       <div className="flex-1 overflow-y-auto bg-[rgb(var(--color-bg-subtle)/0.35)] px-4 py-4">
-        <div className="space-y-3">
-          {Array.from({ length: 5 }).map((_, index) => (
-            <div key={index} className={`flex ${index % 2 === 0 ? "justify-start" : "justify-end"}`}>
-              <Skeleton className="h-16 w-48 rounded-2xl" />
-            </div>
-          ))}
+        <div className="flex h-[83vh] items-center justify-center">
+          <Loader2 size={40} className="animate-spin text-primary opacity-60" />
         </div>
       </div>
     );
@@ -221,7 +231,10 @@ export function MessageList({
               <MessageBubble
                 key={item.message.id}
                 message={item.message}
-                mine={Boolean(item.message.isMine ?? item.message.senderId === currentUserId)}
+                mine={Boolean(
+                  item.message.isMine ??
+                  item.message.senderId === currentUserId,
+                )}
                 onRetry={onRetryMessage}
                 onDiscard={onDiscardMessage}
               />

@@ -229,7 +229,7 @@ export function ConversationActionsDrawer({
                           : await onBlockConversation();
                   if (ok) close();
                 }}
-                className="rounded-full"
+                className="rounded-full text-white"
               >
                 {isPending ? <Loader2 className="animate-spin" /> : null}
                 {view === "report"
