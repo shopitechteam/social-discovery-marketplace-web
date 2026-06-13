@@ -187,7 +187,7 @@ export function ConversationList({
                     </div>
                   ) : (
                     <div
-                      className={`absolute -bottom-1 -left-1 flex h-6 w-6 items-center justify-center rounded-full border-2 bg-gradient-to-br ${avatarGradient(
+                      className={`absolute -bottom-2 -right-1 flex h-6 w-6 items-center justify-center rounded-full border-2 bg-gradient-to-br ${avatarGradient(
                         conversation.otherParticipant?.id ?? "0",
                       )} text-white`}
                       style={{
