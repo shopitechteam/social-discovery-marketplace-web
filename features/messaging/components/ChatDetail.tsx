@@ -70,7 +70,7 @@ export function ChatDetail({
 
   return (
     <section
-      className={`flex h-[100svh] min-h-0 flex-col md:h-[calc(100svh-var(--nav-height)-var(--safe-bottom))] ${
+      className={`flex h-svh min-h-0 flex-col md:h-[calc(100svh-var(--nav-height)-var(--safe-bottom))] ${
         selectedConversationId ? "flex" : "hidden md:flex"
       }`}
     >
@@ -102,7 +102,7 @@ export function ChatDetail({
               paddingTop: "calc(env(safe-area-inset-top) + 0.75rem)",
             }}
           >
-            <div className="flex items-center sticky top-0 left-0 right-0 gap-3">
+            <div className="flex items-center fixed top-6 left-0 right-0 gap-3">
               <button
                 type="button"
                 onClick={onBack}
@@ -124,7 +124,7 @@ export function ChatDetail({
                 </div>
               ) : (
                 <div
-                  className={`flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br ${avatarGradient(
+                  className={`flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br ${avatarGradient(
                     otherParticipant?.id ?? "0",
                   )} text-sm font-semibold text-white`}
                 >
@@ -163,7 +163,7 @@ export function ChatDetail({
 
             {contentSummary ? (
               <div
-                className="mt-3 flex items-center gap-3 rounded-2xl border p-3"
+                className="mt-18 flex items-center gap-3 rounded-2xl border p-3"
                 style={{
                   backgroundColor: "rgb(var(--color-bg-subtle))",
                   borderColor: "rgb(var(--color-border))",
