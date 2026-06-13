@@ -65,7 +65,8 @@ export function ChatDetail({
 }: Props) {
   const router = useRouter();
   const contentSummary = selectedConversation?.content;
-  const otherParticipant: UserLite | null | undefined = selectedConversation?.otherParticipant;
+  const otherParticipant: UserLite | null | undefined =
+    selectedConversation?.otherParticipant;
 
   return (
     <section
@@ -79,11 +80,15 @@ export function ChatDetail({
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
               <MessageCircle size={24} />
             </div>
-            <h2 className="font-semibold" style={{ fontSize: "var(--text-lg)" }}>
+            <h2
+              className="font-semibold"
+              style={{ fontSize: "var(--text-lg)" }}
+            >
               Pick a conversation
             </h2>
             <p className="text-muted" style={{ fontSize: "var(--text-sm)" }}>
-              Open a thread to reply, share media, and see when the other person is online.
+              Open a thread to reply, share media, and see when the other person
+              is online.
             </p>
           </div>
         </div>
@@ -97,8 +102,13 @@ export function ChatDetail({
               paddingTop: "calc(env(safe-area-inset-top) + 0.75rem)",
             }}
           >
-            <div className="flex items-center gap-3">
-              <button type="button" onClick={onBack} className="md:hidden" aria-label="Back to inbox">
+            <div className="flex items-center sticky top-0 left-0 right-0 gap-3">
+              <button
+                type="button"
+                onClick={onBack}
+                className="md:hidden"
+                aria-label="Back to inbox"
+              >
                 <ArrowLeft size={20} />
               </button>
 
@@ -123,10 +133,16 @@ export function ChatDetail({
               )}
 
               <div className="min-w-0 flex-1">
-                <p className="truncate font-semibold" style={{ fontSize: "var(--text-base)" }}>
+                <p
+                  className="truncate font-semibold"
+                  style={{ fontSize: "var(--text-base)" }}
+                >
                   {participantName(otherParticipant)}
                 </p>
-                <p className="truncate text-muted" style={{ fontSize: "var(--text-xs)" }}>
+                <p
+                  className="truncate text-muted"
+                  style={{ fontSize: "var(--text-xs)" }}
+                >
                   {lastSeenLabel(selectedConversation)}
                 </p>
               </div>
@@ -134,7 +150,9 @@ export function ChatDetail({
               {contentSummary ? (
                 <button
                   type="button"
-                  onClick={() => router.push(`/${lang}/content/${contentSummary.id}`)}
+                  onClick={() =>
+                    router.push(`/${lang}/content/${contentSummary.id}`)
+                  }
                   className="rounded-full border px-3 py-1.5 text-xs font-semibold"
                   style={{ borderColor: "rgb(var(--color-border))" }}
                 >
@@ -163,13 +181,25 @@ export function ChatDetail({
                   ) : null}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-semibold" style={{ fontSize: "var(--text-sm)" }}>
+                  <p
+                    className="truncate font-semibold"
+                    style={{ fontSize: "var(--text-sm)" }}
+                  >
                     {contentSummary.title}
                   </p>
-                  <p className="truncate text-muted" style={{ fontSize: "var(--text-xs)" }}>
-                    {money(contentSummary.price?.amount, contentSummary.price?.currency)}
+                  <p
+                    className="truncate text-muted"
+                    style={{ fontSize: "var(--text-xs)" }}
+                  >
+                    {money(
+                      contentSummary.price?.amount,
+                      contentSummary.price?.currency,
+                    )}
                   </p>
-                  <p className="truncate text-muted" style={{ fontSize: "var(--text-xs)" }}>
+                  <p
+                    className="truncate text-muted"
+                    style={{ fontSize: "var(--text-xs)" }}
+                  >
                     {contentSummary.location?.placeName ||
                       contentSummary.location?.subregion ||
                       contentSummary.location?.county}
@@ -184,7 +214,9 @@ export function ChatDetail({
             currentUserId={currentUserId}
             typingUserId={typingUserId}
             otherParticipantId={otherParticipant?.id}
-            initialLoading={(conversationLoading || messagesLoading) && messages.length === 0}
+            initialLoading={
+              (conversationLoading || messagesLoading) && messages.length === 0
+            }
             loadingOlder={loadingOlder}
             hasMoreOlder={hasMoreOlder}
             onLoadOlder={onLoadOlder}
