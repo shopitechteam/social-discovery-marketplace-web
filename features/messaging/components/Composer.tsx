@@ -41,7 +41,7 @@ export function Composer({
           type="button"
           size="icon"
           variant="outline"
-          className="h-11 w-11 rounded-full"
+          className="h-9 w-9 rounded-full"
           onClick={() => {
             if (!requireAuth()) return;
             mediaInputRef.current?.click();
@@ -49,7 +49,7 @@ export function Composer({
           disabled={isUploading || isSending}
           aria-label="Attach photo or video"
         >
-          <Paperclip size={18} />
+          <Paperclip size={15} />
         </Button>
 
         <div className="flex-1">
@@ -57,7 +57,7 @@ export function Composer({
             value={composer}
             onChange={(event) => onChange(event.target.value)}
             placeholder="Message..."
-            className="h-11 rounded-full"
+            className="h-10 text-sm outline-none outline-0 focus:ring-1 focus:ring-gray-700 placeholder:text-sm rounded-full"
             onKeyDown={(event) => {
               if (event.key === "Enter" && !event.shiftKey) {
                 event.preventDefault();
@@ -70,14 +70,14 @@ export function Composer({
         <Button
           type="button"
           size="icon"
-          className="h-11 w-11 rounded-full"
+          className="h-9 w-9 rounded-full"
           onClick={onSendText}
           disabled={isSending || isUploading || !composer.trim()}
         >
           {isSending || isUploading ? (
-            <Loader2 size={18} className="animate-spin" />
+            <Send className="text-white disabled" size={18} />
           ) : (
-            <Send size={18} />
+            <Send className="text-white" size={18} />
           )}
         </Button>
       </div>

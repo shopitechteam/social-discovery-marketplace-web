@@ -1,11 +1,16 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 /**
  * useInbox — the messaging feature's stateful core. Holds all queries, socket
  * subscriptions, local thread state, and the send/upload/read handlers.
  *
- * Extracted from the original InboxScreen monolith with NO behavior change
- * (Phase 0 refactor). The component layer is now purely presentational.
+ * Fixes included:
+ * - Prevents stale Apollo/cache results from another conversation from clearing or polluting the active thread.
+ * - Resets thread-local state before applying fresh message data for a selected conversation.
+ * - Refetches messages after joining a socket room, so the UI catches up even if socket timing/cache misses happen.
+ * - Keeps socket conversation checks based on refs to avoid stale closures.
+ * - Preserves optimistic/socket/older-page messages while merging the latest query baseline.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -46,6 +51,16 @@ import {
   SEND_DIRECT_MESSAGE,
 } from "../graphql/operations";
 
+const PAGE_SIZE = 40;
+
+const sortMessagesChronologically = (items: Message[]) =>
+  [...items].sort(
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+  );
+
+const isOptimisticMessage = (message: Message) =>
+  message.id.startsWith("optimistic:");
+
 export function useInbox(lang: string) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -53,23 +68,42 @@ export function useInbox(lang: string) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated());
   const { requireAuth } = useAuthGuard(lang);
   const { on } = useSocket();
+  const apolloClient = useApolloClient();
 
-  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const [selectedConversationId, setSelectedConversationId] = useState<
+    string | null
+  >(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
+  const [activeConversation, setActiveConversation] =
+    useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [composer, setComposer] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [typingUserId, setTypingUserId] = useState<string | null>(null);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const [hasMoreOlder, setHasMoreOlder] = useState(true);
 
   const ensureKeyRef = useRef<string | null>(null);
   const readKeyRef = useRef<string | null>(null);
+  const selectedConversationIdRef = useRef<string | null>(null);
+  const activeConversationIdRef = useRef<string | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const typingPulseRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingFilesRef = useRef<
+    Map<string, { file: File; kind: "image" | "video"; text?: string }>
+  >(new Map());
 
   const contentIdParam = searchParams.get("contentId");
   const conversationIdParam = searchParams.get("conversationId");
+
+  useEffect(() => {
+    selectedConversationIdRef.current = selectedConversationId;
+  }, [selectedConversationId]);
+
+  useEffect(() => {
+    activeConversationIdRef.current = activeConversation?.id ?? null;
+  }, [activeConversation?.id]);
 
   const {
     data: conversationsData,
@@ -79,26 +113,36 @@ export function useInbox(lang: string) {
     variables: { limit: 40 },
     skip: !isAuthenticated,
     fetchPolicy: "cache-and-network",
+    nextFetchPolicy: "cache-first",
+    notifyOnNetworkStatusChange: true,
   });
 
-  const { data: unreadData } = useQuery(MY_UNREAD_CONVERSATION_COUNT, {
-    skip: !isAuthenticated,
-    fetchPolicy: "cache-and-network",
-  });
+  const { data: unreadData, refetch: refetchUnreadCount } = useQuery(
+    MY_UNREAD_CONVERSATION_COUNT,
+    {
+      skip: !isAuthenticated,
+      fetchPolicy: "cache-and-network",
+      nextFetchPolicy: "cache-first",
+      notifyOnNetworkStatusChange: true,
+    },
+  );
 
-  const { data: conversationData, loading: conversationLoading } = useQuery(DIRECT_CONVERSATION, {
-    variables: { conversationId: selectedConversationId ?? "" },
-    skip: !isAuthenticated || !selectedConversationId,
-    fetchPolicy: "cache-and-network",
-  });
+  const { data: conversationData, loading: conversationLoading } = useQuery(
+    DIRECT_CONVERSATION,
+    {
+      variables: { conversationId: selectedConversationId ?? "" },
+      skip: !isAuthenticated || !selectedConversationId,
+      fetchPolicy: "cache-and-network",
+      nextFetchPolicy: "cache-first",
+      notifyOnNetworkStatusChange: true,
+    },
+  );
 
-  const PAGE_SIZE = 40;
-  const apolloClient = useApolloClient();
-  const [loadingOlder, setLoadingOlder] = useState(false);
-  // hasMoreOlder is true until a fetch returns fewer than a full page.
-  const [hasMoreOlder, setHasMoreOlder] = useState(true);
-
-  const { data: messagesData, loading: messagesLoading } = useQuery(DIRECT_MESSAGES, {
+  const {
+    data: messagesData,
+    loading: messagesLoading,
+    refetch: refetchMessages,
+  } = useQuery(DIRECT_MESSAGES, {
     variables: {
       input: {
         conversationId: selectedConversationId ?? "",
@@ -107,11 +151,17 @@ export function useInbox(lang: string) {
     },
     skip: !isAuthenticated || !selectedConversationId,
     fetchPolicy: "cache-and-network",
+    nextFetchPolicy: "cache-first",
+    notifyOnNetworkStatusChange: true,
   });
 
-  const [ensureConversation, { loading: ensuringConversation }] = useMutation(ENSURE_DIRECT_CONVERSATION);
+  const [ensureConversation, { loading: ensuringConversation }] = useMutation(
+    ENSURE_DIRECT_CONVERSATION,
+  );
   const [sendDirectMessage] = useMutation(SEND_DIRECT_MESSAGE);
-  const [markDirectConversationRead] = useMutation(MARK_DIRECT_CONVERSATION_READ);
+  const [markDirectConversationRead] = useMutation(
+    MARK_DIRECT_CONVERSATION_READ,
+  );
   const [requestImageUpload] = useMutation(REQUEST_IMAGE_UPLOAD);
   const [notifyImageUploaded] = useMutation(NOTIFY_IMAGE_UPLOADED);
   const [requestVideoUpload] = useMutation(REQUEST_VIDEO_UPLOAD);
@@ -119,71 +169,138 @@ export function useInbox(lang: string) {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      // Local thread state is reset on logout so socket-driven UI does not leak across sessions.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setConversations([]);
       setActiveConversation(null);
       setMessages([]);
       setSelectedConversationId(null);
+      setTypingUserId(null);
+      readKeyRef.current = null;
+      ensureKeyRef.current = null;
       return;
     }
+
     if (conversationIdParam) {
       setSelectedConversationId(conversationIdParam);
     }
   }, [conversationIdParam, isAuthenticated]);
 
   useEffect(() => {
-    // Keep the local list in sync with the latest query baseline; socket events layer on top afterward.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setConversations(
-      ((conversationsData as { myDirectConversations?: Conversation[] } | undefined)
-        ?.myDirectConversations ?? []) as Conversation[],
-    );
+    const latest = ((
+      conversationsData as
+        | { myDirectConversations?: Conversation[] }
+        | undefined
+    )?.myDirectConversations ?? []) as Conversation[];
+
+    setConversations((prev) => {
+      if (latest.length === 0) return prev.length === 0 ? prev : [];
+
+      const byId = new Map<string, Conversation>();
+      for (const conversation of prev) byId.set(conversation.id, conversation);
+      for (const conversation of latest) {
+        byId.set(conversation.id, {
+          ...byId.get(conversation.id),
+          ...conversation,
+        });
+      }
+
+      return Array.from(byId.values()).sort(
+        (a, b) =>
+          new Date(b.lastMessageAt ?? b.updatedAt ?? 0).getTime() -
+          new Date(a.lastMessageAt ?? a.updatedAt ?? 0).getTime(),
+      );
+    });
   }, [conversationsData]);
 
   useEffect(() => {
-    const directConversation = (conversationData as { directConversation?: Conversation | null } | undefined)
-      ?.directConversation;
+    const directConversation = (
+      conversationData as
+        | { directConversation?: Conversation | null }
+        | undefined
+    )?.directConversation;
+
     if (!directConversation) return;
-    // Selected-thread detail is owned locally so presence and socket deltas can patch it immediately.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (directConversation.id !== selectedConversationIdRef.current) return;
+
     setActiveConversation(directConversation as Conversation);
     setConversations((prev) => {
-      const withoutCurrent = prev.filter((item) => item.id !== directConversation.id);
+      const withoutCurrent = prev.filter(
+        (item) => item.id !== directConversation.id,
+      );
       return [directConversation as Conversation, ...withoutCurrent];
     });
   }, [conversationData]);
 
   useEffect(() => {
-    const base =
-      ((messagesData as { directConversationMessages?: Message[] } | undefined)
-        ?.directConversationMessages ?? []) as Message[];
-    // The base query returns the most recent page. If it's a full page there may
-    // be older messages to lazy-load above.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setHasMoreOlder(base.length >= PAGE_SIZE);
-    // Merge the baseline with whatever we already hold (older pages we prepended,
-    // optimistic rows, socket-delivered messages) so a baseline refetch doesn't
-    // drop them. Dedupe by id, keep chronological order.
-    setMessages((prev) => {
-      if (prev.length === 0) return base;
-      const byId = new Map<string, Message>();
-      for (const m of prev) byId.set(m.id, m);
-      for (const m of base) byId.set(m.id, { ...byId.get(m.id), ...m });
-      return Array.from(byId.values()).sort(
-        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-      );
-    });
-  }, [messagesData]);
-
-  // Reset thread-local message state whenever the open conversation changes, so
-  // the per-conversation merge above never mixes two threads.
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMessages([]);
     setHasMoreOlder(true);
     setLoadingOlder(false);
+    setTypingUserId(null);
+    readKeyRef.current = null;
   }, [selectedConversationId]);
+
+  useEffect(() => {
+    if (!selectedConversationId) {
+      setMessages([]);
+      setHasMoreOlder(true);
+      return;
+    }
+
+    const rawBase = ((
+      messagesData as { directConversationMessages?: Message[] } | undefined
+    )?.directConversationMessages ?? []) as Message[];
+
+    // Apollo can briefly expose cached data for the previous variables.
+    // Ignore any response that is not for the active conversation.
+    const base = rawBase.filter(
+      (message) => message.conversationId === selectedConversationId,
+    );
+    if (rawBase.length > 0 && base.length === 0) return;
+    if (selectedConversationIdRef.current !== selectedConversationId) return;
+
+    setHasMoreOlder(base.length >= PAGE_SIZE);
+
+    setMessages((prev) => {
+      if (selectedConversationIdRef.current !== selectedConversationId)
+        return prev;
+
+      const sameThreadPrev = prev.filter(
+        (message) =>
+          message.conversationId === selectedConversationId ||
+          (isOptimisticMessage(message) &&
+            message.conversationId === selectedConversationId),
+      );
+
+      const byId = new Map<string, Message>();
+
+      for (const message of sameThreadPrev) {
+        byId.set(message.id, message);
+      }
+
+      for (const message of base) {
+        const optimisticMatch = message.clientMessageId
+          ? sameThreadPrev.find(
+              (existing) =>
+                existing.clientMessageId === message.clientMessageId,
+            )
+          : undefined;
+
+        if (optimisticMatch && optimisticMatch.id !== message.id) {
+          byId.delete(optimisticMatch.id);
+        }
+
+        byId.set(message.id, {
+          ...optimisticMatch,
+          ...byId.get(message.id),
+          ...message,
+          localPreviewUrl:
+            optimisticMatch?.localPreviewUrl ??
+            byId.get(message.id)?.localPreviewUrl,
+        });
+      }
+
+      return sortMessagesChronologically(Array.from(byId.values()));
+    });
+  }, [messagesData, selectedConversationId]);
 
   useEffect(() => {
     if (!contentIdParam || !isAuthenticated) return;
@@ -192,109 +309,161 @@ export function useInbox(lang: string) {
     ensureKeyRef.current = contentIdParam;
     ensureConversation({ variables: { input: { contentId: contentIdParam } } })
       .then((result) => {
-        const conversation = (result.data as { ensureDirectConversation?: Conversation } | undefined)
-          ?.ensureDirectConversation;
+        const conversation = (
+          result.data as { ensureDirectConversation?: Conversation } | undefined
+        )?.ensureDirectConversation;
         if (!conversation) return;
+
         setSelectedConversationId(conversation.id);
         setActiveConversation(conversation);
         setConversations((prev) => {
-          const withoutCurrent = prev.filter((item) => item.id !== conversation.id);
+          const withoutCurrent = prev.filter(
+            (item) => item.id !== conversation.id,
+          );
           return [conversation, ...withoutCurrent];
         });
-        router.replace(`/${lang}/notifications?conversationId=${conversation.id}`);
+        router.replace(
+          `/${lang}/notifications?conversationId=${conversation.id}`,
+        );
         void refetchConversations();
       })
       .catch((error) => {
         ensureKeyRef.current = null;
-        toast.error(error.message ?? "Could not open the conversation");
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Could not open the conversation",
+        );
       });
-  }, [contentIdParam, ensureConversation, isAuthenticated, lang, refetchConversations, router]);
+  }, [
+    contentIdParam,
+    ensureConversation,
+    isAuthenticated,
+    lang,
+    refetchConversations,
+    router,
+  ]);
 
   useEffect(() => {
     if (!selectedConversationId || !isAuthenticated) return;
+
     const socket = getSocket();
     socket.emit(WS_CLIENT_EVENTS.JOIN_CONVERSATION, selectedConversationId);
+
+    // Important: even when the network tab shows messages returned, Apollo/local
+    // state can miss the first paint because of cache-and-network + route changes.
+    // This explicit refetch makes the selected thread authoritative after join.
+    void refetchMessages?.({
+      input: {
+        conversationId: selectedConversationId,
+        limit: PAGE_SIZE,
+      },
+    });
+
     return () => {
       socket.emit(WS_CLIENT_EVENTS.LEAVE_CONVERSATION, selectedConversationId);
     };
-  }, [isAuthenticated, selectedConversationId]);
+  }, [isAuthenticated, refetchMessages, selectedConversationId]);
 
   useEffect(
     () =>
-      on<DirectMessageCreatedPayload>(WS_EVENTS.DM_MESSAGE_CREATED, (payload) => {
-        if (payload.conversationId === selectedConversationId) {
-          setMessages((prev) => upsertMessage(prev, fromSocketMessage(payload, currentUser?.id)));
-        }
-      }),
-    [currentUser?.id, on, selectedConversationId],
+      on<DirectMessageCreatedPayload>(
+        WS_EVENTS.DM_MESSAGE_CREATED,
+        (payload) => {
+          if (payload.conversationId !== selectedConversationIdRef.current)
+            return;
+
+          setMessages((prev) =>
+            upsertMessage(prev, fromSocketMessage(payload, currentUser?.id)),
+          );
+          void refetchConversations();
+          void refetchUnreadCount();
+        },
+      ),
+    [currentUser?.id, on, refetchConversations, refetchUnreadCount],
   );
 
   useEffect(
     () =>
-      on<DirectMessageUpdatedPayload>(WS_EVENTS.DM_MESSAGE_UPDATED, (payload) => {
-        if (payload.conversationId !== selectedConversationId) return;
-        setMessages((prev) => applyMessageUpdate(prev, payload));
-      }),
-    [on, selectedConversationId],
+      on<DirectMessageUpdatedPayload>(
+        WS_EVENTS.DM_MESSAGE_UPDATED,
+        (payload) => {
+          if (payload.conversationId !== selectedConversationIdRef.current)
+            return;
+          setMessages((prev) => applyMessageUpdate(prev, payload));
+        },
+      ),
+    [on],
   );
 
   useEffect(
     () =>
-      on<DirectConversationUpdatedPayload>(WS_EVENTS.DM_CONVERSATION_UPDATED, (payload) => {
-        setConversations((prev) => upsertConversation(prev, payload));
-        if (activeConversation?.id === payload.conversationId) {
+      on<DirectConversationUpdatedPayload>(
+        WS_EVENTS.DM_CONVERSATION_UPDATED,
+        (payload) => {
+          setConversations((prev) => upsertConversation(prev, payload));
+
+          if (activeConversationIdRef.current === payload.conversationId) {
+            setActiveConversation((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    lastMessageId: payload.lastMessageId,
+                    lastMessageText: payload.lastMessageText,
+                    lastMessageType: payload.lastMessageType,
+                    lastMessageSenderId: payload.lastMessageSenderId,
+                    lastMessageAt: payload.lastMessageAt,
+                    myUnreadCount: payload.myUnreadCount,
+                  }
+                : prev,
+            );
+          }
+
+          void refetchConversations();
+          void refetchUnreadCount();
+        },
+      ),
+    [on, refetchConversations, refetchUnreadCount],
+  );
+
+  useEffect(
+    () =>
+      on<DirectPresenceUpdatedPayload>(
+        WS_EVENTS.DM_PRESENCE_UPDATED,
+        (payload) => {
+          setConversations((prev) =>
+            prev.map((conversation) =>
+              conversation.otherParticipant?.id === payload.userId
+                ? {
+                    ...conversation,
+                    otherParticipantOnline: payload.isOnline,
+                    otherParticipantLastSeenAt:
+                      payload.lastSeenAt ??
+                      conversation.otherParticipantLastSeenAt,
+                  }
+                : conversation,
+            ),
+          );
           setActiveConversation((prev) =>
-            prev
+            prev?.otherParticipant?.id === payload.userId
               ? {
                   ...prev,
-                  lastMessageId: payload.lastMessageId,
-                  lastMessageText: payload.lastMessageText,
-                  lastMessageType: payload.lastMessageType,
-                  lastMessageSenderId: payload.lastMessageSenderId,
-                  lastMessageAt: payload.lastMessageAt,
-                  myUnreadCount: payload.myUnreadCount,
+                  otherParticipantOnline: payload.isOnline,
+                  otherParticipantLastSeenAt:
+                    payload.lastSeenAt ?? prev.otherParticipantLastSeenAt,
                 }
               : prev,
           );
-        }
-        if (!conversations.some((item) => item.id === payload.conversationId)) {
-          void refetchConversations();
-        }
-      }),
-    [activeConversation?.id, conversations, on, refetchConversations],
-  );
-
-  useEffect(
-    () =>
-      on<DirectPresenceUpdatedPayload>(WS_EVENTS.DM_PRESENCE_UPDATED, (payload) => {
-        setConversations((prev) =>
-          prev.map((conversation) =>
-            conversation.otherParticipant?.id === payload.userId
-              ? {
-                  ...conversation,
-                  otherParticipantOnline: payload.isOnline,
-                  otherParticipantLastSeenAt: payload.lastSeenAt ?? conversation.otherParticipantLastSeenAt,
-                }
-              : conversation,
-          ),
-        );
-        setActiveConversation((prev) =>
-          prev?.otherParticipant?.id === payload.userId
-            ? {
-                ...prev,
-                otherParticipantOnline: payload.isOnline,
-                otherParticipantLastSeenAt: payload.lastSeenAt ?? prev.otherParticipantLastSeenAt,
-              }
-            : prev,
-        );
-      }),
+        },
+      ),
     [on],
   );
 
   useEffect(
     () =>
       on<DirectTypingUpdatedPayload>(WS_EVENTS.DM_TYPING_UPDATED, (payload) => {
-        if (payload.conversationId !== selectedConversationId) return;
+        if (payload.conversationId !== selectedConversationIdRef.current)
+          return;
         if (payload.userId === currentUser?.id) return;
 
         if (!payload.isTyping) {
@@ -307,13 +476,32 @@ export function useInbox(lang: string) {
         if (typingPulseRef.current) clearTimeout(typingPulseRef.current);
         typingPulseRef.current = setTimeout(() => setTypingUserId(null), 1800);
       }),
-    [currentUser?.id, on, selectedConversationId],
+    [currentUser?.id, on],
   );
 
   useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      if (typingPulseRef.current) clearTimeout(typingPulseRef.current);
+
+      for (const message of messages) {
+        if (message.localPreviewUrl?.startsWith("blob:")) {
+          URL.revokeObjectURL(message.localPreviewUrl);
+        }
+      }
+    };
+  }, [messages]);
+
+  useEffect(() => {
     if (!selectedConversationId || messages.length === 0) return;
+
     const lastMessage = messages[messages.length - 1];
-    if (!lastMessage || lastMessage.senderId === currentUser?.id) return;
+    if (
+      !lastMessage ||
+      lastMessage.senderId === currentUser?.id ||
+      isOptimisticMessage(lastMessage)
+    )
+      return;
 
     const readKey = `${selectedConversationId}:${lastMessage.id}`;
     if (readKeyRef.current === readKey) return;
@@ -326,16 +514,28 @@ export function useInbox(lang: string) {
           upToMessageId: lastMessage.id,
         },
       },
-    }).catch(() => {
-      readKeyRef.current = null;
-    });
-  }, [currentUser?.id, markDirectConversationRead, messages, selectedConversationId]);
+    })
+      .then(() => {
+        void refetchUnreadCount();
+      })
+      .catch(() => {
+        readKeyRef.current = null;
+      });
+  }, [
+    currentUser?.id,
+    markDirectConversationRead,
+    messages,
+    refetchUnreadCount,
+    selectedConversationId,
+  ]);
 
   const selectedConversation = useMemo(
     () =>
-      activeConversation
-      ?? conversations.find((conversation) => conversation.id === selectedConversationId)
-      ?? null,
+      activeConversation ??
+      conversations.find(
+        (conversation) => conversation.id === selectedConversationId,
+      ) ??
+      null,
     [activeConversation, conversations, selectedConversationId],
   );
 
@@ -355,13 +555,16 @@ export function useInbox(lang: string) {
     setSelectedConversationId(null);
     setActiveConversation(null);
     setMessages([]);
+    setTypingUserId(null);
     router.replace(`/${lang}/notifications`);
   }, [lang, router]);
 
   const sendTypingPulse = useCallback(() => {
     if (!selectedConversationId) return;
+
     const socket = getSocket();
     socket.emit(WS_CLIENT_EVENTS.START_TYPING, selectedConversationId);
+
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     typingTimeoutRef.current = setTimeout(() => {
       socket.emit(WS_CLIENT_EVENTS.STOP_TYPING, selectedConversationId);
@@ -377,43 +580,43 @@ export function useInbox(lang: string) {
   );
 
   const handleSendText = useCallback(async () => {
-    if (!selectedConversationId || !composer.trim()) return;
+    const conversationId = selectedConversationIdRef.current;
+    const text = composer.trim();
+    if (!conversationId || !text) return;
+
     setIsSending(true);
+    const clientMessageId = crypto.randomUUID();
+
     try {
       const { data } = await sendDirectMessage({
         variables: {
           input: {
-            conversationId: selectedConversationId,
-            text: composer.trim(),
-            clientMessageId: crypto.randomUUID(),
+            conversationId,
+            text,
+            clientMessageId,
           },
         },
       });
 
-      const message = (data as { sendDirectMessage?: Message } | undefined)?.sendDirectMessage;
-      if (message) {
+      const message = (data as { sendDirectMessage?: Message } | undefined)
+        ?.sendDirectMessage;
+      if (
+        message &&
+        message.conversationId === selectedConversationIdRef.current
+      ) {
         setMessages((prev) => upsertMessage(prev, message));
         setComposer("");
+        void refetchConversations();
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Message failed to send");
+      toast.error(
+        error instanceof Error ? error.message : "Message failed to send",
+      );
     } finally {
       setIsSending(false);
     }
-  }, [composer, selectedConversationId, sendDirectMessage]);
+  }, [composer, refetchConversations, sendDirectMessage]);
 
-  // Hold the File for each optimistic media message so a failed upload can be
-  // retried without the user re-picking the file.
-  const pendingFilesRef = useRef<Map<string, { file: File; kind: "image" | "video"; text?: string }>>(
-    new Map(),
-  );
-
-  /**
-   * Runs the actual upload→notify→send for a media message that's already shown
-   * optimistically (keyed by clientMessageId). On success, upsertMessage swaps
-   * the optimistic row for the server message via clientMessageId. On failure,
-   * the optimistic row is flagged failed so the user can retry.
-   */
   const runMediaUpload = useCallback(
     async (
       clientMessageId: string,
@@ -424,42 +627,78 @@ export function useInbox(lang: string) {
     ) => {
       const markFailed = () =>
         setMessages((prev) =>
-          prev.map((m) => (m.clientMessageId === clientMessageId ? { ...m, pendingStatus: "failed" } : m)),
+          prev.map((message) =>
+            message.clientMessageId === clientMessageId
+              ? { ...message, pendingStatus: "failed" }
+              : message,
+          ),
         );
 
       setIsUploading(true);
+
       try {
         let mediaAssetId: string | undefined;
         let uploadUrl: string | undefined;
 
         if (kind === "image") {
-          const { data } = await requestImageUpload({ variables: { mimeType: file.type || "image/jpeg" } });
-          const r = (data as { requestImageUpload?: { mediaAssetId?: string; uploadUrl?: string } } | undefined)
-            ?.requestImageUpload;
-          mediaAssetId = r?.mediaAssetId;
-          uploadUrl = r?.uploadUrl;
+          const { data } = await requestImageUpload({
+            variables: { mimeType: file.type || "image/jpeg" },
+          });
+          const result = (
+            data as
+              | {
+                  requestImageUpload?: {
+                    mediaAssetId?: string;
+                    uploadUrl?: string;
+                  };
+                }
+              | undefined
+          )?.requestImageUpload;
+          mediaAssetId = result?.mediaAssetId;
+          uploadUrl = result?.uploadUrl;
         } else {
-          const { data } = await requestVideoUpload({ variables: { corsOrigin: window.location.origin } });
-          const r = (data as { requestVideoUpload?: { mediaAssetId?: string; uploadUrl?: string } } | undefined)
-            ?.requestVideoUpload;
-          mediaAssetId = r?.mediaAssetId;
-          uploadUrl = r?.uploadUrl;
+          const { data } = await requestVideoUpload({
+            variables: { corsOrigin: window.location.origin },
+          });
+          const result = (
+            data as
+              | {
+                  requestVideoUpload?: {
+                    mediaAssetId?: string;
+                    uploadUrl?: string;
+                  };
+                }
+              | undefined
+          )?.requestVideoUpload;
+          mediaAssetId = result?.mediaAssetId;
+          uploadUrl = result?.uploadUrl;
         }
-        if (!mediaAssetId || !uploadUrl) throw new Error("Could not start upload");
+
+        if (!mediaAssetId || !uploadUrl)
+          throw new Error("Could not start upload");
 
         const uploadResponse = await fetch(uploadUrl, {
           method: "PUT",
           body: file,
-          headers: { "Content-Type": file.type || (kind === "video" ? "video/mp4" : "image/jpeg") },
+          headers: {
+            "Content-Type":
+              file.type || (kind === "video" ? "video/mp4" : "image/jpeg"),
+          },
         });
-        if (!uploadResponse.ok) throw new Error(`Upload failed: ${uploadResponse.status}`);
 
-        // Flip the optimistic row from "uploading" to "sending" once bytes land.
+        if (!uploadResponse.ok)
+          throw new Error(`Upload failed: ${uploadResponse.status}`);
+
         setMessages((prev) =>
-          prev.map((m) => (m.clientMessageId === clientMessageId ? { ...m, pendingStatus: "sending" } : m)),
+          prev.map((message) =>
+            message.clientMessageId === clientMessageId
+              ? { ...message, pendingStatus: "sending" }
+              : message,
+          ),
         );
 
-        if (kind === "image") await notifyImageUploaded({ variables: { mediaAssetId } });
+        if (kind === "image")
+          await notifyImageUploaded({ variables: { mediaAssetId } });
         else await notifyVideoUploaded({ variables: { mediaAssetId } });
 
         const result = await sendDirectMessage({
@@ -467,22 +706,30 @@ export function useInbox(lang: string) {
             input: { conversationId, text, mediaAssetId, clientMessageId },
           },
         });
-        const message = (result.data as { sendDirectMessage?: Message } | undefined)?.sendDirectMessage;
+
+        const message = (
+          result.data as { sendDirectMessage?: Message } | undefined
+        )?.sendDirectMessage;
         if (message) {
-          // Carry the local preview onto the confirmed row so the image doesn't
-          // flicker to a spinner while the processed variant is still rendering.
           const preview = pendingFilesRef.current.get(clientMessageId);
-          setMessages((prev) =>
-            upsertMessage(prev, {
+
+          setMessages((prev) => {
+            const optimisticMessage = prev.find(
+              (item) => item.clientMessageId === clientMessageId,
+            );
+            return upsertMessage(prev, {
               ...message,
               clientMessageId,
               localPreviewUrl:
                 preview?.kind === "image"
-                  ? (prev.find((m) => m.clientMessageId === clientMessageId)?.localPreviewUrl ?? null)
-                  : null,
-            }),
-          );
+                  ? (optimisticMessage?.localPreviewUrl ?? null)
+                  : (optimisticMessage?.localPreviewUrl ?? null),
+              pendingStatus: undefined,
+            });
+          });
+
           pendingFilesRef.current.delete(clientMessageId);
+          void refetchConversations();
         }
       } catch (error) {
         markFailed();
@@ -491,22 +738,35 @@ export function useInbox(lang: string) {
         setIsUploading(false);
       }
     },
-    [notifyImageUploaded, notifyVideoUploaded, requestImageUpload, requestVideoUpload, sendDirectMessage],
+    [
+      notifyImageUploaded,
+      notifyVideoUploaded,
+      refetchConversations,
+      requestImageUpload,
+      requestVideoUpload,
+      sendDirectMessage,
+    ],
   );
 
   const uploadAndSendMedia = useCallback(
     async (file: File, kind: "image" | "video") => {
       const myId = currentUser?.id;
-      if (!selectedConversationId || !myId) return;
+      const conversationId = selectedConversationIdRef.current;
+      if (!conversationId || !myId) return;
+
       const textToSend = composer.trim() || undefined;
       const clientMessageId = crypto.randomUUID();
       const localPreviewUrl = URL.createObjectURL(file);
-      pendingFilesRef.current.set(clientMessageId, { file, kind, text: textToSend });
 
-      // Insert the optimistic message immediately so the user sees their media.
+      pendingFilesRef.current.set(clientMessageId, {
+        file,
+        kind,
+        text: textToSend,
+      });
+
       const optimistic: Message = {
         id: `optimistic:${clientMessageId}`,
-        conversationId: selectedConversationId,
+        conversationId,
         contentId: selectedConversation?.contentId ?? "",
         senderId: myId,
         recipientId: selectedConversation?.otherParticipant?.id ?? "",
@@ -522,81 +782,125 @@ export function useInbox(lang: string) {
           id: `optimistic-media:${clientMessageId}`,
           type: kind === "video" ? "VIDEO" : "IMAGE",
           status: "PENDING",
-          thumbnailUrl: kind === "video" ? localPreviewUrl : null,
+          thumbnailUrl: localPreviewUrl,
         },
       };
-      setMessages((prev) => [...prev, optimistic]);
+
+      setMessages((prev) => sortMessagesChronologically([...prev, optimistic]));
       setComposer("");
 
-      await runMediaUpload(clientMessageId, selectedConversationId, file, kind, textToSend);
+      await runMediaUpload(
+        clientMessageId,
+        conversationId,
+        file,
+        kind,
+        textToSend,
+      );
     },
-    [composer, currentUser?.id, runMediaUpload, selectedConversation?.contentId, selectedConversation?.otherParticipant?.id, selectedConversationId],
+    [
+      composer,
+      currentUser?.id,
+      runMediaUpload,
+      selectedConversation?.contentId,
+      selectedConversation?.otherParticipant?.id,
+    ],
   );
 
-  /** Retry a previously-failed optimistic media message. */
   const retryMessage = useCallback(
     async (message: Message) => {
-      const cid = message.clientMessageId;
-      if (!cid) return;
-      const pending = pendingFilesRef.current.get(cid);
+      const clientMessageId = message.clientMessageId;
+      if (!clientMessageId) return;
+
+      const pending = pendingFilesRef.current.get(clientMessageId);
       if (!pending) return;
+
       setMessages((prev) =>
-        prev.map((m) => (m.clientMessageId === cid ? { ...m, pendingStatus: "uploading" } : m)),
+        prev.map((item) =>
+          item.clientMessageId === clientMessageId
+            ? { ...item, pendingStatus: "uploading" }
+            : item,
+        ),
       );
-      await runMediaUpload(cid, message.conversationId, pending.file, pending.kind, pending.text);
+
+      await runMediaUpload(
+        clientMessageId,
+        message.conversationId,
+        pending.file,
+        pending.kind,
+        pending.text,
+      );
     },
     [runMediaUpload],
   );
 
-  /** Remove a failed optimistic message (discard). */
   const discardMessage = useCallback((message: Message) => {
-    const cid = message.clientMessageId;
-    setMessages((prev) => prev.filter((m) => m.id !== message.id));
-    if (cid) pendingFilesRef.current.delete(cid);
+    const clientMessageId = message.clientMessageId;
+
+    setMessages((prev) => prev.filter((item) => item.id !== message.id));
+
+    if (clientMessageId) {
+      const optimistic = pendingFilesRef.current.get(clientMessageId);
+      const previewUrl = message.localPreviewUrl;
+      if (optimistic && previewUrl?.startsWith("blob:"))
+        URL.revokeObjectURL(previewUrl);
+      pendingFilesRef.current.delete(clientMessageId);
+    }
   }, []);
 
-  /**
-   * Load the page of messages older than the ones currently shown, using the
-   * oldest loaded id as the `beforeId` cursor. Prepends (deduped). Returns the
-   * number of new messages so the UI can preserve scroll position.
-   */
   const loadOlderMessages = useCallback(async (): Promise<number> => {
-    if (!selectedConversationId || loadingOlder || !hasMoreOlder) return 0;
-    const oldest = messages[0];
-    if (!oldest || oldest.id.startsWith("optimistic:")) return 0;
+    const conversationId = selectedConversationIdRef.current;
+    if (!conversationId || loadingOlder || !hasMoreOlder) return 0;
+
+    const oldest = messages.find((message) => !isOptimisticMessage(message));
+    if (!oldest) return 0;
 
     setLoadingOlder(true);
+
     try {
       const { data } = await apolloClient.query({
         query: DIRECT_MESSAGES,
         variables: {
-          input: { conversationId: selectedConversationId, limit: PAGE_SIZE, beforeId: oldest.id },
+          input: { conversationId, limit: PAGE_SIZE, beforeId: oldest.id },
         },
         fetchPolicy: "network-only",
       });
-      const older = (data as { directConversationMessages?: Message[] } | undefined)
-        ?.directConversationMessages ?? [];
+
+      const olderRaw =
+        (data as { directConversationMessages?: Message[] } | undefined)
+          ?.directConversationMessages ?? [];
+      const older = olderRaw.filter(
+        (message) => message.conversationId === conversationId,
+      );
+
+      if (selectedConversationIdRef.current !== conversationId) return 0;
 
       setHasMoreOlder(older.length >= PAGE_SIZE);
       if (older.length === 0) return 0;
 
       let added = 0;
       setMessages((prev) => {
-        const ids = new Set(prev.map((m) => m.id));
-        const fresh = older.filter((m) => !ids.has(m.id));
+        if (selectedConversationIdRef.current !== conversationId) return prev;
+
+        const ids = new Set(prev.map((message) => message.id));
+        const fresh = older.filter((message) => !ids.has(message.id));
         added = fresh.length;
+
         if (fresh.length === 0) return prev;
-        return [...fresh, ...prev].sort(
-          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-        );
+        return sortMessagesChronologically([...fresh, ...prev]);
       });
+
       return added;
-    } catch {
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Could not load older messages",
+      );
       return 0;
     } finally {
       setLoadingOlder(false);
     }
-  }, [apolloClient, hasMoreOlder, loadingOlder, messages, selectedConversationId]);
+  }, [apolloClient, hasMoreOlder, loadingOlder, messages]);
 
   const handleContinue = useCallback(() => {
     if (!requireAuth()) return;

@@ -38,10 +38,16 @@ export function ConversationList({
       }`}
       style={{ borderColor: "rgb(var(--color-border))" }}
     >
-      <div className="border-b px-4 py-4" style={{ borderColor: "rgb(var(--color-border))" }}>
+      <div
+        className="border-b px-4 py-4"
+        style={{ borderColor: "rgb(var(--color-border))" }}
+      >
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="font-semibold" style={{ fontSize: "var(--text-xl)" }}>
+            <h1
+              className="font-semibold"
+              style={{ fontSize: "var(--text-xl)" }}
+            >
               Inbox
             </h1>
             <p className="text-muted" style={{ fontSize: "var(--text-sm)" }}>
@@ -62,10 +68,10 @@ export function ConversationList({
             {Array.from({ length: 6 }).map((_, index) => (
               <div key={index} className="flex gap-3">
                 <Skeleton className="h-14 w-14 rounded-2xl" />
-                <div className="flex-1 space-y-2 py-1">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-3 w-24" />
-                  <Skeleton className="h-3 w-40" />
+                <div className="flex-1 w-full space-y-2 py-1">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-3 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
                 </div>
               </div>
             ))}
@@ -76,11 +82,15 @@ export function ConversationList({
               <MessageCircle size={24} />
             </div>
             <div className="space-y-1">
-              <h2 className="font-semibold" style={{ fontSize: "var(--text-lg)" }}>
+              <h2
+                className="font-semibold"
+                style={{ fontSize: "var(--text-lg)" }}
+              >
                 No chats yet
               </h2>
               <p className="text-muted" style={{ fontSize: "var(--text-sm)" }}>
-                Tap Message on any post and the thread will appear here instantly.
+                Tap Message on any post and the thread will appear here
+                instantly.
               </p>
             </div>
           </div>
@@ -96,10 +106,12 @@ export function ConversationList({
                 className="flex w-full items-start gap-3 border-b px-4 py-3 text-left transition-colors"
                 style={{
                   borderColor: "rgb(var(--color-border) / 0.6)",
-                  backgroundColor: selected ? "rgb(var(--brand-primary) / 0.06)" : "transparent",
+                  backgroundColor: selected
+                    ? "rgb(var(--brand-primary) / 0.06)"
+                    : "transparent",
                 }}
               >
-                <div className="relative h-14 w-14 shrink-0">
+                <div className="relative h-12 w-12 shrink-0">
                   {/* Square post image */}
                   <div className="h-full w-full overflow-hidden rounded-2xl bg-surface">
                     {thumb ? (
@@ -121,16 +133,15 @@ export function ConversationList({
                   {/* Sender avatar overlaid bottom-left (WhatsApp-style) */}
                   {conversation.otherParticipant?.profile?.avatar ? (
                     <div
-                      className="absolute -bottom-1 -left-1 h-6 w-6 overflow-hidden rounded-full border-2"
+                      className="absolute -bottom-2 -right-1 h-7 w-7 overflow-hidden rounded-full border-2"
                       style={{ borderColor: "rgb(var(--color-bg))" }}
                     >
                       <Image
                         src={conversation.otherParticipant.profile.avatar}
                         alt={participantName(conversation.otherParticipant)}
-                        width={24}
-                        height={24}
+                        fill
                         className="h-full w-full object-cover"
-                        sizes="24px"
+                        sizes="40px"
                       />
                     </div>
                   ) : (
@@ -138,7 +149,11 @@ export function ConversationList({
                       className={`absolute -bottom-1 -left-1 flex h-6 w-6 items-center justify-center rounded-full border-2 bg-gradient-to-br ${avatarGradient(
                         conversation.otherParticipant?.id ?? "0",
                       )} text-white`}
-                      style={{ borderColor: "rgb(var(--color-bg))", fontSize: "9px", fontWeight: 700 }}
+                      style={{
+                        borderColor: "rgb(var(--color-bg))",
+                        fontSize: "9px",
+                        fontWeight: 700,
+                      }}
                     >
                       {initialsForUser(conversation.otherParticipant)}
                     </div>
@@ -147,14 +162,14 @@ export function ConversationList({
 
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="truncate font-semibold" style={{ fontSize: "var(--text-base)" }}>
+                    <p className="truncate font-semibold text-muted text-sm">
                       {participantName(conversation.otherParticipant)}
                     </p>
-                    <span className="shrink-0 text-muted" style={{ fontSize: "var(--text-xs)" }}>
+                    <span className="shrink-0 text-muted text-xs">
                       {shortTime(conversation.lastMessageAt)}
                     </span>
                   </div>
-                  <p className="truncate text-muted" style={{ fontSize: "var(--text-sm)" }}>
+                  <p className="truncate text-sm font-semibold">
                     {conversation.content?.title}
                   </p>
                   <div className="mt-1 flex items-center gap-2">
@@ -166,7 +181,10 @@ export function ConversationList({
                       }`}
                       style={{ fontSize: "var(--text-sm)" }}
                     >
-                      {previewLabel(conversation.lastMessageType, conversation.lastMessageText)}
+                      {previewLabel(
+                        conversation.lastMessageType,
+                        conversation.lastMessageText,
+                      )}
                     </p>
                     {conversation.otherParticipantOnline ? (
                       <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500" />
