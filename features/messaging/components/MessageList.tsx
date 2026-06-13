@@ -182,7 +182,7 @@ export function MessageList({
   if (initialLoading && messages.length === 0) {
     return (
       <div className="flex-1 overflow-y-auto bg-[rgb(var(--color-bg-subtle)/0.35)] px-4 py-4">
-        <div className="flex h-[83vh] items-center justify-center">
+        <div className="flex h-[60vh] items-center justify-center">
           <Loader2 size={40} className="animate-spin text-primary opacity-60" />
         </div>
       </div>
