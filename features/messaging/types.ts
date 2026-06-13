@@ -42,6 +42,7 @@ export type ContentLite = {
 };
 
 export type Conversation = {
+  updatedAt: string | null | undefined;
   id: string;
   contentId: string;
   lastMessageId?: string | null;

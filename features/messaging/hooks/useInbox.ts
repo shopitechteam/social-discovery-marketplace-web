@@ -1,18 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-/**
- * useInbox — the messaging feature's stateful core. Holds all queries, socket
- * subscriptions, local thread state, and the send/upload/read handlers.
- *
- * Fixes included:
- * - Prevents stale Apollo/cache results from another conversation from clearing or polluting the active thread.
- * - Resets thread-local state before applying fresh message data for a selected conversation.
- * - Refetches messages after joining a socket room, so the UI catches up even if socket timing/cache misses happen.
- * - Keeps socket conversation checks based on refs to avoid stale closures.
- * - Preserves optimistic/socket/older-page messages while merging the latest query baseline.
- */
-
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useApolloClient, useMutation, useQuery } from "@apollo/client/react";
