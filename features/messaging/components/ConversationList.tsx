@@ -43,9 +43,7 @@ export function ConversationList({
 }: Props) {
   return (
     <section
-      className={`flex flex-col border-r md:min-h-[calc(100svh-var(--nav-height)-var(--safe-bottom))] ${
-        selectedConversationId ? "hidden md:flex" : "flex"
-      }`}
+      className="flex flex-col"
       style={{ borderColor: "rgb(var(--color-border))" }}
     >
       <div

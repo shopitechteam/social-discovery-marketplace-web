@@ -91,7 +91,6 @@ export function useInbox(lang: string) {
   >(new Map());
 
   const contentIdParam = searchParams.get("contentId");
-  const conversationIdParam = searchParams.get("conversationId");
 
   useEffect(() => {
     selectedConversationIdRef.current = selectedConversationId;
@@ -176,13 +175,8 @@ export function useInbox(lang: string) {
       setTypingUserId(null);
       readKeyRef.current = null;
       ensureKeyRef.current = null;
-      return;
     }
-
-    if (conversationIdParam) {
-      setSelectedConversationId(conversationIdParam);
-    }
-  }, [conversationIdParam, isAuthenticated]);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     const latest = ((
@@ -303,7 +297,7 @@ export function useInbox(lang: string) {
   }, [messagesData, selectedConversationId]);
 
   useEffect(() => {
-    if (!contentIdParam || !isAuthenticated) return;
+    if (!contentIdParam) return;
     if (ensureKeyRef.current === contentIdParam) return;
 
     ensureKeyRef.current = contentIdParam;
@@ -322,9 +316,7 @@ export function useInbox(lang: string) {
           );
           return [conversation, ...withoutCurrent];
         });
-        router.replace(
-          `/${lang}/notifications?conversationId=${conversation.id}`,
-        );
+        router.replace(`/${lang}/notifications/${conversation.id}`);
         void refetchConversations();
       })
       .catch((error) => {
@@ -338,7 +330,6 @@ export function useInbox(lang: string) {
   }, [
     contentIdParam,
     ensureConversation,
-    isAuthenticated,
     lang,
     refetchConversations,
     router,
@@ -439,7 +430,7 @@ export function useInbox(lang: string) {
             setSelectedConversationId(null);
             setMessages([]);
             setTypingUserId(null);
-            router.replace(`/${lang}/notifications`);
+            router.push(`/${lang}/notifications`);
           }
           void refetchUnreadCount();
         },
@@ -567,9 +558,53 @@ export function useInbox(lang: string) {
   const navigateToConversation = useCallback(
     (conversationId: string) => {
       setSelectedConversationId(conversationId);
-      router.replace(`/${lang}/notifications?conversationId=${conversationId}`);
+      router.push(`/${lang}/notifications/${conversationId}`);
     },
     [lang, router],
+  );
+
+  /**
+   * Ensure (create-or-reuse) the conversation for a content/post, select it, and
+   * swap the URL to the real conversation id IN PLACE (history.replaceState — no
+   * Next navigation, so the chat screen doesn't remount or flicker). Used when
+   * opening a chat directly from a post's "Message" button.
+   */
+  const ensureConversationByContent = useCallback(
+    async (contentId: string) => {
+      if (ensureKeyRef.current === contentId) return;
+      ensureKeyRef.current = contentId;
+      try {
+        const result = await ensureConversation({
+          variables: { input: { contentId } },
+        });
+        const conversation = (
+          result.data as { ensureDirectConversation?: Conversation } | undefined
+        )?.ensureDirectConversation;
+        if (!conversation) return;
+
+        setSelectedConversationId(conversation.id);
+        setActiveConversation(conversation);
+        setConversations((prev) => {
+          const withoutCurrent = prev.filter((item) => item.id !== conversation.id);
+          return [conversation, ...withoutCurrent];
+        });
+        // Replace the URL without a navigation so we stay on the same chat screen.
+        if (typeof window !== "undefined") {
+          window.history.replaceState(
+            window.history.state,
+            "",
+            `/${lang}/notifications/${conversation.id}`,
+          );
+        }
+        void refetchConversations();
+      } catch (error) {
+        ensureKeyRef.current = null;
+        toast.error(
+          error instanceof Error ? error.message : "Could not open the conversation",
+        );
+      }
+    },
+    [ensureConversation, lang, refetchConversations],
   );
 
   const handleBack = useCallback(() => {
@@ -577,8 +612,8 @@ export function useInbox(lang: string) {
     setActiveConversation(null);
     setMessages([]);
     setTypingUserId(null);
-    router.replace(`/${lang}/notifications`);
-  }, [lang, router]);
+    router.back();
+  }, [router]);
 
   const sendTypingPulse = useCallback(() => {
     if (!selectedConversationId) return;
@@ -998,7 +1033,7 @@ export function useInbox(lang: string) {
       setSelectedConversationId(null);
       setMessages([]);
       setTypingUserId(null);
-      router.replace(`/${lang}/notifications`);
+      router.push(`/${lang}/notifications`);
       void refetchUnreadCount();
       toast.success("Conversation deleted");
       return true;
@@ -1149,6 +1184,7 @@ export function useInbox(lang: string) {
     hasMoreOlder,
     // actions
     navigateToConversation,
+    ensureConversationByContent,
     handleBack,
     handleComposerChange,
     handleSendText,

@@ -37,6 +37,27 @@ async function getRegistration(): Promise<ServiceWorkerRegistration> {
   return navigator.serviceWorker.register("/shopi-push-sw.js");
 }
 
+function uint8ToBase64Url(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+/**
+ * A subscription is bound to the VAPID key it was created with. If the server's
+ * current public key differs (e.g. keys were rotated/regenerated), pushes 403.
+ * Returns true when the existing subscription was made with `serverKey`.
+ */
+function subscriptionMatchesKey(
+  subscription: PushSubscription,
+  serverKey: string,
+): boolean {
+  const appKey = subscription.options?.applicationServerKey;
+  if (!appKey) return false;
+  return uint8ToBase64Url(appKey) === serverKey.replace(/=+$/, "");
+}
+
 export function usePushNotifications(lang: string) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated());
   const [permission, setPermission] = useState<PermissionState>(() =>
@@ -70,13 +91,22 @@ export function usePushNotifications(lang: string) {
   const isSupported = permission !== "unsupported";
   const isAvailable = Boolean(status?.isAvailable);
   const isEnabled = Boolean(status?.isEnabled);
+  const publicKey = status?.publicKey ?? null;
 
   const syncExistingSubscription = useCallback(async () => {
-    if (!browserSupportsPush() || !status?.publicKey) return false;
+    if (!browserSupportsPush() || !publicKey) return false;
 
     const registration = await getRegistration();
     const subscription = await registration.pushManager.getSubscription();
     if (!subscription) return false;
+
+    // A subscription made with an older/different VAPID key can never be
+    // delivered to (push service returns 403). Discard it so the user re-enables
+    // with the current key instead of silently staying broken.
+    if (!subscriptionMatchesKey(subscription, publicKey)) {
+      await subscription.unsubscribe().catch(() => {});
+      return false;
+    }
 
     const json = subscription.toJSON();
     const p256dh = json.keys?.p256dh;
@@ -96,7 +126,7 @@ export function usePushNotifications(lang: string) {
     });
     await refetch();
     return true;
-  }, [lang, refetch, saveSubscription, status?.publicKey]);
+  }, [lang, publicKey, refetch, saveSubscription]);
 
   useEffect(() => {
     if (
@@ -152,6 +182,12 @@ export function usePushNotifications(lang: string) {
 
       const registration = await getRegistration();
       let subscription = await registration.pushManager.getSubscription();
+      // If an existing subscription was created with a different VAPID key, drop
+      // it first — otherwise we'd re-save a subscription that 403s on send.
+      if (subscription && !subscriptionMatchesKey(subscription, status.publicKey)) {
+        await subscription.unsubscribe().catch(() => {});
+        subscription = null;
+      }
       if (!subscription) {
         subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,

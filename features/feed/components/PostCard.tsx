@@ -1134,7 +1134,10 @@ export function PostCard({ post, lang, priority }: Props) {
             onClick={(e) => {
               e.stopPropagation();
               if (!requireAuth({ contentId: post.id })) return;
-              router.push(`/${lang}/notifications?contentId=${post.id}`);
+              // Go straight to the full-screen chat. `source=content` tells the
+              // chat screen to ensure (create-or-reuse) the conversation in place,
+              // so we never flash the inbox list.
+              router.push(`/${lang}/notifications/${post.id}?source=content`);
             }}
             className="flex-1 bg-primary/90 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-xs font-semibold text-[#f1f1f1] transition-all active:scale-95"
           >
