@@ -1125,7 +1125,7 @@ export function PostCard({ post, lang, priority }: Props) {
           <span>
             {(post.stats?.shares ?? 0) > 0
               ? fmt(post.stats!.shares ?? 0)
-              : "Share"}
+              : "Share."}
           </span>
         </button>
 
