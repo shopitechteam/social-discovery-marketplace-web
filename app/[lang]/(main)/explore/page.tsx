@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { siteConfig } from "@/config/site";
+import { DiscoverPage } from "@/features/discover/components/DiscoverPage";
 
 export const metadata: Metadata = {
   title: siteConfig.routes.explore.title,
@@ -7,6 +8,9 @@ export const metadata: Metadata = {
   alternates: { canonical: `${siteConfig.url}${siteConfig.routes.explore.path}` },
 };
 
-export default function ExplorePage() {
-  return <div className="p-4">Explore</div>;
+type Props = { params: Promise<{ lang: string }> };
+
+export default async function ExplorePage({ params }: Props) {
+  const { lang } = await params;
+  return <DiscoverPage lang={lang} />;
 }

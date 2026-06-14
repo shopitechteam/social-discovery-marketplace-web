@@ -17,7 +17,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 const PAGE_SIZE = 20;
 
 function displayNameOf(v: VisitorFieldsFragment): string {
-  const name = [v.profile?.firstName, v.profile?.lastName].filter(Boolean).join(" ");
+  const name = [v.profile?.firstName, v.profile?.lastName]
+    .filter(Boolean)
+    .join(" ");
   return name || v.username || "User";
 }
 
@@ -60,7 +62,10 @@ function FollowerRow({
       className="flex items-center gap-3 px-4 py-2.5"
       style={{ borderColor: "rgb(var(--color-border))" }}
     >
-      <Link href={profileHref} className="flex min-w-0 flex-1 items-center gap-3">
+      <Link
+        href={profileHref}
+        className="flex min-w-0 flex-1 items-center gap-3"
+      >
         <div
           className="relative h-11 w-11 shrink-0 overflow-hidden rounded-full border"
           style={{
@@ -82,7 +87,10 @@ function FollowerRow({
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center">
-              <span className="select-none font-bold text-white" style={{ fontSize: "var(--text-sm)" }}>
+              <span
+                className="select-none font-bold text-white"
+                style={{ fontSize: "var(--text-sm)" }}
+              >
                 {initialsOf(user)}
               </span>
             </div>
@@ -92,14 +100,20 @@ function FollowerRow({
         <div className="min-w-0 flex-1">
           <p
             className="truncate font-semibold leading-tight"
-            style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text))" }}
+            style={{
+              fontSize: "var(--text-sm)",
+              color: "rgb(var(--color-text))",
+            }}
           >
             {name}
           </p>
           {user.username && (
             <p
               className="truncate leading-tight"
-              style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}
+              style={{
+                fontSize: "var(--text-xs)",
+                color: "rgb(var(--color-text-muted))",
+              }}
             >
               @{user.username}
             </p>
@@ -121,7 +135,9 @@ function FollowerRow({
               ? "rgb(var(--color-bg-elevated))"
               : "rgb(var(--brand-primary))",
             color: following ? "rgb(var(--color-text))" : "#fff",
-            border: following ? "1px solid rgb(var(--color-border-strong))" : "none",
+            border: following
+              ? "1px solid rgb(var(--color-border-strong))"
+              : "none",
           }}
         >
           {label}
@@ -151,11 +167,14 @@ interface Props {
 /** "Followers" — users who follow me. Paginated, infinite-scroll. Owner-only. */
 export function ProfileFollowersView({ lang }: Props) {
   const router = useRouter();
-  const { data, loading, networkStatus, fetchMore } = useQuery(MyFollowersDocument, {
-    variables: { limit: PAGE_SIZE },
-    notifyOnNetworkStatusChange: true,
-    fetchPolicy: "cache-and-network",
-  });
+  const { data, loading, networkStatus, fetchMore } = useQuery(
+    MyFollowersDocument,
+    {
+      variables: { limit: PAGE_SIZE },
+      notifyOnNetworkStatusChange: true,
+      fetchPolicy: "cache-and-network",
+    },
+  );
 
   const result = data?.myFollowers;
   const users = result?.users ?? [];
@@ -180,7 +199,10 @@ export function ProfileFollowersView({ lang }: Props) {
         return {
           myFollowers: {
             ...fetchMoreResult.myFollowers,
-            users: [...prev.myFollowers.users, ...fetchMoreResult.myFollowers.users],
+            users: [
+              ...prev.myFollowers.users,
+              ...fetchMoreResult.myFollowers.users,
+            ],
           },
         };
       },
@@ -205,7 +227,10 @@ export function ProfileFollowersView({ lang }: Props) {
   const initialLoading = loading && !data;
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "rgb(var(--color-bg))" }}>
+    <div
+      className="min-h-screen"
+      style={{ backgroundColor: "rgb(var(--color-bg))" }}
+    >
       {/* Header */}
       <div
         className="sticky top-0 z-20 flex items-center gap-3 border-b px-4 py-3"
@@ -227,14 +252,20 @@ export function ProfileFollowersView({ lang }: Props) {
         <div className="min-w-0">
           <h1
             className="font-bold leading-tight"
-            style={{ fontSize: "var(--text-base)", color: "rgb(var(--color-text))" }}
+            style={{
+              fontSize: "var(--text-base)",
+              color: "rgb(var(--color-text))",
+            }}
           >
             Followers
           </h1>
           {!initialLoading && (
             <p
               className="leading-tight"
-              style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}
+              style={{
+                fontSize: "var(--text-xs)",
+                color: "rgb(var(--color-text-muted))",
+              }}
             >
               {total} {total === 1 ? "follower" : "followers"}
             </p>
@@ -243,9 +274,12 @@ export function ProfileFollowersView({ lang }: Props) {
       </div>
 
       {/* List */}
-      <ul className="mx-auto w-full max-w-2xl divide-y" style={{ borderColor: "rgb(var(--color-border))" }}>
+      <ul
+        className="mx-auto w-full max-w-2xl divide-y"
+        style={{ borderColor: "rgb(var(--color-border))" }}
+      >
         {initialLoading
-          ? Array.from({ length: 8 }).map((_, i) => <RowSkeleton key={i} />)
+          ? Array.from({ length: 14 }).map((_, i) => <RowSkeleton key={i} />)
           : users.map((u) => (
               <FollowerRow
                 key={u.id}
@@ -261,13 +295,19 @@ export function ProfileFollowersView({ lang }: Props) {
         <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
           <p
             className="font-semibold"
-            style={{ fontSize: "var(--text-base)", color: "rgb(var(--color-text))" }}
+            style={{
+              fontSize: "var(--text-base)",
+              color: "rgb(var(--color-text))",
+            }}
           >
             No followers yet
           </p>
           <p
             className="mt-1"
-            style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text-muted))" }}
+            style={{
+              fontSize: "var(--text-sm)",
+              color: "rgb(var(--color-text-muted))",
+            }}
           >
             When people follow you, they&apos;ll show up here.
           </p>

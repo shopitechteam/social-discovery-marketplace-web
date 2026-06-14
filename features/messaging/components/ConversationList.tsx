@@ -104,7 +104,7 @@ export function ConversationList({
       <div className="flex-1 pb-14 overflow-y-auto">
         {conversationsLoading && conversations.length === 0 ? (
           <div className="space-y-3 px-4 py-4">
-            {Array.from({ length: 6 }).map((_, index) => (
+            {Array.from({ length: 12 }).map((_, index) => (
               <div key={index} className="flex gap-3">
                 <Skeleton className="h-14 w-14 rounded-2xl" />
                 <div className="flex-1 w-full space-y-2 py-1">

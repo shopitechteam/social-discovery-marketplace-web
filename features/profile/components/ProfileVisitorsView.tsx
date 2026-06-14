@@ -8,7 +8,7 @@ import { ArrowLeft } from "lucide-react";
 import { useQuery } from "@apollo/client/react";
 import {
   MyProfileVisitorsDocument,
-  type VisitorFieldsFragment
+  type VisitorFieldsFragment,
 } from "@/types/__generated__/graphql";
 import { useFollow } from "@/features/feed/hooks/useFollow";
 import { SHIMMER_AVATAR } from "@/lib/shimmer";
@@ -17,7 +17,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 const PAGE_SIZE = 20;
 
 function displayNameOf(v: VisitorFieldsFragment): string {
-  const name = [v.profile?.firstName, v.profile?.lastName].filter(Boolean).join(" ");
+  const name = [v.profile?.firstName, v.profile?.lastName]
+    .filter(Boolean)
+    .join(" ");
   return name || v.username || "User";
 }
 
@@ -32,7 +34,7 @@ function initialsOf(v: VisitorFieldsFragment): string {
 function VisitorRow({
   visitor,
   lang,
-  resolvingFollowState
+  resolvingFollowState,
 }: {
   visitor: VisitorFieldsFragment;
   lang: string;
@@ -43,7 +45,7 @@ function VisitorRow({
   const { following, toggle, loading } = useFollow({
     userId: visitor.id,
     initialFollowing: visitor.isFollowedByMe ?? false,
-    lang
+    lang,
   });
 
   const avatar = visitor.profile?.avatar;
@@ -62,14 +64,17 @@ function VisitorRow({
       className="flex items-center gap-3 px-4 py-2.5"
       style={{ borderColor: "rgb(var(--color-border))" }}
     >
-      <Link href={profileHref} className="flex min-w-0 flex-1 items-center gap-3">
+      <Link
+        href={profileHref}
+        className="flex min-w-0 flex-1 items-center gap-3"
+      >
         <div
           className="relative h-11 w-11 shrink-0 overflow-hidden rounded-full border"
           style={{
             background: avatar
               ? "rgb(var(--color-bg-subtle))"
               : "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)) 62%, rgb(var(--brand-accent)))",
-            borderColor: "rgb(var(--color-bg-elevated))"
+            borderColor: "rgb(var(--color-bg-elevated))",
           }}
         >
           {avatar ? (
@@ -84,7 +89,10 @@ function VisitorRow({
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center">
-              <span className="select-none font-bold text-white" style={{ fontSize: "var(--text-sm)" }}>
+              <span
+                className="select-none font-bold text-white"
+                style={{ fontSize: "var(--text-sm)" }}
+              >
                 {initialsOf(visitor)}
               </span>
             </div>
@@ -94,14 +102,20 @@ function VisitorRow({
         <div className="min-w-0 flex-1">
           <p
             className="truncate font-semibold leading-tight"
-            style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text))" }}
+            style={{
+              fontSize: "var(--text-sm)",
+              color: "rgb(var(--color-text))",
+            }}
           >
             {name}
           </p>
           {visitor.username && (
             <p
               className="truncate leading-tight"
-              style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}
+              style={{
+                fontSize: "var(--text-xs)",
+                color: "rgb(var(--color-text-muted))",
+              }}
             >
               @{visitor.username}
             </p>
@@ -117,11 +131,16 @@ function VisitorRow({
           onClick={toggle}
           disabled={loading}
           className="h-8 shrink-0 rounded-full px-4 font-semibold transition-opacity active:opacity-70 disabled:opacity-50"
-          style={{ fontSize: "var(--text-xs)", backgroundColor: following
+          style={{
+            fontSize: "var(--text-xs)",
+            backgroundColor: following
               ? "rgb(var(--color-bg-elevated))"
               : "rgb(var(--brand-primary))",
             color: following ? "rgb(var(--color-text))" : "#fff",
-            border: following ? "1px solid rgb(var(--color-border-strong))" : "none" }}
+            border: following
+              ? "1px solid rgb(var(--color-border-strong))"
+              : "none",
+          }}
         >
           {label}
         </button>
@@ -155,7 +174,7 @@ export function ProfileVisitorsView({ lang }: Props) {
     {
       variables: { limit: PAGE_SIZE },
       notifyOnNetworkStatusChange: true,
-      fetchPolicy: "cache-and-network"
+      fetchPolicy: "cache-and-network",
     },
   );
 
@@ -188,10 +207,10 @@ export function ProfileVisitorsView({ lang }: Props) {
             visitors: [
               ...prev.myProfileVisitors.visitors,
               ...fetchMoreResult.myProfileVisitors.visitors,
-            ]
-          }
+            ],
+          },
         };
-      }
+      },
     }).catch(() => {
       fetchingMore.current = false;
     });
@@ -213,14 +232,17 @@ export function ProfileVisitorsView({ lang }: Props) {
   const initialLoading = loading && !data;
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "rgb(var(--color-bg))" }}>
+    <div
+      className="min-h-screen"
+      style={{ backgroundColor: "rgb(var(--color-bg))" }}
+    >
       {/* Header */}
       <div
         className="sticky top-0 z-20 flex items-center gap-3 border-b px-4 py-3"
         style={{
           backgroundColor: "rgb(var(--color-bg) / 0.94)",
           borderColor: "rgb(var(--color-border))",
-          backdropFilter: "blur(8px)"
+          backdropFilter: "blur(8px)",
         }}
       >
         <button
@@ -235,14 +257,20 @@ export function ProfileVisitorsView({ lang }: Props) {
         <div className="min-w-0">
           <h1
             className="font-bold leading-tight"
-            style={{ fontSize: "var(--text-base)", color: "rgb(var(--color-text))" }}
+            style={{
+              fontSize: "var(--text-base)",
+              color: "rgb(var(--color-text))",
+            }}
           >
             Profile views
           </h1>
           {!initialLoading && (
             <p
               className="leading-tight"
-              style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}
+              style={{
+                fontSize: "var(--text-xs)",
+                color: "rgb(var(--color-text-muted))",
+              }}
             >
               {total} {total === 1 ? "viewer" : "viewers"}
             </p>
@@ -251,9 +279,12 @@ export function ProfileVisitorsView({ lang }: Props) {
       </div>
 
       {/* List */}
-      <ul className="mx-auto w-full max-w-2xl divide-y" style={{ borderColor: "rgb(var(--color-border))" }}>
+      <ul
+        className="mx-auto w-full max-w-2xl divide-y"
+        style={{ borderColor: "rgb(var(--color-border))" }}
+      >
         {initialLoading
-          ? Array.from({ length: 8 }).map((_, i) => <RowSkeleton key={i} />)
+          ? Array.from({ length: 14 }).map((_, i) => <RowSkeleton key={i} />)
           : visitors.map((v) => (
               <VisitorRow
                 key={v.id}
@@ -269,13 +300,19 @@ export function ProfileVisitorsView({ lang }: Props) {
         <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
           <p
             className="font-semibold"
-            style={{ fontSize: "var(--text-base)", color: "rgb(var(--color-text))" }}
+            style={{
+              fontSize: "var(--text-base)",
+              color: "rgb(var(--color-text))",
+            }}
           >
             No profile views yet
           </p>
           <p
             className="mt-1"
-            style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text-muted))" }}
+            style={{
+              fontSize: "var(--text-sm)",
+              color: "rgb(var(--color-text-muted))",
+            }}
           >
             When logged-in users view your profile, they&apos;ll show up here.
           </p>
