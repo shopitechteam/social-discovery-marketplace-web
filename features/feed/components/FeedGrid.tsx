@@ -41,11 +41,19 @@ export function FeedGrid({ lang }: Props) {
 
     scrollRestored.current = true;
 
-    // Retry until page is tall enough to scroll to the target position
+    // Abort restore the moment the user interacts — prevents snap-back on scroll
+    let cancelled = false;
+    const cancel = () => { cancelled = true; };
+    window.addEventListener("touchstart", cancel, { once: true, passive: true });
+    window.addEventListener("wheel", cancel, { once: true, passive: true });
+
     let attempts = 0;
     function tryScroll() {
+      if (cancelled) return;
       if (document.body.scrollHeight >= target || attempts > 20) {
         window.scrollTo({ top: target, behavior: "instant" });
+        window.removeEventListener("touchstart", cancel);
+        window.removeEventListener("wheel", cancel);
         return;
       }
       attempts++;

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import {
   ChartColumn,
+  FileEdit,
   LayoutGrid,
   LogOut,
   Palette,
@@ -27,12 +28,13 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProfileHeader } from "./ProfileHeader";
 import { PostsGrid } from "./PostsGrid";
+import { DraftsGrid } from "./DraftsGrid";
 import { AnalyticsPanel } from "./AnalyticsPanel";
 import { TiktokImportPanel } from "./TiktokImportPanel";
 import { LogoutButton } from "@/features/auth/components/LogoutButton";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
-type Tab = "posts" | "analytics" | "tiktok" | "settings";
+type Tab = "posts" | "drafts" | "analytics" | "tiktok" | "settings";
 
 interface Props {
   lang: string;
@@ -106,6 +108,7 @@ function ProfileSkeleton() {
 
 const tabConfig: { key: Tab; label: string; icon: TabIcon }[] = [
   { key: "posts", label: "Posts", icon: LayoutGrid },
+  { key: "drafts", label: "Drafts", icon: FileEdit },
   { key: "analytics", label: "Analytics", icon: ChartColumn },
   { key: "tiktok", label: "TikTok", icon: TikTokIcon },
   { key: "settings", label: "Settings", icon: Settings },
@@ -171,7 +174,7 @@ export function ProfileView({ lang }: Props) {
         }}
       >
         <div
-          className="mx-auto grid h-12 w-full max-w-6xl grid-cols-4 px-2 sm:px-6 lg:px-8"
+          className="mx-auto grid h-12 w-full max-w-6xl grid-cols-5 px-2 sm:px-6 lg:px-8"
           role="tablist"
           aria-label="Profile sections"
         >
@@ -217,6 +220,8 @@ export function ProfileView({ lang }: Props) {
           lang={lang}
         />
       )}
+
+      {tab === "drafts" && <DraftsGrid lang={lang} />}
 
       {tab === "analytics" && (
         <>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, KeyboardEvent } from "react";
+import { useEffect, useState, KeyboardEvent } from "react";
 import { useMutation } from "@apollo/client/react";
 import { useForm } from "react-hook-form";
 import Image from "next/image";
@@ -8,8 +8,10 @@ import { useCreateStore } from "@/stores/create";
 import {
   AutosaveDraftDocument,
   AdvanceDraftStepDocument,
+  ExtractDraftDetailsDocument,
 } from "@/types/__generated__/graphql";
 import { LocationPicker } from "./LocationPicker";
+import { SpecsEditor } from "./SpecsEditor";
 import {
   getMediaPreviewSrc,
   shouldUnoptimizeMedia,
@@ -29,6 +31,15 @@ function autosize(el: HTMLTextAreaElement | null) {
   el.style.height = `${el.scrollHeight}px`;
 }
 
+/** Focus the visible title textarea (there are mobile + desktop copies). */
+function focusTitle() {
+  const inputs = Array.from(
+    document.querySelectorAll<HTMLTextAreaElement>("textarea[data-title-input]"),
+  );
+  const visible = inputs.find((el) => el.offsetParent !== null) ?? inputs[0];
+  visible?.focus();
+}
+
 export function StepEdit({ onBack }: { onBack?: () => void }) {
   const {
     draftId,
@@ -38,12 +49,18 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
     price,
     currency,
     isFree,
+    specs,
+    isExtracting,
+    hasExtracted,
     location,
     mediaItems,
     setTitle,
     setCaption,
     setHashtags,
     setPrice,
+    setSpecs,
+    setIsExtracting,
+    setHasExtracted,
     setLocation,
     setStep,
     setError,
@@ -54,14 +71,19 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
   const [advanceStep, { loading: advancing }] = useMutation(
     AdvanceDraftStepDocument,
   );
+  const [extractDetails] = useMutation(ExtractDraftDetailsDocument);
 
   // ── Title (autosize textarea) ──────────────────────────────────────────────
   const [titleValue, setTitleValue] = useState(title);
   const [titleError, setTitleError] = useState<string | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
-  const titleRef = useRef<HTMLTextAreaElement>(null);
+  // Resize every rendered title textarea (mobile + desktop copies) whenever the
+  // value changes programmatically (e.g. AI auto-fill). Per-element so the hidden
+  // copy doesn't starve the visible one.
   useEffect(() => {
-    autosize(titleRef.current);
+    document
+      .querySelectorAll<HTMLTextAreaElement>("textarea[data-title-input]")
+      .forEach((el) => autosize(el));
   }, [titleValue]);
 
   // ── Tag chip input ─────────────────────────────────────────────────────────
@@ -95,11 +117,64 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
   );
 
   // ── Caption (react-hook-form) ──────────────────────────────────────────────
-  const { register, watch, handleSubmit } = useForm<EditFormValues>({
+  const { register, watch, handleSubmit, setValue } = useForm<EditFormValues>({
     defaultValues: { caption },
     mode: "onChange",
   });
   const watchCaption = watch("caption", caption);
+
+  // ── AI auto-fill: runs once when media is ready ────────────────────────────
+  // The "killer feature" — analyses the uploaded media (image, or video frames
+  // + voice-over) and fills title, description, price and specs. Whatever it
+  // returns is fully editable; the user can clear/override anything.
+  const allReady =
+    mediaItems.length > 0 && mediaItems.every((m) => m.status === "ready");
+
+  useEffect(() => {
+    if (!draftId || hasExtracted || isExtracting || !allReady) {
+      console.log("[AI-extract] effect skipped", {
+        draftId,
+        hasExtracted,
+        isExtracting,
+        allReady,
+        mediaStatuses: mediaItems.map((m) => m.status),
+      });
+      return;
+    }
+
+    console.log("[AI-extract] firing extraction mutation", { draftId });
+    setHasExtracted(true); // guard: never re-run for this draft
+    setIsExtracting(true);
+    extractDetails({ variables: { id: draftId } })
+      .then(({ data }) => {
+        console.log("[AI-extract] mutation response", { data });
+        const r = data?.extractDraftDetails;
+        if (!r) {
+          console.warn("[AI-extract] no result returned (data null)");
+          return;
+        }
+
+        // Only fill fields the user hasn't already typed into.
+        if (r.title && !titleValue.trim()) setTitleValue(r.title);
+        if (r.description && !watch("caption")?.trim()) {
+          setValue("caption", r.description);
+        }
+        if (r.price != null && !priceInput.trim()) {
+          setPriceInput(String(r.price));
+        }
+        const cleanSpecs = (r.specs ?? [])
+          .map((s) => ({ key: s.key, value: s.value }))
+          .filter((s) => s.key.trim() && s.value.trim());
+        if (cleanSpecs.length > 0 && specs.length === 0) {
+          setSpecs(cleanSpecs);
+        }
+      })
+      .catch((err) => {
+        console.error("[AI-extract] mutation error", err);
+      })
+      .finally(() => setIsExtracting(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allReady, draftId, hasExtracted]);
 
   // ── Debounced autosave ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -112,6 +187,11 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
             title: titleValue || undefined,
             caption: watch("caption") || undefined,
             hashtags: tags.length ? tags : undefined,
+            specs: specs.length
+              ? specs
+                  .filter((s) => s.key.trim() && s.value.trim())
+                  .map((s) => ({ key: s.key.trim(), value: s.value.trim() }))
+              : undefined,
             location: location
               ? {
                   placeName: location.placeName,
@@ -142,7 +222,7 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
     const trimmedTitle = titleValue.trim();
     if (!trimmedTitle) {
       setTitleError("Add a title before moving to settings.");
-      titleRef.current?.focus();
+      focusTitle();
       return;
     }
 
@@ -197,6 +277,9 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
             title: trimmedTitle,
             caption: values.caption,
             hashtags: tags,
+            specs: specs
+              .filter((s) => s.key.trim() && s.value.trim())
+              .map((s) => ({ key: s.key.trim(), value: s.value.trim() })),
             price: { amount: parsedPrice, currency, negotiable: false },
             location: location
               ? {
@@ -247,7 +330,7 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
       const message = err instanceof Error ? err.message : String(err);
       if (/title/i.test(message)) {
         setTitleError("Add a title before moving to settings.");
-        titleRef.current?.focus();
+        focusTitle();
         return;
       }
       setError(message);
@@ -266,16 +349,24 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
   const titleBlock = (
     <div className="flex-1 flex flex-col justify-start pt-1">
       <textarea
-        ref={titleRef}
+        // Callback ref sizes whichever copy (mobile/desktop) is actually
+        // visible. A shared useRef breaks here because the title is rendered in
+        // two places — the hidden copy has scrollHeight 0 and starves the other.
+        ref={(el) => {
+          autosize(el);
+        }}
         value={titleValue}
         onChange={(e) => {
           if (e.target.value.length <= MAX_TITLE) {
             setTitleValue(e.target.value);
             if (e.target.value.trim()) setTitleError(null);
           }
+          autosize(e.currentTarget);
         }}
+        onInput={(e) => autosize(e.currentTarget)}
         placeholder="Add a title…"
         rows={1}
+        data-title-input
         className="w-full bg-transparent outline-none resize-none placeholder:text-base font-semibold leading-snug"
         aria-invalid={!!titleError}
         style={{
@@ -312,15 +403,29 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
 
   const captionBlock = (
     <div>
-      <label
-        className="block mb-1.5 font-medium"
-        style={{
-          fontSize: "var(--text-sm)",
-          color: "rgb(var(--color-text-muted))",
-        }}
-      >
-        Detailed description (optional)
-      </label>
+      <div className="mb-1.5 flex items-center gap-2">
+        <label
+          className="font-medium"
+          style={{
+            fontSize: "var(--text-sm)",
+            color: "rgb(var(--color-text-muted))",
+          }}
+        >
+          Detailed description (optional)
+        </label>
+        {isExtracting && (
+          <span
+            className="inline-flex items-center gap-1"
+            style={{
+              fontSize: "var(--text-xs)",
+              color: "rgb(var(--brand-primary))",
+            }}
+          >
+            <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            Writing with AI…
+          </span>
+        )}
+      </div>
       <textarea
         {...register("caption", {
           maxLength: {
@@ -551,6 +656,10 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
     </div>
   );
 
+  const specsBlock = (
+    <SpecsEditor specs={specs} onChange={setSpecs} aiGenerated={hasExtracted} />
+  );
+
   const errorBlock = error ? (
     <div
       className="rounded-xl px-4 py-3"
@@ -699,8 +808,14 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
 
       {/* ── Right / mobile column — header + form ── */}
       <div className="flex flex-col flex-1 h-full min-h-0">
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 pt-4 pb-3 shrink-0">
+        {/* Header — sticky so it stays pinned while the form scrolls */}
+        <div
+          className="sticky top-0 z-20 flex items-center justify-between px-4 pt-4 pb-3 shrink-0 border-b"
+          style={{
+            backgroundColor: "rgb(var(--color-bg))",
+            borderColor: "rgb(var(--color-border))",
+          }}
+        >
           <button
             onClick={onBack}
             className="flex items-center gap-1"
@@ -858,6 +973,13 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
           <div className="mt-4">{priceBlock}</div>
 
           <Divider className="mt-4" />
+
+          {/* Specifications (AI-generated, editable) — hidden for now.
+              Remove `hidden` to re-enable once spec generation is turned on. */}
+          <div className="mt-4 hidden">{specsBlock}</div>
+          <div className="hidden">
+            <Divider className="mt-4" />
+          </div>
 
           {/* Location */}
           <div className="mt-4">{locationBlock}</div>

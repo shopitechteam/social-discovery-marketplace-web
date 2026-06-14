@@ -170,7 +170,6 @@ function VideoMedia({
       : null);
 
   const isLandscape = mux?.aspectRatio === "16:9";
-  const aspectRatio = isLandscape ? "16/9" : "9/16";
 
   const durationFmt = mux?.duration
     ? mux.duration >= 60
@@ -306,9 +305,7 @@ function VideoMedia({
       ref={containerRef}
       className="relative w-full bg-black overflow-hidden"
       style={{
-        aspectRatio,
-        minHeight: "40dvh",
-        maxHeight: "65dvh",
+        height: `min(${isLandscape ? "56.25vw" : "177.78vw"}, 53dvh)`,
       }}
     >
       {/* Thumbnail — fades out once video is playing */}
@@ -583,19 +580,17 @@ function ImageMedia({
 
   if (count === 1) {
     return (
-      <div
-        className="relative w-full overflow-hidden bg-black cursor-pointer"
-        style={{ height: GRID_H }}
-        onClick={nav}
-      >
-        <FeedImage
+      <div className="relative w-full cursor-pointer overflow-hidden" style={{ maxHeight: "53dvh" }} onClick={nav}>
+        <Image
           src={firstSrc}
           alt={post.title}
+          width={0}
+          height={0}
           sizes="100vw"
-          className="object-cover"
+          className="w-full h-auto"
           priority={priority}
           loading={priority ? "eager" : "lazy"}
-          blurDataURL={`data:image/svg+xml;base64,${toBase64(Shimmer(700, 700))}`}
+          placeholder={`data:image/svg+xml;base64,${toBase64(Shimmer(700, 700))}`}
         />
       </div>
     );

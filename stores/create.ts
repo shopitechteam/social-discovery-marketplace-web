@@ -20,6 +20,9 @@ export type MediaItem = {
   errorMessage?: string;
 };
 
+/** A product attribute (Make, Model, Condition, …) — AI-generated, user-editable. */
+export type Spec = { key: string; value: string };
+
 /** Location as returned by the LocationPicker — mirrors ContentLocationInput */
 export type DraftLocation = {
   placeName: string;           // e.g. "Madaraka Estate"
@@ -43,6 +46,11 @@ export type CreateFlowState = {
   price: number | null;
   currency: string;
   isFree: boolean;
+  specs: Spec[];
+  /** True while AI auto-fill is running after media processes. */
+  isExtracting: boolean;
+  /** True once AI auto-fill has run for this draft (so we don't re-run). */
+  hasExtracted: boolean;
   visibilityMode: "public" | "friends_only" | "private";
   allowDownload: boolean;
   hdEnabled: boolean;
@@ -66,6 +74,9 @@ type CreateFlowActions = {
   setHashtags: (tags: string[]) => void;
   setContentType: (type: "image" | "video" | null) => void;
   setPrice: (price: number | null, isFree: boolean) => void;
+  setSpecs: (specs: Spec[]) => void;
+  setIsExtracting: (v: boolean) => void;
+  setHasExtracted: (v: boolean) => void;
   setVisibilityMode: (mode: "public" | "friends_only" | "private") => void;
   setAllowDownload: (v: boolean) => void;
   setHdEnabled: (v: boolean) => void;
@@ -89,6 +100,9 @@ const DEFAULT_STATE: CreateFlowState = {
   price: null,
   currency: "KES",
   isFree: true,
+  specs: [],
+  isExtracting: false,
+  hasExtracted: false,
   visibilityMode: "public",
   allowDownload: false,
   hdEnabled: false,
@@ -106,7 +120,14 @@ export const useCreateStore = create<CreateFlowState & CreateFlowActions>()(
       ...DEFAULT_STATE,
 
       setStep: (step) => set({ step }),
-      setDraftId: (draftId) => set({ draftId }),
+      // Starting/switching a draft resets the one-shot AI auto-fill guard so the
+      // new draft gets its own extraction pass.
+      setDraftId: (draftId) =>
+        set((s) =>
+          s.draftId === draftId
+            ? { draftId }
+            : { draftId, hasExtracted: false, isExtracting: false },
+        ),
 
       addMediaItem: (item) =>
         set((s) => ({ mediaItems: [...s.mediaItems, item] })),
@@ -135,6 +156,9 @@ export const useCreateStore = create<CreateFlowState & CreateFlowActions>()(
       setHashtags: (hashtags) => set({ hashtags }),
       setContentType: (contentType) => set({ contentType }),
       setPrice: (price, isFree) => set({ price, isFree }),
+      setSpecs: (specs) => set({ specs }),
+      setIsExtracting: (isExtracting) => set({ isExtracting }),
+      setHasExtracted: (hasExtracted) => set({ hasExtracted }),
       setVisibilityMode: (visibilityMode) => set({ visibilityMode }),
       setAllowDownload: (allowDownload) => set({ allowDownload }),
       setHdEnabled: (hdEnabled) => set({ hdEnabled }),
@@ -162,6 +186,11 @@ export const useCreateStore = create<CreateFlowState & CreateFlowActions>()(
         price: s.price,
         currency: s.currency,
         isFree: s.isFree,
+        specs: s.specs,
+        // NOTE: hasExtracted/isExtracting are intentionally NOT persisted.
+        // Persisting hasExtracted made the AI auto-fill run only once per
+        // browser session (it stayed true across drafts), so later uploads
+        // silently never called the extraction mutation.
         visibilityMode: s.visibilityMode,
         allowDownload: s.allowDownload,
         hdEnabled: s.hdEnabled,

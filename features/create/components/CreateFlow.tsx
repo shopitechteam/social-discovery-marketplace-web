@@ -68,6 +68,7 @@ export function CreateFlow({ lang }: CreateFlowProps) {
     setHashtags,
     setContentType,
     setPrice,
+    setSpecs,
     setVisibilityMode,
     setAllowDownload,
     setHdEnabled,
@@ -164,6 +165,7 @@ export function CreateFlow({ lang }: CreateFlowProps) {
         setTitle(d.title ?? "");
         setCaption(d.caption ?? "");
         setHashtags(d.hashtags ?? []);
+        setSpecs((d.specs ?? []).map((s) => ({ key: s.key, value: s.value })));
         setVisibilityMode(
           (d.visibilityMode?.toLowerCase() as
             | "public"

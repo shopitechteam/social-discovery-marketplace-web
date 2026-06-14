@@ -15,10 +15,15 @@ fragment DraftFields on DraftContent {
   version
   sourceImportId
   importProvider
+  coverThumbnailUrl
   price {
     amount
     currency
     negotiable
+  }
+  specs {
+    key
+    value
   }
   location {
     placeName
@@ -155,5 +160,21 @@ query GetDraft($id: String!) {
 query MyDrafts($limit: Int, $afterId: String) {
   myDrafts(limit: $limit, afterId: $afterId) {
     ...DraftFields
+  }
+}
+
+mutation ExtractDraftDetails($id: String!) {
+  extractDraftDetails(id: $id) {
+    title
+    description
+    price
+    currency
+    specs {
+      key
+      value
+    }
+    level1
+    categoryId
+    usedTranscript
   }
 }
