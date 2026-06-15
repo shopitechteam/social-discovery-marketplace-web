@@ -70,10 +70,10 @@ export function UploadPickerPage({ lang }: { lang: string }) {
       setContentType(kind);
       // Start uploads in background — they run while user is on the media review step
       const list = Array.from(files).slice(0, kind === "video" ? 1 : 10);
-      for (const file of list) {
-        if (kind === "image") startImageUpload(file, did);
+      list.forEach((file, i) => {
+        if (kind === "image") startImageUpload(file, did, i);
         else startVideoUpload(file, did);
-      }
+      });
       // Skip media review — go straight to edit details (TikTok style)
       // Media thumbnail in StepEdit shows upload progress while user fills in details
       setStep("edit");

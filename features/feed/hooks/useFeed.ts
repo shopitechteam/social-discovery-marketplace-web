@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@apollo/client/react";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback } from "react";
 import {
   ForYouFeedDocument,
   FollowingFeedDocument,
@@ -11,55 +11,20 @@ import {
 
 const PAGE_SIZE = 10;
 
-// How long (ms) before a cached feed is considered stale and worth re-fetching.
-const STALE_MS = 3 * 60_000; // 3 minutes before background refresh
-
 export function useForYouFeed() {
-  const { data, loading, error, fetchMore, refetch } = useQuery(
-    ForYouFeedDocument,
-    {
-      variables: { limit: PAGE_SIZE },
-      fetchPolicy: "cache-and-network",
-      nextFetchPolicy: "cache-first",
-    },
-  );
-
-  // Background refresh only after STALE_MS — keeps back-nav instant with no flicker.
-  const lastFetchedAt = useRef<number>(0);
-  const hasMounted = useRef(false);
-  useEffect(() => {
-    if (hasMounted.current) {
-      const age = Date.now() - lastFetchedAt.current;
-      if (age > STALE_MS) {
-        lastFetchedAt.current = Date.now();
-        refetch({ limit: PAGE_SIZE });
-      }
-    } else {
-      lastFetchedAt.current = Date.now();
-    }
-    hasMounted.current = true;
-  }, [refetch]);
+  const { data, loading, error, fetchMore } = useQuery(ForYouFeedDocument, {
+    variables: { limit: PAGE_SIZE },
+    fetchPolicy: "cache-and-network",
+    notifyOnNetworkStatusChange: true,
+  });
 
   const items = data?.forYouFeed?.items ?? [];
   const pageInfo = data?.forYouFeed?.pageInfo;
 
   const loadMore = useCallback(() => {
     if (!pageInfo?.hasNextPage || !pageInfo.endCursor) return;
-    fetchMore({
-      variables: { limit: PAGE_SIZE, after: pageInfo.endCursor },
-      updateQuery(prev, { fetchMoreResult }) {
-        if (!fetchMoreResult) return prev;
-        return {
-          forYouFeed: {
-            ...fetchMoreResult.forYouFeed,
-            items: [
-              ...(prev.forYouFeed?.items ?? []),
-              ...fetchMoreResult.forYouFeed.items,
-            ],
-          },
-        };
-      },
-    });
+    // The cache `merge` policy appends the page — no updateQuery needed.
+    fetchMore({ variables: { limit: PAGE_SIZE, after: pageInfo.endCursor } });
   }, [fetchMore, pageInfo]);
 
   return {
@@ -75,7 +40,7 @@ export function useFollowingFeed() {
   const { data, loading, error, fetchMore } = useQuery(FollowingFeedDocument, {
     variables: { limit: PAGE_SIZE },
     fetchPolicy: "cache-and-network",
-    nextFetchPolicy: "cache-first",
+    notifyOnNetworkStatusChange: true,
   });
 
   const items = data?.followingFeed?.items ?? [];
@@ -83,21 +48,7 @@ export function useFollowingFeed() {
 
   const loadMore = useCallback(() => {
     if (!pageInfo?.hasNextPage || !pageInfo.endCursor) return;
-    fetchMore({
-      variables: { limit: PAGE_SIZE, after: pageInfo.endCursor },
-      updateQuery(prev, { fetchMoreResult }) {
-        if (!fetchMoreResult) return prev;
-        return {
-          followingFeed: {
-            ...fetchMoreResult.followingFeed,
-            items: [
-              ...(prev.followingFeed?.items ?? []),
-              ...fetchMoreResult.followingFeed.items,
-            ],
-          },
-        };
-      },
-    });
+    fetchMore({ variables: { limit: PAGE_SIZE, after: pageInfo.endCursor } });
   }, [fetchMore, pageInfo]);
 
   return {
@@ -121,7 +72,7 @@ export function useNearbyFeed(
     },
     skip: !county,
     fetchPolicy: "cache-and-network",
-    nextFetchPolicy: "cache-first",
+    notifyOnNetworkStatusChange: true,
   });
 
   const items = data?.localFeed?.items ?? [];
@@ -135,18 +86,6 @@ export function useNearbyFeed(
         subregion: subregion ?? undefined,
         limit: PAGE_SIZE,
         after: pageInfo.endCursor,
-      },
-      updateQuery(prev, { fetchMoreResult }) {
-        if (!fetchMoreResult) return prev;
-        return {
-          localFeed: {
-            ...fetchMoreResult.localFeed,
-            items: [
-              ...(prev.localFeed?.items ?? []),
-              ...fetchMoreResult.localFeed.items,
-            ],
-          },
-        };
       },
     });
   }, [fetchMore, pageInfo, county, subregion]);

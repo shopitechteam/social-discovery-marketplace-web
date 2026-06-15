@@ -47,10 +47,10 @@ export function CreateDrawer({ lang }: { lang: string }) {
       setContentType(kind);
 
       const list = Array.from(files).slice(0, kind === "video" ? 1 : 10);
-      for (const file of list) {
-        if (kind === "image") startImageUpload(file, did);
+      list.forEach((file, i) => {
+        if (kind === "image") startImageUpload(file, did, i);
         else startVideoUpload(file, did);
-      }
+      });
       setStep("edit");
       router.push(`/${lang}/upload/create`);
     } catch (err) {

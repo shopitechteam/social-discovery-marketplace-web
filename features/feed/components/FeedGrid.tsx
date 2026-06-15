@@ -1,12 +1,10 @@
 "use client";
 
-import { useLayoutEffect, useRef } from "react";
 import { PostCard } from "./PostCard";
 import { useForYouFeed } from "../hooks/useFeed";
 import { FeedPaginationSkeleton, FeedSkeleton } from "./FeedSkeleton";
 import { TrendingStrip } from "./TrendingStrip";
 //import { StoriesBar } from "@/features/stories/components/StoriesBar";
-import { consumeAuthIntent } from "../hooks/useAuthGuard";
 import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
 
 interface Props {
@@ -22,45 +20,6 @@ export function FeedGrid({ lang }: Props) {
     onLoadMore: loadMore,
     rootMargin: "1400px",
   });
-
-  // Restore scroll when returning from PDP or auth — wait until DOM has enough height
-  const scrollRestored = useRef(false);
-  useLayoutEffect(() => {
-    if (scrollRestored.current || items.length === 0) return;
-
-    const intent = consumeAuthIntent();
-    const savedScroll = sessionStorage.getItem("feed-scroll");
-    const target = intent?.scrollY
-      ? intent.scrollY
-      : savedScroll
-        ? parseInt(savedScroll, 10)
-        : 0;
-
-    if (savedScroll) sessionStorage.removeItem("feed-scroll");
-    if (!target) return;
-
-    scrollRestored.current = true;
-
-    // Abort restore the moment the user interacts — prevents snap-back on scroll
-    let cancelled = false;
-    const cancel = () => { cancelled = true; };
-    window.addEventListener("touchstart", cancel, { once: true, passive: true });
-    window.addEventListener("wheel", cancel, { once: true, passive: true });
-
-    let attempts = 0;
-    function tryScroll() {
-      if (cancelled) return;
-      if (document.body.scrollHeight >= target || attempts > 20) {
-        window.scrollTo({ top: target, behavior: "instant" });
-        window.removeEventListener("touchstart", cancel);
-        window.removeEventListener("wheel", cancel);
-        return;
-      }
-      attempts++;
-      requestAnimationFrame(tryScroll);
-    }
-    requestAnimationFrame(tryScroll);
-  }, [items.length]);
 
   if (loading && items.length === 0) return <FeedSkeleton />;
 

@@ -305,7 +305,12 @@ function VideoMedia({
       ref={containerRef}
       className="relative w-full bg-black overflow-hidden"
       style={{
-        height: `min(${isLandscape ? "56.25vw" : "177.78vw"}, 53dvh)`,
+        // Portrait videos get a taller budget (70dvh) so they aren't squeezed;
+        // landscape keep their natural 16:9 box. `object-contain` below then
+        // shows the WHOLE frame letterboxed rather than cropping it.
+        height: `min(${isLandscape ? "56.25vw" : "177.78vw"}, ${
+          isLandscape ? "53dvh" : "70dvh"
+        })`,
       }}
     >
       {/* Thumbnail — fades out once video is playing */}
@@ -314,7 +319,7 @@ function VideoMedia({
           src={thumbnail}
           alt={post.title}
           sizes="100vw"
-          className={`object-cover transition-opacity duration-500 ${
+          className={`object-contain transition-opacity duration-500 ${
             hlsUrl && shouldPlay && !buffering
               ? "opacity-0"
               : thumbLoaded
@@ -333,7 +338,7 @@ function VideoMedia({
           ref={videoRef}
           muted={muted}
           playsInline
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-contain"
         />
       )}
       {/* Replay button — shown when video finishes */}
@@ -501,6 +506,21 @@ function mediaSrc(
   );
 }
 
+type MediaEntry = NonNullable<ContentCardFieldsFragment["media"]>[number];
+
+/**
+ * Best-effort intrinsic aspect ratio (width / height) for an image media item.
+ * Falls back to the largest r2 variant's dimensions, then to a sensible 4:5
+ * portrait default when nothing is known — so the layout reserves space and
+ * never collapses to zero height while the bitmap loads.
+ */
+function aspectRatioOf(item: MediaEntry | undefined): number {
+  const w = item?.displayWidth ?? item?.r2Variants?.[0]?.width ?? 0;
+  const h = item?.displayHeight ?? item?.r2Variants?.[0]?.height ?? 0;
+  if (w > 0 && h > 0) return w / h;
+  return 4 / 5; // unknown → portrait-ish placeholder
+}
+
 function downloadSrc(post: ContentCardFieldsFragment): string | null {
   const first = post.media?.[0];
   if (!first) return null;
@@ -579,18 +599,31 @@ function ImageMedia({
   const count = media.length;
 
   if (count === 1) {
+    // Reserve the box from the known intrinsic ratio so the height is correct
+    // on first paint — no blank gap, no jump when the bitmap loads. The ratio
+    // is clamped so very wide images keep a usable minimum height and very tall
+    // ones don't exceed the viewport budget.
+    const ratio = aspectRatioOf(first); // width / height
+    // clamp displayed ratio between 4:5 (tall) and 16:9 (wide)
+    const clamped = Math.min(Math.max(ratio, 9 / 16), 16 / 9);
     return (
-      <div className="relative w-full cursor-pointer overflow-hidden" style={{ maxHeight: "53dvh" }} onClick={nav}>
-        <Image
+      <div
+        className="relative w-full cursor-pointer overflow-hidden bg-surface"
+        style={{
+          aspectRatio: String(clamped),
+          maxHeight: "60dvh",
+          minHeight: "40dvh",
+        }}
+        onClick={nav}
+      >
+        <FeedImage
           src={firstSrc}
           alt={post.title}
-          width={0}
-          height={0}
           sizes="100vw"
-          className="w-full h-auto"
+          className="object-contain h-auto"
           priority={priority}
           loading={priority ? "eager" : "lazy"}
-          placeholder={`data:image/svg+xml;base64,${toBase64(Shimmer(700, 700))}`}
+          blurDataURL={`data:image/svg+xml;base64,${toBase64(Shimmer(700, 700))}`}
         />
       </div>
     );
@@ -612,7 +645,7 @@ function ImageMedia({
                   src={src}
                   alt={post.title}
                   sizes="50vw"
-                  className="object-cover"
+                  className="object-fit"
                   priority={priority && i === 0}
                   loading={priority && i === 0 ? "eager" : "lazy"}
                   blurDataURL={SHIMMER}
@@ -633,7 +666,7 @@ function ImageMedia({
             src={firstSrc}
             alt={post.title}
             sizes="66vw"
-            className="object-cover"
+            className="object-fit"
             priority={priority}
             loading={priority ? "eager" : "lazy"}
             blurDataURL={SHIMMER}
@@ -665,44 +698,104 @@ function ImageMedia({
     );
   }
 
-  const visible = media.slice(0, 4);
-  const overflow = count - 4;
+  // Exactly 4 → clean 2×2 grid.
+  if (count === 4) {
+    return (
+      <div
+        className="grid grid-cols-2 gap-0.5 overflow-hidden"
+        style={{ height: GRID_H }}
+      >
+        {media.slice(0, 4).map((item, i) => {
+          const src = mediaSrc(item, i === 0 ? "large" : "medium");
+          return (
+            <div
+              key={i}
+              className="relative bg-black cursor-pointer overflow-hidden"
+              onClick={nav}
+            >
+              {src && (
+                <FeedImage
+                  src={src}
+                  alt={post.title}
+                  sizes="50vw"
+                  className="object-fit"
+                  priority={priority && i === 0}
+                  loading={priority && i === 0 ? "eager" : "lazy"}
+                  blurDataURL={SHIMMER}
+                />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // 5+ → Facebook-style stack: 2 large tiles on top, 3 smaller below, with a
+  // "+N" overlay on the final tile. Tapping any tile opens the full carousel.
+  const top = media.slice(0, 2);
+  const bottom = media.slice(2, 5);
+  const overflow = count - 5;
 
   return (
     <div
-      className="grid grid-cols-2 gap-0.5 overflow-hidden"
+      className="flex flex-col gap-0.5 overflow-hidden"
       style={{ height: GRID_H }}
     >
-      {visible.map((item, i) => {
-        const src = mediaSrc(item, i === 0 ? "large" : "medium");
-        const isLast = i === 3 && overflow > 0;
-        return (
-          <div
-            key={i}
-            className="relative bg-black cursor-pointer overflow-hidden"
-            onClick={nav}
-          >
-            {src && (
-              <FeedImage
-                src={src}
-                alt={post.title}
-                sizes="50vw"
-                className="object-cover"
-                priority={priority && i === 0}
-                loading={priority && i === 0 ? "eager" : "lazy"}
-                blurDataURL={SHIMMER}
-              />
-            )}
-            {isLast && (
-              <div className="absolute inset-0 bg-black/55 flex items-center justify-center">
-                <span className="text-white text-2xl font-bold">
-                  +{overflow}
-                </span>
-              </div>
-            )}
-          </div>
-        );
-      })}
+      <div className="flex gap-0.5 flex-[3]">
+        {top.map((item, i) => {
+          const src = mediaSrc(item, i === 0 ? "large" : "medium");
+          return (
+            <div
+              key={i}
+              className="relative flex-1 bg-black cursor-pointer overflow-hidden"
+              onClick={nav}
+            >
+              {src && (
+                <FeedImage
+                  src={src}
+                  alt={post.title}
+                  sizes="50vw"
+                  className="object-cover"
+                  priority={priority && i === 0}
+                  loading={priority && i === 0 ? "eager" : "lazy"}
+                  blurDataURL={SHIMMER}
+                />
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex gap-0.5 flex-[2]">
+        {bottom.map((item, i) => {
+          const src = mediaSrc(item, "medium");
+          const isLast = i === bottom.length - 1 && overflow > 0;
+          return (
+            <div
+              key={i}
+              className="relative flex-1 bg-black cursor-pointer overflow-hidden"
+              onClick={nav}
+            >
+              {src && (
+                <FeedImage
+                  src={src}
+                  alt={post.title}
+                  sizes="33vw"
+                  className="object-cover"
+                  blurDataURL={SHIMMER}
+                />
+              )}
+              {isLast && (
+                <div className="absolute inset-0 bg-black/55 flex items-center justify-center backdrop-blur-[1px]">
+                  <span className="text-white text-2xl font-bold">
+                    +{overflow}
+                  </span>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -774,7 +867,6 @@ export function PostCard({ post, lang, priority }: Props) {
     isLong && !expanded ? caption.slice(0, 160) + "…" : caption;
 
   function handleOpen() {
-    sessionStorage.setItem("feed-scroll", String(window.scrollY));
     if (shouldFire(post.id, "DETAIL_VIEWED")) {
       trackDetailViewed({ variables: { contentId: post.id } }).catch(() => {});
     }

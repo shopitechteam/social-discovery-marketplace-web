@@ -159,6 +159,25 @@ function createClient() {
                 return { ...incoming, items: [...prevItems, ...nextItems] };
               },
             },
+            followingFeed: {
+              keyArgs: [],
+              merge(existing, incoming, { args }) {
+                const prevItems = existing?.items ?? [];
+                const nextItems = incoming?.items ?? [];
+                if (!args?.after) return { ...incoming, items: nextItems };
+                return { ...incoming, items: [...prevItems, ...nextItems] };
+              },
+            },
+            localFeed: {
+              // Each county/subregion is its own list; cursor args don't key it.
+              keyArgs: ["county", "subregion"],
+              merge(existing, incoming, { args }) {
+                const prevItems = existing?.items ?? [];
+                const nextItems = incoming?.items ?? [];
+                if (!args?.after) return { ...incoming, items: nextItems };
+                return { ...incoming, items: [...prevItems, ...nextItems] };
+              },
+            },
             comments: {
               keyArgs: ["contentId"],
               merge(existing, incoming, { args }) {

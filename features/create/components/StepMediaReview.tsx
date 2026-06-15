@@ -57,10 +57,11 @@ export function StepMediaReview({ onBack }: { onBack?: () => void }) {
   function handleAddMore(files: FileList) {
     if (!draftId || !files.length) return;
     const remaining = 10 - mediaItems.length;
+    const base = mediaItems.length;
     Array.from(files)
       .slice(0, remaining)
-      .forEach((file) => {
-        startImageUpload(file, draftId);
+      .forEach((file, i) => {
+        startImageUpload(file, draftId, base + i);
       });
   }
 

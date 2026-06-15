@@ -142,7 +142,7 @@ export function useMediaUpload() {
 
   // ── Image: direct PUT to R2, then queued Sharp processing ──────────────────
   const startImageUpload = useCallback(
-    (file: File, did: string): string => {
+    (file: File, did: string, sortOrder = 0): string => {
       const localUri = URL.createObjectURL(file);
       const tempId = `temp-img-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
@@ -168,7 +168,7 @@ export function useMediaUpload() {
           addMediaItem({ id: mediaAssetId, localUri, type: "image", status: "uploading" });
 
           await attachMediaAsset({
-            variables: { draftId: did, mediaAssetId, sortOrder: 0 },
+            variables: { draftId: did, mediaAssetId, sortOrder },
           });
 
           const uploadRes = await fetch(uploadUrl, {
