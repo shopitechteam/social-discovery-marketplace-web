@@ -15,15 +15,17 @@ function makeShimmer(w: number, h: number): string {
   const base = "#d1d1db";
   const highlight = "#e8e8f0";
 
+  // Static gradient — no animation. Next.js paints this as a still background
+  // behind the loading image; an animated SVG here repaints constantly and
+  // reads as flicker on mobile while the bitmap decodes.
   const svg = `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
   <rect width="${w}" height="${h}" fill="${base}"/>
   <rect id="s" width="${w}" height="${h}" fill="url(#g)"/>
   <defs>
-    <linearGradient id="g" x1="-100%" y1="0" x2="200%" y2="0">
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%"   stop-color="${base}"/>
       <stop offset="50%"  stop-color="${highlight}"/>
       <stop offset="100%" stop-color="${base}"/>
-      <animateTransform attributeName="gradientTransform" type="translate" from="-2 0" to="2 0" dur="1.2s" repeatCount="indefinite"/>
     </linearGradient>
   </defs>
 </svg>`;
@@ -49,15 +51,14 @@ export const SHIMMER_AVATAR = makeShimmer(80, 80);
 const Shimmer = (w: number, h: number) => `
 <svg width="${w}" height="${h}" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <defs>
-    <linearGradient id="g">
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
       <stop stop-color="#dedede" offset="0%" />
       <stop stop-color="#e8e8e8" offset="50%" />
       <stop stop-color="#dedede" offset="100%" />
     </linearGradient>
   </defs>
   <rect width="${w}" height="${h}" fill="#dedede" />
-  <rect id="r" width="${w}" height="${h}" fill="url(#g)" />
-  <animate xlink:href="#r" attributeName="x" from="-${w}" to="${w}" dur="1s" repeatCount="indefinite"  />
+  <rect width="${w}" height="${h}" fill="url(#g)" />
 </svg>`;
 
 export default Shimmer;

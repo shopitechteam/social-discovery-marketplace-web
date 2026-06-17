@@ -439,7 +439,13 @@ function FeedImageInner({
 }) {
   const [retrySrc, setRetrySrc] = useState(src);
   const [errored, setErrored] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const retried = useRef(false);
+
+  function handleLoad() {
+    setLoaded(true);
+    onLoad?.();
+  }
 
   function handleError() {
     if (!retried.current) {
@@ -481,8 +487,14 @@ function FeedImageInner({
       loading={loadingProp}
       placeholder={blurDataURL ? "blur" : "empty"}
       blurDataURL={blurDataURL}
-      onLoad={onLoad}
+      onLoad={handleLoad}
       onError={handleError}
+      // Fade the decoded bitmap in over the blur placeholder. Inline transition
+      // so the global `transition: none` on <img> doesn't suppress it.
+      style={{
+        opacity: loaded ? 1 : 0,
+        transition: "opacity 0.3s ease",
+      }}
     />
   );
 }

@@ -57,6 +57,22 @@ export function MediaCarouselDialog({
     return () => clearTimeout(t);
   }, [open, startIndex]);
 
+  // Native back-button / browser-back closes the dialog instead of leaving the
+  // feed. While open we push a throwaway history entry; pressing back pops it
+  // and we close. If the dialog is closed by other means (✕ / scrim) we undo
+  // the pushed entry so the user's real history isn't polluted.
+  useEffect(() => {
+    if (!open) return;
+    window.history.pushState({ carousel: true }, "");
+    const onPop = () => onOpenChange(false);
+    window.addEventListener("popstate", onPop);
+    return () => {
+      window.removeEventListener("popstate", onPop);
+      // If we're unmounting/closing without a popstate, remove our entry.
+      if (window.history.state?.carousel) window.history.back();
+    };
+  }, [open, onOpenChange]);
+
   function go(next: number) {
     const el = trackRef.current;
     if (!el) return;
@@ -75,11 +91,12 @@ export function MediaCarouselDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="h-svh w-screen max-w-none translate-x-[-50%] translate-y-[-50%] gap-0 border-0 bg-black p-0 sm:rounded-none [&>button]:hidden"
+        className="h-svh w-screen max-w-none translate-x-[-50%] translate-y-[-50%] gap-0 border-0 bg-black p-0 sm:rounded-none [&>button:last-of-type]:hidden"
       >
         <DialogTitle className="sr-only">{title}</DialogTitle>
 
-        {/* Close */}
+        {/* Close — our own visible ✕. The parent only hides the *last* direct
+            button (Radix's built-in close), so this one stays visible. */}
         <button
           type="button"
           onClick={() => onOpenChange(false)}
