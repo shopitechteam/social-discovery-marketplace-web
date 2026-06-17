@@ -10,7 +10,8 @@ import {
   GetRepliesDocument,
 } from "@/types/__generated__/graphql";
 import type { GetCommentsQuery, GetRepliesQuery } from "@/types/__generated__/graphql";
-import { useKeyboardInset } from "@/hooks/useKeyboardInset";
+import { motion, AnimatePresence, type PanInfo } from "framer-motion";
+import { useVisualViewport } from "@/hooks/useKeyboardInset";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
 
@@ -310,33 +311,19 @@ export function CommentsDrawer({ contentId, contentCreatorId, onClose, onComment
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const client = useApolloClient();
-  const keyboardInset = useKeyboardInset();
+  const { height: vvHeight, offsetTop: vvOffsetTop, keyboardHeight } =
+    useVisualViewport();
 
-  // Swipe-to-dismiss: how far the sheet is currently dragged down (px), and
-  // whether a drag is in progress (disables the snap transition while dragging).
-  const [dragY, setDragY] = useState(0);
-  const [dragging, setDragging] = useState(false);
-  const dragStartY = useRef<number | null>(null);
+  // `visible` drives the open/close animation; when it flips to false the sheet
+  // animates out and AnimatePresence's onExitComplete fires the real onClose
+  // (which unmounts us). This gives a smooth slide-down on dismiss.
+  const [visible, setVisible] = useState(true);
+  const requestClose = useCallback(() => setVisible(false), []);
 
-  function onDragStart(e: React.TouchEvent) {
-    dragStartY.current = e.touches[0].clientY;
-    setDragging(true);
-  }
-  function onDragMove(e: React.TouchEvent) {
-    if (dragStartY.current === null) return;
-    const delta = e.touches[0].clientY - dragStartY.current;
-    // Only allow dragging downward.
-    setDragY(delta > 0 ? delta : 0);
-  }
-  function onDragEnd() {
-    setDragging(false);
-    dragStartY.current = null;
-    // Past ~120px of pull → dismiss; otherwise snap back.
-    if (dragY > 120) {
-      onClose();
-    } else {
-      setDragY(0);
-    }
+  // Swipe-to-dismiss handled by framer-motion `drag="y"`. Past ~120px pull or a
+  // fast downward flick → dismiss.
+  function handleDragEnd(_: unknown, info: PanInfo) {
+    if (info.offset.y > 120 || info.velocity.y > 600) requestClose();
   }
 
   const { data, loading, fetchMore } = useQuery(GetCommentsDocument, {
@@ -534,16 +521,14 @@ export function CommentsDrawer({ contentId, contentCreatorId, onClose, onComment
         )}
       </div>
 
-      {/* Input bar — TikTok behaviour: the sheet stays anchored; only this bar
-          lifts to sit right above the keyboard, so nothing else shifts. */}
+      {/* Input bar — the whole sheet is pinned above the keyboard (see render),
+          so the input is always visible with nothing else shifting. */}
       <div
         className="border-t border-default shrink-0 bg-app"
         style={{
-          transform: desktopInline ? undefined : `translateY(-${keyboardInset}px)`,
-          transition: "transform 0.15s ease-out",
           paddingBottom: desktopInline
             ? "0px"
-            : keyboardInset > 0
+            : keyboardHeight > 0
               ? "0px"
               : "env(safe-area-inset-bottom, 0px)",
         }}
@@ -590,59 +575,69 @@ export function CommentsDrawer({ contentId, contentCreatorId, onClose, onComment
     return <div className="flex flex-col flex-1 overflow-hidden">{inner}</div>;
   }
 
-  // ── Mobile: keyboard-aware bottom sheet (native feel, no layout shift) ──
-  // Scrim dims less as the user drags the sheet down, like a native drawer.
-  const dragProgress = Math.min(dragY / 400, 0.6);
-
+  // ── Mobile: keyboard-avoiding bottom sheet (TikTok-style) ──
+  // The overlay is pinned to the VISUAL viewport (the area NOT covered by the
+  // keyboard). So when the keyboard opens, the overlay's bottom edge sits right
+  // on top of the keyboard — the sheet floats above it and nothing scrolls or
+  // shifts. We also pad the bottom of the viewport box so the sheet's own height
+  // (75dvh) is measured against the full screen, keeping it stable.
   return (
-    <div className="fixed inset-0 z-80" role="dialog" aria-modal="true">
-      {/* Scrim */}
-      <button
-        type="button"
-        aria-label="Close comments"
-        onClick={onClose}
-        className="absolute inset-0 bg-black/60 animate-in fade-in-0 duration-300"
-        style={{ opacity: 1 - dragProgress }}
-      />
-
-      {/* Sheet — bottom rides above the keyboard so the input stays visible
-          and the list shrinks instead of being covered. */}
-      <div
-        className="absolute inset-x-0 bottom-0 mx-auto flex max-w-107.5 flex-col overflow-hidden rounded-t-3xl bg-app shadow-2xl animate-in slide-in-from-bottom duration-300"
-        style={{
-          // Fixed height → no layout shift; sheet stays anchored to the bottom
-          // even when the keyboard opens (only the input bar lifts).
-          height: "75dvh",
-          transform: `translateY(${dragY}px)`,
-          transition: dragging ? "none" : "transform 0.25s ease-out",
-        }}
-      >
-        {/* Grabber + header — drag handle for swipe-to-close */}
+    <AnimatePresence onExitComplete={onClose}>
+      {visible && (
         <div
-          className="shrink-0 border-b border-default touch-none cursor-grab active:cursor-grabbing"
-          onTouchStart={onDragStart}
-          onTouchMove={onDragMove}
-          onTouchEnd={onDragEnd}
+          className="fixed inset-x-0 z-80"
+          role="dialog"
+          aria-modal="true"
+          style={{ top: vvOffsetTop, height: vvHeight }}
         >
-          {/* Drawer grabber pill — the "pull me" indicator on top */}
-          <div className="flex justify-center pt-3 pb-1.5">
-            <div className="h-1.5 w-11 rounded-full bg-muted-foreground/35" />
-          </div>
-          <div className="flex items-center justify-between px-4 pb-3 pt-1">
-            <h2 className="text-sm font-bold text-default">Comments</h2>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close"
-              className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-surface"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-        </div>
+          {/* Scrim */}
+          <motion.button
+            type="button"
+            aria-label="Close comments"
+            onClick={requestClose}
+            className="absolute inset-0 bg-black/60"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+          />
 
-        {inner}
-      </div>
-    </div>
+          {/* Sheet — slides up; drag the handle down to dismiss. */}
+          <motion.div
+            className="absolute inset-x-0 bottom-0 mx-auto flex max-w-107.5 flex-col overflow-hidden rounded-t-3xl bg-app shadow-2xl"
+            style={{ height: "75dvh" }}
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 32, stiffness: 320 }}
+            drag="y"
+            dragConstraints={{ top: 0, bottom: 0 }}
+            dragElastic={{ top: 0, bottom: 0.6 }}
+            onDragEnd={handleDragEnd}
+          >
+            {/* Grabber + header — drag handle for swipe-to-close */}
+            <div className="shrink-0 border-b border-default cursor-grab active:cursor-grabbing">
+              {/* Drawer grabber pill — the "pull me" indicator on top */}
+              <div className="flex justify-center pt-3 pb-1.5">
+                <div className="h-1.5 w-11 rounded-full bg-muted-foreground/35" />
+              </div>
+              <div className="flex items-center justify-between px-4 pb-3 pt-1">
+                <h2 className="text-sm font-bold text-default">Comments</h2>
+                <button
+                  type="button"
+                  onClick={requestClose}
+                  aria-label="Close"
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-surface"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {inner}
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 }
