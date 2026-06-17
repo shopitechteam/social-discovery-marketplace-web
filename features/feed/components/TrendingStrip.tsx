@@ -169,7 +169,7 @@ export function TrendingStrip({ lang, county }: Props) {
       <div
         ref={scrollRef}
         className="flex gap-2.5 mx-4 overflow-x-auto scrollbar-none pb-0.5"
-        style={{ scrollSnapType: "x mandatory" }}
+        style={{ scrollSnapType: "x proximity" }}
       >
         {items.slice(0, 8).map((post, i) => (
           <div key={post.id} style={{ scrollSnapAlign: "start" }}>
