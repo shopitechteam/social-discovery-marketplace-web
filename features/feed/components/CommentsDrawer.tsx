@@ -11,6 +11,7 @@ import {
 } from "@/types/__generated__/graphql";
 import type { GetCommentsQuery, GetRepliesQuery } from "@/types/__generated__/graphql";
 import { useKeyboardInset } from "@/hooks/useKeyboardInset";
+import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
 
 type CommentItem = NonNullable<GetCommentsQuery["comments"]["items"]>[number];
@@ -271,6 +272,36 @@ function CommentRow({
   );
 }
 
+// ─── Loading skeleton — mirrors the comment row layout ────────────────────────
+
+function CommentSkeleton({ short }: { short?: boolean }) {
+  return (
+    <div className="flex gap-3 py-3 px-4">
+      <Skeleton className="h-8 w-8 rounded-full shrink-0" />
+      <div className="flex-1 min-w-0 space-y-2 py-0.5">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-3 w-24 rounded-full" />
+          <Skeleton className="h-2.5 w-8 rounded-full" />
+        </div>
+        <Skeleton className="h-3 w-full rounded-full" />
+        {!short && <Skeleton className="h-3 w-2/3 rounded-full" />}
+        <Skeleton className="h-2.5 w-10 rounded-full" />
+      </div>
+      <Skeleton className="h-4 w-4 rounded-full shrink-0" />
+    </div>
+  );
+}
+
+function CommentListSkeleton() {
+  return (
+    <div className="divide-y divide-default">
+      {Array.from({ length: 13 }).map((_, i) => (
+        <CommentSkeleton key={i} short={i % 3 === 0} />
+      ))}
+    </div>
+  );
+}
+
 // ─── Main drawer ─────────────────────────────────────────────────────────────
 
 export function CommentsDrawer({ contentId, contentCreatorId, onClose, onCommentAdded, desktopInline = false }: Props) {
@@ -482,11 +513,7 @@ export function CommentsDrawer({ contentId, contentCreatorId, onClose, onComment
       {/* Comment list */}
       <div ref={listRef} onScroll={handleScroll}
         className="flex-1 overflow-y-auto overscroll-contain" style={{ minHeight: 0 }}>
-        {loading && merged.length === 0 && (
-          <div className="flex justify-center py-10">
-            <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          </div>
-        )}
+        {loading && merged.length === 0 && <CommentListSkeleton />}
         {!loading && merged.length === 0 && (
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground text-sm">
             <span className="text-2xl mb-2">💬</span>
@@ -507,10 +534,13 @@ export function CommentsDrawer({ contentId, contentCreatorId, onClose, onComment
         )}
       </div>
 
-      {/* Input bar */}
+      {/* Input bar — TikTok behaviour: the sheet stays anchored; only this bar
+          lifts to sit right above the keyboard, so nothing else shifts. */}
       <div
-        className="border-t border-default shrink-0"
+        className="border-t border-default shrink-0 bg-app"
         style={{
+          transform: desktopInline ? undefined : `translateY(-${keyboardInset}px)`,
+          transition: "transform 0.15s ease-out",
           paddingBottom: desktopInline
             ? "0px"
             : keyboardInset > 0
@@ -578,16 +608,13 @@ export function CommentsDrawer({ contentId, contentCreatorId, onClose, onComment
       {/* Sheet — bottom rides above the keyboard so the input stays visible
           and the list shrinks instead of being covered. */}
       <div
-        className="absolute inset-x-0 mx-auto flex max-w-107.5 flex-col rounded-t-3xl bg-app shadow-2xl animate-in slide-in-from-bottom duration-300"
+        className="absolute inset-x-0 bottom-0 mx-auto flex max-w-107.5 flex-col overflow-hidden rounded-t-3xl bg-app shadow-2xl animate-in slide-in-from-bottom duration-300"
         style={{
-          bottom: keyboardInset,
-          top: "auto",
-          maxHeight: "82svh",
-          height: "75svh",
+          // Fixed height → no layout shift; sheet stays anchored to the bottom
+          // even when the keyboard opens (only the input bar lifts).
+          height: "75dvh",
           transform: `translateY(${dragY}px)`,
-          transition: dragging
-            ? "none"
-            : "transform 0.25s ease-out, bottom 0.15s ease-out",
+          transition: dragging ? "none" : "transform 0.25s ease-out",
         }}
       >
         {/* Grabber + header — drag handle for swipe-to-close */}
