@@ -1,8 +1,47 @@
+import { viewport } from "@/app/layout";
 import { MainShell } from "@/components/layout/MainShell";
 import { SideNav } from "@/components/layout/SideNav";
 import { SocketProvider } from "@/components/providers/SocketProvider";
 import { isValidLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
+
+export const metadata = {
+  viewport: {
+    width: viewport.width,
+    height: viewport.height,
+    initialScale: viewport.initialScale,
+    maximumScale: viewport.maximumScale,
+    minimumScale: viewport.minimumScale,
+    userScalable: false,
+    viewportfit: "cover",
+  },
+  title: "Shopi — Social Commerce Platform",
+  description: "Discover products, watch videos, and shop live with creators.",
+  openGraph: {
+    title: "Shopi — Social Commerce Platform",
+    description:
+      "Discover products, watch videos, and shop live with creators.",
+    url: "https://shopi.com",
+    siteName: "Shopi",
+    images: [
+      {
+        url: "https://shopi.com/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Shopi Open Graph Image",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Shopi — Social Commerce Platform",
+    description:
+      "Discover products, watch videos, and shop live with creators.",
+    images: ["https://shopi.com/twitter-image.png"],
+  },
+};
 
 export default async function MainLayout({
   children,
