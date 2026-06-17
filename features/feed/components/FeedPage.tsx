@@ -37,7 +37,7 @@ export function FeedPage({ lang }: Props) {
     <>
       {/* ── Desktop: fullscreen TikTok-style feed — no header/tabs needed ── */}
       <div className="hidden md:block">
-        <DesktopFeed />
+        <DesktopFeed lang={lang} />
       </div>
 
       {/* ── Mobile: existing card feed with tabs ── */}

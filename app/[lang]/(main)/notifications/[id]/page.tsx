@@ -1,4 +1,4 @@
-import { ChatDetailScreen } from "@/features/messaging/components/ChatDetailScreen";
+import { MessagingShell } from "@/features/messaging/components/MessagingShell";
 
 export default async function ConversationPage({
   params,
@@ -12,7 +12,7 @@ export default async function ConversationPage({
   // `?source=content` → the [id] segment is a post/content id; the screen ensures
   // the conversation in place. Otherwise it's an existing conversation id.
   return (
-    <ChatDetailScreen
+    <MessagingShell
       lang={lang}
       conversationId={id}
       mode={source === "content" ? "content" : "conversation"}

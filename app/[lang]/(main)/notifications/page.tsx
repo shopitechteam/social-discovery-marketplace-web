@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { siteConfig } from "@/config/site";
-import { InboxScreen } from "@/components/layout/InboxScreen";
+import { MessagingShell } from "@/features/messaging/components/MessagingShell";
 
 export const metadata: Metadata = {
   title: siteConfig.routes.notifications.title,
@@ -15,5 +15,5 @@ export default async function NotificationsPage({
   params: Promise<{ lang: string }>;
 }) {
   const { lang } = await params;
-  return <InboxScreen lang={lang} />;
+  return <MessagingShell lang={lang} />;
 }

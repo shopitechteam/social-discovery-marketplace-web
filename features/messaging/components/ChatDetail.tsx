@@ -84,7 +84,7 @@ export function ChatDetail({
 
   return (
     <section
-      className={`flex h-svh min-h-0 flex-col md:h-[calc(100svh-var(--nav-height)-var(--safe-bottom))] ${
+      className={`flex h-svh min-h-0 flex-col md:h-full ${
         selectedConversationId ? "flex" : "hidden md:flex"
       }`}
     >
