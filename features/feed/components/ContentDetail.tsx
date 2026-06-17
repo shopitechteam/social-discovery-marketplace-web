@@ -1651,8 +1651,10 @@ function CommentsSheet({
       >
         {/* Grabber + header */}
         <div className="shrink-0 border-b border-default">
-          <div className="mx-auto mt-2.5 h-1 w-10 rounded-full bg-muted-foreground/30" />
-          <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex justify-center pt-3 pb-1.5">
+            <div className="h-1.5 w-11 rounded-full bg-muted-foreground/35" />
+          </div>
+          <div className="flex items-center justify-between px-4 pb-3 pt-1">
             <h2 className="text-sm font-bold text-default">{title}</h2>
             <button
               type="button"

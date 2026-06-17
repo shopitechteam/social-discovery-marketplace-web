@@ -281,6 +281,33 @@ export function CommentsDrawer({ contentId, contentCreatorId, onClose, onComment
   const client = useApolloClient();
   const keyboardInset = useKeyboardInset();
 
+  // Swipe-to-dismiss: how far the sheet is currently dragged down (px), and
+  // whether a drag is in progress (disables the snap transition while dragging).
+  const [dragY, setDragY] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const dragStartY = useRef<number | null>(null);
+
+  function onDragStart(e: React.TouchEvent) {
+    dragStartY.current = e.touches[0].clientY;
+    setDragging(true);
+  }
+  function onDragMove(e: React.TouchEvent) {
+    if (dragStartY.current === null) return;
+    const delta = e.touches[0].clientY - dragStartY.current;
+    // Only allow dragging downward.
+    setDragY(delta > 0 ? delta : 0);
+  }
+  function onDragEnd() {
+    setDragging(false);
+    dragStartY.current = null;
+    // Past ~120px of pull → dismiss; otherwise snap back.
+    if (dragY > 120) {
+      onClose();
+    } else {
+      setDragY(0);
+    }
+  }
+
   const { data, loading, fetchMore } = useQuery(GetCommentsDocument, {
     variables: { contentId, limit: 20 },
     fetchPolicy: "cache-and-network",
@@ -415,10 +442,39 @@ export function CommentsDrawer({ contentId, contentCreatorId, onClose, onComment
   // Note: no auto-focus on open — let the user read comments first; the
   // keyboard appears only when they tap the input or hit Reply.
 
+  // Lock the page behind the sheet so it can't scroll while open. Restores the
+  // exact scroll position on close (position:fixed would otherwise jump to top).
   useEffect(() => {
     if (desktopInline) return;
     document.body.classList.add("comments-open");
-    return () => document.body.classList.remove("comments-open");
+
+    const scrollY = window.scrollY;
+    const { body } = document;
+    const prev = {
+      position: body.style.position,
+      top: body.style.top,
+      left: body.style.left,
+      right: body.style.right,
+      width: body.style.width,
+      overflow: body.style.overflow,
+    };
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.left = "0";
+    body.style.right = "0";
+    body.style.width = "100%";
+    body.style.overflow = "hidden";
+
+    return () => {
+      body.classList.remove("comments-open");
+      body.style.position = prev.position;
+      body.style.top = prev.top;
+      body.style.left = prev.left;
+      body.style.right = prev.right;
+      body.style.width = prev.width;
+      body.style.overflow = prev.overflow;
+      window.scrollTo(0, scrollY);
+    };
   }, [desktopInline]);
 
   const inner = (
@@ -505,6 +561,9 @@ export function CommentsDrawer({ contentId, contentCreatorId, onClose, onComment
   }
 
   // ── Mobile: keyboard-aware bottom sheet (native feel, no layout shift) ──
+  // Scrim dims less as the user drags the sheet down, like a native drawer.
+  const dragProgress = Math.min(dragY / 400, 0.6);
+
   return (
     <div className="fixed inset-0 z-80" role="dialog" aria-modal="true">
       {/* Scrim */}
@@ -513,6 +572,7 @@ export function CommentsDrawer({ contentId, contentCreatorId, onClose, onComment
         aria-label="Close comments"
         onClick={onClose}
         className="absolute inset-0 bg-black/60 animate-in fade-in-0 duration-300"
+        style={{ opacity: 1 - dragProgress }}
       />
 
       {/* Sheet — bottom rides above the keyboard so the input stays visible
@@ -524,13 +584,24 @@ export function CommentsDrawer({ contentId, contentCreatorId, onClose, onComment
           top: "auto",
           maxHeight: "82svh",
           height: "75svh",
-          transition: "bottom 0.15s ease-out",
+          transform: `translateY(${dragY}px)`,
+          transition: dragging
+            ? "none"
+            : "transform 0.25s ease-out, bottom 0.15s ease-out",
         }}
       >
-        {/* Grabber + header */}
-        <div className="shrink-0 border-b border-default">
-          <div className="mx-auto mt-2.5 h-1 w-10 rounded-full bg-muted-foreground/30" />
-          <div className="flex items-center justify-between px-4 py-3">
+        {/* Grabber + header — drag handle for swipe-to-close */}
+        <div
+          className="shrink-0 border-b border-default touch-none cursor-grab active:cursor-grabbing"
+          onTouchStart={onDragStart}
+          onTouchMove={onDragMove}
+          onTouchEnd={onDragEnd}
+        >
+          {/* Drawer grabber pill — the "pull me" indicator on top */}
+          <div className="flex justify-center pt-3 pb-1.5">
+            <div className="h-1.5 w-11 rounded-full bg-muted-foreground/35" />
+          </div>
+          <div className="flex items-center justify-between px-4 pb-3 pt-1">
             <h2 className="text-sm font-bold text-default">Comments</h2>
             <button
               type="button"
