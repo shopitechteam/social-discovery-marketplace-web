@@ -311,8 +311,7 @@ export function CommentsDrawer({ contentId, contentCreatorId, onClose, onComment
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const client = useApolloClient();
-  const { height: vvHeight, offsetTop: vvOffsetTop, keyboardHeight } =
-    useVisualViewport();
+  const { keyboardHeight } = useVisualViewport();
 
   // `visible` drives the open/close animation; when it flips to false the sheet
   // animates out and AnimatePresence's onExitComplete fires the real onClose
@@ -521,11 +520,15 @@ export function CommentsDrawer({ contentId, contentCreatorId, onClose, onComment
         )}
       </div>
 
-      {/* Input bar — the whole sheet is pinned above the keyboard (see render),
-          so the input is always visible with nothing else shifting. */}
+      {/* Input bar — TikTok behaviour: only THIS bar lifts above the keyboard;
+          the drawer body behind it stays anchored and doesn't shift. */}
       <div
         className="border-t border-default shrink-0 bg-app"
         style={{
+          transform: desktopInline
+            ? undefined
+            : `translateY(-${keyboardHeight}px)`,
+          transition: "transform 0.18s ease-out",
           paddingBottom: desktopInline
             ? "0px"
             : keyboardHeight > 0
@@ -576,19 +579,18 @@ export function CommentsDrawer({ contentId, contentCreatorId, onClose, onComment
   }
 
   // ── Mobile: keyboard-avoiding bottom sheet (TikTok-style) ──
-  // The overlay is pinned to the VISUAL viewport (the area NOT covered by the
-  // keyboard). So when the keyboard opens, the overlay's bottom edge sits right
-  // on top of the keyboard — the sheet floats above it and nothing scrolls or
-  // shifts. We also pad the bottom of the viewport box so the sheet's own height
-  // (75dvh) is measured against the full screen, keeping it stable.
+  // The overlay is full-screen `position: fixed` so it never affects page layout
+  // and the drawer body stays put. When the keyboard opens we DON'T move the
+  // sheet — only the input bar lifts to sit above the keyboard (see `inner`),
+  // exactly like TikTok: the keyboard slides up over the content, the drawer
+  // itself doesn't shift.
   return (
     <AnimatePresence onExitComplete={onClose}>
       {visible && (
         <div
-          className="fixed inset-x-0 z-80"
+          className="fixed inset-0 z-80"
           role="dialog"
           aria-modal="true"
-          style={{ top: vvOffsetTop, height: vvHeight }}
         >
           {/* Scrim */}
           <motion.button

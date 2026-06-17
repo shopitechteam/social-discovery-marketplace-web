@@ -1,4 +1,3 @@
-import { viewport } from "@/app/layout";
 import { MainShell } from "@/components/layout/MainShell";
 import { SideNav } from "@/components/layout/SideNav";
 import { SocketProvider } from "@/components/providers/SocketProvider";
@@ -7,11 +6,6 @@ import { notFound } from "next/navigation";
 
 export const metadata = {
   viewport: {
-    width: viewport.width,
-    height: viewport.height,
-    initialScale: viewport.initialScale,
-    maximumScale: viewport.maximumScale,
-    minimumScale: viewport.minimumScale,
     userScalable: false,
     viewportfit: "cover",
   },
