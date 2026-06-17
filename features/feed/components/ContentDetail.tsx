@@ -2,14 +2,16 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Download, Bookmark } from "lucide-react";
-import { gql } from "@apollo/client";
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+  Download,
+  Bookmark,
+  MessageCircle,
+  Send,
+  Share2,
+  X,
+} from "lucide-react";
+import { gql } from "@apollo/client";
+import { useKeyboardInset } from "@/hooks/useKeyboardInset";
 
 import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
 import { useFollow } from "../hooks/useFollow";
@@ -505,6 +507,7 @@ export function ContentDetail({ id, lang }: Props) {
   const toggleVideoMuted = useFeedPreferencesStore((s) => s.toggleVideoMuted);
   const isDesktop = useIsDesktop();
   const [showCommentDrawer, setShowCommentDrawer] = useState(false);
+  const keyboardInset = useKeyboardInset();
   const resolvedSaved =
     (post as typeof post & { isSavedByMe?: boolean })?.isSavedByMe ?? false;
   const resolvedSaveCount = post?.stats?.saves ?? 0;
@@ -1380,185 +1383,8 @@ export function ContentDetail({ id, lang }: Props) {
               </button>
             )}
 
-            {/* Right-side action column */}
-            <div
-              className="absolute right-4 z-30 flex flex-col items-center gap-6"
-              style={{
-                bottom: "max(env(safe-area-inset-bottom, 0px) + 140px, 160px)",
-              }}
-            >
-              {/* Save */}
-              <button
-                onClick={() => handleSave()}
-                className="flex flex-col items-center gap-1.5"
-              >
-                <div className="w-[52px] h-[52px] rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center">
-                  <Bookmark
-                    className="w-7 h-7 transition-all"
-                    fill={resolvedSaved ? "rgb(var(--brand-primary))" : "none"}
-                    stroke={
-                      resolvedSaved ? "rgb(var(--brand-primary))" : "white"
-                    }
-                    strokeWidth={1.8}
-                  />
-                </div>
-                <span className="text-white text-xs font-semibold drop-shadow">
-                  {resolvedSaveCount > 0 ? fmt(resolvedSaveCount) : "Save"}
-                </span>
-              </button>
-
-              {/* Comment — opens drawer */}
-              <button
-                onClick={() => {
-                  if (!requireAuth({ contentId: id, action: "comment" }))
-                    return;
-                  setShowCommentDrawer(true);
-                }}
-                className="flex flex-col items-center gap-1.5"
-              >
-                <div className="w-[52px] h-[52px] rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center">
-                  <svg
-                    className="w-7 h-7 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={1.8}
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                    />
-                  </svg>
-                </div>
-                <span className="text-white text-xs font-semibold drop-shadow">
-                  {resolvedCommentCount > 0
-                    ? fmt(resolvedCommentCount)
-                    : "Comment"}
-                </span>
-              </button>
-
-              {/* Message */}
-              {!isOwnPost && (
-                <button
-                  onClick={() => {
-                    if (!requireAuth({ contentId: id, action: "comment" }))
-                      return;
-                    router.push(`/${lang}/notifications?contentId=${id}`);
-                  }}
-                  className="flex flex-col items-center gap-1.5"
-                >
-                  <div className="w-[52px] h-[52px] rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center">
-                    <svg
-                      className="w-7 h-7 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={1.8}
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                      />
-                    </svg>
-                  </div>
-                  <span className="text-white text-xs font-semibold drop-shadow">
-                    Message
-                  </span>
-                </button>
-              )}
-
-              {/* Repost */}
-              <button className="flex flex-col items-center gap-1.5">
-                <div className="w-[52px] h-[52px] rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center">
-                  <svg
-                    className="w-7 h-7 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={1.8}
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                    />
-                  </svg>
-                </div>
-                <span className="text-white text-xs font-semibold drop-shadow">
-                  Repost
-                </span>
-              </button>
-
-              {/* Share */}
-              <button
-                onClick={handleShare}
-                className="flex flex-col items-center gap-1.5"
-              >
-                <div className="w-[52px] h-[52px] rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center">
-                  <svg
-                    className="w-7 h-7 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={1.8}
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-                    />
-                  </svg>
-                </div>
-                <span className="text-white text-xs font-semibold drop-shadow">
-                  Share
-                </span>
-              </button>
-
-              {post.allowDownload && (
-                <button
-                  onClick={handleDownload}
-                  disabled={isDownloading}
-                  className="flex flex-col items-center gap-1.5 disabled:opacity-60"
-                >
-                  <div className="w-[52px] h-[52px] rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center">
-                    {isDownloading ? (
-                      <svg
-                        className="w-7 h-7 text-white animate-spin"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="3"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                        />
-                      </svg>
-                    ) : (
-                      <Download
-                        className="w-7 h-7 text-white"
-                        strokeWidth={1.8}
-                      />
-                    )}
-                  </div>
-                  <span className="text-white text-xs font-semibold drop-shadow">
-                    {isDownloading ? "Downloading…" : "Download"}
-                  </span>
-                </button>
-              )}
-            </div>
-
             {/* Overlay: title + description + creator bottom-left */}
-            <div className="absolute bottom-0 left-0 right-16 z-20 px-4 pb-8 pt-20 bg-linear-to-t from-black/85 via-black/40 to-transparent">
+            <div className="absolute bottom-0 left-0 right-0 z-20 px-4 pb-28 pt-20 bg-linear-to-t from-black/85 via-black/40 to-transparent">
               {/* Creator name */}
               {creatorName ? (
                 <p className="text-white/80 text-sm font-semibold mb-1 drop-shadow">
@@ -1626,34 +1452,237 @@ export function ContentDetail({ id, lang }: Props) {
                 </div>
               )}
             </div>
+
+            {/* ── Bottom action bar ──────────────────────────────────────────── */}
+            <div
+              className="absolute inset-x-0 bottom-0 z-30"
+              style={{
+                paddingBottom: "max(env(safe-area-inset-bottom, 0px), 10px)",
+              }}
+            >
+              <div className="mx-3 mb-2 flex items-center justify-around gap-1 rounded-full bg-black/55 px-2 py-2 backdrop-blur-md">
+                {/* Save */}
+                <ActionPill
+                  label={resolvedSaveCount > 0 ? fmt(resolvedSaveCount) : "Save"}
+                  active={resolvedSaved}
+                  onClick={() => handleSave()}
+                >
+                  <Bookmark
+                    className="h-6 w-6"
+                    fill={resolvedSaved ? "rgb(var(--brand-primary))" : "none"}
+                    stroke={resolvedSaved ? "rgb(var(--brand-primary))" : "white"}
+                    strokeWidth={1.9}
+                  />
+                </ActionPill>
+
+                {/* Comment */}
+                <ActionPill
+                  label={
+                    resolvedCommentCount > 0
+                      ? fmt(resolvedCommentCount)
+                      : "Comment"
+                  }
+                  onClick={() => setShowCommentDrawer(true)}
+                >
+                  <MessageCircle className="h-6 w-6 text-white" strokeWidth={1.9} />
+                </ActionPill>
+
+                {/* Message seller */}
+                {!isOwnPost && (
+                  <ActionPill
+                    label="Message"
+                    onClick={() => {
+                      if (!requireAuth({ contentId: id, action: "comment" }))
+                        return;
+                      router.push(`/${lang}/notifications?contentId=${id}`);
+                    }}
+                  >
+                    <Send className="h-6 w-6 text-white" strokeWidth={1.9} />
+                  </ActionPill>
+                )}
+
+                {/* Share */}
+                <ActionPill label="Share" onClick={handleShare}>
+                  <Share2 className="h-6 w-6 text-white" strokeWidth={1.9} />
+                </ActionPill>
+
+                {/* Download */}
+                {post.allowDownload && (
+                  <ActionPill
+                    label={isDownloading ? "…" : "Save"}
+                    onClick={handleDownload}
+                    disabled={isDownloading}
+                  >
+                    {isDownloading ? (
+                      <svg
+                        className="h-6 w-6 animate-spin text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="3"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                        />
+                      </svg>
+                    ) : (
+                      <Download className="h-6 w-6 text-white" strokeWidth={1.9} />
+                    )}
+                  </ActionPill>
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* ── Comments drawer ──────────────────────────────────────────────── */}
-          <Drawer open={showCommentDrawer} onOpenChange={setShowCommentDrawer}>
-            <DrawerContent className="max-h-[80svh] flex flex-col">
-              <DrawerHeader className="shrink-0 pb-2">
-                <DrawerTitle>
-                  {resolvedCommentCount > 0
-                    ? `${fmt(resolvedCommentCount)} Comments`
-                    : "Comments"}
-                </DrawerTitle>
-              </DrawerHeader>
-              <div className="flex-1 overflow-y-auto px-4 pb-2">
-                {CommentsSection}
-              </div>
-              <div
-                className="shrink-0 border-t border-default"
-                style={{
-                  backgroundColor: "rgb(var(--color-bg-elevated))",
-                  paddingBottom: "env(safe-area-inset-bottom, 0px)",
-                }}
-              >
-                {CommentInput}
-              </div>
-            </DrawerContent>
-          </Drawer>
+          {/* ── Comments sheet (custom, keyboard-aware) ────────────────────── */}
+          <CommentsSheet
+            open={showCommentDrawer}
+            onClose={() => setShowCommentDrawer(false)}
+            keyboardInset={keyboardInset}
+            title={
+              resolvedCommentCount > 0
+                ? `${fmt(resolvedCommentCount)} Comments`
+                : "Comments"
+            }
+            input={CommentInput}
+          >
+            {CommentsSection}
+          </CommentsSheet>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── ActionPill — bottom bar button ─────────────────────────────────────────────
+
+function ActionPill({
+  label,
+  active,
+  disabled,
+  onClick,
+  children,
+}: {
+  label: string;
+  active?: boolean;
+  disabled?: boolean;
+  onClick?: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="flex flex-1 flex-col items-center gap-0.5 rounded-full py-1 transition-transform active:scale-95 disabled:opacity-60"
+    >
+      {children}
+      <span
+        className="text-[11px] font-semibold leading-none drop-shadow"
+        style={{ color: active ? "rgb(var(--brand-primary))" : "white" }}
+      >
+        {label}
+      </span>
+    </button>
+  );
+}
+
+// ─── CommentsSheet — fixed bottom sheet whose input rises with the keyboard ──────
+
+function CommentsSheet({
+  open,
+  onClose,
+  keyboardInset,
+  title,
+  input,
+  children,
+}: {
+  open: boolean;
+  onClose: () => void;
+  keyboardInset: number;
+  title: string;
+  input: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  // Lock background scroll while the sheet is open.
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  return (
+    <div
+      className={`fixed inset-0 z-[80] ${open ? "" : "pointer-events-none"}`}
+      aria-hidden={!open}
+    >
+      {/* Scrim */}
+      <button
+        type="button"
+        aria-label="Close comments"
+        onClick={onClose}
+        className={`absolute inset-0 bg-black/60 transition-opacity duration-300 ${
+          open ? "opacity-100" : "opacity-0"
+        }`}
+      />
+
+      {/* Sheet — its bottom rides above the keyboard so the input is always
+          visible and the comment list shrinks instead of being covered. */}
+      <div
+        className={`absolute inset-x-0 flex max-h-[82svh] flex-col rounded-t-3xl bg-app shadow-2xl transition-transform duration-300 ease-out ${
+          open ? "translate-y-0" : "translate-y-full"
+        }`}
+        style={{
+          bottom: keyboardInset,
+          transition:
+            "transform 0.3s ease-out, bottom 0.15s ease-out",
+        }}
+      >
+        {/* Grabber + header */}
+        <div className="shrink-0 border-b border-default">
+          <div className="mx-auto mt-2.5 h-1 w-10 rounded-full bg-muted-foreground/30" />
+          <div className="flex items-center justify-between px-4 py-3">
+            <h2 className="text-sm font-bold text-default">{title}</h2>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-surface"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Scrollable comments — leaves room so the last rows clear the input */}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4">
+          {children}
+        </div>
+
+        {/* Pinned input — always sits just above the sheet bottom (which itself
+            rides above the keyboard), so nothing shifts and there's no gap. */}
+        <div
+          className="shrink-0 border-t border-default"
+          style={{
+            backgroundColor: "rgb(var(--color-bg-elevated))",
+            paddingBottom:
+              keyboardInset > 0 ? 0 : "env(safe-area-inset-bottom, 0px)",
+          }}
+        >
+          {input}
+        </div>
+      </div>
     </div>
   );
 }
