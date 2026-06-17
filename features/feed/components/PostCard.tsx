@@ -30,6 +30,7 @@ import {
   Bookmark,
   Link2,
   Flag,
+  Share2,
   MoreHorizontal,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -51,6 +52,8 @@ import { useInteractions } from "../hooks/useInteractions";
 import { useAuthGuard } from "../hooks/useAuthGuard";
 import { useFollow } from "../hooks/useFollow";
 import { BufferSpinner } from "./BufferSpinner";
+import { CommentsDrawer } from "./CommentsDrawer";
+import { MediaCarouselDialog } from "./MediaCarouselDialog";
 import { usePageFocused } from "../hooks/usePageFocused";
 import toBase64 from "@/lib/utils";
 import {
@@ -554,7 +557,8 @@ function ImageMedia({
 }: {
   post: ContentCardFieldsFragment;
   priority?: boolean;
-  onNavigate: () => void;
+  /** Tap handler for the media. When omitted, tapping does nothing. */
+  onNavigate?: () => void;
 }) {
   const media = useMemo(
     () =>
@@ -565,6 +569,7 @@ function ImageMedia({
   );
 
   const nav = (e: React.MouseEvent) => {
+    if (!onNavigate) return;
     e.stopPropagation();
     onNavigate();
   };
@@ -813,6 +818,10 @@ export function PostCard({ post, lang, priority }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const [showCarousel, setShowCarousel] = useState(false);
+
+  const mediaCount = post.media?.length ?? 0;
 
   const [trackDetailViewed] = useMutation(gql`
     mutation TrackDetailViewed($contentId: String!) {
@@ -1039,6 +1048,22 @@ export function PostCard({ post, lang, priority }: Props) {
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
+                setMenuOpen(false);
+                handleShare();
+              }}
+              className="flex w-full text-sm items-center gap-3 px-4 py-3 rounded-xl  font-semibold text-default hover:bg-surface transition-colors"
+            >
+              <Share2
+                className="w-4 h-4 shrink-0 text-muted-foreground"
+                strokeWidth={2.2}
+              />
+              Share content
+            </button>
+
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
                 if (!requireAuth({ contentId: post.id })) return;
                 setMenuOpen(false);
                 void handleReport().then(() =>
@@ -1094,11 +1119,17 @@ export function PostCard({ post, lang, priority }: Props) {
       </div>
 
       {/* ── Media ──────────────────────────────────────────────────────── */}
-      <div className="cursor-pointer" onClick={handleOpen}>
+      {/* No PDP navigation: videos toggle play/pause; multi-image opens the
+          in-place carousel dialog; single images do nothing on tap. */}
+      <div>
         {post.type === "VIDEO" ? (
           <VideoMedia post={post} priority={priority} />
         ) : (
-          <ImageMedia post={post} priority={priority} onNavigate={handleOpen} />
+          <ImageMedia
+            post={post}
+            priority={priority}
+            onNavigate={mediaCount > 1 ? () => setShowCarousel(true) : undefined}
+          />
         )}
       </div>
 
@@ -1191,9 +1222,9 @@ export function PostCard({ post, lang, priority }: Props) {
           </button>
         )}
 
-        {/* Share pill — outlined */}
+        {/* Comment pill — opens the lazy-loaded comments sheet */}
         <button
-          onClick={handleShare}
+          onClick={() => setShowComments(true)}
           className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-full border border-border text-xs font-semibold text-default transition-all active:scale-95"
         >
           <svg
@@ -1206,14 +1237,10 @@ export function PostCard({ post, lang, priority }: Props) {
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
-              d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
             />
           </svg>
-          <span>
-            {(post.stats?.shares ?? 0) > 0
-              ? fmt(post.stats!.shares ?? 0)
-              : "Share."}
-          </span>
+          <span>Comment</span>
         </button>
 
         {!isOwnPost && (
@@ -1245,6 +1272,27 @@ export function PostCard({ post, lang, priority }: Props) {
           </button>
         )}
       </div>
+
+      {/* ── Lazy comments sheet — mounted (and queried) only when opened ── */}
+      {showComments && (
+        <CommentsDrawer
+          contentId={post.id}
+          contentCreatorId={creator?.id ?? post.creatorId}
+          onClose={() => setShowComments(false)}
+        />
+      )}
+
+      {/* ── Multi-image carousel dialog (replaces PDP navigation) ── */}
+      {mediaCount > 1 && post.type !== "VIDEO" && (
+        <MediaCarouselDialog
+          open={showCarousel}
+          onOpenChange={setShowCarousel}
+          media={[...(post.media ?? [])].sort(
+            (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
+          )}
+          title={post.title}
+        />
+      )}
     </article>
   );
 }

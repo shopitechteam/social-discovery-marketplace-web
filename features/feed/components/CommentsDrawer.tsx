@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useApolloClient } from "@apollo/client/react";
+import { X } from "lucide-react";
 import {
   GetCommentsDocument,
   AddCommentDocument,
@@ -9,12 +10,7 @@ import {
   GetRepliesDocument,
 } from "@/types/__generated__/graphql";
 import type { GetCommentsQuery, GetRepliesQuery } from "@/types/__generated__/graphql";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+import { useKeyboardInset } from "@/hooks/useKeyboardInset";
 import Image from "next/image";
 
 type CommentItem = NonNullable<GetCommentsQuery["comments"]["items"]>[number];
@@ -283,6 +279,7 @@ export function CommentsDrawer({ contentId, contentCreatorId, onClose, onComment
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const client = useApolloClient();
+  const keyboardInset = useKeyboardInset();
 
   const { data, loading, fetchMore } = useQuery(GetCommentsDocument, {
     variables: { contentId, limit: 20 },
@@ -415,7 +412,8 @@ export function CommentsDrawer({ contentId, contentCreatorId, onClose, onComment
     }
   }
 
-  useEffect(() => { setTimeout(() => inputRef.current?.focus(), 150); }, []);
+  // Note: no auto-focus on open — let the user read comments first; the
+  // keyboard appears only when they tap the input or hit Reply.
 
   useEffect(() => {
     if (desktopInline) return;
@@ -456,7 +454,13 @@ export function CommentsDrawer({ contentId, contentCreatorId, onClose, onComment
       {/* Input bar */}
       <div
         className="border-t border-default shrink-0"
-        style={{ paddingBottom: desktopInline ? "0px" : "env(safe-area-inset-bottom, 0px)" }}
+        style={{
+          paddingBottom: desktopInline
+            ? "0px"
+            : keyboardInset > 0
+              ? "0px"
+              : "env(safe-area-inset-bottom, 0px)",
+        }}
       >
         {/* Replying-to banner */}
         {replyingTo && (
@@ -500,14 +504,47 @@ export function CommentsDrawer({ contentId, contentCreatorId, onClose, onComment
     return <div className="flex flex-col flex-1 overflow-hidden">{inner}</div>;
   }
 
+  // ── Mobile: keyboard-aware bottom sheet (native feel, no layout shift) ──
   return (
-    <Drawer open onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DrawerContent className="mx-auto max-w-107.5 focus:outline-none" style={{ maxHeight: "75vh" }}>
-        <DrawerHeader className="border-b border-default pb-3 pt-1">
-          <DrawerTitle className="text-sm font-semibold text-default text-center">Comments</DrawerTitle>
-        </DrawerHeader>
+    <div className="fixed inset-0 z-80" role="dialog" aria-modal="true">
+      {/* Scrim */}
+      <button
+        type="button"
+        aria-label="Close comments"
+        onClick={onClose}
+        className="absolute inset-0 bg-black/60 animate-in fade-in-0 duration-300"
+      />
+
+      {/* Sheet — bottom rides above the keyboard so the input stays visible
+          and the list shrinks instead of being covered. */}
+      <div
+        className="absolute inset-x-0 mx-auto flex max-w-107.5 flex-col rounded-t-3xl bg-app shadow-2xl animate-in slide-in-from-bottom duration-300"
+        style={{
+          bottom: keyboardInset,
+          top: "auto",
+          maxHeight: "82svh",
+          height: "75svh",
+          transition: "bottom 0.15s ease-out",
+        }}
+      >
+        {/* Grabber + header */}
+        <div className="shrink-0 border-b border-default">
+          <div className="mx-auto mt-2.5 h-1 w-10 rounded-full bg-muted-foreground/30" />
+          <div className="flex items-center justify-between px-4 py-3">
+            <h2 className="text-sm font-bold text-default">Comments</h2>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-surface"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+
         {inner}
-      </DrawerContent>
-    </Drawer>
+      </div>
+    </div>
   );
 }
