@@ -5,10 +5,6 @@ import { isValidLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 
 export const metadata = {
-  viewport: {
-    userScalable: false,
-    viewportfit: "cover",
-  },
   title: "Shopi — Social Commerce Platform",
   description: "Discover products, watch videos, and shop live with creators.",
   openGraph: {
