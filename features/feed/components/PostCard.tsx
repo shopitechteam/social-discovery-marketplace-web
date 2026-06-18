@@ -1090,6 +1090,44 @@ export function PostCard({ post, lang, priority }: Props) {
               Copy link
             </button>
 
+            {post.allowDownload && (
+              <button
+                onClick={handleDownload}
+                disabled={isDownloading}
+                className="flex text-sm w-full items-center gap-3 px-4 py-3 rounded-xl  font-semibold text-default hover:bg-surface transition-colors"
+              >
+                {isDownloading ? (
+                  <>
+                    <svg
+                      className="w-4 h-4 animate-spin"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                      />
+                    </svg>
+                    <span>Down.…</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" strokeWidth={1.8} />
+                    <span>Download</span>
+                  </>
+                )}
+              </button>
+            )}
+
             <button
               type="button"
               onClick={(e) => {
@@ -1253,45 +1291,6 @@ export function PostCard({ post, lang, priority }: Props) {
           />
           <span>{saveCount > 0 ? fmt(saveCount) : "Save"}</span>
         </button>
-
-        {/* Download pill — outlined like Save */}
-        {post.allowDownload && (
-          <button
-            onClick={handleDownload}
-            disabled={isDownloading}
-            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-full border border-border text-xs font-semibold transition-all active:scale-95 disabled:opacity-60"
-          >
-            {isDownloading ? (
-              <>
-                <svg
-                  className="w-4 h-4 animate-spin"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                  />
-                </svg>
-                <span>Down.…</span>
-              </>
-            ) : (
-              <>
-                <Download className="w-4 h-4" strokeWidth={1.8} />
-                <span>Download</span>
-              </>
-            )}
-          </button>
-        )}
 
         {/* Comment pill — opens the lazy-loaded comments sheet */}
         <button
