@@ -10,7 +10,13 @@
  * attribution.
  */
 
-import { useState, useRef, useCallback, type DetailedHTMLProps, type HTMLAttributes } from "react";
+import {
+  useState,
+  useRef,
+  useCallback,
+  type DetailedHTMLProps,
+  type HTMLAttributes,
+} from "react";
 import Image from "next/image";
 import { TikTokIcon } from "@/components/ui/TikTokIcon";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
@@ -99,18 +105,6 @@ export function TikTokEmbedMedia({
           </span>
         </button>
       )}
-
-      {/* Attribution badge — always visible, links back to TikTok */}
-      <a
-        href={shareUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={(e) => e.stopPropagation()}
-        className="absolute right-3 top-3 z-20 flex items-center gap-1.5 rounded-full bg-black/65 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm"
-      >
-        <TikTokIcon size={14} className="h-3.5 w-3.5" />
-        View on TikTok
-      </a>
     </div>
   );
 }
