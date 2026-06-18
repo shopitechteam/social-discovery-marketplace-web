@@ -3,16 +3,19 @@
 /**
  * TikTokImportPage — full-page TikTok video picker for the create flow.
  *
+ * Embed-and-attribute model: we do NOT download or re-host. The user picks one
+ * of their own TikTok videos; we create an embed-backed draft that streams the
+ * video from TikTok via <tiktok-video> and links back with a "View on TikTok"
+ * badge in the feed.
+ *
  * States:
- *  1. Not connected → show connect CTA (opens OAuth popup, returns to this page)
+ *  1. Not connected → connect CTA (opens OAuth popup, returns to this page)
  *  2. Connected, loading → skeleton
- *  3. Connected → two tabs: "My TikTok" (live videos) | "Imported" (already downloaded)
- *     - RadioGroup single-select
- *     - If video not yet imported → "Import" button → polls until COMPLETED
- *     - Once a COMPLETED video is selected → "Use This Video" → creates draft → enter flow
+ *  3. Connected → single list of the user's TikTok videos (RadioGroup single-select)
+ *     → "Use This Video" → createDraftFromTiktokEmbed → enter edit flow
  */
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "@apollo/client/react";
 import { useCreateStore } from "@/stores/create";
@@ -20,22 +23,12 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
 import {
   MeDocument,
-  MyTiktokImportsDocument,
   MyTiktokVideosDocument,
   TiktokConnectUrlDocument,
-  ImportTiktokVideoDocument,
-  CreateDraftFromTiktokImportDocument,
-  type TiktokDownloadFieldsFragment,
+  CreateDraftFromTiktokEmbedDocument,
   type TiktokVideoItemFieldsFragment,
 } from "@/types/__generated__/graphql";
 import Image from "next/image";
-import { getSocket, connectSocket } from "@/lib/socket/socket-client";
-import {
-  WS_EVENTS,
-  type TiktokImportUpdatedPayload,
-} from "@/lib/socket/socket-events";
-
-type Tab = "tiktok" | "imported";
 
 interface Props {
   lang: string;
@@ -43,37 +36,23 @@ interface Props {
 
 export function TikTokImportPage({ lang }: Props) {
   const router = useRouter();
-  const { setContentType, setStep, setDraftId, addMediaItem, reset, setTitle, setCaption } = useCreateStore();
+  const {
+    setContentType,
+    setStep,
+    setDraftId,
+    setTiktokEmbed,
+    addMediaItem,
+    reset,
+    setTitle,
+  } = useCreateStore();
 
-  const [tab, setTab] = useState<Tab>("tiktok");
-  const [selectedShareUrl, setSelectedShareUrl] = useState<string | null>(null);
-  const [selectedImportId, setSelectedImportId] = useState<string | null>(null);
-  const [importingUrl, setImportingUrl] = useState<string | null>(null);
-  const [importError, setImportError] = useState<string | null>(null);
-  const pageRef = useRef<HTMLDivElement>(null);
-
-  // Scroll page to top — stable ref so WS handler can call it without stale closure
-  const scrollToTop = useRef(() => {
-    pageRef.current?.scrollTo({ top: 0, behavior: "smooth" });
-  });
-  // Fire on every tab switch (including auto-switch after import completes)
-  useEffect(() => {
-    scrollToTop.current();
-  }, [tab]);
+  const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [using, setUsing] = useState(false);
 
   // ── Queries ──────────────────────────────────────────────────────────────
   const { data: meData, loading: meLoading } = useQuery(MeDocument);
   const isTiktokConnected = meData?.me?.authProviders?.tiktok ?? false;
-
-  const {
-    data: importedData,
-    loading: importedLoading,
-    refetch: refetchImported,
-  } = useQuery(MyTiktokImportsDocument, {
-    skip: !isTiktokConnected,
-    fetchPolicy: "network-only", // always fresh — never serve stale imports
-    nextFetchPolicy: "network-only", // keep network-only after refetch too
-  });
 
   const {
     data: videosData,
@@ -82,9 +61,12 @@ export function TikTokImportPage({ lang }: Props) {
   } = useQuery(MyTiktokVideosDocument, { skip: !isTiktokConnected });
 
   // ── Mutations ─────────────────────────────────────────────────────────────
-  const [getTiktokConnectUrl, { loading: connectLoading }] = useMutation(TiktokConnectUrlDocument);
-  const [importTiktokVideo] = useMutation(ImportTiktokVideoDocument);
-  const [createDraftFromTiktokImport] = useMutation(CreateDraftFromTiktokImportDocument);
+  const [getTiktokConnectUrl, { loading: connectLoading }] = useMutation(
+    TiktokConnectUrlDocument,
+  );
+  const [createDraftFromTiktokEmbed] = useMutation(
+    CreateDraftFromTiktokEmbedDocument,
+  );
 
   // ── Connect TikTok ────────────────────────────────────────────────────────
   async function handleConnect() {
@@ -114,75 +96,28 @@ export function TikTokImportPage({ lang }: Props) {
     window.addEventListener("focus", onFocus);
   }
 
-  // ── WebSocket — real-time import status ──────────────────────────────────
-  // ── WebSocket — real-time import status ──────────────────────────────────
-  // Keep refetchImported in a ref so the stable WS handler can always call
-  // the latest version without being recreated on every render.
-  const refetchImportedRef = useRef(refetchImported);
-  useEffect(() => {
-    refetchImportedRef.current = refetchImported;
-  }, [refetchImported]);
+  // ── Use selected video → create embed draft → enter create flow ────────────
+  async function handleUse() {
+    const video = videos.find((v) => v.id === selectedVideoId);
+    if (!video) return;
 
-  useEffect(() => {
-    connectSocket();
-    const socket = getSocket();
-
-    const handler = async (payload: TiktokImportUpdatedPayload) => {
-      if (payload.status === "COMPLETED") {
-        try {
-          await refetchImportedRef.current();
-        } catch {
-          /* non-fatal */
-        }
-        setImportingUrl(null);
-        setSelectedImportId(payload.downloadId);
-        setTab("imported");
-        scrollToTop.current();
-      } else if (payload.status === "FAILED") {
-        setImportError(payload.errorMessage ?? "Import failed");
-        setImportingUrl(null);
-      }
-    };
-
-    socket.on(WS_EVENTS.TIKTOK_IMPORT_UPDATED, handler);
-    return () => {
-      socket.off(WS_EVENTS.TIKTOK_IMPORT_UPDATED, handler);
-    };
-  }, []); // mount/unmount only — handler reads refs, not stale closures
-
-  // ── Import ────────────────────────────────────────────────────────────────
-  async function handleImport(shareUrl: string) {
-    setImportError(null);
-    setImportingUrl(shareUrl);
+    setUsing(true);
+    setError(null);
     try {
-      await importTiktokVideo({ variables: { shareUrl } });
-      // Status updates arrive via WebSocket — no polling needed
-    } catch (e) {
-      setImportError(String(e));
-      setImportingUrl(null);
-    }
-  }
-
-  const [usingImport, setUsingImport] = useState(false);
-
-  // ── Use selected video → enter create flow ────────────────────────────────
-  async function handleUseImported() {
-    const item = (importedData?.myTiktokImports ?? []).find(
-      (d) => d.id === selectedImportId,
-    );
-    if (!item || item.status !== "COMPLETED" || !item.muxPlaybackId) return;
-
-    setUsingImport(true);
-    setImportError(null);
-    try {
-      // createDraftFromTiktokImport is idempotent — if the background worker
-      // already created a draft it returns that one, otherwise creates fresh.
-      const { data } = await createDraftFromTiktokImport({
-        variables: { downloadId: item.id },
+      const { data } = await createDraftFromTiktokEmbed({
+        variables: {
+          input: {
+            videoId: video.id,
+            shareUrl: video.shareUrl,
+            coverImageUrl: video.coverImageUrl,
+            title: video.title,
+            duration: video.duration,
+          },
+        },
       });
-      const draft = data?.createDraftFromTiktokImport;
+      const draft = data?.createDraftFromTiktokEmbed;
       if (!draft) {
-        setImportError("Could not create draft — please try again.");
+        setError("Could not create draft — please try again.");
         return;
       }
 
@@ -190,40 +125,37 @@ export function TikTokImportPage({ lang }: Props) {
       setContentType("video");
       setDraftId(draft.id);
       if (draft.title) setTitle(draft.title);
-      if (draft.caption) setCaption(draft.caption);
-
-      // Use the real mediaAssetId from the draft so autosave references the
-      // correct backend asset; fall back to a local key only if somehow absent.
-      const realAssetId = draft.mediaAssetIds?.[0] ?? `tiktok-${item.id}`;
+      setTiktokEmbed({
+        videoId: video.id,
+        shareUrl: video.shareUrl,
+        coverImageUrl: video.coverImageUrl ?? undefined,
+        title: video.title ?? undefined,
+        duration: video.duration ?? undefined,
+      });
+      // Synthesize a read-only cover media item so the create-flow steps (which
+      // key off mediaItems[0]) render a preview and pass their "media ready" gates.
       addMediaItem({
-        id: realAssetId,
-        localUri: item.thumbnailUrl ?? "",
+        id: `tiktok-embed:${video.id}`,
+        localUri: video.coverImageUrl ?? "",
         type: "video",
         status: "ready",
-        thumbnailUrl: item.thumbnailUrl ?? undefined,
-        muxPlaybackId: item.muxPlaybackId,
+        thumbnailUrl: video.coverImageUrl ?? undefined,
       });
 
       setStep("edit");
       router.push(`/${lang}/upload/create`);
     } catch (e) {
-      setImportError(String(e));
+      setError(String(e));
     } finally {
-      setUsingImport(false);
+      setUsing(false);
     }
   }
 
   // ── Derived ───────────────────────────────────────────────────────────────
-  const imports = importedData?.myTiktokImports ?? [];
-  const importedByUrl = new Map(imports.map((d) => [d.url, d]));
   const videos = videosData?.myTiktokVideos?.videos ?? [];
   const hasMore = videosData?.myTiktokVideos?.hasMore ?? false;
   const nextCursor = videosData?.myTiktokVideos?.nextCursor ?? undefined;
-  const completedCount = imports.filter((d) => d.status === "COMPLETED").length;
-
-  const selectedImport = imports.find((d) => d.id === selectedImportId);
-  const canUse =
-    selectedImport?.status === "COMPLETED" && !!selectedImport.muxPlaybackId;
+  const canUse = !!selectedVideoId;
 
   // ── Render ────────────────────────────────────────────────────────────────
   if (meLoading)
@@ -256,8 +188,8 @@ export function TikTokImportPage({ lang }: Props) {
                 color: "rgb(var(--color-text-muted))",
               }}
             >
-              Connect your TikTok account to import your videos directly into
-              Shopi
+              Connect your TikTok account to feature your videos on Shopi — they
+              stream from TikTok and link back to your profile.
             </p>
           </div>
           <Button
@@ -275,32 +207,9 @@ export function TikTokImportPage({ lang }: Props) {
 
   return (
     <PageShell lang={lang}>
-      {/* Sticky tabs */}
-      <div
-        className="flex px-4 md:px-6 gap-2 py-3 shrink-0 bg-app"
-        style={{ borderBottom: "1px solid rgb(var(--color-border))" }}
-      >
-        {(["tiktok", "imported"] as Tab[]).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className="flex-1 h-9 rounded-xl text-sm font-medium transition-colors"
-            style={{
-              backgroundColor:
-                tab === t
-                  ? "rgb(var(--brand-primary))"
-                  : "rgb(var(--color-bg-subtle))",
-              color: tab === t ? "white" : "rgb(var(--color-text-muted))",
-            }}
-          >
-            {t === "tiktok" ? "My TikTok" : `Imported (${completedCount})`}
-          </button>
-        ))}
-      </div>
-
-      {/* Scrollable list — this is the ONLY part that scrolls */}
-      <div ref={pageRef} className="flex-1 overflow-y-auto px-4 pt-3 pb-2 md:px-6">
-        {importError && (
+      {/* Scrollable list */}
+      <div className="flex-1 overflow-y-auto px-4 pt-3 pb-2 md:px-6">
+        {error && (
           <div
             className="mb-3 rounded-xl px-4 py-3 text-sm"
             style={{
@@ -309,99 +218,44 @@ export function TikTokImportPage({ lang }: Props) {
               color: "rgb(var(--color-error))",
             }}
           >
-            {importError}
+            {error}
           </div>
         )}
 
-        {/* Tab: My TikTok videos */}
-        {tab === "tiktok" && (
+        {videosLoading ? (
+          <LoadingSkeleton />
+        ) : (
           <>
-            {videosLoading ? (
-              <LoadingSkeleton />
-            ) : (
-              <>
-                {videos.length === 0 && (
-                  <p
-                    className="text-center py-12 text-sm"
-                    style={{ color: "rgb(var(--color-text-muted))" }}
-                  >
-                    No TikTok videos found
-                  </p>
-                )}
-                <RadioGroup
-                  value={selectedShareUrl ?? ""}
-                  onValueChange={setSelectedShareUrl}
-                  className="grid grid-cols-1 md:grid-cols-2 gap-3"
-                >
-                  {videos.map((video) => {
-                    const existing = importedByUrl.get(video.shareUrl);
-                    return (
-                      <TikTokVideoRow
-                        key={video.id}
-                        video={video}
-                        isSelected={selectedShareUrl === video.shareUrl}
-                        existingImport={existing}
-                        isImporting={importingUrl === video.shareUrl}
-                        anyImporting={importingUrl !== null}
-                        onSelect={() => {
-                          if (existing?.status === "COMPLETED") {
-                            setSelectedImportId(existing.id);
-                            setTab("imported");
-                          } else {
-                            setSelectedShareUrl(video.shareUrl);
-                          }
-                        }}
-                        onImport={() => handleImport(video.shareUrl)}
-                      />
-                    );
-                  })}
-                </RadioGroup>
-                {hasMore && (
-                  <Button
-                    variant="ghost"
-                    className="w-full mt-4"
-                    onClick={() =>
-                      fetchMore({ variables: { cursor: nextCursor } })
-                    }
-                  >
-                    Load more
-                  </Button>
-                )}
-              </>
+            {videos.length === 0 && (
+              <p
+                className="text-center py-12 text-sm"
+                style={{ color: "rgb(var(--color-text-muted))" }}
+              >
+                No TikTok videos found
+              </p>
             )}
-          </>
-        )}
-
-        {/* Tab: Already imported */}
-        {tab === "imported" && (
-          <>
-            {importedLoading ? (
-              <LoadingSkeleton />
-            ) : (
-              <>
-                {imports.length === 0 && (
-                  <p
-                    className="text-center py-12 text-sm"
-                    style={{ color: "rgb(var(--color-text-muted))" }}
-                  >
-                    No imported videos yet — go to My TikTok to import one
-                  </p>
-                )}
-                <RadioGroup
-                  value={selectedImportId ?? ""}
-                  onValueChange={setSelectedImportId}
-                  className="grid grid-cols-1 md:grid-cols-2 gap-3"
-                >
-                  {imports.map((item) => (
-                    <ImportedVideoRow
-                      key={item.id}
-                      item={item}
-                      isSelected={selectedImportId === item.id}
-                      onSelect={() => setSelectedImportId(item.id)}
-                    />
-                  ))}
-                </RadioGroup>
-              </>
+            <RadioGroup
+              value={selectedVideoId ?? ""}
+              onValueChange={setSelectedVideoId}
+              className="grid grid-cols-1 md:grid-cols-2 gap-3"
+            >
+              {videos.map((video) => (
+                <TikTokVideoRow
+                  key={video.id}
+                  video={video}
+                  isSelected={selectedVideoId === video.id}
+                  onSelect={() => setSelectedVideoId(video.id)}
+                />
+              ))}
+            </RadioGroup>
+            {hasMore && (
+              <Button
+                variant="ghost"
+                className="w-full mt-4"
+                onClick={() => fetchMore({ variables: { cursor: nextCursor } })}
+              >
+                Load more
+              </Button>
             )}
           </>
         )}
@@ -413,17 +267,17 @@ export function TikTokImportPage({ lang }: Props) {
         style={{ borderTop: "1px solid rgb(var(--color-border))" }}
       >
         <Button
-          onClick={handleUseImported}
-          disabled={!canUse || usingImport}
+          onClick={handleUse}
+          disabled={!canUse || using}
           className="w-full h-12 rounded-2xl font-semibold text-white"
           style={{
             backgroundColor: canUse
               ? "rgb(var(--brand-primary))"
               : "rgb(var(--color-border))",
-            opacity: canUse && !usingImport ? 1 : 0.4,
+            opacity: canUse && !using ? 1 : 0.4,
           }}
         >
-          {usingImport ? "Loading…" : "Use This Video"}
+          {using ? "Loading…" : "Use This Video"}
         </Button>
       </div>
     </PageShell>
@@ -476,7 +330,7 @@ function PageShell({
             className="font-semibold"
             style={{ fontSize: "var(--text-xl)", color: "rgb(var(--color-text))" }}
           >
-            TikTok Import
+            Add from TikTok
           </h1>
         </div>
         {children}
@@ -488,35 +342,17 @@ function PageShell({
 function TikTokVideoRow({
   video,
   isSelected,
-  existingImport,
-  isImporting,
-  anyImporting,
   onSelect,
-  onImport,
 }: {
   video: TiktokVideoItemFieldsFragment;
   isSelected: boolean;
-  existingImport?: TiktokDownloadFieldsFragment;
-  isImporting: boolean;
-  anyImporting: boolean;
   onSelect: () => void;
-  onImport: () => void;
 }) {
-  const isImported = existingImport?.status === "COMPLETED";
-  const isPending =
-    existingImport?.status === "PENDING" ||
-    existingImport?.status === "PROCESSING" ||
-    existingImport?.status === "UPLOADING";
-  // This row is blocked if another row is currently importing
-  const isBlockedByOther = anyImporting && !isImporting;
-
   return (
     <div
-      onClick={isBlockedByOther ? undefined : onSelect}
-      className="flex items-center gap-3 p-3 rounded-2xl transition-colors"
+      onClick={onSelect}
+      className="flex items-center gap-3 p-3 rounded-2xl transition-colors cursor-pointer"
       style={{
-        cursor: isBlockedByOther ? "default" : "pointer",
-        opacity: isBlockedByOther ? 0.4 : 1,
         backgroundColor: isSelected
           ? "rgb(var(--brand-primary)/0.06)"
           : "rgb(var(--color-bg-subtle))",
@@ -528,7 +364,6 @@ function TikTokVideoRow({
       {/* Thumbnail */}
       <div className="relative w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-gray-200">
         {video.coverImageUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
           <Image
             height={100}
             width={100}
@@ -563,134 +398,12 @@ function TikTokVideoRow({
         >
           {new Date(video.createTime * 1000).toLocaleDateString()}
         </p>
-        {isImported && (
-          <span
-            className="inline-flex items-center gap-1 text-xs mt-1"
-            style={{ color: "#4ade80" }}
-          >
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M5 13l4 4L19 7"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-              />
-            </svg>
-            Imported
-          </span>
-        )}
-        {(isImporting || isPending) && (
-          <span
-            className="inline-flex items-center gap-1 text-xs mt-1"
-            style={{ color: "rgb(var(--brand-primary))" }}
-          >
-            <MiniSpinner /> Importing…
-          </span>
-        )}
       </div>
 
       {/* Right action */}
       <div className="shrink-0">
-        {isImported ? (
-          <RadioGroupItem value={video.shareUrl} />
-        ) : isImporting || isPending ? (
-          <MiniSpinner />
-        ) : (
-          <Button
-            size="sm"
-            disabled={isBlockedByOther}
-            onClick={(e) => {
-              e.stopPropagation();
-              onImport();
-            }}
-            className="h-8 px-3 rounded-xl text-xs font-semibold text-white"
-            style={{ backgroundColor: "rgb(var(--brand-primary))" }}
-          >
-            Import
-          </Button>
-        )}
+        <RadioGroupItem value={video.id} />
       </div>
-    </div>
-  );
-}
-
-function ImportedVideoRow({
-  item,
-  isSelected,
-  onSelect,
-}: {
-  item: TiktokDownloadFieldsFragment;
-  isSelected: boolean;
-  onSelect: () => void;
-}) {
-  const isReady = item.status === "COMPLETED";
-  const isFailed = item.status === "FAILED";
-
-  return (
-    <div
-      onClick={isReady ? onSelect : undefined}
-      className="flex items-center gap-3 p-3 rounded-2xl transition-colors"
-      style={{
-        cursor: isReady ? "pointer" : "default",
-        backgroundColor: isSelected
-          ? "rgb(var(--brand-primary)/0.06)"
-          : "rgb(var(--color-bg-subtle))",
-        border: isSelected
-          ? "1.5px solid rgb(var(--brand-primary)/0.3)"
-          : "1.5px solid transparent",
-        opacity: isReady ? 1 : 0.55,
-      }}
-    >
-      {/* Thumbnail */}
-      <div className="relative w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-gray-200">
-        {item.thumbnailUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <Image
-            height={100}
-            width={100}
-            src={item?.thumbnailUrl}
-            alt=""
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-        )}
-        {!isReady && !isFailed && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-            <MiniSpinner color="white" />
-          </div>
-        )}
-      </div>
-
-      {/* Info */}
-      <div className="flex-1 min-w-0">
-        <p
-          className="text-sm font-medium truncate"
-          style={{ color: "rgb(var(--color-text))" }}
-        >
-          {item.title || item.authorNickname || "TikTok Video"}
-        </p>
-        {item.authorUsername && (
-          <p
-            className="text-xs mt-0.5"
-            style={{ color: "rgb(var(--color-text-muted))" }}
-          >
-            @{item.authorUsername}
-          </p>
-        )}
-        <span
-          className="text-xs mt-1 inline-block"
-          style={{
-            color: isReady
-              ? "#4ade80"
-              : isFailed
-                ? "rgb(var(--color-error))"
-                : "rgb(var(--color-text-muted))",
-          }}
-        >
-          {isReady ? "Ready" : isFailed ? "Failed" : "Processing…"}
-        </span>
-      </div>
-
-      {isReady && <RadioGroupItem value={item.id} className="flex-shrink-0" />}
     </div>
   );
 }
@@ -721,37 +434,6 @@ function TikTokIcon({ size = 24 }: { size?: number }) {
       <path
         d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.22 8.22 0 0 0 4.82 1.56V6.8a4.85 4.85 0 0 1-1.05-.11Z"
         fill="rgb(var(--color-text))"
-      />
-    </svg>
-  );
-}
-
-function MiniSpinner({
-  color = "rgb(var(--brand-primary))",
-}: {
-  color?: string;
-}) {
-  return (
-    <svg
-      className="animate-spin"
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-    >
-      <circle
-        cx="12"
-        cy="12"
-        r="10"
-        stroke={color}
-        strokeOpacity="0.25"
-        strokeWidth="3"
-      />
-      <path
-        d="M12 2a10 10 0 0 1 10 10"
-        stroke={color}
-        strokeWidth="3"
-        strokeLinecap="round"
       />
     </svg>
   );

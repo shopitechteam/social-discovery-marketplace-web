@@ -89,13 +89,12 @@ function ProfileSkeleton() {
         </div>
       </div>
       <div className="mx-auto max-w-6xl px-4 py-5 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-          {Array.from({ length: 12 }).map((_, index) => (
+        <div className="grid grid-cols-2 gap-2">
+          {Array.from({ length: 6 }).map((_, index) => (
             <div
               key={index}
-              className="rounded-lg"
+              className="aspect-9/10 rounded-lg"
               style={{
-                aspectRatio: "9/16",
                 backgroundColor: "rgb(var(--color-bg-subtle))",
               }}
             />
@@ -109,8 +108,9 @@ function ProfileSkeleton() {
 const tabConfig: { key: Tab; label: string; icon: TabIcon }[] = [
   { key: "posts", label: "Posts", icon: LayoutGrid },
   { key: "drafts", label: "Drafts", icon: FileEdit },
-  { key: "analytics", label: "Analytics", icon: ChartColumn },
   { key: "tiktok", label: "TikTok", icon: TikTokIcon },
+  { key: "analytics", label: "Analytics", icon: ChartColumn },
+
   { key: "settings", label: "Settings", icon: Settings },
 ];
 

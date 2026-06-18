@@ -54,6 +54,7 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
     hasExtracted,
     location,
     mediaItems,
+    tiktokEmbed,
     setTitle,
     setCaption,
     setHashtags,
@@ -130,8 +131,13 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
   const allReady =
     mediaItems.length > 0 && mediaItems.every((m) => m.status === "ready");
 
+  // Embed-backed drafts (TikTok) have no media assets, but AI auto-fill can run
+  // off the TikTok thumbnail (the server uses coverImageUrl for these). For
+  // native drafts it needs all media READY as before.
+  const canExtract = !!tiktokEmbed?.coverImageUrl || allReady;
+
   useEffect(() => {
-    if (!draftId || hasExtracted || isExtracting || !allReady) {
+    if (!draftId || hasExtracted || isExtracting || !canExtract) {
       console.log("[AI-extract] effect skipped", {
         draftId,
         hasExtracted,
@@ -174,7 +180,7 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
       })
       .finally(() => setIsExtracting(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allReady, draftId, hasExtracted]);
+  }, [canExtract, draftId, hasExtracted]);
 
   // ── Debounced autosave ─────────────────────────────────────────────────────
   useEffect(() => {

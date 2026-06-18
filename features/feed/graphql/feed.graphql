@@ -32,6 +32,17 @@ fragment MediaItemFields on MediaItem {
 fragment ContentCardFields on Content {
   id
   type
+  source
+  isLive
+  tiktokEmbed {
+    videoId
+    shareUrl
+    coverImageUrl
+    authorUsername
+    authorName
+    title
+    duration
+  }
   title
   caption
   hashtags

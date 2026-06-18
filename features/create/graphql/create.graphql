@@ -15,6 +15,16 @@ fragment DraftFields on DraftContent {
   version
   sourceImportId
   importProvider
+  source
+  tiktokEmbed {
+    videoId
+    shareUrl
+    coverImageUrl
+    authorUsername
+    authorName
+    title
+    duration
+  }
   coverThumbnailUrl
   price {
     amount
@@ -147,6 +157,12 @@ query GetMediaAsset($id: String!) {
 
 mutation CreateDraftFromTiktokImport($downloadId: String!) {
   createDraftFromTiktokImport(downloadId: $downloadId) {
+    ...DraftFields
+  }
+}
+
+mutation CreateDraftFromTiktokEmbed($input: TiktokEmbedInput!) {
+  createDraftFromTiktokEmbed(input: $input) {
     ...DraftFields
   }
 }

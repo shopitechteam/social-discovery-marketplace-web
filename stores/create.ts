@@ -23,6 +23,21 @@ export type MediaItem = {
 /** A product attribute (Make, Model, Condition, …) — AI-generated, user-editable. */
 export type Spec = { key: string; value: string };
 
+/**
+ * Reference to an embedded TikTok video. Present only for embed-backed drafts
+ * (source = TIKTOK_EMBED). The video streams from TikTok via <tiktok-video>;
+ * no media is uploaded or re-hosted.
+ */
+export type TiktokEmbed = {
+  videoId: string;
+  shareUrl: string;
+  coverImageUrl?: string;
+  authorUsername?: string;
+  authorName?: string;
+  title?: string;
+  duration?: number;
+};
+
 /** Location as returned by the LocationPicker — mirrors ContentLocationInput */
 export type DraftLocation = {
   placeName: string;           // e.g. "Madaraka Estate"
@@ -43,6 +58,8 @@ export type CreateFlowState = {
   caption: string;
   hashtags: string[];
   contentType: "image" | "video" | null;
+  /** Set when the draft embeds a TikTok video instead of uploaded media. */
+  tiktokEmbed: TiktokEmbed | null;
   price: number | null;
   currency: string;
   isFree: boolean;
@@ -73,6 +90,7 @@ type CreateFlowActions = {
   setCaption: (caption: string) => void;
   setHashtags: (tags: string[]) => void;
   setContentType: (type: "image" | "video" | null) => void;
+  setTiktokEmbed: (embed: TiktokEmbed | null) => void;
   setPrice: (price: number | null, isFree: boolean) => void;
   setSpecs: (specs: Spec[]) => void;
   setIsExtracting: (v: boolean) => void;
@@ -97,6 +115,7 @@ const DEFAULT_STATE: CreateFlowState = {
   caption: "",
   hashtags: [],
   contentType: null,
+  tiktokEmbed: null,
   price: null,
   currency: "KES",
   isFree: true,
@@ -155,6 +174,7 @@ export const useCreateStore = create<CreateFlowState & CreateFlowActions>()(
       setCaption: (caption) => set({ caption }),
       setHashtags: (hashtags) => set({ hashtags }),
       setContentType: (contentType) => set({ contentType }),
+      setTiktokEmbed: (tiktokEmbed) => set({ tiktokEmbed }),
       setPrice: (price, isFree) => set({ price, isFree }),
       setSpecs: (specs) => set({ specs }),
       setIsExtracting: (isExtracting) => set({ isExtracting }),
@@ -178,6 +198,7 @@ export const useCreateStore = create<CreateFlowState & CreateFlowActions>()(
         draftId: s.draftId,
         step: s.step,
         contentType: s.contentType,
+        tiktokEmbed: s.tiktokEmbed,
         // Strip blob localUris — they're only valid in the originating tab's memory
         mediaItems: s.mediaItems.map(({ localUri: _, ...rest }) => rest as MediaItem),
         title: s.title,

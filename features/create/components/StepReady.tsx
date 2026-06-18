@@ -39,6 +39,7 @@ export function StepReady({ lang }: StepReadyProps) {
     hashtags,
     mediaItems,
     contentType,
+    tiktokEmbed,
     price,
     isFree,
     currency,
@@ -320,7 +321,25 @@ export function StepReady({ lang }: StepReadyProps) {
           }}
         >
           {/* ── MuxPlayer fills column, contain keeps aspect ratio ─────── */}
-          {cover?.muxPlaybackId ? (
+          {tiktokEmbed ? (
+            // Embed-backed post: we don't host the video. Show the TikTok cover
+            // as the publish preview; the live embed renders in the feed.
+            <>
+              {tiktokEmbed.coverImageUrl && (
+                <Image
+                  src={tiktokEmbed.coverImageUrl}
+                  alt={tiktokEmbed.title ?? "TikTok video"}
+                  fill
+                  sizes="430px"
+                  className="object-contain"
+                  unoptimized
+                />
+              )}
+              <span className="absolute right-3 top-3 z-10 rounded-full bg-black/65 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm">
+                TikTok
+              </span>
+            </>
+          ) : cover?.muxPlaybackId ? (
             <MuxPlayer
               ref={playerRef}
               playbackId={cover.muxPlaybackId}

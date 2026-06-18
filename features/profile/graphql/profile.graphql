@@ -173,6 +173,8 @@ query GetMyTiktokVideos($cursor: String) {
       shareUrl
       duration
       createTime
+      viewCount
+      likeCount
     }
     nextCursor
     hasMore

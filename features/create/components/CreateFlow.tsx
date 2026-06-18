@@ -75,6 +75,7 @@ export function CreateFlow({ lang }: CreateFlowProps) {
     setError,
     addMediaItem,
     updateMediaItem,
+    setTiktokEmbed,
   } = store;
 
   const router = useRouter();
@@ -175,6 +176,35 @@ export function CreateFlow({ lang }: CreateFlowProps) {
         setAllowDownload(d.allowDownload ?? false);
         setHdEnabled(d.hdEnabled ?? false);
         if (d.price) setPrice(d.price.amount, d.price.amount === 0);
+
+        // ── Embed-backed draft (TikTok) ──────────────────────────────────────
+        // No MediaAssets — the video streams from TikTok. Restore the embed ref
+        // and synthesize a read-only cover media item so the create-flow steps
+        // (which key off mediaItems[0]) render a preview and pass their gates.
+        if (d.source === "TIKTOK_EMBED" && d.tiktokEmbed) {
+          const e = d.tiktokEmbed;
+          setTiktokEmbed({
+            videoId: e.videoId,
+            shareUrl: e.shareUrl,
+            coverImageUrl: e.coverImageUrl ?? undefined,
+            authorUsername: e.authorUsername ?? undefined,
+            authorName: e.authorName ?? undefined,
+            title: e.title ?? undefined,
+            duration: e.duration ?? undefined,
+          });
+          const embedItemId = `tiktok-embed:${e.videoId}`;
+          const known = new Set(useCreateStore.getState().mediaItems.map((m) => m.id));
+          if (!known.has(embedItemId)) {
+            addMediaItem({
+              id: embedItemId,
+              localUri: e.coverImageUrl ?? "",
+              type: "video",
+              status: "ready",
+              thumbnailUrl: e.coverImageUrl ?? undefined,
+            });
+          }
+          return;
+        }
 
         // Re-hydrate media items from the API — blob localUris are not persisted
         const knownIds = new Set(useCreateStore.getState().mediaItems.map((m) => m.id));

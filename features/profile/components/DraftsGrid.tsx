@@ -24,6 +24,16 @@ function mapType(type?: string | null): "image" | "video" | null {
   return null;
 }
 
+function formatDate(value: unknown) {
+  const date = new Date(String(value));
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("en", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 export function DraftsGrid({ lang }: Props) {
   const router = useRouter();
   const { setDraftId, setContentType, setStep } = useCreateStore();
@@ -50,7 +60,9 @@ export function DraftsGrid({ lang }: Props) {
     if (busyId) return;
     setBusyId(draft.id);
     try {
-      const { data: res, error } = await publishDraft({ variables: { id: draft.id } });
+      const { data: res, error } = await publishDraft({
+        variables: { id: draft.id },
+      });
       if (error || !res?.publishDraft) {
         throw new Error(error?.message ?? "Could not publish");
       }
@@ -78,6 +90,23 @@ export function DraftsGrid({ lang }: Props) {
     }
   }
 
+  // ── Loading skeleton (2-grid, matches Posts/TikTok) ──────────────────────────
+  if (loading && drafts.length === 0) {
+    return (
+      <section className="px-4 py-5 sm:px-6 lg:px-8">
+        <div className="mx-auto grid w-full max-w-6xl grid-cols-2 gap-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={i}
+              className="aspect-9/10 rounded-xl"
+              style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
+            />
+          ))}
+        </div>
+      </section>
+    );
+  }
+
   // ── Empty state ────────────────────────────────────────────────────────────
   if (!loading && drafts.length === 0) {
     return (
@@ -95,16 +124,22 @@ export function DraftsGrid({ lang }: Props) {
           </div>
           <h2
             className="font-bold"
-            style={{ fontSize: "var(--text-lg)", color: "rgb(var(--color-text))" }}
+            style={{
+              fontSize: "var(--text-lg)",
+              color: "rgb(var(--color-text))",
+            }}
           >
             No drafts yet
           </h2>
           <p
             className="mt-2 max-w-sm leading-snug"
-            style={{ fontSize: "var(--text-base)", color: "rgb(var(--color-text-muted))" }}
+            style={{
+              fontSize: "var(--text-base)",
+              color: "rgb(var(--color-text-muted))",
+            }}
           >
-            When you save a post as a draft, it shows up here so you can finish and
-            publish it later.
+            When you save a post as a draft, it shows up here so you can finish
+            and publish it later.
           </p>
           <button
             type="button"
@@ -125,7 +160,7 @@ export function DraftsGrid({ lang }: Props) {
 
   return (
     <section className="px-4 py-5 sm:px-6 lg:px-8">
-      <div className="mx-auto grid w-full max-w-6xl grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+      <div className="mx-auto grid w-full max-w-6xl grid-cols-2 gap-2">
         {drafts.map((draft) => {
           const busy = busyId === draft.id;
           const isVideo = mapType(draft.type) === "video";
@@ -142,8 +177,7 @@ export function DraftsGrid({ lang }: Props) {
               <button
                 type="button"
                 onClick={() => continueEditing(draft)}
-                className="relative block w-full overflow-hidden bg-black/5"
-                style={{ aspectRatio: "9/16" }}
+                className="relative block aspect-9/10 w-full overflow-hidden bg-black/5"
                 aria-label="Continue editing draft"
               >
                 {draft.coverThumbnailUrl ? (
@@ -174,24 +208,40 @@ export function DraftsGrid({ lang }: Props) {
                 {/* Draft badge */}
                 <span
                   className="absolute left-2 top-2 rounded-full px-2 py-0.5 font-semibold text-white"
-                  style={{ fontSize: "11px", backgroundColor: "rgb(0 0 0 / 0.6)" }}
+                  style={{
+                    fontSize: "11px",
+                    backgroundColor: "rgb(0 0 0 / 0.6)",
+                  }}
                 >
                   Draft
                 </span>
               </button>
 
-              {/* Title */}
-              <div className="px-3 pt-2">
+              {/* Meta — title / date (matches TikTok & Posts cards) */}
+              <div className="px-2.5 pt-2.5">
                 <p
-                  className="line-clamp-2 font-semibold"
-                  style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text))" }}
+                  className="line-clamp-2 leading-tight"
+                  style={{
+                    fontSize: "var(--text-sm)",
+                    color: "rgb(var(--color-text))",
+                    fontWeight: 500,
+                  }}
                 >
                   {draft.title?.trim() || "Untitled draft"}
+                </p>
+                <p
+                  className="mt-1"
+                  style={{
+                    fontSize: "var(--text-xs)",
+                    color: "rgb(var(--color-text-muted))",
+                  }}
+                >
+                  {formatDate(draft.updatedAt ?? draft.createdAt)}
                 </p>
               </div>
 
               {/* Actions */}
-              <div className="mt-2 flex items-center gap-2 px-3 pb-3">
+              <div className="mt-2 flex items-center gap-2 px-2.5 pb-3">
                 <button
                   type="button"
                   onClick={() => handlePublish(draft)}

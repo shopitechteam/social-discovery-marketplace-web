@@ -54,6 +54,8 @@ import { useFollow } from "../hooks/useFollow";
 import { BufferSpinner } from "./BufferSpinner";
 import { CommentsDrawer } from "./CommentsDrawer";
 import { MediaCarouselDialog } from "./MediaCarouselDialog";
+import { TikTokEmbedMedia } from "./TikTokEmbedMedia";
+import { TikTokIcon } from "@/components/ui/TikTokIcon";
 import { usePageFocused } from "../hooks/usePageFocused";
 import toBase64 from "@/lib/utils";
 import {
@@ -181,11 +183,23 @@ function VideoMedia({
     : null;
 
   const [ended, setEnded] = useState(false);
+  // Manual play/pause: tapping the video toggles this. It overrides autoplay
+  // until the video scrolls away (reset in the inactive effect below).
+  const [userPaused, setUserPaused] = useState(false);
 
   // hls.js — fast ABR + buffering state
-  // Pass ended as paused so useHlsVideo doesn't resume after the ended event
+  // Pause when the video ended OR the user tapped to pause, so useHlsVideo
+  // doesn't resume on its own.
   const shouldPlay = active && pageFocused;
-  const { videoRef, buffering } = useHlsVideo(hlsUrl, shouldPlay, ended);
+  const { videoRef, buffering } = useHlsVideo(
+    hlsUrl,
+    shouldPlay,
+    ended || userPaused,
+  );
+
+  const toggleUserPaused = useCallback(() => {
+    setUserPaused((p) => !p);
+  }, []);
 
   const [trackInteractionMutation] = useMutation(gql`
     mutation TrackInteractionFeed(
@@ -244,7 +258,11 @@ function VideoMedia({
   useEffect(() => {
     if (!active) {
       // Defer resetting ended to avoid synchronous setState inside the effect
-      const t = setTimeout(() => setEnded(false), 0);
+      const t = setTimeout(() => {
+        setEnded(false);
+        // Clear any manual pause so the video autoplays again when re-entered
+        setUserPaused(false);
+      }, 0);
       const video = videoRef.current;
       if (!video) {
         clearTimeout(t);
@@ -306,6 +324,7 @@ function VideoMedia({
   return (
     <div
       ref={containerRef}
+      onClick={toggleUserPaused}
       className="relative w-full bg-black overflow-hidden"
       style={{
         // Portrait videos get a taller budget (70dvh) so they aren't squeezed;
@@ -361,6 +380,17 @@ function VideoMedia({
             </svg>
           </span>
         </button>
+      )}
+      {/* Paused indicator — shown when the user tapped to pause (not ended).
+          Pointer-events-none so the tap falls through to the container toggle. */}
+      {active && userPaused && !ended && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm">
+            <svg className="h-7 w-7 translate-x-0.5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </span>
+        </div>
       )}
       {/* TikTok-style buffer spinner */}
       {active && buffering && (
@@ -1133,8 +1163,14 @@ export function PostCard({ post, lang, priority }: Props) {
       {/* ── Media ──────────────────────────────────────────────────────── */}
       {/* No PDP navigation: videos toggle play/pause; multi-image opens the
           in-place carousel dialog; single images do nothing on tap. */}
-      <div>
-        {post.type === "VIDEO" ? (
+      <div className="relative">
+        {/* TikTok posts render native once the background re-host has populated
+            `media` (the post is then live). Until then we fall back to the live
+            embed — though pre-live posts are normally hidden from the feed, so
+            this branch is mainly a safety net. */}
+        {post.source === "TIKTOK_EMBED" && !post.media?.length ? (
+          <TikTokEmbedMedia post={post} />
+        ) : post.type === "VIDEO" ? (
           <VideoMedia post={post} priority={priority} />
         ) : (
           <ImageMedia
@@ -1143,6 +1179,23 @@ export function PostCard({ post, lang, priority }: Props) {
             onNavigate={mediaCount > 1 ? () => setShowCarousel(true) : undefined}
           />
         )}
+
+        {/* Attribution badge for native (re-hosted) TikTok posts. The embed
+            block draws its own badge, so only add it for the native case. */}
+        {post.source === "TIKTOK_EMBED" &&
+          !!post.media?.length &&
+          post.tiktokEmbed?.shareUrl && (
+            <a
+              href={post.tiktokEmbed.shareUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="absolute right-3 top-3 z-20 flex items-center gap-1.5 rounded-full bg-black/65 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm"
+            >
+              <TikTokIcon size={14} className="h-3.5 w-3.5" />
+              View on TikTok
+            </a>
+          )}
       </div>
 
       {/* ── Stats row ──────────────────────────────────────────────────── */}

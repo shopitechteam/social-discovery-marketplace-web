@@ -1,47 +1,29 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
-import { useQuery, useMutation, useApolloClient } from "@apollo/client/react";
+import { useQuery, useMutation } from "@apollo/client/react";
 import {
   GetTiktokConnectStatusDocument,
   GetTiktokConnectUrlDocument,
   GetMyTiktokVideosDocument,
-  GetMyTiktokImportsDocument,
-  GetMyTiktokImportsPagedDocument,
-  BatchImportTiktokVideosDocument,
 } from "@/types/__generated__/graphql";
-import type {
-  GetMyTiktokVideosQuery,
-  GetMyTiktokImportsQuery,
-} from "@/types/__generated__/graphql";
-import { getSocket, connectSocket, WS_EVENTS } from "@/lib/socket";
-import type { TiktokImportUpdatedPayload } from "@/lib/socket";
+import type { GetMyTiktokVideosQuery } from "@/types/__generated__/graphql";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  CheckCircle2,
-  Clock,
   ExternalLink,
+  Eye,
+  Heart,
   Loader2,
-  Play,
   RefreshCw,
   Tv2,
-  Upload,
   Video,
-  XCircle,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { HlsVideoDialog } from "./HlsVideoDialog";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type TiktokVideo = GetMyTiktokVideosQuery["myTiktokVideos"]["videos"][number];
-type TiktokImport = GetMyTiktokImportsQuery["myTiktokImports"][number];
-
-type ImportStatus = TiktokImport["status"];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -61,38 +43,11 @@ function formatDate(ts: unknown) {
   });
 }
 
-const STATUS_CONFIG: Record<
-  ImportStatus,
-  {
-    label: string;
-    icon: React.ElementType;
-    variant: "default" | "secondary" | "destructive" | "outline";
-    className?: string;
-  }
-> = {
-  PENDING: { label: "Queued", icon: Clock, variant: "secondary" },
-  UPLOADING: {
-    label: "Uploading",
-    icon: Upload,
-    variant: "secondary",
-    className: "animate-pulse",
-  },
-  PROCESSING: {
-    label: "Processing",
-    icon: Loader2,
-    variant: "secondary",
-    className: "animate-spin",
-  },
-  COMPLETED: {
-    label: "Imported",
-    icon: CheckCircle2,
-    variant: "default",
-    className: "text-green-600 dark:text-green-400",
-  },
-  FAILED: { label: "Failed", icon: XCircle, variant: "destructive" },
-};
-
-const ACTIVE_STATUSES: ImportStatus[] = ["PENDING", "UPLOADING", "PROCESSING"];
+function formatCount(n: number) {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return String(n);
+}
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -141,7 +96,7 @@ function ConnectGate({ lang }: { lang: string }) {
             fontSize: "var(--text-base)",
           }}
         >
-          Link your TikTok account to browse and import your videos into Shopi.
+          Link your TikTok account to see your videos here.
         </p>
         <Button
           onClick={handleConnect}
@@ -168,42 +123,23 @@ function ConnectGate({ lang }: { lang: string }) {
   );
 }
 
-function VideoCard({
-  video,
-  selected,
-  imported,
-  onToggle,
-}: {
-  video: TiktokVideo;
-  selected: boolean;
-  imported: boolean;
-  onToggle: (id: string) => void;
-}) {
+function VideoCard({ video }: { video: TiktokVideo }) {
   return (
     <div
-      onClick={() => !imported && onToggle(video.id)}
-      className={cn(
-        "group relative cursor-pointer overflow-hidden rounded-xl border transition-all duration-150",
-        selected && !imported && "ring-2 ring-offset-0",
-        imported && "cursor-default opacity-60",
-      )}
+      className="overflow-hidden rounded-xl border"
       style={{
-        borderColor:
-          selected && !imported
-            ? "rgb(var(--brand-primary))"
-            : "rgb(var(--color-border))",
-        ["--tw-ring-color" as string]: "rgb(var(--brand-primary))",
+        borderColor: "rgb(var(--color-border))",
         backgroundColor: "rgb(var(--color-bg-elevated))",
       }}
     >
       {/* Thumbnail */}
-      <div className="relative" style={{ aspectRatio: "9/16" }}>
+      <div className="relative aspect-9/10">
         <Image
           src={video.coverImageUrl}
           alt={video.title}
           fill
           className="object-cover"
-          sizes="(max-width: 430px) 33vw, 140px"
+          sizes="(max-width: 430px) 50vw, 215px"
           unoptimized
         />
         {/* Duration pill */}
@@ -217,147 +153,53 @@ function VideoCard({
         >
           {formatDuration(video.duration)}
         </div>
-
-        {/* Already imported overlay */}
-        {imported && (
-          <div
-            className="absolute inset-0 flex items-center justify-center"
-            style={{ backgroundColor: "rgba(0,0,0,0.45)" }}
-          >
-            <CheckCircle2 size={28} className="text-white drop-shadow" />
-          </div>
-        )}
-
-        {/* Checkbox — top-left */}
-        {!imported && (
-          <div className="absolute left-2 top-2">
-            <Checkbox
-              checked={selected}
-              onCheckedChange={() => onToggle(video.id)}
-              className="h-5 w-5 border-2 border-white bg-white/20 data-[state=checked]:bg-primary data-[state=checked]:border-primary shadow-sm"
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>
-        )}
       </div>
 
-      {/* Title */}
-      <div className="p-2">
+      {/* Meta */}
+      <div className="p-2.5">
+        {video.title && (
+          <p
+            className="line-clamp-2 leading-tight"
+            style={{
+              fontSize: "var(--text-sm)",
+              color: "rgb(var(--color-text))",
+              fontWeight: 500,
+            }}
+          >
+            {video.title}
+          </p>
+        )}
+
+        {/* Stats row — only render counts the API returned */}
+        {(video.viewCount != null || video.likeCount != null) && (
+          <div
+            className="mt-1 flex items-center gap-3"
+            style={{
+              fontSize: "var(--text-xs)",
+              color: "rgb(var(--color-text-muted))",
+            }}
+          >
+            {video.viewCount != null && (
+              <span className="flex items-center gap-1">
+                <Eye size={12} /> {formatCount(video.viewCount)}
+              </span>
+            )}
+            {video.likeCount != null && (
+              <span className="flex items-center gap-1">
+                <Heart size={12} /> {formatCount(video.likeCount)}
+              </span>
+            )}
+          </div>
+        )}
+
         <p
-          className="line-clamp-2 leading-tight"
-          style={{
-            fontSize: "var(--text-xs)",
-            color: "rgb(var(--color-text))",
-            fontWeight: 500,
-          }}
-        >
-          {video.title || "Untitled"}
-        </p>
-        <p
-          className="mt-0.5"
+          className="mt-1"
           style={{
             fontSize: "var(--text-xs)",
             color: "rgb(var(--color-text-muted))",
           }}
         >
           {formatDate(video.createTime)}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-/**
- * Queue tile — same visual design as the My Videos VideoCard, minus the select
- * checkbox. Shows a status badge; when the import has a playable video it shows
- * a play affordance and opens the HLS preview dialog on click.
- */
-function QueueVideoCard({
-  item,
-  liveStatus,
-  onPlay,
-}: {
-  item: TiktokImport;
-  liveStatus?: ImportStatus;
-  onPlay: (item: TiktokImport) => void;
-}) {
-  const status = liveStatus ?? item.status;
-  const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.PENDING;
-  const playable = Boolean(item.hlsUrl || item.muxPlaybackId);
-
-  return (
-    <div
-      onClick={() => playable && onPlay(item)}
-      className={cn(
-        "group relative overflow-hidden rounded-xl border transition-all duration-150",
-        playable ? "cursor-pointer" : "cursor-default",
-      )}
-      style={{
-        borderColor: "rgb(var(--color-border))",
-        backgroundColor: "rgb(var(--color-bg-elevated))",
-      }}
-    >
-      {/* Thumbnail */}
-      <div className="relative" style={{ aspectRatio: "9/16" }}>
-        {item.thumbnailUrl ? (
-          <Image
-            src={item.thumbnailUrl}
-            alt={item.title ?? ""}
-            fill
-            className="object-cover"
-            sizes="(max-width: 430px) 33vw, 140px"
-            unoptimized
-          />
-        ) : (
-          <div
-            className="flex h-full w-full items-center justify-center"
-            style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
-          >
-            <Video size={20} style={{ color: "rgb(var(--color-text-placeholder))" }} />
-          </div>
-        )}
-
-        {/* Play affordance for playable items */}
-        {playable && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/15 opacity-0 transition-opacity group-hover:opacity-100">
-            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-black/55">
-              <Play size={20} fill="currentColor" strokeWidth={0} className="ml-0.5 text-white" />
-            </span>
-          </div>
-        )}
-
-        {/* Status badge — top-left */}
-        <div className="absolute left-1.5 top-1.5">
-          <Badge
-            variant={cfg.variant === "default" ? "secondary" : cfg.variant}
-            className={cn(
-              "gap-1 px-1.5 py-0 text-xs font-semibold",
-              cfg.variant === "default" &&
-                "bg-green-100 text-black dark:bg-green-900/30 dark:text-green-400",
-            )}
-          >
-            {cfg.label}
-          </Badge>
-        </div>
-      </div>
-
-      {/* Title */}
-      <div className="p-2">
-        <p
-          className="line-clamp-2 leading-tight"
-          style={{
-            fontSize: "var(--text-xs)",
-            color: "rgb(var(--color-text))",
-            fontWeight: 500,
-          }}
-        >
-          {item.title || "Untitled"}
-        </p>
-        <p
-          className="mt-0.5"
-          style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}
-        >
-          {formatDate(item.createdAt)}
         </p>
       </div>
     </div>
@@ -371,8 +213,6 @@ interface Props {
 }
 
 export function TiktokImportPanel({ lang }: Props) {
-  const apolloClient = useApolloClient();
-
   // ── Auth / connect status ──────────────────────────────────────────────────
   const {
     data: statusData,
@@ -384,9 +224,7 @@ export function TiktokImportPanel({ lang }: Props) {
 
   const isTiktokConnected = statusData?.me?.authProviders?.tiktok === true;
 
-  // ── TikTok videos list ─────────────────────────────────────────────────────
-  // Apollo accumulates pages via fetchMore (merge below). Infinite scroll drives
-  // each fetch — no manual page accumulator.
+  // ── TikTok videos list (infinite scroll) ────────────────────────────────────
   const {
     data: videosData,
     loading: videosLoading,
@@ -440,175 +278,6 @@ export function TiktokImportPanel({ lang }: Props) {
     return () => observer.disconnect();
   }, [loadMoreVideos]);
 
-  // ── Existing imports ───────────────────────────────────────────────────────
-  // This (capped) query powers cross-cutting concerns: the "already imported"
-  // dedup set for the pick grid, active-import polling, and live status updates.
-  const { data: importsData, refetch: refetchImports } = useQuery(
-    GetMyTiktokImportsDocument,
-    { skip: !isTiktokConnected, fetchPolicy: "cache-and-network" },
-  );
-
-  const imports = importsData?.myTiktokImports ?? [];
-
-  // Build set of already-imported shareUrls for quick look-up
-  const importedUrls = new Set(imports.map((i) => i.url));
-
-  // Paginated query that drives the Import-queue grid display (infinite scroll).
-  const {
-    data: importsPagedData,
-    loading: importsPagedLoading,
-    refetch: refetchImportsPaged,
-    fetchMore: fetchMoreImports,
-  } = useQuery(GetMyTiktokImportsPagedDocument, {
-    variables: { limit: 21 },
-    skip: !isTiktokConnected,
-    fetchPolicy: "cache-and-network",
-    notifyOnNetworkStatusChange: true,
-  });
-
-  const queueItems = importsPagedData?.myTiktokImportsPaged.items ?? [];
-  const queueHasMore = importsPagedData?.myTiktokImportsPaged.hasMore ?? false;
-  const queueNextCursor = importsPagedData?.myTiktokImportsPaged.nextCursor ?? null;
-  const queueFetchingMore = useRef(false);
-
-  const loadMoreQueue = useCallback(() => {
-    if (!queueHasMore || !queueNextCursor || queueFetchingMore.current) return;
-    queueFetchingMore.current = true;
-    fetchMoreImports({
-      variables: { limit: 21, after: queueNextCursor },
-      updateQuery(prev, { fetchMoreResult }) {
-        queueFetchingMore.current = false;
-        if (!fetchMoreResult) return prev;
-        return {
-          myTiktokImportsPaged: {
-            ...fetchMoreResult.myTiktokImportsPaged,
-            items: [
-              ...prev.myTiktokImportsPaged.items,
-              ...fetchMoreResult.myTiktokImportsPaged.items,
-            ],
-          },
-        };
-      },
-    }).catch(() => {
-      queueFetchingMore.current = false;
-    });
-  }, [queueHasMore, queueNextCursor, fetchMoreImports]);
-
-  const queueSentinelRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = queueSentinelRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) loadMoreQueue();
-      },
-      { rootMargin: "300px" },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [loadMoreQueue]);
-
-  // ── Selection state ────────────────────────────────────────────────────────
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-
-  function toggleVideo(shareUrl: string) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      next.has(shareUrl) ? next.delete(shareUrl) : next.add(shareUrl);
-      return next;
-    });
-  }
-
-  const importableUrls = allVideos
-    .filter((v) => !importedUrls.has(v.shareUrl))
-    .map((v) => v.shareUrl);
-  const allSelected =
-    importableUrls.length > 0 &&
-    importableUrls.every((url) => selected.has(url));
-
-  function toggleSelectAll() {
-    if (allSelected) {
-      setSelected(new Set());
-    } else {
-      setSelected(new Set(importableUrls));
-    }
-  }
-
-  function clearSelection() {
-    setSelected(new Set());
-  }
-
-  // ── Batch import mutation ──────────────────────────────────────────────────
-  const [batchImport, { loading: importing }] = useMutation(
-    BatchImportTiktokVideosDocument,
-  );
-  const [importResult, setImportResult] = useState<{
-    queued: number;
-    skipped: number;
-  } | null>(null);
-
-  async function handleImport() {
-    if (selected.size === 0) return;
-    const shareUrls = Array.from(selected);
-    const { data } = await batchImport({ variables: { shareUrls } });
-    if (data?.batchImportTiktokVideos) {
-      setImportResult({
-        queued: data.batchImportTiktokVideos.queued,
-        skipped: data.batchImportTiktokVideos.skipped,
-      });
-      setSelected(new Set());
-      refetchImports();
-      // Reset the queue's paginated list to its first page so new imports show
-      refetchImportsPaged({ limit: 21, after: undefined });
-    }
-  }
-
-  // ── WebSocket live updates ─────────────────────────────────────────────────
-  const [liveStatuses, setLiveStatuses] = useState<
-    Record<string, ImportStatus>
-  >({});
-
-  const hasActiveImports = imports.some((i) =>
-    ACTIVE_STATUSES.includes(liveStatuses[i.id] ?? i.status),
-  );
-
-  useEffect(() => {
-    if (!isTiktokConnected) return;
-
-    const socket = getSocket();
-    connectSocket();
-
-    function handleUpdate(payload: TiktokImportUpdatedPayload) {
-      setLiveStatuses((prev) => ({
-        ...prev,
-        [payload.downloadId]: payload.status as ImportStatus,
-      }));
-
-      // When a job completes/fails, refetch to pick up title/thumbnail from DB
-      if (payload.status === "COMPLETED" || payload.status === "FAILED") {
-        apolloClient.refetchQueries({ include: [GetMyTiktokImportsDocument] });
-      }
-    }
-
-    socket.on(WS_EVENTS.TIKTOK_IMPORT_UPDATED, handleUpdate);
-    return () => {
-      socket.off(WS_EVENTS.TIKTOK_IMPORT_UPDATED, handleUpdate);
-    };
-  }, [isTiktokConnected, apolloClient]);
-
-  // Poll while there are active imports (fallback if WS unavailable)
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  useEffect(() => {
-    if (hasActiveImports) {
-      pollRef.current = setInterval(() => refetchImports(), 8000);
-    } else {
-      if (pollRef.current) clearInterval(pollRef.current);
-    }
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
-  }, [hasActiveImports, refetchImports]);
-
   // Refresh TikTok connect status after returning from OAuth popup
   useEffect(() => {
     function handleFocus() {
@@ -618,26 +287,11 @@ export function TiktokImportPanel({ lang }: Props) {
     return () => window.removeEventListener("focus", handleFocus);
   }, [isTiktokConnected, refetchStatus]);
 
-  // ── View toggle ────────────────────────────────────────────────────────────
-  const [view, setView] = useState<"pick" | "queue">("pick");
-  const activeCount = imports.filter((i) =>
-    ACTIVE_STATUSES.includes(liveStatuses[i.id] ?? i.status),
-  ).length;
-
-  // Queue video preview dialog
-  const [previewItem, setPreviewItem] = useState<TiktokImport | null>(null);
-  const previewHls =
-    previewItem?.hlsUrl ??
-    (previewItem?.muxPlaybackId
-      ? `https://stream.mux.com/${previewItem.muxPlaybackId}.m3u8`
-      : null);
-
   // ── Render ─────────────────────────────────────────────────────────────────
 
   if (statusLoading && !statusData) {
     return (
       <div className="flex flex-col gap-0">
-        {/* header row */}
         <div className="flex items-center justify-between px-4 pt-4 pb-3">
           <div className="flex flex-col gap-2">
             <Skeleton className="h-4 w-28 rounded-md" />
@@ -645,14 +299,8 @@ export function TiktokImportPanel({ lang }: Props) {
           </div>
           <Skeleton className="h-8 w-8 rounded-full" />
         </div>
-        {/* tab switcher */}
-        <div className="flex gap-2 px-4 pb-3">
-          <Skeleton className="h-8 flex-1 rounded-lg" />
-          <Skeleton className="h-8 flex-1 rounded-lg" />
-        </div>
-        {/* video grid */}
-        <div className="grid grid-cols-3 gap-1 px-4">
-          {Array.from({ length: 9 }).map((_, i) => (
+        <div className="grid grid-cols-2 gap-2 px-4">
+          {Array.from({ length: 6 }).map((_, i) => (
             <Skeleton
               key={i}
               className="rounded-xl"
@@ -672,10 +320,6 @@ export function TiktokImportPanel({ lang }: Props) {
     );
   }
 
-  const notImportedVideos = allVideos.filter(
-    (v) => !importedUrls.has(v.shareUrl),
-  );
-
   return (
     <div className="flex flex-col gap-0">
       {/* ── Header ──────────────────────────────────────────────────────── */}
@@ -688,7 +332,7 @@ export function TiktokImportPanel({ lang }: Props) {
               color: "rgb(var(--color-text))",
             }}
           >
-            TikTok Import
+            My TikTok Videos
           </p>
           <p
             style={{
@@ -697,7 +341,7 @@ export function TiktokImportPanel({ lang }: Props) {
             }}
           >
             {allVideos.length > 0
-              ? `${allVideos.length} video${allVideos.length !== 1 ? "s" : ""} · ${notImportedVideos.length} not yet imported`
+              ? `${allVideos.length} video${allVideos.length !== 1 ? "s" : ""}`
               : "Browse your videos"}
           </p>
         </div>
@@ -719,358 +363,60 @@ export function TiktokImportPanel({ lang }: Props) {
         </button>
       </div>
 
-      {/* ── Tab switcher ────────────────────────────────────────────────── */}
-      <div
-        className="sticky z-10 flex gap-2 px-4 pb-3 pt-1"
-        style={{
-          top: 48,
-          backgroundColor: "rgb(var(--color-bg) / 0.94)",
-          backdropFilter: "blur(14px) saturate(150%)",
-          WebkitBackdropFilter: "blur(14px) saturate(150%)",
-          borderBottom: "1px solid rgb(var(--color-border))",
-        }}
-      >
-        <button
-          onClick={() => setView("pick")}
-          className={cn(
-            "flex h-10 flex-1 items-center justify-center gap-1.5 rounded-lg border font-semibold transition-all",
-            view === "pick"
-              ? "border-primary bg-primary text-white shadow-sm"
-              : "border-border bg-background text-muted-foreground",
-          )}
-          style={{
-            fontSize: "var(--text-xs)",
-            borderColor:
-              view === "pick"
-                ? "rgb(var(--brand-primary))"
-                : "rgb(var(--color-border))",
-            backgroundColor:
-              view === "pick"
-                ? "rgb(var(--brand-primary))"
-                : "rgb(var(--color-bg-elevated))",
-            color: view === "pick" ? "#fff" : "rgb(var(--color-text-muted))",
-          }}
-        >
-          <Video size={13} strokeWidth={2.2} />
-          My Videos
-        </button>
-        <button
-          onClick={() => setView("queue")}
-          className={cn(
-            "relative flex h-10 flex-1 items-center justify-center gap-1.5 rounded-lg border font-semibold transition-all",
-          )}
-          style={{
-            fontSize: "var(--text-xs)",
-            borderColor:
-              view === "queue"
-                ? "rgb(var(--brand-primary))"
-                : "rgb(var(--color-border))",
-            backgroundColor:
-              view === "queue"
-                ? "rgb(var(--brand-primary))"
-                : "rgb(var(--color-bg-elevated))",
-            color: view === "queue" ? "#fff" : "rgb(var(--color-text-muted))",
-          }}
-        >
-          <Upload size={13} strokeWidth={2.2} />
-          Import Queue
-          {activeCount > 0 && (
-            <span
-              className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs font-bold text-white"
-              style={{ backgroundColor: "rgb(var(--brand-primary))" }}
-            >
-              {activeCount}
-            </span>
-          )}
-        </button>
-      </div>
-
-      {/* ── Import result toast ──────────────────────────────────────────── */}
-      {importResult && (
-        <div
-          className="mx-4 mb-3 flex items-start gap-2 rounded-xl border px-3 py-2.5"
-          style={{
-            backgroundColor: "rgb(var(--color-success) / 0.08)",
-            borderColor: "rgb(var(--color-success) / 0.3)",
-          }}
-        >
-          <CheckCircle2
-            size={16}
-            className="mt-0.5 shrink-0"
-            style={{ color: "rgb(var(--color-success))" }}
+      {/* ── Video grid (2-up) ───────────────────────────────────────────── */}
+      {videosLoading && allVideos.length === 0 ? (
+        <div className="grid grid-cols-2 gap-2 px-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton
+              key={i}
+              className="rounded-xl"
+              style={{ aspectRatio: "9/16" }}
+            />
+          ))}
+        </div>
+      ) : allVideos.length === 0 ? (
+        <div className="flex flex-col items-center justify-center gap-3 py-14 text-center px-6">
+          <Video
+            size={32}
+            style={{ color: "rgb(var(--color-text-placeholder))" }}
           />
-          <div>
-            <p
-              className="font-semibold"
-              style={{
-                fontSize: "var(--text-sm)",
-                color: "rgb(var(--color-text))",
-              }}
-            >
-              {importResult.queued} video{importResult.queued !== 1 ? "s" : ""}{" "}
-              queued for import
-            </p>
-            {importResult.skipped > 0 && (
-              <p
-                style={{
-                  fontSize: "var(--text-xs)",
-                  color: "rgb(var(--color-text-muted))",
-                }}
-              >
-                {importResult.skipped} already imported, skipped
-              </p>
-            )}
-          </div>
-          <button
-            onClick={() => setImportResult(null)}
-            className="ml-auto shrink-0 opacity-50 hover:opacity-100"
+          <p
+            className="font-semibold"
+            style={{
+              fontSize: "var(--text-base)",
+              color: "rgb(var(--color-text))",
+            }}
           >
-            <XCircle size={14} />
-          </button>
+            No videos found
+          </p>
+          <p
+            style={{
+              fontSize: "var(--text-sm)",
+              color: "rgb(var(--color-text-muted))",
+            }}
+          >
+            Your TikTok videos will appear here once loaded.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-2 px-4">
+          {allVideos.map((video) => (
+            <VideoCard key={video.id} video={video} />
+          ))}
         </div>
       )}
 
-      {/* ── Pick view ───────────────────────────────────────────────────── */}
-      {view === "pick" && (
-        <div className="flex flex-col gap-0">
-          {/* Selection toolbar */}
-          <div className="flex items-center justify-between px-4 pb-2">
-            <div className="flex items-center gap-2">
-              {selected.size > 0 ? (
-                <>
-                  <span
-                    className="font-semibold"
-                    style={{
-                      fontSize: "var(--text-sm)",
-                      color: "rgb(var(--color-text))",
-                    }}
-                  >
-                    {selected.size} selected
-                  </span>
-                  <button
-                    onClick={clearSelection}
-                    className="rounded-md px-2 py-0.5 font-medium transition-opacity active:opacity-60"
-                    style={{
-                      fontSize: "var(--text-xs)",
-                      color: "rgb(var(--color-text-muted))",
-                      backgroundColor: "rgb(var(--color-bg-subtle))",
-                    }}
-                  >
-                    Clear
-                  </button>
-                </>
-              ) : (
-                <span
-                  style={{
-                    fontSize: "var(--text-sm)",
-                    color: "rgb(var(--color-text-muted))",
-                  }}
-                >
-                  Tap to select
-                </span>
-              )}
-            </div>
-            <button
-              onClick={toggleSelectAll}
-              disabled={notImportedVideos.length === 0}
-              className="font-semibold transition-opacity disabled:opacity-30"
-              style={{
-                fontSize: "var(--text-sm)",
-                color: "rgb(var(--brand-primary))",
-              }}
-            >
-              {allSelected ? "Deselect all" : "Select all"}
-            </button>
-          </div>
-
-          {/* Video grid */}
-          {videosLoading && allVideos.length === 0 ? (
-            <div className="grid grid-cols-3 gap-1 px-4">
-              {Array.from({ length: 9 }).map((_, i) => (
-                <Skeleton
-                  key={i}
-                  className="rounded-xl"
-                  style={{ aspectRatio: "9/16" }}
-                />
-              ))}
-            </div>
-          ) : allVideos.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-3 py-14 text-center px-6">
-              <Video
-                size={32}
-                style={{ color: "rgb(var(--color-text-placeholder))" }}
-              />
-              <p
-                className="font-semibold"
-                style={{
-                  fontSize: "var(--text-base)",
-                  color: "rgb(var(--color-text))",
-                }}
-              >
-                No videos found
-              </p>
-              <p
-                style={{
-                  fontSize: "var(--text-sm)",
-                  color: "rgb(var(--color-text-muted))",
-                }}
-              >
-                Your TikTok videos will appear here once loaded.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-3 gap-1 px-4">
-              {allVideos.map((video) => (
-                <VideoCard
-                  key={video.id}
-                  video={video}
-                  selected={selected.has(video.shareUrl)}
-                  imported={importedUrls.has(video.shareUrl)}
-                  onToggle={(id) => {
-                    const v = allVideos.find((x) => x.id === id);
-                    if (v) toggleVideo(v.shareUrl);
-                  }}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Infinite scroll sentinel */}
-          <div ref={videosSentinelRef} className="h-px" />
-          {hasMore && (
-            <div className="flex justify-center px-4 pt-3 pb-1">
-              <Loader2
-                size={18}
-                className="animate-spin"
-                style={{ color: "rgb(var(--color-text-muted))" }}
-              />
-            </div>
-          )}
-
-          {/* Spacer so last row of grid isn't hidden behind the sticky CTA */}
-          {selected.size > 0 && <div style={{ height: 88 }} />}
-
-          {/* Import CTA */}
-          {selected.size > 0 && (
-            <div
-              className="fixed left-1/2 -translate-x-1/2 w-full px-4 z-30"
-              style={{
-                bottom: "calc(var(--nav-height, 60px) + 12px)",
-                maxWidth: 430,
-              }}
-            >
-              <div
-                className="rounded-2xl px-4 py-3"
-                style={{
-                  backgroundColor: "rgb(var(--color-bg-elevated) / 0.88)",
-                  backdropFilter: "blur(16px) saturate(180%)",
-                  WebkitBackdropFilter: "blur(16px) saturate(180%)",
-                  boxShadow:
-                    "0 -2px 24px rgba(0,0,0,0.08), 0 8px 32px rgba(0,0,0,0.08)",
-                  border: "1px solid rgb(var(--color-border))",
-                }}
-              >
-                <Button
-                  onClick={handleImport}
-                  disabled={importing}
-                  className="w-full gap-2 font-semibold"
-                  style={{
-                    background: "#000",
-                    color: "#fff",
-                    boxShadow: "0 4px 16px rgba(0,0,0,0.25)",
-                    height: 48,
-                    fontSize: "var(--text-md)",
-                    borderRadius: "var(--radius-full)",
-                  }}
-                >
-                  {importing ? (
-                    <Loader2 size={16} className="animate-spin" />
-                  ) : (
-                    <Upload size={16} />
-                  )}
-                  Import {selected.size} video{selected.size !== 1 ? "s" : ""}
-                </Button>
-              </div>
-            </div>
-          )}
+      {/* Infinite scroll sentinel */}
+      <div ref={videosSentinelRef} className="h-px" />
+      {hasMore && (
+        <div className="flex justify-center px-4 pt-3 pb-1">
+          <Loader2
+            size={18}
+            className="animate-spin"
+            style={{ color: "rgb(var(--color-text-muted))" }}
+          />
         </div>
       )}
-
-      {/* ── Queue view ───────────────────────────────────────────────────── */}
-      {view === "queue" && (
-        <div className="px-4 pb-4">
-          {queueItems.length === 0 && !importsPagedLoading ? (
-            <div
-              className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed py-14 text-center"
-              style={{ borderColor: "rgb(var(--color-border))" }}
-            >
-              <Upload
-                size={28}
-                style={{ color: "rgb(var(--color-text-placeholder))" }}
-              />
-              <p
-                className="font-semibold"
-                style={{
-                  fontSize: "var(--text-base)",
-                  color: "rgb(var(--color-text))",
-                }}
-              >
-                No imports yet
-              </p>
-              <p
-                style={{
-                  fontSize: "var(--text-sm)",
-                  color: "rgb(var(--color-text-muted))",
-                }}
-              >
-                Select videos on the My Videos tab and tap Import.
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setView("pick")}
-                className="mt-1 gap-1.5"
-              >
-                <Video size={13} /> Browse videos
-              </Button>
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-3 gap-1">
-                {queueItems.map((item) => (
-                  <QueueVideoCard
-                    key={item.id}
-                    item={item}
-                    liveStatus={liveStatuses[item.id]}
-                    onPlay={setPreviewItem}
-                  />
-                ))}
-              </div>
-
-              {/* Infinite scroll sentinel */}
-              <div ref={queueSentinelRef} className="h-px" />
-              {queueHasMore && (
-                <div className="flex justify-center pt-3">
-                  <Loader2
-                    size={18}
-                    className="animate-spin"
-                    style={{ color: "rgb(var(--color-text-muted))" }}
-                  />
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      )}
-
-      {/* Queue video preview dialog */}
-      <HlsVideoDialog
-        open={previewItem !== null}
-        onOpenChange={(o) => !o && setPreviewItem(null)}
-        hlsUrl={previewHls}
-        poster={previewItem?.thumbnailUrl}
-        title={previewItem?.title}
-      />
     </div>
   );
 }
