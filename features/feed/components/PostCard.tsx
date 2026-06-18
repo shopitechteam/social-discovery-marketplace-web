@@ -386,7 +386,11 @@ function VideoMedia({
       {active && userPaused && !ended && (
         <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
           <span className="flex h-16 w-16 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm">
-            <svg className="h-7 w-7 translate-x-0.5" fill="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="h-7 w-7 translate-x-0.5"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path d="M8 5v14l11-7z" />
             </svg>
           </span>
@@ -789,7 +793,7 @@ function ImageMedia({
       className="flex flex-col gap-0.5 overflow-hidden"
       style={{ height: GRID_H }}
     >
-      <div className="flex gap-0.5 flex-[3]">
+      <div className="flex gap-0.5 flex-3">
         {top.map((item, i) => {
           const src = mediaSrc(item, i === 0 ? "large" : "medium");
           return (
@@ -813,7 +817,7 @@ function ImageMedia({
           );
         })}
       </div>
-      <div className="flex gap-0.5 flex-[2]">
+      <div className="flex gap-0.5 flex-2">
         {bottom.map((item, i) => {
           const src = mediaSrc(item, "medium");
           const isLast = i === bottom.length - 1 && overflow > 0;
@@ -1176,7 +1180,9 @@ export function PostCard({ post, lang, priority }: Props) {
           <ImageMedia
             post={post}
             priority={priority}
-            onNavigate={mediaCount > 1 ? () => setShowCarousel(true) : undefined}
+            onNavigate={
+              mediaCount > 1 ? () => setShowCarousel(true) : undefined
+            }
           />
         )}
 
