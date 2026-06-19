@@ -212,14 +212,13 @@ export function StepOptions({ lang }: StepOptionsProps) {
             return; // hold on the success screen so user can reconnect
           }
         } catch {
-          // network error — still redirect normally
+          // network error — user still lands on the success screen
         }
       }
 
-      setTimeout(() => {
-        reset();
-        router.push(`/${lang}/feed`);
-      }, 1500);
+      // No auto-redirect — the success screen stays up until the user taps
+      // "Go to feed". The post is already submitted and will appear once it
+      // clears automated review in the background.
     } catch (err) {
       setError(String(err));
     } finally {
@@ -258,9 +257,12 @@ export function StepOptions({ lang }: StepOptionsProps) {
   // ── Published success ──────────────────────────────────────────────────────
   if (published) {
     return (
-      <div className="h-full" style={{ backgroundColor: "rgb(var(--color-bg))" }}>
+      <div
+        className="fixed inset-0 z-[60] flex items-center justify-center"
+        style={{ backgroundColor: "rgb(var(--color-bg))" }}
+      >
         <Celebration>
-          <div className="flex flex-col items-center justify-center gap-5 px-6 text-center">
+          <div className="flex flex-col items-center justify-center gap-5 px-6 text-center max-w-sm mx-auto">
             <SuccessBadge />
 
             <div className="celebrate-text">
@@ -271,7 +273,9 @@ export function StepOptions({ lang }: StepOptionsProps) {
                 Posted! 🎉
               </h2>
               <p style={{ fontSize: "var(--text-base)", color: "rgb(var(--color-text-muted))" }}>
-                Your post is live on the feed
+                It’s been submitted and is going through a quick automated review
+                to make sure it meets our guidelines. It’ll show up on the feed as
+                soon as it’s approved.
               </p>
             </div>
 
@@ -289,7 +293,7 @@ export function StepOptions({ lang }: StepOptionsProps) {
                   boxShadow: "0 8px 24px rgb(var(--brand-primary) / 0.4)",
                 }}
               >
-                View feed
+                Go to feed
               </button>
             )}
 
