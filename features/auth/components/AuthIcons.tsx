@@ -1,30 +1,11 @@
 // Static, server-safe — no "use client"
 
-import Image from "next/image";
-
-/** Full Shopi SVG logo — wordmark + icon */
-export function ShopiLogo({
-  height = 120,
-  width = 120,
-  className,
-}: {
-  height?: number;
-  width?: number;
-  className?: string;
-}) {
-  return (
-    <div className={className}>
-      <Image
-        src="/assets/shopi-logo.png"
-        height={height}
-        width={width}
-        alt="shopi"
-      />
-    </div>
-  );
-}
-
-/** Small square icon-only mark for tight spaces */
+/**
+ * Icon-only mark.
+ * Concept: a shopping bag whose handle is a chat/location pin —
+ * "discover what's for sale near you, then message the seller."
+ * Uses the brand purple so it sits with the rest of the UI.
+ */
 export function ShopiLogoMark({ size = 48 }: { size?: number }) {
   return (
     <svg
@@ -33,37 +14,91 @@ export function ShopiLogoMark({ size = 48 }: { size?: number }) {
       height={size}
       viewBox="0 0 48 48"
       fill="none"
+      role="img"
       aria-label="Shopi"
     >
-      <defs>
-        <linearGradient id="lm" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#FF3B5C" />
-          <stop offset="100%" stopColor="#FF9F40" />
-        </linearGradient>
-      </defs>
       {/* Rounded square background */}
-      <rect width="48" height="48" rx="14" fill="url(#lm)" />
+      <rect width="48" height="48" rx="13" fill="rgb(var(--brand-primary))" />
       {/* Bag body */}
-      <rect
-        x="10"
-        y="22"
-        width="28"
-        height="18"
-        rx="4"
-        fill="white"
-        fillOpacity="0.92"
-      />
-      {/* Bag handle */}
       <path
-        d="M17 22V18a7 7 0 0 1 14 0v4"
-        stroke="white"
-        strokeWidth="2.8"
+        d="M13 19h22l-1.6 18.2A3 3 0 0 1 30.4 40H17.6a3 3 0 0 1-3-2.8L13 19Z"
+        fill="#fff"
+      />
+      {/* Bag handle — also reads as a chat/pin arc */}
+      <path
+        d="M19 19v-2.5a5 5 0 0 1 10 0V19"
+        stroke="#fff"
+        strokeWidth="2.6"
         strokeLinecap="round"
         fill="none"
       />
-      {/* Spark dot */}
-      <circle cx="35" cy="15" r="6" fill="white" fillOpacity="0.3" />
-      <circle cx="35" cy="15" r="3" fill="white" />
+      {/* Location-pin dot inside the bag */}
+      <circle cx="24" cy="28" r="3.4" fill="rgb(var(--brand-primary))" />
+      <path
+        d="M24 33.5c2.2-2.4 3.4-4 3.4-5.6a3.4 3.4 0 1 0-6.8 0c0 1.6 1.2 3.2 3.4 5.6Z"
+        fill="rgb(var(--brand-primary))"
+      />
+    </svg>
+  );
+}
+
+/**
+ * Full logo — mark + "shopi" wordmark.
+ * `height` controls overall scale; width auto-derives unless given.
+ */
+export function ShopiLogo({
+  height = 36,
+  width,
+  className,
+}: {
+  height?: number;
+  width?: number;
+  className?: string;
+}) {
+  // Intrinsic art is 132 x 40; keep aspect ratio off height.
+  const w = width ?? Math.round((height / 40) * 132);
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={w}
+      height={height}
+      viewBox="0 0 132 40"
+      fill="none"
+      role="img"
+      aria-label="Shopi"
+      className={className}
+    >
+      {/* Mark */}
+      <rect width="40" height="40" rx="11" fill="rgb(var(--brand-primary))" />
+      <path
+        d="M11 16h18l-1.3 14.8A2.5 2.5 0 0 1 25.2 33H14.8a2.5 2.5 0 0 1-2.5-2.2L11 16Z"
+        fill="#fff"
+      />
+      <path
+        d="M16 16v-2a4 4 0 0 1 8 0v2"
+        stroke="#fff"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        fill="none"
+      />
+      <path
+        d="M20 28.5c1.8-2 2.8-3.3 2.8-4.6a2.8 2.8 0 1 0-5.6 0c0 1.3 1 2.6 2.8 4.6Z"
+        fill="rgb(var(--brand-primary))"
+        transform="translate(0 -2)"
+      />
+      <circle cx="20" cy="22" r="2.6" fill="rgb(var(--brand-primary))" />
+      {/* Wordmark */}
+      <text
+        x="50"
+        y="28"
+        fontFamily="var(--font-display), system-ui, sans-serif"
+        fontSize="24"
+        fontWeight="700"
+        letterSpacing="-0.5"
+        fill="rgb(var(--color-text))"
+      >
+        shopi
+      </text>
     </svg>
   );
 }

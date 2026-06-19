@@ -1,13 +1,12 @@
 {
   "common": {
     "appName": "Shopi",
-    "tagline": "Discover. Shop. Share.",
+    "tagline": "Discover. Chat. Buy.",
     "loading": "Loading…",
     "error": "Something went wrong",
-    "continueWeb": "Continue in web →",
-    "downloadApp": "Download App",
-    "downloadAppStore": "Download on the App Store",
-    "downloadGooglePlay": "Get it on Google Play"
+    "continueWeb": "Open the feed →",
+    "openFeed": "Open the feed",
+    "startFree": "Start free"
   },
 
   "nav": {
@@ -22,100 +21,97 @@
 
   "hero": {
     "badge": "Kenya's Social Discovery Marketplace",
-    "headline": "Discover local products through short videos.",
-    "subheadline": "Shopi is the social commerce feed where sellers post videos and photos of what they're selling — and you scroll, discover, and message them directly.",
-    "ctaExplore": "Explore the feed",
-    "ctaHowItWorks": "See how it works",
-    "socialProof": "Join {count}+ sellers already on Shopi"
+    "headline": "Everything for sale near you, in one feed.",
+    "subheadline": "Shopi is where people post what they are selling and you find it by scrolling — cars, clothes, phones, furniture, fresh farm produce. See it, message the seller, agree, done.",
+    "ctaExplore": "Open the feed",
+    "ctaHowItWorks": "See how it works"
   },
 
   "features": {
     "sectionLabel": "Why Shopi",
-    "headline": "Built so local sellers waste zero time getting started.",
+    "headline": "Find it. Message the seller. Close the deal.",
     "items": {
       "scroll": {
-        "title": "Scroll to discover, not search",
-        "body": "Forget boring classified listings. Sellers post short videos, product demos, and photos. You discover them the same way you'd discover content — by scrolling."
+        "title": "You scroll, the product finds you",
+        "body": "No searching for the right words. Sellers post short videos and photos of what they have. You just scroll your local feed and discover things you didn't even know to look for."
       },
       "message": {
-        "title": "Interested? Just message.",
-        "body": "No carts. No checkout. No payment forms. When you find something you want, tap to chat with the seller directly and agree on your own terms."
+        "title": "See it, message, agree",
+        "body": "No cart. No checkout. No middleman. When something catches your eye, tap to chat with the seller, ask your questions and agree on price and pickup on your own terms."
       },
       "local": {
-        "title": "Local products, finally discoverable",
-        "body": "That farmer selling tomatoes in Kiambu. The sneaker dealer in Eastleigh. The tailor in Kisumu. They're all on Shopi — and now you can actually find them."
+        "title": "The seller next to you, finally visible",
+        "body": "The farmer in Kiambu. The phone dealer in town. The lady selling furniture down the road. They are all here — and now buyers across the country can find them."
       },
-      "communities": {
-        "title": "Join communities that match you",
-        "body": "\"iPhones in Embakasi.\" \"Sneakers Kenya.\" \"Farm Produce Nairobi.\" Join niche local communities where buyers and sellers already know each other."
+      "ai": {
+        "title": "Just tell Shopi what you want",
+        "body": "Open Explore and ask in plain words: \"black Mazda Demio, 2015, under 1 million, in Meru.\" Shopi searches, compares and recommends. Need more? It can ask the seller for you."
       },
-      "postOnce": {
-        "title": "Post once. Reach thousands.",
-        "body": "One video can reach thousands of potential buyers in your city. No ad budget needed — just good content and the right community."
+      "tiktok": {
+        "title": "Post on Shopi, get seen on TikTok too",
+        "body": "Connect your TikTok and choose to let your Shopi post auto-publish there, with the first comment linking back to your product. You post once and pull buyers from both — no posting twice."
       },
-      "import": {
-        "title": "Already on TikTok? Just import it.",
-        "body": "If you already post on TikTok or Instagram, bring your content straight to Shopi where it actually converts into sales."
+      "free": {
+        "title": "Free, and it stays free to use",
+        "body": "No fees to post. No commission on your sale. Shopi does not take a cut and does not hold your money. You and the buyer talk directly and keep everything between you."
       }
     }
   },
 
   "howItWorks": {
     "sectionLabel": "How it works",
-    "headline": "Discover locally. Connect directly. No checkout needed.",
+    "headline": "Scroll. Message. Agree. That is the whole thing.",
     "steps": {
       "1": {
-        "title": "Sign up in 30 seconds",
-        "body": "No credit card. No long forms. Pick your interests — phones, fashion, food, whatever — and your local feed is ready."
+        "title": "Open the feed",
+        "body": "No long forms to start looking. Pick what you are into — cars, phones, fashion, farm produce — and your local feed is ready in seconds."
       },
       "2": {
-        "title": "Scroll your local feed",
-        "body": "Watch videos and photos posted by real sellers near you. Think TikTok, but every post is something actually for sale — with a seller you can message directly."
+        "title": "Scroll what is near you",
+        "body": "Watch real videos and photos from real sellers around you. Every post is something for sale, tagged with a location and a price."
       },
       "3": {
-        "title": "Like it? Message the seller.",
-        "body": "Tap to open a direct chat with any seller. Negotiate, ask questions, arrange pickup or delivery — completely on your terms."
+        "title": "Message the seller",
+        "body": "Like it? Tap to chat directly. Ask questions, agree on the price, arrange pickup or delivery. No middleman, no commission."
       },
       "4": {
-        "title": "Sell. Post. Build your audience.",
-        "body": "Sellers post content, grow followers, and build trust over time. The more you post, the more people discover what you're selling."
+        "title": "Selling? Just post",
+        "body": "Take a video of what you are selling, add a price and a location, and post. Buyers find you while scrolling, and message you straight away."
       }
     }
   },
 
   "audience": {
     "sectionLabel": "Who is Shopi for?",
-    "headline": "Everyone in Kenya buying and selling locally.",
+    "headline": "Anyone buying or selling near them.",
     "buyers": {
-      "tag": "Buyers",
+      "tag": "For buyers",
       "title": "Stop searching. Start discovering.",
-      "body": "Forget typing into a search bar hoping to find the right seller. On Shopi, your feed surfaces local products you'd actually want — based on your interests, your area, and what's trending near you.",
-      "cta": "Explore the feed"
+      "body": "Forget typing into a search bar and hoping. Your feed shows you real products from real sellers around you, and you message anyone directly the moment you see something you want.",
+      "cta": "Open the feed"
     },
     "sellers": {
-      "tag": "Sellers",
-      "title": "Your phone is your storefront.",
-      "body": "Post a 30-second video. Reach buyers in your city without spending on ads. Build a following that comes back every time you post something new. No website needed. No delivery company required.",
-      "cta": "Start selling"
+      "tag": "For sellers",
+      "title": "Your phone is your shop.",
+      "body": "Take a short video, add a price and your location, and post. Buyers find you while scrolling and message you directly. No website, no ad budget, no commission taken from your sale.",
+      "cta": "Start selling free"
     }
   },
 
   "testimonials": {
-    "sectionLabel": "Real people. Real sales.",
-    "headline": "Sellers across Kenya are already making it work."
+    "sectionLabel": "Real people. Real deals.",
+    "headline": "Built for the way Kenya already buys and sells."
   },
 
   "download": {
-    "sectionLabel": "Get the app",
-    "headline": "Your local market just got a social feed.",
-    "body": "Shopi is available on iOS and Android. Download the app and join thousands of sellers and buyers already on the platform.",
-    "appStore": "Download on the App Store",
-    "googlePlay": "Get it on Google Play",
-    "webCta": "Or continue in your browser →"
+    "sectionLabel": "Ready when you are",
+    "headline": "What you are looking for is already on the feed.",
+    "body": "Sellers near you are posting right now. Open the feed, find what you need, and message the seller directly. No fees, no checkout, no account needed to start looking.",
+    "webCta": "Open the feed →"
   },
 
   "footer": {
-    "tagline": "The social commerce feed for Kenya.",
+    "tagline": "Kenya's social marketplace. Discover it, message the seller, done.",
     "links": {
       "product": "Product",
       "company": "Company",
@@ -127,7 +123,7 @@
   "support": {
     "agentName": "Amina · Shopi Support",
     "agentSubtitle": "Usually replies in a few minutes",
-    "greeting": "Hi there 👋 I'm Amina from the Shopi support team. How can I help you today?",
+    "greeting": "Hi there, I'm Amina from the Shopi support team. How can I help you today?",
     "autoReply": "Thanks for reaching out! Our team has received your message and will reply shortly.",
     "placeholder": "Type a message…",
     "close": "Close chat",

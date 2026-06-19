@@ -1,10 +1,8 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-/* eslint-disable react-hooks/refs */
 "use client";
 
 import { useThemeStore } from "@/stores/theme";
-import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 //import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -25,19 +23,16 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeHash, setActiveHash] = useState("");
   const [hydrated, setHydrated] = useState(false);
-  const platformRef = useRef<"ios" | "android" | "other">("other");
   const pathname = usePathname();
   const router = useRouter();
 
+  // Base path of the landing page for the current locale (e.g. "/en").
+  const localeSeg = pathname.split("/").filter(Boolean)[0] ?? "";
+  const homeBase = ["en", "sw"].includes(localeSeg) ? `/${localeSeg}` : "";
+  const sectionHref = (hash: string) => `${homeBase}/${hash}`;
+
   useEffect(() => {
     void setHydrated(true);
-
-    const ua = navigator.userAgent;
-    platformRef.current = /iphone|ipad|ipod/i.test(ua)
-      ? "ios"
-      : /android/i.test(ua)
-        ? "android"
-        : "other";
 
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -82,15 +77,18 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
     e.preventDefault();
     setMenuOpen(false);
     const id = hash.replace("#", "");
-    if (pathname === "/") {
-      const el = document.getElementById(id);
-      if (el) {
-        const top = el.getBoundingClientRect().top + window.scrollY - 72;
-        window.scrollTo({ top, behavior: "smooth" });
-      }
-    } else {
-      router.push(`/${hash}`);
+
+    // If the target section is on the current page, just scroll to it.
+    // (The landing page lives at /[lang], e.g. "/en", so a "/" check fails.)
+    const el = document.getElementById(id);
+    if (el) {
+      const top = el.getBoundingClientRect().top + window.scrollY - 72;
+      window.scrollTo({ top, behavior: "smooth" });
+      return;
     }
+
+    // Otherwise go to the landing page (root of the current locale) with the hash.
+    router.push(sectionHref(hash));
   }
 
   return (
@@ -127,9 +125,7 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
             textDecoration: "none",
           }}
         >
-          <div className="h-18 w-18 relative">
-            <ShopiLogo height={72} width={72} />
-          </div>
+          <ShopiLogo height={34} />
         </Link>
 
         {/* Desktop nav links */}
@@ -149,7 +145,7 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
             return (
               <a
                 key={label}
-                href={pathname === "/" ? href : `/${href}`}
+                href={sectionHref(href)}
                 onClick={(e) => handleHashLink(e, href)}
                 style={{
                   textDecoration: "none",
@@ -196,18 +192,26 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: "1rem",
+                  color: "rgb(var(--color-text))",
                 }}
               >
-                {resolvedTheme === "dark" ? "☀️" : "🌙"}
+                {resolvedTheme === "dark" ? (
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="4" />
+                    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+                  </svg>
+                ) : (
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                  </svg>
+                )}
               </button>
             )}
           </div>
 
           {/* Desktop CTA */}
-          <a
-            href={pathname === "/" ? "#download" : "/#download"}
-            onClick={(e) => handleHashLink(e, "#download")}
+          <Link
+            href="/feed"
             className="btn-primary landing-nav-cta"
             style={{
               padding: "0.5rem 1.25rem",
@@ -218,8 +222,8 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
               whiteSpace: "nowrap",
             }}
           >
-            {dict?.common.downloadApp ?? "Download App"}
-          </a>
+            {dict?.common.openFeed ?? "Open the feed"}
+          </Link>
 
           {/* Language switcher */}
           {/* <LanguageSwitcher current={lang} /> */}
@@ -322,7 +326,7 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
             </a>
           ))}
 
-          {/* Download buttons */}
+          {/* Primary CTA → feed */}
           <div
             style={{
               marginTop: "1.25rem",
@@ -331,66 +335,6 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
               gap: "0.75rem",
             }}
           >
-            {(platformRef.current === "ios" ||
-              platformRef.current === "other") && (
-              <a
-                href="#download"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "0.625rem",
-                  padding: "0.75rem 1.25rem",
-                  borderRadius: 9999,
-                  background: "rgb(var(--color-text))",
-                  color: "rgb(var(--color-bg))",
-                  fontWeight: 700,
-                  fontSize: "0.875rem",
-                  textDecoration: "none",
-                }}
-              >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
-                </svg>
-                Download on the App Store
-              </a>
-            )}
-            {(platformRef.current === "android" ||
-              platformRef.current === "other") && (
-              <a
-                href="#download"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "0.625rem",
-                  padding: "0.75rem 1.25rem",
-                  borderRadius: 9999,
-                  background: "rgb(var(--brand-primary))",
-                  color: "#fff",
-                  fontWeight: 700,
-                  fontSize: "0.875rem",
-                  textDecoration: "none",
-                }}
-              >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <path d="M3.18 23.76c.3.17.64.19.96.08l11.29-6.52-2.5-2.5-9.75 8.94zM.96 1.1C.36 1.45 0 2.1 0 2.88v18.24c0 .78.36 1.43.96 1.78l.1.06 10.22-10.22v-.24L1.06 1.04l-.1.06zM20.38 10.06l-2.9-1.68-2.8 2.8 2.8 2.8 2.92-1.69c.83-.48.83-1.26-.02-1.23zM4.14.24l11.29 6.52-2.5 2.5L3.18.32C3.5.21 3.84.23 4.14.24z" />
-                </svg>
-                Get it on Google Play
-              </a>
-            )}
-
-            {/* Continue in web */}
             <Link
               href="/feed"
               onClick={() => setMenuOpen(false)}
@@ -399,18 +343,27 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
                 alignItems: "center",
                 justifyContent: "center",
                 gap: "0.5rem",
-                padding: "0.7rem 1.25rem",
+                padding: "0.85rem 1.25rem",
                 borderRadius: 9999,
-                border: "1px solid rgb(var(--color-border))",
-                background: "transparent",
-                color: "rgb(var(--color-text-muted))",
-                fontWeight: 600,
-                fontSize: "0.875rem",
+                background: "rgb(var(--brand-primary))",
+                color: "#fff",
+                fontWeight: 700,
+                fontSize: "0.9rem",
                 textDecoration: "none",
               }}
             >
-              Continue in web →
+              {dict?.common.openFeed ?? "Open the feed"} →
             </Link>
+            <p
+              style={{
+                textAlign: "center",
+                fontSize: "0.78rem",
+                color: "rgb(var(--color-text-muted))",
+                margin: 0,
+              }}
+            >
+              Free to use · No account needed to start looking
+            </p>
           </div>
         </div>
       )}

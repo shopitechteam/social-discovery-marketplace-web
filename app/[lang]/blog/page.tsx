@@ -43,24 +43,18 @@ export default function BlogIndexPage() {
       <main className="blog-main-wrap">
         {/* Header */}
         <div style={{ marginBottom: "2rem", textAlign: "center" }}>
-          <div
+          <p
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "0.375rem",
-              padding: "0.35rem 1rem",
-              borderRadius: 9999,
-              border: "1px solid rgb(var(--brand-primary) / 0.3)",
-              background: "rgb(var(--brand-primary) / 0.07)",
+              fontSize: "0.8rem",
+              fontWeight: 700,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
               color: "rgb(var(--brand-primary))",
-              fontSize: "0.75rem",
-              fontWeight: 600,
-              marginBottom: "1.25rem",
-              letterSpacing: "0.04em",
+              marginBottom: "1rem",
             }}
           >
-            ✦ Shopi Blog
-          </div>
+            Shopi Blog
+          </p>
           <h1
             style={{
               fontFamily: "var(--font-display)",
@@ -93,24 +87,39 @@ export default function BlogIndexPage() {
           style={{ textDecoration: "none", display: "block", marginBottom: "2rem" }}
         >
           <article className="blog-featured-card blog-card-hover">
-            {/* Visual */}
+            {/* Visual — clean typographic header, no emoji */}
             <div className="blog-featured-visual">
               <div
                 style={{
                   position: "absolute",
                   inset: 0,
                   background:
-                    "repeating-linear-gradient(45deg, rgb(var(--brand-primary) / 0.03) 0px, rgb(var(--brand-primary) / 0.03) 1px, transparent 1px, transparent 20px)",
+                    "repeating-linear-gradient(45deg, rgb(var(--brand-primary) / 0.04) 0px, rgb(var(--brand-primary) / 0.04) 1px, transparent 1px, transparent 22px)",
                 }}
               />
               <div
                 style={{
-                  fontSize: "5rem",
-                  filter: "drop-shadow(0 8px 24px rgba(0,0,0,0.15))",
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 4,
+                  background: categoryColors[featured.category],
+                }}
+              />
+              <span
+                style={{
+                  position: "relative",
+                  fontFamily: "var(--font-display)",
+                  fontWeight: 700,
+                  fontSize: "clamp(1.25rem, 3vw, 1.9rem)",
+                  letterSpacing: "-0.02em",
+                  color: categoryColors[featured.category],
+                  textAlign: "center",
                 }}
               >
-                🔍
-              </div>
+                {featured.category}
+              </span>
             </div>
             {/* Content */}
             <div style={{ padding: "1.75rem" }}>
@@ -212,15 +221,14 @@ export default function BlogIndexPage() {
                 }}
                 className="blog-card-hover"
               >
-                {/* Card visual */}
+                {/* Card visual — clean typographic header, no emoji */}
                 <div
                   style={{
-                    height: 140,
-                    background: `linear-gradient(135deg, ${categoryColors[post.category]}22, ${categoryColors[post.category]}11)`,
+                    height: 120,
+                    background: `linear-gradient(135deg, ${categoryColors[post.category]}1f, ${categoryColors[post.category]}08)`,
                     display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "3rem",
+                    alignItems: "flex-end",
+                    padding: "0.9rem",
                     position: "relative",
                     overflow: "hidden",
                   }}
@@ -230,10 +238,31 @@ export default function BlogIndexPage() {
                       position: "absolute",
                       inset: 0,
                       background:
-                        "repeating-linear-gradient(45deg, rgba(0,0,0,0.02) 0px, rgba(0,0,0,0.02) 1px, transparent 1px, transparent 20px)",
+                        "repeating-linear-gradient(45deg, rgba(0,0,0,0.02) 0px, rgba(0,0,0,0.02) 1px, transparent 1px, transparent 22px)",
                     }}
                   />
-                  {["📱", "🎬", "🏙️"][rest.indexOf(post)]}
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: 3,
+                      background: categoryColors[post.category],
+                    }}
+                  />
+                  <span
+                    style={{
+                      position: "relative",
+                      fontFamily: "var(--font-display)",
+                      fontWeight: 700,
+                      fontSize: "1.05rem",
+                      letterSpacing: "-0.01em",
+                      color: categoryColors[post.category],
+                    }}
+                  >
+                    {post.category}
+                  </span>
                 </div>
                 <div style={{ padding: "1.25rem 1.25rem 1.5rem", flex: 1, display: "flex", flexDirection: "column" }}>
                   <div style={{ display: "flex", gap: 8, marginBottom: "0.75rem", alignItems: "center" }}>

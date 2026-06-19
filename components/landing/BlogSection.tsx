@@ -9,8 +9,6 @@ const categoryColors: Record<string, string> = {
   "Success Stories": "#f59e0b",
 };
 
-const cardEmojis = ["🔍", "📱", "🎬", "🏙️"];
-
 export function BlogSection({ dict: _dict }: { dict: Dictionary }) {
   return (
     <section
@@ -33,24 +31,18 @@ export function BlogSection({ dict: _dict }: { dict: Dictionary }) {
         }}
       >
         <div>
-          <div
+          <p
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "0.375rem",
-              padding: "0.35rem 1rem",
-              borderRadius: 9999,
-              border: "1px solid rgb(var(--brand-primary) / 0.3)",
-              background: "rgb(var(--brand-primary) / 0.07)",
+              fontSize: "0.8rem",
+              fontWeight: 700,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
               color: "rgb(var(--brand-primary))",
-              fontSize: "0.75rem",
-              fontWeight: 600,
-              marginBottom: "1rem",
-              letterSpacing: "0.04em",
+              marginBottom: "0.75rem",
             }}
           >
-            ✦ From the blog
-          </div>
+            From the blog
+          </p>
           <h2
             style={{
               fontFamily: "var(--font-display)",
@@ -62,19 +54,7 @@ export function BlogSection({ dict: _dict }: { dict: Dictionary }) {
               margin: 0,
             }}
           >
-            Insights for sellers
-            <br />
-            <span
-              style={{
-                background:
-                  "linear-gradient(90deg, rgb(var(--brand-primary)), rgb(var(--brand-accent)))",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
-            >
-              and curious buyers.
-            </span>
+            Guides for buying and selling locally.
           </h2>
         </div>
         <Link
@@ -101,7 +81,7 @@ export function BlogSection({ dict: _dict }: { dict: Dictionary }) {
 
       {/* Cards grid */}
       <div className="blog-landing-grid">
-        {blogPosts.map((post, i) => {
+        {blogPosts.map((post) => {
           const catColor = categoryColors[post.category] ?? "rgb(var(--brand-primary))";
           return (
             <Link
@@ -123,15 +103,14 @@ export function BlogSection({ dict: _dict }: { dict: Dictionary }) {
                 }}
                 className="blog-landing-card"
               >
-                {/* Card visual */}
+                {/* Card visual — clean typographic header, no emoji */}
                 <div
                   style={{
-                    height: 136,
-                    background: `linear-gradient(135deg, ${catColor}18, ${catColor}0a)`,
+                    height: 120,
+                    background: `linear-gradient(135deg, ${catColor}1f, ${catColor}08)`,
                     display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "3rem",
+                    alignItems: "flex-end",
+                    padding: "0.9rem",
                     position: "relative",
                     overflow: "hidden",
                     flexShrink: 0,
@@ -142,10 +121,9 @@ export function BlogSection({ dict: _dict }: { dict: Dictionary }) {
                       position: "absolute",
                       inset: 0,
                       background:
-                        "repeating-linear-gradient(45deg, rgba(0,0,0,0.018) 0px, rgba(0,0,0,0.018) 1px, transparent 1px, transparent 20px)",
+                        "repeating-linear-gradient(45deg, rgba(0,0,0,0.02) 0px, rgba(0,0,0,0.02) 1px, transparent 1px, transparent 22px)",
                     }}
                   />
-                  {/* Accent line top */}
                   <div
                     style={{
                       position: "absolute",
@@ -153,10 +131,21 @@ export function BlogSection({ dict: _dict }: { dict: Dictionary }) {
                       left: 0,
                       right: 0,
                       height: 3,
-                      background: `linear-gradient(90deg, ${catColor}, ${catColor}44)`,
+                      background: catColor,
                     }}
                   />
-                  {cardEmojis[i]}
+                  <span
+                    style={{
+                      position: "relative",
+                      fontFamily: "var(--font-display)",
+                      fontWeight: 700,
+                      fontSize: "1.05rem",
+                      letterSpacing: "-0.01em",
+                      color: catColor,
+                    }}
+                  >
+                    {post.category}
+                  </span>
                 </div>
 
                 {/* Content */}
@@ -175,24 +164,8 @@ export function BlogSection({ dict: _dict }: { dict: Dictionary }) {
                       gap: 7,
                       alignItems: "center",
                       marginBottom: "0.65rem",
-                      flexWrap: "wrap",
                     }}
                   >
-                    <span
-                      style={{
-                        fontSize: "0.62rem",
-                        fontWeight: 700,
-                        padding: "2px 8px",
-                        borderRadius: 9999,
-                        background: `${catColor}20`,
-                        color: catColor,
-                        letterSpacing: "0.05em",
-                        textTransform: "uppercase",
-                        flexShrink: 0,
-                      }}
-                    >
-                      {post.category}
-                    </span>
                     <span
                       style={{
                         fontSize: "0.7rem",

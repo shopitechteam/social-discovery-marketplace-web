@@ -81,7 +81,7 @@ export default async function RegisterPage({
         {/* Top bar */}
 
         <div className="flex w-full justify-center items-center  px-5  pb-1 shrink-0">
-          <ShopiLogo height={90} width={80} />
+          <ShopiLogo height={44} />
         </div>
 
         {/* Heading */}

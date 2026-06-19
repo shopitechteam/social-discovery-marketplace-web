@@ -43,15 +43,7 @@ export const metadata: Metadata = {
 
   description: siteConfig.description,
 
-  keywords: [
-    "social commerce",
-    "shop videos",
-    "discover products",
-    "live shopping",
-    "creator marketplace",
-    "Kenya shopping app",
-    "shopi",
-  ],
+  keywords: [...siteConfig.keywords],
 
   authors: [{ name: siteConfig.name, url: siteConfig.url }],
   creator: siteConfig.name,

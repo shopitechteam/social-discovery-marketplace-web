@@ -64,8 +64,8 @@ export function LandingFooter({ dict }: { dict?: Dictionary }) {
               maxWidth: "260px",
             }}
           >
-            Kenya&apos;s social discovery marketplace. Scroll local products.
-            Connect with sellers directly. No checkout needed.
+            {dict?.footer.tagline ??
+              "Kenya's social marketplace. Discover it, message the seller, done."}
           </p>
           <div
             style={{ display: "flex", gap: "0.75rem", marginTop: "1.25rem" }}
@@ -131,7 +131,7 @@ export function LandingFooter({ dict }: { dict?: Dictionary }) {
               { label: "Privacy Policy", href: `/${lang}/privacy` },
               { label: "Terms of Service", href: `/${lang}/terms` },
               { label: "Cookie Policy", href: `/${lang}/cookies` },
-              { label: "Contact", href: "mailto:hello@shopi.app" },
+              { label: "Contact", href: "mailto:hello@shopi.co.ke" },
             ],
           },
         ].map(({ heading, links }) => (
@@ -198,7 +198,13 @@ export function LandingFooter({ dict }: { dict?: Dictionary }) {
           color: "rgb(var(--color-text-muted))",
         }}
       >
-        <span>{dict?.footer.copyright.replace("{year}", String(new Date().getFullYear())) ?? `© ${new Date().getFullYear()} Shopi Limited. All rights reserved.`}</span>
+        <span>
+          {dict?.footer.copyright.replace(
+            "{year}",
+            String(new Date().getFullYear()),
+          ) ??
+            `© ${new Date().getFullYear()} Shopi Limited. All rights reserved.`}
+        </span>
         <span>Made in Kenya</span>
       </div>
 

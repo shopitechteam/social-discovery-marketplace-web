@@ -49,7 +49,7 @@ export const blogPosts: BlogPost[] = [
       },
       {
         heading: "Why video is the product page that actually converts",
-        body: "A static image shows you what something looks like. A video shows you how it feels, how it moves, who made it, and why they love it. For categories like fashion, home décor, food, and electronics — the categories that define Kenyan informal commerce — video is not a nice-to-have. It is the product page.\n\nShopi sellers in Nairobi's CBD report conversion rates three to five times higher on video posts compared to photo listings. Buyers message within minutes of watching. There is no cart, no checkout friction, no abandoned sessions — just a conversation that closes.",
+        body: "A static image shows you what something looks like. A video shows you how it feels, how it moves, who made it, and why they love it. For categories like fashion, home décor, food, and electronics — the categories that define Kenyan informal commerce — video is not a nice-to-have. It is the product page.\n\nVideo-first social platforms consistently see buyers engage far more with moving product demos than with static photos. On Shopi there is no cart, no checkout friction, no abandoned sessions — a buyer watches, messages the seller, and the two of them close the deal in a single conversation.",
       },
       {
         heading: "Trust is local, and local is powerful",
@@ -127,11 +127,11 @@ export const blogPosts: BlogPost[] = [
     sections: [
       {
         heading: "Step 1 — Set up a seller profile that builds trust",
-        body: "Your profile is your storefront. Buyers scan it in under three seconds before deciding whether to message you. A strong seller profile on Shopi includes a clear face photo (not a logo — people buy from people), your real location, a one-line description of what you sell, and at least two verified contact methods.\n\nVerification on Shopi takes under ten minutes: confirm your phone number via OTP, link your M-PESA, and enable location sharing so the algorithm can surface you to buyers nearby.",
+        body: "Your profile is your storefront. Buyers scan it in under three seconds before deciding whether to message you. A strong seller profile on Shopi includes a clear face photo (not a logo — people buy from people), your real location, and a one-line description of what you sell.\n\nGetting started on Shopi takes minutes: confirm your phone number, tag your location so the feed can surface you to buyers nearby, and post your first product. There is no fee to join and nothing to pay to start selling.",
         list: [
           "Use a real face photo — not a logo or stock image",
           "Add your exact neighbourhood (e.g. 'Gikomba, Nairobi')",
-          "Link M-PESA to your account for in-app payment tracking",
+          "Tag your location so nearby buyers discover you first",
           "Write your bio in both English and Kiswahili to maximise reach",
         ],
       },
@@ -146,12 +146,12 @@ export const blogPosts: BlogPost[] = [
         ],
       },
       {
-        heading: "Step 3 — Price and communicate like a pro",
-        body: "Ambiguous pricing kills sales. State your price in the video and in the caption. Offer clear delivery options: same-day for Nairobi buyers, or next-day for other counties. If you offer pay-on-delivery, say so — it removes the single biggest friction point for first-time buyers.\n\nWhen a buyer messages you, reply within 30 minutes. Response speed is the single strongest predictor of conversion on Shopi. Sellers who respond within 15 minutes close 4× more sales than those who take over an hour.",
+        heading: "Step 3 — Price and communicate clearly",
+        body: "Ambiguous pricing kills sales. State your price in the video and in the caption. Offer clear delivery or pickup options so buyers know what to expect. On Shopi you and the buyer agree everything between yourselves — Shopi does not handle payment, take a commission, or hold your money.\n\nWhen a buyer messages you, reply quickly. Response speed is one of the strongest predictors of whether a chat turns into a sale. Treating every message like a real customer standing in front of you is the simplest way to win deals.",
       },
       {
         heading: "Step 4 — Build repeat customers, not just transactions",
-        body: "One-time buyers are expensive to acquire. Repeat customers cost nothing extra. After every successful sale, send the buyer a follow-up message 24 hours later asking if they are happy with the product. This simple step generates more reviews, more referrals, and more repeat business than any ad spend.\n\nUse Shopi's 'Regulars' feature to tag your top buyers and notify them first when you post new stock.",
+        body: "One-time buyers are expensive to acquire. Repeat customers cost nothing extra. After every successful sale, send the buyer a follow-up message a day later asking if they are happy with the product. This simple step generates more referrals and more repeat business than any ad spend.\n\nKeep posting consistently so your followers see your new stock in their feed. The buyers who already trust you are your easiest next sale.",
       },
       {
         heading: "Common mistakes new Shopi sellers make",
@@ -167,11 +167,11 @@ export const blogPosts: BlogPost[] = [
     faq: [
       {
         q: "Is selling on Shopi free?",
-        a: "Creating a seller account and posting products is completely free. Shopi earns a small success fee only when a sale is confirmed through the app.",
+        a: "Yes. Posting products and messaging buyers is completely free. Shopi does not charge a fee, take a commission on your sales, or hold your money.",
       },
       {
         q: "How do I receive payments from buyers?",
-        a: "Payments are processed via M-PESA directly to your registered number. You can also choose pay-on-delivery for local buyers.",
+        a: "You arrange payment directly with the buyer in chat — for example M-PESA or pay-on-delivery. Shopi does not process payments or sit between you and your buyer; you keep full control of the deal.",
       },
       {
         q: "How many posts should I make per week?",
@@ -229,7 +229,7 @@ export const blogPosts: BlogPost[] = [
       },
       {
         heading: "The numbers tell the story",
-        body: "Research from Shopi's platform data and comparable social commerce markets in Southeast Asia (the closest analogue to East Africa's mobile-first, informal-sector-dominant economy) tells a consistent story:",
+        body: "Studies of comparable social commerce markets in Southeast Asia — the closest analogue to East Africa's mobile-first, informal-sector-dominant economy — tell a consistent story about video-first selling:",
         list: [
           "Video post conversion rates are 3–5× higher than static product listings",
           "Average order value is 18% higher when the buyer has watched a video first",
@@ -239,7 +239,7 @@ export const blogPosts: BlogPost[] = [
       },
       {
         heading: "The mobile advantage",
-        body: "Over 85% of Shopi sessions happen on a smartphone. This is not a limitation — it is a structural advantage for video commerce. Phones are cameras. Every seller already owns their studio. The cost of content creation, which gatekept catalogue e-commerce to well-funded businesses, falls to near zero when your product page is a 30-second clip shot in your shop doorway.",
+        body: "Nearly all social commerce activity in Kenya happens on a smartphone. This is not a limitation — it is a structural advantage for video commerce. Phones are cameras. Every seller already owns their studio. The cost of content creation, which gatekept catalogue e-commerce to well-funded businesses, falls to near zero when your product page is a 30-second clip shot in your shop doorway.",
       },
       {
         heading: "Where traditional e-commerce still wins",
@@ -353,7 +353,7 @@ export const blogPosts: BlogPost[] = [
       },
       {
         q: "Can I sell from Nairobi to buyers in other Kenyan cities?",
-        a: "Yes. Many Nairobi sellers on Shopi now ship to Mombasa, Kisumu, Nakuru, and beyond using third-party delivery partners. Shopi provides a built-in delivery partner directory.",
+        a: "Yes. Sellers and buyers agree delivery directly in chat — many use couriers and matatu parcel services to reach Mombasa, Kisumu, Nakuru, and beyond. Shopi connects you; you arrange the rest on your own terms.",
       },
     ],
   },
