@@ -103,12 +103,17 @@ export function MediaPicker() {
           </span>
           <span
             className="font-semibold"
-            style={{ fontSize: "var(--text-md)", color: "rgb(var(--color-text))" }}
+            style={{
+              fontSize: "var(--text-md)",
+              color: "rgb(var(--color-text))",
+            }}
           >
             {isVideo ? "Add a video" : "Add photos"}
           </span>
           <span style={{ fontSize: "var(--text-sm)" }}>
-            {isVideo ? "MP4 or MOV · up to 10 min" : `Up to ${MAX_IMAGES} images`}
+            {isVideo
+              ? "MP4 or MOV · up to 10 min"
+              : `Up to ${MAX_IMAGES} images`}
           </span>
         </button>
         {hiddenInput}
@@ -155,7 +160,7 @@ export function MediaPicker() {
             </div>
           )}
 
-          {item.status !== "ready" && (
+          {/* {item.status !== "ready" && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-10 pointer-events-none">
               <div className="flex flex-col items-center gap-1.5">
                 <Spinner />
@@ -164,14 +169,18 @@ export function MediaPicker() {
                 </span>
               </div>
             </div>
-          )}
+          )} */}
 
           {/* Replace button */}
           <button
             type="button"
             onClick={openPicker}
             className="absolute top-2 right-2 z-20 rounded-full px-3 py-1 text-white"
-            style={{ background: "rgba(0,0,0,0.55)", fontSize: "var(--text-xs)", fontWeight: 600 }}
+            style={{
+              background: "rgba(0,0,0,0.55)",
+              fontSize: "var(--text-xs)",
+              fontWeight: 600,
+            }}
           >
             Replace
           </button>
@@ -229,7 +238,15 @@ export function MediaPicker() {
                 className="absolute top-1 right-1 z-20 flex items-center justify-center rounded-full text-white active:opacity-70"
                 style={{ width: 22, height: 22, background: "rgba(0,0,0,0.6)" }}
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                >
                   <path d="M18 6 6 18M6 6l12 12" />
                 </svg>
               </button>
@@ -250,16 +267,29 @@ export function MediaPicker() {
               color: "rgb(var(--color-text-muted))",
             }}
           >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            >
               <path d="M12 5v14M5 12h14" />
             </svg>
-            <span style={{ fontSize: "var(--text-xs)", fontWeight: 500 }}>Add</span>
+            <span style={{ fontSize: "var(--text-xs)", fontWeight: 500 }}>
+              Add
+            </span>
           </button>
         )}
       </div>
       <p
         className="mt-2"
-        style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}
+        style={{
+          fontSize: "var(--text-xs)",
+          color: "rgb(var(--color-text-muted))",
+        }}
       >
         {mediaItems.length}/{MAX_IMAGES} photos
       </p>
@@ -271,24 +301,69 @@ export function MediaPicker() {
 function Spinner({ small }: { small?: boolean }) {
   const s = small ? 18 : 24;
   return (
-    <svg className="animate-spin" width={s} height={s} viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="12" r="10" stroke="white" strokeOpacity="0.3" strokeWidth="3" />
-      <path d="M12 2a10 10 0 0 1 10 10" stroke="white" strokeWidth="3" strokeLinecap="round" />
+    <svg
+      className="animate-spin"
+      width={s}
+      height={s}
+      viewBox="0 0 24 24"
+      fill="none"
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="white"
+        strokeOpacity="0.3"
+        strokeWidth="3"
+      />
+      <path
+        d="M12 2a10 10 0 0 1 10 10"
+        stroke="white"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
 
 const ICON_VIDEO = (
   <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-    <rect x="2" y="5" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.7" />
-    <path d="M16 9.5l6-3v11l-6-3v-5Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+    <rect
+      x="2"
+      y="5"
+      width="14"
+      height="14"
+      rx="2"
+      stroke="currentColor"
+      strokeWidth="1.7"
+    />
+    <path
+      d="M16 9.5l6-3v11l-6-3v-5Z"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinejoin="round"
+    />
   </svg>
 );
 
 const ICON_PHOTO = (
   <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-    <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.7" />
+    <rect
+      x="3"
+      y="3"
+      width="18"
+      height="18"
+      rx="3"
+      stroke="currentColor"
+      strokeWidth="1.7"
+    />
     <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" />
-    <path d="M3 15l5-5 4 4 3-3 6 6" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" strokeLinecap="round" />
+    <path
+      d="M3 15l5-5 4 4 3-3 6 6"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinejoin="round"
+      strokeLinecap="round"
+    />
   </svg>
 );

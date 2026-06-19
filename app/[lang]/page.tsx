@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { AudienceSection } from "@/components/landing/AudienceSection";
-import { BlogSection } from "@/components/landing/BlogSection";
+//import { BlogSection } from "@/components/landing/BlogSection";
 import { DownloadSection } from "@/components/landing/DownloadSection";
 import { FeaturesSection } from "@/components/landing/FeaturesSection";
 import { HeroSection } from "@/components/landing/HeroSection";
@@ -120,7 +120,7 @@ export default async function Rootpage({ params }: PageProps<"/[lang]">) {
       <HowItWorksSection dict={dict} />
       <AudienceSection dict={dict} />
       <TestimonialsSection dict={dict} />
-      <BlogSection dict={dict} />
+      {/* <BlogSection dict={dict} /> */}
       {/* Visible FAQ — strong AEO signal and matches the FAQ structured data */}
       <HomeFaq />
       <DownloadSection dict={dict} />

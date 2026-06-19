@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, KeyboardEvent } from "react";
+import { useEffect, useRef, useState, KeyboardEvent } from "react";
 import { useMutation } from "@apollo/client/react";
 import { useForm } from "react-hook-form";
 import { useCreateStore } from "@/stores/create";
@@ -12,6 +12,8 @@ import {
 import { LocationPicker } from "./LocationPicker";
 import { SpecsEditor } from "./SpecsEditor";
 import { MediaPicker } from "./MediaPicker";
+import { useVideoFrameExtract } from "@/features/create/hooks/useVideoFrameExtract";
+import { takeCachedVideoFrames } from "@/features/create/utils/captureVideoFrames";
 
 interface EditFormValues {
   caption: string;
@@ -53,6 +55,7 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
     location,
     mediaItems,
     tiktokEmbed,
+    contentType,
     setTitle,
     setCaption,
     setHashtags,
@@ -71,6 +74,9 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
     AdvanceDraftStepDocument,
   );
   const [extractDetails] = useMutation(ExtractDraftDetailsDocument);
+  const { extractFromFrames } = useVideoFrameExtract();
+  // One-shot guard for the instant video extraction (keyed by draftId).
+  const videoExtractStartedRef = useRef<string | null>(null);
 
   // ── Title (autosize textarea) ──────────────────────────────────────────────
   const [titleValue, setTitleValue] = useState(title);
@@ -122,63 +128,108 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
   });
   const watchCaption = watch("caption", caption);
 
-  // ── AI auto-fill: runs once when media is ready ────────────────────────────
-  // The "killer feature" — analyses the uploaded media (image, or video frames
-  // + voice-over) and fills title, description, price and specs. Whatever it
-  // returns is fully editable; the user can clear/override anything.
+  // ── AI auto-fill: fills title, description, price and specs ─────────────────
+  // The "killer feature". Whatever it returns is fully editable; the user can
+  // clear/override anything. Two paths, both one-shot per draft:
+  //
+  //   • VIDEO (native): runs INSTANTLY off frames snapshotted from the local
+  //     file at pick-time (cached by draftId). Decoupled from the Mux upload —
+  //     no need to wait for processing, matching the image flow's speed.
+  //   • IMAGE / TikTok embed: runs the server-side extractDraftDetails mutation
+  //     once the media is READY (or off the TikTok cover for embeds).
   const allReady =
     mediaItems.length > 0 && mediaItems.every((m) => m.status === "ready");
 
-  // Embed-backed drafts (TikTok) have no media assets, but AI auto-fill can run
-  // off the TikTok thumbnail (the server uses coverImageUrl for these). For
-  // native drafts it needs all media READY as before.
-  const canExtract = !!tiktokEmbed?.coverImageUrl || allReady;
+  const isNativeVideo = contentType === "video" && !tiktokEmbed;
 
-  useEffect(() => {
-    if (!draftId || hasExtracted || isExtracting || !canExtract) {
-      console.log("[AI-extract] effect skipped", {
-        draftId,
-        hasExtracted,
-        isExtracting,
-        allReady,
-        mediaStatuses: mediaItems.map((m) => m.status),
-      });
-      return;
+  // Apply an extracted result to the form — only fills fields the user hasn't
+  // already typed into. Shared by both the video and image/embed paths.
+  function applyExtracted(r: {
+    title?: string | null;
+    description?: string | null;
+    price?: number | null;
+    specs?: { key: string; value: string }[] | null;
+  }) {
+    if (r.title && !titleValue.trim()) setTitleValue(r.title);
+    if (r.description && !watch("caption")?.trim()) {
+      setValue("caption", r.description);
     }
+    if (r.price != null && !priceInput.trim()) {
+      setPriceInput(String(r.price));
+    }
+    const cleanSpecs = (r.specs ?? [])
+      .map((s) => ({ key: s.key, value: s.value }))
+      .filter((s) => s.key.trim() && s.value.trim());
+    if (cleanSpecs.length > 0 && specs.length === 0) {
+      setSpecs(cleanSpecs);
+    }
+  }
 
-    console.log("[AI-extract] firing extraction mutation", { draftId });
+  // Embed-backed drafts (TikTok) have no media assets, but AI auto-fill can run
+  // off the TikTok thumbnail (the server uses coverImageUrl for these). Native
+  // image drafts need all media READY first; native video uses the frame path.
+  const canExtractServer =
+    !isNativeVideo && (!!tiktokEmbed?.coverImageUrl || allReady);
+
+  // ── Video path: instant frame-based extraction ─────────────────────────────
+  // One-shot per draft via a ref guard — NOT via effect state, so re-renders
+  // (e.g. setIsExtracting) never re-enter or cancel the in-flight request. That
+  // bug previously dropped the result and left the spinner stuck.
+  useEffect(() => {
+    if (!draftId || !isNativeVideo) return;
+    if (videoExtractStartedRef.current === draftId) return;
+
+    // Frames are captured asynchronously at pick-time; poll briefly for them.
+    const startedAt = Date.now();
+    const FRAME_WAIT_MS = 15_000;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const tryExtract = async () => {
+      const frames = takeCachedVideoFrames(draftId);
+      if (!frames || frames.length === 0) {
+        if (Date.now() - startedAt < FRAME_WAIT_MS) {
+          timer = setTimeout(tryExtract, 400);
+        }
+        return;
+      }
+
+      videoExtractStartedRef.current = draftId; // lock in once frames are in hand
+      setHasExtracted(true);
+      setIsExtracting(true);
+      try {
+        const r = await extractFromFrames(draftId, frames);
+        if (r) applyExtracted(r);
+      } catch (err) {
+        console.error("[AI-extract] video frame extraction error", err);
+      } finally {
+        setIsExtracting(false);
+      }
+    };
+    tryExtract();
+
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftId, isNativeVideo]);
+
+  // ── Image / TikTok embed path: server-side extraction ──────────────────────
+  useEffect(() => {
+    if (!draftId || hasExtracted || isExtracting || !canExtractServer) return;
+
     setHasExtracted(true); // guard: never re-run for this draft
     setIsExtracting(true);
     extractDetails({ variables: { id: draftId } })
       .then(({ data }) => {
-        console.log("[AI-extract] mutation response", { data });
         const r = data?.extractDraftDetails;
-        if (!r) {
-          console.warn("[AI-extract] no result returned (data null)");
-          return;
-        }
-
-        // Only fill fields the user hasn't already typed into.
-        if (r.title && !titleValue.trim()) setTitleValue(r.title);
-        if (r.description && !watch("caption")?.trim()) {
-          setValue("caption", r.description);
-        }
-        if (r.price != null && !priceInput.trim()) {
-          setPriceInput(String(r.price));
-        }
-        const cleanSpecs = (r.specs ?? [])
-          .map((s) => ({ key: s.key, value: s.value }))
-          .filter((s) => s.key.trim() && s.value.trim());
-        if (cleanSpecs.length > 0 && specs.length === 0) {
-          setSpecs(cleanSpecs);
-        }
+        if (r) applyExtracted(r);
       })
       .catch((err) => {
         console.error("[AI-extract] mutation error", err);
       })
       .finally(() => setIsExtracting(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canExtract, draftId, hasExtracted]);
+  }, [canExtractServer, draftId, hasExtracted]);
 
   // ── Debounced autosave ─────────────────────────────────────────────────────
   useEffect(() => {

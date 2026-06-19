@@ -194,3 +194,19 @@ mutation ExtractDraftDetails($id: String!) {
     usedTranscript
   }
 }
+
+mutation ExtractDraftDetailsFromFrames($id: String!, $frames: [String!]!) {
+  extractDraftDetailsFromFrames(id: $id, frames: $frames) {
+    title
+    description
+    price
+    currency
+    specs {
+      key
+      value
+    }
+    level1
+    categoryId
+    usedTranscript
+  }
+}
