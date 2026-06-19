@@ -61,6 +61,7 @@ export function CreateFlow({ lang }: CreateFlowProps) {
   const {
     step,
     draftId,
+    draftPending,
     mediaItems,
     setStep,
     setTitle,
@@ -105,6 +106,9 @@ export function CreateFlow({ lang }: CreateFlowProps) {
     if (!hydrated) return;
 
     if (!draftId) {
+      // A draft is being created in the background (instant-open flow) — wait
+      // for its id instead of bouncing back to the picker.
+      if (draftPending) return;
       // Nothing in session — send back to picker
       router.replace(`/${lang}/upload`);
       return;
@@ -248,6 +252,14 @@ export function CreateFlow({ lang }: CreateFlowProps) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated]);
+
+  // Background draft creation failed (pending cleared, still no id) — don't
+  // strand the user on a blank editor; send them back to the picker.
+  useEffect(() => {
+    if (hydrated && !draftId && !draftPending && step !== "pick") {
+      router.replace(`/${lang}/upload`);
+    }
+  }, [hydrated, draftId, draftPending, step, router, lang]);
 
   function handleBack() {
     // Reset draft so the picker doesn't immediately redirect back here

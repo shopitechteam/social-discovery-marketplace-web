@@ -77,6 +77,12 @@ export type CreateFlowState = {
   isSubmitting: boolean;
   error: string | null;
   isRestoring: boolean;
+  /**
+   * True while a draft is being created in the background after the user picked
+   * media. Lets the editor open INSTANTLY (before draftId exists) without the
+   * CreateFlow guard bouncing back to the picker.
+   */
+  draftPending: boolean;
 };
 
 type CreateFlowActions = {
@@ -103,6 +109,7 @@ type CreateFlowActions = {
   setLocation: (loc: DraftLocation | null) => void;
   setIsSubmitting: (v: boolean) => void;
   setIsRestoring: (v: boolean) => void;
+  setDraftPending: (v: boolean) => void;
   setError: (err: string | null) => void;
   reset: () => void;
 };
@@ -131,6 +138,7 @@ const DEFAULT_STATE: CreateFlowState = {
   isSubmitting: false,
   error: null,
   isRestoring: false,
+  draftPending: false,
 };
 
 export const useCreateStore = create<CreateFlowState & CreateFlowActions>()(
@@ -187,6 +195,7 @@ export const useCreateStore = create<CreateFlowState & CreateFlowActions>()(
       setLocation: (location) => set({ location }),
       setIsSubmitting: (isSubmitting) => set({ isSubmitting }),
       setIsRestoring: (isRestoring) => set({ isRestoring }),
+      setDraftPending: (draftPending) => set({ draftPending }),
       setError: (error) => set({ error }),
 
       reset: () => set(DEFAULT_STATE),

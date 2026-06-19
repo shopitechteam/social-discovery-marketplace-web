@@ -14,8 +14,16 @@ export function CreateDrawer({ lang }: { lang: string }) {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
-  const { draftId, step, setDraftId, setContentType, setStep, setError, reset } =
-    useCreateStore();
+  const {
+    draftId,
+    step,
+    setDraftId,
+    setContentType,
+    setStep,
+    setDraftPending,
+    setError,
+    reset,
+  } = useCreateStore();
   const [createDraft] = useMutation(CreateDraftDocument);
   const { startImageUpload, startVideoUpload } = useMediaUpload();
 
@@ -28,34 +36,47 @@ export function CreateDrawer({ lang }: { lang: string }) {
     }
   }
 
-  async function handleFiles(files: FileList, kind: "image" | "video") {
+  function handleFiles(files: FileList, kind: "image" | "video") {
     if (!files.length) return;
     setError(null);
 
     // Start fresh for a new upload — wipes any previous draft
     reset();
 
-    try {
-      const { data, error } = await createDraft({
-        variables: { input: { type: kind === "video" ? "VIDEO" : "IMAGE" } },
-      });
-      if (error || !data?.createDraft)
-        throw new Error(error?.message ?? "Failed to create draft");
+    // ── Open the editor INSTANTLY ──────────────────────────────────────────
+    // Creating the draft is a network round-trip; don't block the UI on it.
+    // We set the type + step and navigate immediately, then create the draft
+    // and start the uploads in the background. CreateFlow tolerates a pending
+    // draft (draftId still null) without bouncing back to the picker.
+    setContentType(kind);
+    setStep("edit");
+    setDraftPending(true);
+    router.push(`/${lang}/upload/create`);
 
-      const did = data.createDraft.id;
-      setDraftId(did);
-      setContentType(kind);
+    const list = Array.from(files).slice(0, kind === "video" ? 1 : 10);
 
-      const list = Array.from(files).slice(0, kind === "video" ? 1 : 10);
-      list.forEach((file, i) => {
-        if (kind === "image") startImageUpload(file, did, i);
-        else startVideoUpload(file, did);
-      });
-      setStep("edit");
-      router.push(`/${lang}/upload/create`);
-    } catch (err) {
-      setError(String(err));
-    }
+    (async () => {
+      try {
+        const { data, error } = await createDraft({
+          variables: { input: { type: kind === "video" ? "VIDEO" : "IMAGE" } },
+        });
+        if (error || !data?.createDraft)
+          throw new Error(error?.message ?? "Failed to create draft");
+
+        const did = data.createDraft.id;
+        setDraftId(did);
+        setDraftPending(false);
+
+        // Uploads need the draft id, so they start once it's resolved.
+        list.forEach((file, i) => {
+          if (kind === "image") startImageUpload(file, did, i);
+          else startVideoUpload(file, did);
+        });
+      } catch (err) {
+        setDraftPending(false);
+        setError(String(err));
+      }
+    })();
   }
 
   // function handleText() {
