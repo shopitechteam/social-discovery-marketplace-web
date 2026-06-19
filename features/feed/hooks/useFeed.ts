@@ -22,8 +22,8 @@ export function useForYouFeed() {
       // for a cursor-less response — collapsing everything we've paginated and
       // snapping the scroll position. cache-first keeps the accumulated window
       // stable across re-renders; fetchMore still appends new pages.
-      fetchPolicy: "cache-first",
-      nextFetchPolicy: "cache-first",
+      fetchPolicy: "cache-and-network",
+      // nextFetchPolicy: "cache-first",
       notifyOnNetworkStatusChange: true,
     },
   );
@@ -54,8 +54,8 @@ export function useFollowingFeed() {
     {
       variables: { limit: PAGE_SIZE },
       // See useForYouFeed: cache-first keeps the paginated window stable.
-      fetchPolicy: "cache-first",
-      nextFetchPolicy: "cache-first",
+      //  fetchPolicy: "cache-first",
+      fetchPolicy: "cache-and-network",
       notifyOnNetworkStatusChange: true,
     },
   );
@@ -92,8 +92,7 @@ export function useNearbyFeed(
       },
       skip: !county,
       // See useForYouFeed: cache-first keeps the paginated window stable.
-      fetchPolicy: "cache-first",
-      nextFetchPolicy: "cache-first",
+      fetchPolicy: "cache-and-network",
       notifyOnNetworkStatusChange: true,
     },
   );
