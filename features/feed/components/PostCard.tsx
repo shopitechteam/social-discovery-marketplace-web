@@ -594,9 +594,7 @@ function ImageMedia({
     onNavigate();
   };
 
-  // svh (not dvh) so the multi-image grid height stays constant while iOS
-  // Safari's toolbar shows/hides during scroll — prevents the feed jumping.
-  const GRID_H = "clamp(40svh, 72vw, 60svh)";
+  const GRID_H = "clamp(40dvh, 72vw, 60dvh)";
   const first = media[0];
   const firstSrc = mediaSrc(first, "large");
 
@@ -638,8 +636,8 @@ function ImageMedia({
         className="relative w-full cursor-pointer overflow-hidden bg-surface"
         style={{
           aspectRatio: String(clamped),
-          maxHeight: "60svh",
-          minHeight: "40svh",
+          maxHeight: "60dvh",
+          minHeight: "40dvh",
         }}
         onClick={nav}
       >
@@ -672,7 +670,7 @@ function ImageMedia({
                   src={src}
                   alt={post.title}
                   sizes="50vw"
-                  className="object-fit"
+                  className="object-cover"
                   priority={priority && i === 0}
                   loading={priority && i === 0 ? "eager" : "lazy"}
                   blurDataURL={SHIMMER}
@@ -693,7 +691,7 @@ function ImageMedia({
             src={firstSrc}
             alt={post.title}
             sizes="66vw"
-            className="object-fit"
+            className="object-cover"
             priority={priority}
             loading={priority ? "eager" : "lazy"}
             blurDataURL={SHIMMER}
@@ -745,7 +743,7 @@ function ImageMedia({
                   src={src}
                   alt={post.title}
                   sizes="50vw"
-                  className="object-fit"
+                  className="object-cover"
                   priority={priority && i === 0}
                   loading={priority && i === 0 ? "eager" : "lazy"}
                   blurDataURL={SHIMMER}
