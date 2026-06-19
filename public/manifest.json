@@ -12,6 +12,12 @@
   "theme_color": "#7c3aed",
   "icons": [
     {
+      "src": "/assets/shopi-logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
       "src": "/assets/shopi-logo.png",
       "sizes": "192x192",
       "type": "image/png",

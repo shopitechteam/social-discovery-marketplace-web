@@ -3,7 +3,6 @@
 import { useEffect, useState, KeyboardEvent } from "react";
 import { useMutation } from "@apollo/client/react";
 import { useForm } from "react-hook-form";
-import Image from "next/image";
 import { useCreateStore } from "@/stores/create";
 import {
   AutosaveDraftDocument,
@@ -12,10 +11,7 @@ import {
 } from "@/types/__generated__/graphql";
 import { LocationPicker } from "./LocationPicker";
 import { SpecsEditor } from "./SpecsEditor";
-import {
-  getMediaPreviewSrc,
-  shouldUnoptimizeMedia,
-} from "@/features/create/utils/mediaPreview";
+import { MediaPicker } from "./MediaPicker";
 
 interface EditFormValues {
   caption: string;
@@ -34,7 +30,9 @@ function autosize(el: HTMLTextAreaElement | null) {
 /** Focus the visible title textarea (there are mobile + desktop copies). */
 function focusTitle() {
   const inputs = Array.from(
-    document.querySelectorAll<HTMLTextAreaElement>("textarea[data-title-input]"),
+    document.querySelectorAll<HTMLTextAreaElement>(
+      "textarea[data-title-input]",
+    ),
   );
   const visible = inputs.find((el) => el.offsetParent !== null) ?? inputs[0];
   visible?.focus();
@@ -319,7 +317,9 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
           setError(stepError.message ?? "Could not advance step");
           return;
         }
-        serverStep = stepData?.advanceDraftStep?.currentStep as string | undefined;
+        serverStep = stepData?.advanceDraftStep?.currentStep as
+          | string
+          | undefined;
         if (serverStep === "PUBLISHING_OPTIONS" || serverStep === "READY") {
           setStep("options");
           return;
@@ -342,10 +342,6 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
       setError(message);
     }
   }
-
-  // Show first media item immediately (blob) regardless of upload status
-  const cover = mediaItems[0];
-  const coverSrc = getMediaPreviewSrc(cover);
 
   // ─────────────────────────────────────────────────────────────────────────
   // Shared sub-components (form fields) extracted so we can render them in
@@ -683,7 +679,7 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
   // ── Desktop media preview panel (left column) ──────────────────────────────
   const desktopPreview = (
     <div
-      className="hidden md:flex md:flex-col md:justify-center md:items-center md:gap-4 md:p-8"
+      className="hidden md:flex md:flex-col md:gap-4 md:p-8 md:overflow-y-auto"
       style={{
         width: 340,
         flexShrink: 0,
@@ -691,105 +687,7 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
         backgroundColor: "rgb(var(--color-bg-subtle))",
       }}
     >
-      {/* Large media preview */}
-      <div
-        className="rounded-2xl overflow-hidden relative w-full"
-        style={{
-          aspectRatio: "3/4",
-          maxWidth: 240,
-          backgroundColor: "rgb(var(--color-bg))",
-          border: "1px solid rgb(var(--color-border))",
-        }}
-      >
-        {coverSrc ? (
-          <Image
-            src={coverSrc}
-            alt=""
-            fill
-            sizes="100vw"
-            className="object-contain"
-            unoptimized={shouldUnoptimizeMedia(coverSrc)}
-          />
-        ) : (
-          <div
-            className="absolute inset-0 flex items-center justify-center"
-            style={{ color: "rgb(var(--color-text-muted))" }}
-          >
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
-              <rect
-                x="3"
-                y="3"
-                width="18"
-                height="18"
-                rx="3"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              />
-              <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" />
-              <path
-                d="M3 15l5-5 4 4 3-3 6 6"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinejoin="round"
-                strokeLinecap="round"
-              />
-            </svg>
-          </div>
-        )}
-
-        {/* Upload / processing overlay — always show until ready */}
-        {(!cover || cover.status !== "ready") && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
-            <div className="flex flex-col items-center gap-1.5">
-              <svg
-                className="animate-spin"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-              >
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="white"
-                  strokeOpacity="0.3"
-                  strokeWidth="3"
-                />
-                <path
-                  d="M12 2a10 10 0 0 1 10 10"
-                  stroke="white"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                />
-              </svg>
-              <span
-                style={{
-                  fontSize: 10,
-                  color: "white",
-                  fontWeight: 600,
-                  letterSpacing: "0.05em",
-                }}
-              >
-                {cover?.status === "uploading" ? "UPLOADING" : "PROCESSING"}
-              </span>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Media count badge */}
-      {mediaItems.length > 1 && (
-        <p
-          style={{
-            fontSize: "var(--text-sm)",
-            color: "rgb(var(--color-text-muted))",
-          }}
-        >
-          +{mediaItems.length - 1} more{" "}
-          {mediaItems.length - 1 === 1 ? "file" : "files"}
-        </p>
-      )}
+      <MediaPicker />
 
       {/* Title preview */}
       {titleValue && (
@@ -798,7 +696,6 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
           style={{
             fontSize: "var(--text-base)",
             color: "rgb(var(--color-text))",
-            maxWidth: 240,
           }}
         >
           {titleValue}
@@ -816,7 +713,7 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
       <div className="flex flex-col flex-1 h-full min-h-0">
         {/* Header — sticky so it stays pinned while the form scrolls */}
         <div
-          className="sticky top-0 z-20 flex items-center justify-between px-4 pt-4 pb-3 shrink-0 border-b"
+          className="sticky top-0 z-50 flex items-center justify-between px-4 pt-4 pb-3 shrink-0 border-b"
           style={{
             backgroundColor: "rgb(var(--color-bg))",
             borderColor: "rgb(var(--color-border))",
@@ -866,102 +763,13 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 pb-8">
-          {/* Mobile-only: thumbnail + title row */}
-          <div className="flex gap-3 mb-5 md:hidden">
-            <div
-              className="rounded-xl overflow-hidden flex-shrink-0 relative"
-              style={{
-                width: 72,
-                height: 96,
-                backgroundColor: "rgb(var(--color-bg-subtle))",
-              }}
-            >
-              {/* Image preview — shown as soon as blob URL is available */}
-              {coverSrc ? (
-                <Image
-                  src={coverSrc}
-                  alt=""
-                  fill
-                  sizes="80px"
-                  className="object-contain"
-                  unoptimized={shouldUnoptimizeMedia(coverSrc)}
-                />
-              ) : (
-                // Placeholder while no blob URL yet
-                <div
-                  className="absolute inset-0 flex items-center justify-center"
-                  style={{ color: "rgb(var(--color-text-muted))" }}
-                >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <rect
-                      x="3"
-                      y="3"
-                      width="18"
-                      height="18"
-                      rx="3"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                    />
-                    <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" />
-                    <path
-                      d="M3 15l5-5 4 4 3-3 6 6"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinejoin="round"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                </div>
-              )}
-
-              {/* Upload / processing spinner overlay */}
-              {(!cover || cover.status !== "ready") && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
-                  <div className="flex flex-col items-center gap-1">
-                    <svg
-                      className="animate-spin"
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                    >
-                      <circle
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="white"
-                        strokeOpacity="0.3"
-                        strokeWidth="3"
-                      />
-                      <path
-                        d="M12 2a10 10 0 0 1 10 10"
-                        stroke="white"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                    <span
-                      style={{
-                        fontSize: 9,
-                        color: "white",
-                        fontWeight: 600,
-                        letterSpacing: "0.05em",
-                      }}
-                    >
-                      {cover?.status === "uploading"
-                        ? "UPLOADING"
-                        : "PROCESSING"}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {titleBlock}
+          {/* Mobile-only: media picker (dotted picker / photo grid / video) */}
+          <div className="mb-5 md:hidden">
+            <MediaPicker />
           </div>
 
-          {/* Desktop-only: title block without thumbnail (thumbnail is in left panel) */}
-          <div className="hidden md:block mb-5">{titleBlock}</div>
+          {/* Title — full width on both layouts (media lives above/in left panel) */}
+          <div className="mb-5">{titleBlock}</div>
 
           <Divider />
 

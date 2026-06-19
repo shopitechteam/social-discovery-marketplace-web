@@ -1,10 +1,9 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@apollo/client/react";
 import { useCreateStore } from "@/stores/create";
-import { useMediaUpload } from "@/features/create/hooks/useMediaUpload";
 import { CreateDraftDocument } from "@/types/__generated__/graphql";
 
 const ICON_VIDEO = (
@@ -36,12 +35,10 @@ const ICON_TIKTOK = (
 
 export function UploadPickerPage({ lang }: { lang: string }) {
   const router = useRouter();
-  const imageInputRef = useRef<HTMLInputElement>(null);
-  const videoInputRef = useRef<HTMLInputElement>(null);
+  const [creating, setCreating] = useState(false);
 
   const { setDraftId, setContentType, setStep, setError, draftId, step } = useCreateStore();
   const [createDraft] = useMutation(CreateDraftDocument);
-  const { startImageUpload, startVideoUpload } = useMediaUpload();
 
   // If a draft is already in progress, skip the picker and resume it
   useEffect(() => {
@@ -50,36 +47,26 @@ export function UploadPickerPage({ lang }: { lang: string }) {
     }
   }, [draftId, step, lang, router]);
 
-  async function ensureDraft(type: "image" | "video"): Promise<string> {
-    if (draftId) return draftId;
-    const { data, error } = await createDraft({
-      variables: { input: { type: type === "video" ? "VIDEO" : "IMAGE" } },
-    });
-    if (error || !data?.createDraft)
-      throw new Error(error?.message ?? "Failed to create draft");
-    const id = data.createDraft.id;
-    setDraftId(id);
-    return id;
-  }
-
-  async function handleFiles(files: FileList, kind: "image" | "video") {
-    if (!files.length) return;
+  // Pick a media type → create the draft and jump straight to the details step.
+  // No native file picker here; the user chooses files on the details step via
+  // its dotted media picker (cleaner UX, lets them keep adding/removing photos).
+  async function handlePickType(kind: "image" | "video") {
+    if (creating) return;
     setError(null);
+    setCreating(true);
     try {
-      const did = await ensureDraft(kind);
-      setContentType(kind);
-      // Start uploads in background — they run while user is on the media review step
-      const list = Array.from(files).slice(0, kind === "video" ? 1 : 10);
-      list.forEach((file, i) => {
-        if (kind === "image") startImageUpload(file, did, i);
-        else startVideoUpload(file, did);
+      const { data, error } = await createDraft({
+        variables: { input: { type: kind === "video" ? "VIDEO" : "IMAGE" } },
       });
-      // Skip media review — go straight to edit details (TikTok style)
-      // Media thumbnail in StepEdit shows upload progress while user fills in details
+      if (error || !data?.createDraft)
+        throw new Error(error?.message ?? "Failed to create draft");
+      setDraftId(data.createDraft.id);
+      setContentType(kind);
       setStep("edit");
       router.push(`/${lang}/upload/create`);
     } catch (err) {
       setError(String(err));
+      setCreating(false);
     }
   }
 
@@ -88,13 +75,13 @@ export function UploadPickerPage({ lang }: { lang: string }) {
       label: "Video",
       description: "Share a short clip",
       icon: ICON_VIDEO,
-      onClick: () => videoInputRef.current?.click(),
+      onClick: () => handlePickType("video"),
     },
     {
       label: "Photos",
       description: "Up to 10 images",
       icon: ICON_PHOTO,
-      onClick: () => imageInputRef.current?.click(),
+      onClick: () => handlePickType("image"),
     },
     {
       label: "TikTok Import",
@@ -142,7 +129,8 @@ export function UploadPickerPage({ lang }: { lang: string }) {
             <button
               key={opt.label}
               onClick={opt.onClick}
-              className="flex items-center gap-4 w-full rounded-2xl active:scale-[0.98] transition-transform text-left
+              disabled={creating}
+              className="flex items-center gap-4 w-full rounded-2xl active:scale-[0.98] transition-transform text-left disabled:opacity-50
                          md:flex-col md:items-center md:text-center md:gap-3 md:py-8 md:px-4"
               style={{
                 padding: "18px 20px",
@@ -193,23 +181,6 @@ export function UploadPickerPage({ lang }: { lang: string }) {
           ))}
         </div>
       </div>
-
-      {/* Hidden file inputs */}
-      <input
-        ref={videoInputRef}
-        type="file"
-        accept="video/*"
-        className="hidden"
-        onChange={(e) => e.target.files && handleFiles(e.target.files, "video")}
-      />
-      <input
-        ref={imageInputRef}
-        type="file"
-        accept="image/*"
-        multiple
-        className="hidden"
-        onChange={(e) => e.target.files && handleFiles(e.target.files, "image")}
-      />
     </div>
   );
 }
