@@ -85,7 +85,7 @@ export function ConversationList({
                 }
               >
                 {pushUpdating ? (
-                  <Loader2 className="animate-spin text-muted" size={16} />
+                  <div />
                 ) : pushEnabled ? (
                   <Bell size={16} />
                 ) : (
