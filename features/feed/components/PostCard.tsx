@@ -613,7 +613,9 @@ function ImageMedia({
     onNavigate();
   };
 
-  const GRID_H = "clamp(40dvh, 72vw, 60dvh)";
+  // svh (not dvh): dvh changes as iOS Safari's toolbar shows/hides during
+  // scroll, resizing every media box mid-scroll and making the feed jump.
+  const GRID_H = "clamp(40svh, 72vw, 60svh)";
   const first = media[0];
   const firstSrc = mediaSrc(first, "large");
 
@@ -655,8 +657,8 @@ function ImageMedia({
         className="relative w-full cursor-pointer overflow-hidden bg-surface"
         style={{
           aspectRatio: String(clamped),
-          maxHeight: "60dvh",
-          minHeight: "40dvh",
+          maxHeight: "60svh",
+          minHeight: "40svh",
         }}
         onClick={nav}
       >
