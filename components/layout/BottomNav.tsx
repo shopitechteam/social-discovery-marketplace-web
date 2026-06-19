@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Compass,
   House,
+  Inbox,
   MessageCircle,
   Plus,
   Search,
@@ -29,8 +31,8 @@ const tabs: Tab[] = [
   {
     key: "explore",
     path: "explore",
-    label: "Discover",
-    icon: Search,
+    label: "Explore",
+    icon: Compass,
   },
   {
     key: "upload",
@@ -42,7 +44,7 @@ const tabs: Tab[] = [
     key: "notifications",
     path: "notifications",
     label: "Inbox",
-    icon: MessageCircle,
+    icon: Inbox,
   },
   {
     key: "profile",

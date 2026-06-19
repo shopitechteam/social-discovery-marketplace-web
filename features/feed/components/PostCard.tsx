@@ -286,7 +286,26 @@ function VideoMedia({
       { threshold: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0] },
     );
     obs.observe(el);
+
+    // Force an initial election after (re)mount. On a route return the tree can
+    // be kept alive and the observer won't re-fire on its own (nothing scrolls),
+    // so the in-view video would never be elected active → tap-to-play dead.
+    // Re-measure on next frame and whenever the page is shown again.
+    const remeasure = () => {
+      const r = el.getBoundingClientRect();
+      const vh = window.innerHeight || document.documentElement.clientHeight;
+      const visible = Math.max(0, Math.min(r.bottom, vh) - Math.max(r.top, 0));
+      const ratio = r.height > 0 ? visible / r.height : 0;
+      updateRatio(id, ratio);
+    };
+    const raf = requestAnimationFrame(remeasure);
+    window.addEventListener("pageshow", remeasure);
+    document.addEventListener("visibilitychange", remeasure);
+
     return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("pageshow", remeasure);
+      document.removeEventListener("visibilitychange", remeasure);
       obs.disconnect();
       unregister();
     };

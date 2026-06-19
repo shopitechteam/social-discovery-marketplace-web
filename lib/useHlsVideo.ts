@@ -13,6 +13,13 @@ export function useHlsVideo(
   const pausedRef = useRef(paused);
   // Track whether HLS has parsed the manifest so we can play/pause safely
   const readyRef = useRef(false);
+  // Bumped to force a re-init of the HLS source. Needed when the component is
+  // kept alive across a route change: the cleanup below destroys the hls.js
+  // instance and strips the <video> src, but the init effect won't re-run on
+  // its own because hlsUrl is unchanged — leaving the player dead (tap-to-play
+  // does nothing) until a full refresh. The recovery effect bumps this when we
+  // want to play but the manifest isn't ready, re-attaching the source.
+  const [reinitKey, setReinitKey] = useState(0);
 
   // Keep refs in sync without re-running the init effect
   useEffect(() => { activeRef.current = active; }, [active]);
@@ -111,19 +118,51 @@ export function useHlsVideo(
       hls?.destroy();
       hls = null;
     };
-  }, [hlsUrl]);
+    // reinitKey forces a re-attach after the cleanup destroyed the player while
+    // the component stayed mounted across a route change.
+  }, [hlsUrl, reinitKey]);
 
   // ── Play / pause: only act once HLS has the manifest ────────────────────────
   useEffect(() => {
     const vid = videoRef.current;
-    if (!vid || !readyRef.current) return;
+    if (!vid) return;
     if (active && !paused) {
+      if (!readyRef.current) {
+        // We want to play but the source isn't attached (e.g. it was torn down
+        // on a route change and never re-initialised). Re-init the player.
+        setReinitKey((k) => k + 1);
+        return;
+      }
       vid.play().catch(() => {});
     } else {
+      if (!readyRef.current) return;
       vid.pause();
       if (!active) Promise.resolve().then(() => setBuffering(false));
     }
   }, [active, paused]);
+
+  // ── Recovery: re-init if the player was torn down while we should be playing.
+  // Covers bfcache restore / tab return where active didn't change so the
+  // play/pause effect above never re-ran. Without this the video stays dead
+  // until the user taps or refreshes.
+  useEffect(() => {
+    const recover = () => {
+      if (
+        document.visibilityState === "visible" &&
+        activeRef.current &&
+        !pausedRef.current &&
+        !readyRef.current
+      ) {
+        setReinitKey((k) => k + 1);
+      }
+    };
+    document.addEventListener("visibilitychange", recover);
+    window.addEventListener("pageshow", recover);
+    return () => {
+      document.removeEventListener("visibilitychange", recover);
+      window.removeEventListener("pageshow", recover);
+    };
+  }, []);
 
   return { videoRef, buffering };
 }

@@ -22,9 +22,13 @@ export function useUnreadConversationCount(): number {
   const currentUserId = useAuthStore((s) => s.user?.id);
   const { on } = useSocket();
 
+  // cache-first, NOT cache-and-network: the badge re-mounts on every navigation
+  // (the bottom nav unmounts on chat-detail routes), and cache-and-network would
+  // fire a network request each time — the "icon loading on back" flicker. The
+  // count is kept live by the socket-driven refetch() handlers below instead.
   const { data, refetch } = useQuery(MY_UNREAD_CONVERSATION_COUNT, {
     skip: !isAuthenticated,
-    fetchPolicy: "cache-and-network",
+    fetchPolicy: "cache-first",
   });
 
   // A new incoming message (not from me) or a conversation-updated event can
