@@ -13,7 +13,7 @@ import {
   Link2,
   Play,
   Share2,
-  Video
+  Video,
 } from "lucide-react";
 import { useQuery, useMutation } from "@apollo/client/react";
 import { SHIMMER_AVATAR, SHIMMER_PORTRAIT } from "@/lib/shimmer";
@@ -21,7 +21,7 @@ import {
   GetUserPostsDocument,
   RecordProfileVisitDocument,
   type ProfileUserFieldsFragment,
-  type ProfilePostFieldsFragment
+  type ProfilePostFieldsFragment,
 } from "@/types/__generated__/graphql";
 import { useFollow } from "@/features/feed/hooks/useFollow";
 import { useAuthStore } from "@/stores/auth";
@@ -34,14 +34,32 @@ function formatCompact(value: number | null | undefined) {
   return String(value);
 }
 
+function formatDate(value: unknown) {
+  const date = new Date(String(value));
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("en", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 function getThumb(post: ProfilePostFieldsFragment): string | null {
   const m = post.media?.[0];
+
+  // For videos, fall back to a Mux-derived thumbnail when no stored cover exists.
+  const muxPlaybackId = m?.muxMeta?.playbackId;
+  const muxDerivedThumb = muxPlaybackId
+    ? `https://image.mux.com/${muxPlaybackId}/thumbnail.jpg?time=0&width=540&fit_mode=smartcrop`
+    : null;
+
   return (
     m?.muxMeta?.thumbnailUrl ??
     m?.thumbnailUrl ??
     m?.r2Variants?.find((v) => v.variant === "thumbnail")?.url ??
     m?.r2Variants?.[0]?.url ??
     m?.url ??
+    muxDerivedThumb ??
     null
   );
 }
@@ -57,8 +75,11 @@ function StatPill({ label, value }: { label: string; value: string }) {
       >
         {value}
       </span>
-      <span 
-        style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}
+      <span
+        style={{
+          fontSize: "var(--text-xs)",
+          color: "rgb(var(--color-text-muted))",
+        }}
       >
         {label}
       </span>
@@ -72,7 +93,7 @@ function PostTile({
   post,
   lang,
   onShare,
-  onCopyLink
+  onCopyLink,
 }: {
   post: ProfilePostFieldsFragment;
   lang: string;
@@ -85,160 +106,191 @@ function PostTile({
 
   return (
     <div
-      className="group relative overflow-hidden rounded-xl border"
+      className="group overflow-hidden rounded-xl border"
       style={{
-        aspectRatio: "9/16",
-        backgroundColor: "rgb(var(--color-bg-subtle))",
-        borderColor: "rgb(var(--color-border))"
+        borderColor: "rgb(var(--color-border))",
+        backgroundColor: "rgb(var(--color-bg-elevated))",
       }}
     >
-      {/* Whole tile navigates to content detail — z-10 sits above the image */}
-      <Link
-        href={`/${lang}/content/${post.id}`}
-        className="absolute inset-0 z-10"
-        aria-label={post.title}
-      />
-
-      {thumb ? (
-        <Image
-          src={thumb}
-          alt={post.title}
-          fill
-          className="object-contain transition-transform duration-500 group-hover:scale-105"
-          sizes="(max-width: 640px) 32vw, 200px"
-          placeholder="blur"
-          blurDataURL={SHIMMER_PORTRAIT}
+      {/* Thumbnail */}
+      <div className="relative aspect-9/10">
+        {/* Whole thumbnail navigates to content detail */}
+        <Link
+          href={`/${lang}/content/${post.id}`}
+          className="absolute inset-0 z-10"
+          aria-label={post.title}
         />
-      ) : (
-        <div className="flex h-full w-full items-center justify-center">
-          <ImageIcon
-            size={24}
-            style={{ color: "rgb(var(--color-text-placeholder))" }}
+
+        {thumb && isVideo ? (
+          <Image
+            src={thumb}
+            alt={post.title}
+            fill
+            className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            sizes="(max-width: 430px) 50vw, 215px"
+            placeholder="blur"
+            blurDataURL={SHIMMER_PORTRAIT}
           />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center">
+            <Image
+              src={
+                post.media.filter((m) => m.mediaType === "IMAGE")[0]
+                  ?.r2Variants?.[0]?.url ??
+                thumb ??
+                "/images/placeholder.png"
+              }
+              alt={post.title}
+              fill
+              className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+              sizes="(max-width: 430px) 50vw, 215px"
+              placeholder="blur"
+              blurDataURL={SHIMMER_PORTRAIT}
+            />
+            {/* <ImageIcon
+                      size={28}
+                      strokeWidth={1.7}
+                      style={{ color: "rgb(var(--color-text-placeholder))" }}
+                      aria-hidden
+                    /> */}
+          </div>
+        )}
+
+        {/* Play affordance for video posts */}
+        {isVideo && thumb && (
+          <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white">
+              <Play
+                size={20}
+                fill="currentColor"
+                strokeWidth={0}
+                className="ml-0.5"
+              />
+            </span>
+          </span>
+        )}
+
+        {/* action menu — sits above the Link overlay */}
+        <div className="absolute right-2 top-2 z-20 opacity-0 transition-opacity group-hover:opacity-100">
+          <div className="relative">
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                setMenuOpen((v) => !v);
+              }}
+              className="inline-flex h-7 w-7 items-center justify-center rounded-lg border text-white"
+              style={{
+                backgroundColor: "rgba(0,0,0,0.5)",
+                borderColor: "rgba(255,255,255,0.2)",
+                backdropFilter: "blur(8px)",
+              }}
+              aria-label="Post actions"
+            >
+              <span className="flex flex-col items-center gap-0.5">
+                {[0, 1, 2].map((i) => (
+                  <span
+                    key={i}
+                    className="block h-0.5 w-0.5 rounded-full bg-white"
+                  />
+                ))}
+              </span>
+            </button>
+            {menuOpen && (
+              <div
+                className="absolute right-0 top-8 z-20 w-36 overflow-hidden rounded-xl border py-1 shadow-xl"
+                style={{
+                  backgroundColor: "rgb(var(--color-bg-elevated))",
+                  borderColor: "rgb(var(--color-border))",
+                }}
+                onMouseLeave={() => setMenuOpen(false)}
+              >
+                <Link
+                  href={`/${lang}/content/${post.id}`}
+                  className="flex items-center gap-2 px-3 py-2 font-medium transition-colors hover:bg-surface"
+                  style={{
+                    fontSize: "var(--text-sm)",
+                    color: "rgb(var(--color-text))",
+                  }}
+                >
+                  <Eye size={14} />
+                  View
+                </Link>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onShare(post);
+                    setMenuOpen(false);
+                  }}
+                  className="flex w-full items-center gap-2 px-3 py-2 font-medium transition-colors hover:bg-surface"
+                  style={{
+                    fontSize: "var(--text-sm)",
+                    color: "rgb(var(--color-text))",
+                  }}
+                >
+                  <Share2 size={14} />
+                  Share
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onCopyLink(post);
+                    setMenuOpen(false);
+                  }}
+                  className="flex w-full items-center gap-2 px-3 py-2 font-medium transition-colors hover:bg-surface"
+                  style={{
+                    fontSize: "var(--text-sm)",
+                    color: "rgb(var(--color-text))",
+                  }}
+                >
+                  <Link2 size={14} />
+                  Copy link
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      </div>
 
-      {/* gradient */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            "linear-gradient(to top, rgba(0,0,0,0.7), transparent 50%, rgba(0,0,0,0.2))"
-        }}
-      />
+      {/* Meta — title / stats / date (matches /profile cards) */}
+      <Link href={`/${lang}/content/${post.id}`} className="block p-2.5">
+        {post.title && (
+          <p
+            className="line-clamp-2 leading-tight"
+            style={{
+              fontSize: "var(--text-sm)",
+              color: "rgb(var(--color-text))",
+              fontWeight: 500,
+            }}
+          >
+            {post.title}
+          </p>
+        )}
 
-      {/* type badge */}
-      <div className="absolute left-2 top-2 pointer-events-none">
-        <span
-          className="inline-flex h-6 w-6 items-center justify-center rounded-lg border text-white"
+        <div
+          className="mt-1 flex items-center gap-3"
           style={{
-            backgroundColor: "rgba(0,0,0,0.45)",
-            borderColor: "rgba(255,255,255,0.2)",
-            backdropFilter: "blur(8px)"
+            fontSize: "var(--text-xs)",
+            color: "rgb(var(--color-text-muted))",
           }}
         >
-          {isVideo ? (
-            <Play size={12} fill="currentColor" strokeWidth={0} />
-          ) : (
-            <ImageIcon size={12} strokeWidth={2} />
-          )}
-        </span>
-      </div>
-
-      {/* action menu — sits above the Link overlay */}
-      <div className="absolute right-2 top-2 z-20 opacity-0 transition-opacity group-hover:opacity-100">
-        <div className="relative">
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              setMenuOpen((v) => !v);
-            }}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border text-white"
-            style={{
-              backgroundColor: "rgba(0,0,0,0.5)",
-              borderColor: "rgba(255,255,255,0.2)",
-              backdropFilter: "blur(8px)"
-            }}
-            aria-label="Post actions"
-          >
-            <span className="flex flex-col items-center gap-0.5">
-              {[0, 1, 2].map((i) => (
-                <span
-                  key={i}
-                  className="block h-0.5 w-0.5 rounded-full bg-white"
-                />
-              ))}
-            </span>
-          </button>
-          {menuOpen && (
-            <div
-              className="absolute right-0 top-8 z-20 w-36 overflow-hidden rounded-xl border py-1 shadow-xl"
-              style={{
-                backgroundColor: "rgb(var(--color-bg-elevated))",
-                borderColor: "rgb(var(--color-border))"
-              }}
-              onMouseLeave={() => setMenuOpen(false)}
-            >
-              <Link
-                href={`/${lang}/content/${post.id}`}
-                className="flex items-center gap-2 px-3 py-2 font-medium transition-colors hover:bg-surface"
-                style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text))" }}
-              >
-                <Eye size={14} />
-                View
-              </Link>
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  onShare(post);
-                  setMenuOpen(false);
-                }}
-                className="flex w-full items-center gap-2 px-3 py-2 font-medium transition-colors hover:bg-surface"
-                style={{
-                  fontSize: "var(--text-sm)",
-                  color: "rgb(var(--color-text))"
-                  }}
-              >
-                <Share2 size={14} />
-                Share
-              </button>
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  onCopyLink(post);
-                  setMenuOpen(false);
-                }}
-                className="flex w-full items-center gap-2 px-3 py-2 font-medium transition-colors hover:bg-surface"
-                style={{
-                  fontSize: "var(--text-sm)",
-                  color: "rgb(var(--color-text))"
-                  }}
-              >
-                <Link2 size={14} />
-                Copy link
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* stats */}
-      <div className="absolute inset-x-0 bottom-0 z-0 p-2 pointer-events-none">
-        <div className="flex items-center gap-2">
-          <span
-            className="inline-flex items-center gap-1 font-semibold text-white"
-           style={{ fontSize: "var(--text-xs)" }}>
-            <Eye size={11} strokeWidth={2.2} />
-            {formatCompact(post.stats.views)}
+          <span className="flex items-center gap-1">
+            <Eye size={12} /> {formatCompact(post.stats.views)}
           </span>
-          <span
-            className="inline-flex items-center gap-1 font-semibold text-white"
-           style={{ fontSize: "var(--text-xs)" }}>
-            <Bookmark size={11} strokeWidth={2.2} />
-            {formatCompact(post.stats.saves)}
+          <span className="flex items-center gap-1">
+            <Bookmark size={12} /> {formatCompact(post.stats.saves)}
           </span>
         </div>
-      </div>
+
+        <p
+          className="mt-1"
+          style={{
+            fontSize: "var(--text-xs)",
+            color: "rgb(var(--color-text-muted))",
+          }}
+        >
+          {formatDate(post.createdAt)}
+        </p>
+      </Link>
     </div>
   );
 }
@@ -269,12 +321,12 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
     following,
     followerCount,
     toggle: toggleFollow,
-    loading: followLoading
+    loading: followLoading,
   } = useFollow({
     userId: user.id,
     initialFollowing: user.isFollowedByMe ?? false,
     initialFollowerCount: user.followerCount ?? 0,
-    lang
+    lang,
   });
 
   // Record a profile visit once per mount. Requires login (so we can attribute
@@ -283,7 +335,8 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
   const [recordProfileVisit] = useMutation(RecordProfileVisitDocument);
   const visitTrackedRef = useRef(false);
   useEffect(() => {
-    if (isOwnProfile || !isAuthenticated || visitTrackedRef.current || !user.id) return;
+    if (isOwnProfile || !isAuthenticated || visitTrackedRef.current || !user.id)
+      return;
     visitTrackedRef.current = true;
     recordProfileVisit({ variables: { userId: user.id } }).catch(() => {});
   }, [user.id, isOwnProfile, isAuthenticated, recordProfileVisit]);
@@ -291,10 +344,10 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
   const {
     data,
     loading: postsLoading,
-    fetchMore
+    fetchMore,
   } = useQuery(GetUserPostsDocument, {
     variables: { userId: user.id, limit: 18 },
-    notifyOnNetworkStatusChange: true
+    notifyOnNetworkStatusChange: true,
   });
 
   const posts = data?.userPosts.posts ?? [];
@@ -328,10 +381,10 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
                   posts: [
                     ...prev.userPosts.posts,
                     ...fetchMoreResult.userPosts.posts,
-                  ]
-                }
+                  ],
+                },
               };
-            }
+            },
           });
         }
       },
@@ -370,23 +423,26 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
       <div
         style={{
           background:
-            "linear-gradient(160deg, rgb(var(--brand-primary) / 0.08) 0%, rgb(var(--color-bg)) 60%)"
+            "linear-gradient(160deg, rgb(var(--brand-primary) / 0.08) 0%, rgb(var(--color-bg)) 60%)",
         }}
       >
         <div className="mx-auto max-w-2xl px-4 pb-6 pt-4 sm:px-6">
           {/* Back button */}
-          <button
-            onClick={() => router.back()}
-            className="mb-4 inline-flex items-center gap-1.5 font-semibold transition-opacity active:opacity-60"
-            style={{
-              fontSize: "var(--text-sm)",
-              color: "rgb(var(--color-text))"
+          <div>
+            {" "}
+            <button
+              onClick={() => router.back()}
+              className="mb-4 inline-flex items-center gap-1.5 font-semibold transition-opacity active:opacity-60"
+              style={{
+                fontSize: "var(--text-sm)",
+                color: "rgb(var(--color-text))",
               }}
-            aria-label="Go back"
-          >
-            <ArrowLeft size={18} strokeWidth={2.2} />
-            Back
-          </button>
+              aria-label="Go back"
+            >
+              <ArrowLeft size={18} strokeWidth={2.2} />
+              Back
+            </button>
+          </div>
 
           {/* Avatar + name row */}
           <div className="flex items-start gap-4">
@@ -398,7 +454,7 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
                   ? "rgb(var(--color-bg-subtle))"
                   : "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)) 60%, rgb(var(--brand-accent)))",
                 borderColor: "rgb(var(--color-bg-elevated))",
-                boxShadow: "0 12px 32px rgb(var(--brand-primary) / 0.18)"
+                boxShadow: "0 12px 32px rgb(var(--brand-primary) / 0.18)",
               }}
             >
               {avatar ? (
@@ -415,7 +471,8 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
                 <div className="flex h-full w-full items-center justify-center">
                   <span
                     className="select-none font-bold text-white"
-                   style={{ fontSize: "var(--text-xl)" }}>
+                    style={{ fontSize: "var(--text-xl)" }}
+                  >
                     {initials}
                   </span>
                 </div>
@@ -427,7 +484,10 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
               <div className="flex flex-wrap items-center gap-2">
                 <h1
                   className="truncate font-bold"
-                  style={{ fontSize: "var(--text-xl)", color: "rgb(var(--color-text))" }}
+                  style={{
+                    fontSize: "var(--text-xl)",
+                    color: "rgb(var(--color-text))",
+                  }}
                 >
                   {displayName}
                 </h1>
@@ -454,7 +514,10 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
               {user.username && (
                 <p
                   className="mt-0.5"
-                  style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text-muted))" }}
+                  style={{
+                    fontSize: "var(--text-sm)",
+                    color: "rgb(var(--color-text-muted))",
+                  }}
                 >
                   @{user.username}
                 </p>
@@ -497,9 +560,12 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex h-8 items-center gap-1.5 rounded-full border px-3 font-semibold transition-opacity active:opacity-75"
-                    style={{ fontSize: "var(--text-sm)", backgroundColor: "rgb(var(--color-bg-elevated))",
+                    style={{
+                      fontSize: "var(--text-sm)",
+                      backgroundColor: "rgb(var(--color-bg-elevated))",
                       borderColor: "rgb(var(--color-border))",
-                      color: "rgb(var(--color-text))" }}
+                      color: "rgb(var(--color-text))",
+                    }}
                   >
                     <Video size={14} strokeWidth={2.2} />
                     TikTok
@@ -518,8 +584,11 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
           {user.profile?.bio && (
             <p
               className="mt-4 leading-snug"
-              style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text))",
-                maxWidth: "36rem" }}
+              style={{
+                fontSize: "var(--text-sm)",
+                color: "rgb(var(--color-text))",
+                maxWidth: "36rem",
+              }}
             >
               {user.profile.bio}
             </p>
@@ -534,7 +603,10 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
               target="_blank"
               rel="noopener noreferrer"
               className="mt-1 inline-flex items-center gap-1.5 font-semibold"
-              style={{ fontSize: "var(--text-sm)", color: "rgb(var(--brand-accent))" }}
+              style={{
+                fontSize: "var(--text-sm)",
+                color: "rgb(var(--brand-accent))",
+              }}
             >
               <ExternalLink size={13} strokeWidth={2.2} />
               {user.profile.website.replace(/^https?:\/\//, "")}
@@ -547,7 +619,7 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
             style={{
               backgroundColor: "rgb(var(--color-bg-elevated) / 0.82)",
               borderColor: "rgb(var(--color-border))",
-              boxShadow: "var(--shadow-sm)"
+              boxShadow: "var(--shadow-sm)",
             }}
           >
             <StatPill label="Followers" value={formatCompact(followerCount)} />
@@ -573,37 +645,27 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
         <div className="mb-4 flex items-center justify-between">
           <h2
             className="font-bold"
-            style={{ fontSize: "var(--text-base)", color: "rgb(var(--color-text))" }}
+            style={{
+              fontSize: "var(--text-base)",
+              color: "rgb(var(--color-text))",
+            }}
           >
             Posts
           </h2>
-          <span 
-            style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text-muted))" }}
+          <span
+            style={{
+              fontSize: "var(--text-sm)",
+              color: "rgb(var(--color-text-muted))",
+            }}
           >
             {posts.length} shown
           </span>
         </div>
 
         {postsLoading && posts.length === 0 ? (
-          <div className="grid grid-cols-3 gap-2">
-            {Array.from({ length: 9 }).map((_, i) => (
-              <div
-                key={i}
-                className="relative overflow-hidden rounded-xl"
-                style={{ aspectRatio: "9/16" }}
-              >
-                {/* thumbnail area */}
-                <Skeleton className="absolute inset-0" />
-                {/* type badge */}
-                <div className="absolute left-2 top-2">
-                  <Skeleton className="h-6 w-6 rounded-lg" />
-                </div>
-                {/* stats strip */}
-                <div className="absolute inset-x-0 bottom-0 p-2 flex gap-2">
-                  <Skeleton className="h-3 w-8 rounded" />
-                  <Skeleton className="h-3 w-8 rounded" />
-                </div>
-              </div>
+          <div className="grid grid-cols-2 gap-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="aspect-9/10 rounded-xl" />
             ))}
           </div>
         ) : posts.length === 0 ? (
@@ -612,7 +674,7 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
               className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl border"
               style={{
                 backgroundColor: "rgb(var(--color-bg-elevated))",
-                borderColor: "rgb(var(--color-border))"
+                borderColor: "rgb(var(--color-border))",
               }}
             >
               <Play
@@ -623,14 +685,17 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
             </div>
             <p
               className="font-semibold"
-              style={{ fontSize: "var(--text-base)", color: "rgb(var(--color-text))" }}
+              style={{
+                fontSize: "var(--text-base)",
+                color: "rgb(var(--color-text))",
+              }}
             >
               No posts yet
             </p>
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {posts.map((post) => (
                 <PostTile
                   key={post.id}
@@ -647,22 +712,9 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
 
             {/* Skeleton tiles while fetching the next page */}
             {postsLoading && posts.length > 0 && (
-              <div className="mt-2 grid grid-cols-3 gap-2">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="relative overflow-hidden rounded-xl"
-                    style={{ aspectRatio: "9/16" }}
-                  >
-                    <Skeleton className="absolute inset-0" />
-                    <div className="absolute left-2 top-2">
-                      <Skeleton className="h-6 w-6 rounded-lg" />
-                    </div>
-                    <div className="absolute inset-x-0 bottom-0 p-2 flex gap-2">
-                      <Skeleton className="h-3 w-8 rounded" />
-                      <Skeleton className="h-3 w-8 rounded" />
-                    </div>
-                  </div>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Skeleton key={i} className="aspect-9/10 rounded-xl" />
                 ))}
               </div>
             )}

@@ -7,6 +7,7 @@ import type {
   DirectMessageUpdatedPayload,
 } from "@/lib/socket/socket-events";
 import type { Conversation, Message, UserLite } from "../types";
+import { timeAgoLong } from "@/lib/time";
 
 export function normalizeEnum(value?: string | null): string {
   return (value ?? "").toLowerCase();
@@ -94,23 +95,14 @@ export function shortTime(value?: string | null): string {
   });
 }
 
-export function relativeTime(value?: string | null): string {
-  if (!value) return "";
-  const diffMs = Date.now() - new Date(value).getTime();
-  const minutes = Math.floor(diffMs / 60000);
-  if (minutes < 1) return "now";
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-  const days = Math.floor(hours / 24);
-  return `${days}d`;
-}
-
 export function lastSeenLabel(conversation?: Conversation | null): string {
   if (!conversation?.otherParticipant) return "";
   if (conversation.otherParticipantOnline) return "Online";
   if (!conversation.otherParticipantLastSeenAt) return "Offline";
-  return `Last seen ${relativeTime(conversation.otherParticipantLastSeenAt)} ago`;
+  // timeAgoLong already returns "just now" for very recent times (no "ago"),
+  // which fixes the old "Last seen now ago" bug.
+  const label = timeAgoLong(conversation.otherParticipantLastSeenAt);
+  return label === "just now" ? "Last seen just now" : `Last seen ${label}`;
 }
 
 export function previewLabel(type?: string | null, text?: string | null): string {

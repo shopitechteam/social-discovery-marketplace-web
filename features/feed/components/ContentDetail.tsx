@@ -39,25 +39,12 @@ import { useFeedPreferencesStore } from "@/stores/feedPreferences";
 import { VideoProgressBar } from "./VideoProgressBar";
 import { usePageFocused } from "../hooks/usePageFocused";
 import { shouldFire } from "@/lib/interactionDedup";
+import { timeAgoLong as timeAgo } from "@/lib/time";
 
 type CommentItem = NonNullable<GetCommentsQuery["comments"]["items"]>[number];
 type DetailPost = NonNullable<GetContentQuery["content"]>;
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
-
-function timeAgo(raw: unknown): string {
-  if (!raw) return "";
-  const diff = Date.now() - new Date(raw as string).getTime();
-  const s = Math.floor(diff / 1000);
-  if (s < 60) return "just now";
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  const d = Math.floor(h / 24);
-  if (d < 30) return `${d}d ago`;
-  return `${Math.floor(d / 30)}mo ago`;
-}
 
 function fmt(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;

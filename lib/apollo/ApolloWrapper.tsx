@@ -71,6 +71,32 @@ async function doRefresh(
   }
 }
 
+/**
+ * Shared merge for cursor-paginated feeds (forYouFeed/followingFeed/localFeed).
+ *
+ * - First page (no `after`): replace the window.
+ * - Subsequent pages: append, but dedupe by the item's normalized ref/id so an
+ *   overlapping cursor window can't insert a post twice. A duplicate key in the
+ *   list makes React remount that subtree, which is what causes the flicker /
+ *   scroll jump when paginating back and forth.
+ */
+type FeedItem = { __ref?: string; id?: string };
+type FeedPage = { items?: FeedItem[] } & Record<string, unknown>;
+
+function mergeFeedPage(
+  existing: FeedPage | undefined,
+  incoming: FeedPage,
+  { args }: { args: Record<string, unknown> | null },
+): FeedPage {
+  const incomingItems = incoming?.items ?? [];
+  if (!args?.after) return { ...incoming, items: incomingItems };
+
+  const prevItems = existing?.items ?? [];
+  const seen = new Set(prevItems.map((it) => it.__ref ?? it.id));
+  const deduped = incomingItems.filter((it) => !seen.has(it.__ref ?? it.id));
+  return { ...incoming, items: [...prevItems, ...deduped] };
+}
+
 function createClient() {
   const httpLink = new HttpLink({
     uri: `${process.env.NEXT_PUBLIC_API_URL}/graphql`,
@@ -152,31 +178,16 @@ function createClient() {
           fields: {
             forYouFeed: {
               keyArgs: [],
-              merge(existing, incoming, { args }) {
-                const prevItems = existing?.items ?? [];
-                const nextItems = incoming?.items ?? [];
-                if (!args?.after) return { ...incoming, items: nextItems };
-                return { ...incoming, items: [...prevItems, ...nextItems] };
-              },
+              merge: mergeFeedPage,
             },
             followingFeed: {
               keyArgs: [],
-              merge(existing, incoming, { args }) {
-                const prevItems = existing?.items ?? [];
-                const nextItems = incoming?.items ?? [];
-                if (!args?.after) return { ...incoming, items: nextItems };
-                return { ...incoming, items: [...prevItems, ...nextItems] };
-              },
+              merge: mergeFeedPage,
             },
             localFeed: {
               // Each county/subregion is its own list; cursor args don't key it.
               keyArgs: ["county", "subregion"],
-              merge(existing, incoming, { args }) {
-                const prevItems = existing?.items ?? [];
-                const nextItems = incoming?.items ?? [];
-                if (!args?.after) return { ...incoming, items: nextItems };
-                return { ...incoming, items: [...prevItems, ...nextItems] };
-              },
+              merge: mergeFeedPage,
             },
             comments: {
               keyArgs: ["contentId"],

@@ -61,7 +61,7 @@ function TrendingItem({
     <button
       ref={containerRef}
       onClick={() => router.push(`/${lang}/content/${post.id}`)}
-      className="relative flex-none w-28 rounded-xl overflow-hidden group"
+      className="relative flex-none w-28 bg-gray-200 rounded-xl overflow-hidden group"
       style={{ aspectRatio: "9/14" }}
       aria-label={post.title}
     >
@@ -93,7 +93,7 @@ function TrendingItem({
           alt={post.title}
           fill
           sizes="112px"
-          className="object-cover transition-transform duration-300 group-hover:scale-105"
+          className="object-contain transition-transform duration-300 group-hover:scale-105"
           unoptimized={thumb.endsWith(".gif")}
         />
       ) : (

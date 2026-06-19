@@ -28,7 +28,10 @@ const REPORT_CONTENT = gql`
 
 interface Options {
   /** Call before like/comment/save — return false to abort (not authed). */
-  requireAuth?: (intent?: { contentId?: string; action?: "like" | "comment" | "save" }) => boolean;
+  requireAuth?: (intent?: {
+    contentId?: string;
+    action?: "like" | "comment" | "save";
+  }) => boolean;
 }
 
 function writeLikeToCache(
@@ -63,7 +66,10 @@ function writeSaveToCache(
   });
 }
 
-export function useInteractions(post: ContentCardFieldsFragment, options?: Options) {
+export function useInteractions(
+  post: ContentCardFieldsFragment,
+  options?: Options,
+) {
   const [liked, setLiked] = useState(post.isLikedByMe ?? false);
   const [likeCount, setLikeCount] = useState(post.stats?.likes ?? 0);
   const [saved, setSaved] = useState(post.isSavedByMe ?? false);
@@ -79,11 +85,17 @@ export function useInteractions(post: ContentCardFieldsFragment, options?: Optio
   const [reportMutation] = useMutation(REPORT_CONTENT);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLiked(post.isLikedByMe ?? false);
     setLikeCount(post.stats?.likes ?? 0);
     setSaved(post.isSavedByMe ?? false);
     setSaveCount(post.stats?.saves ?? 0);
-  }, [post.isLikedByMe, post.stats?.likes, post.isSavedByMe, post.stats?.saves]);
+  }, [
+    post.isLikedByMe,
+    post.stats?.likes,
+    post.isSavedByMe,
+    post.stats?.saves,
+  ]);
 
   // Call this when the post scrolls into view — fires at most once per mount
   function fireView() {
@@ -106,11 +118,18 @@ export function useInteractions(post: ContentCardFieldsFragment, options?: Optio
     writeLikeToCache(client, post.id, newLiked, newCount);
 
     try {
-      const { data } = await toggleLikeMutation({ variables: { contentId: post.id } });
+      const { data } = await toggleLikeMutation({
+        variables: { contentId: post.id },
+      });
       if (data?.toggleLike) {
         setLiked(data.toggleLike.liked);
         setLikeCount(data.toggleLike.likeCount);
-        writeLikeToCache(client, post.id, data.toggleLike.liked, data.toggleLike.likeCount);
+        writeLikeToCache(
+          client,
+          post.id,
+          data.toggleLike.liked,
+          data.toggleLike.likeCount,
+        );
       }
     } catch {
       setLiked(wasLiked);
@@ -139,7 +158,12 @@ export function useInteractions(post: ContentCardFieldsFragment, options?: Optio
       if (data?.toggleSave) {
         setSaved(data.toggleSave.saved);
         setSaveCount(data.toggleSave.saveCount);
-        writeSaveToCache(client, post.id, data.toggleSave.saved, data.toggleSave.saveCount);
+        writeSaveToCache(
+          client,
+          post.id,
+          data.toggleSave.saved,
+          data.toggleSave.saveCount,
+        );
       }
     } catch {
       setSaved(wasSaved);
@@ -151,7 +175,9 @@ export function useInteractions(post: ContentCardFieldsFragment, options?: Optio
   function handleShare() {
     shareMutation({ variables: { contentId: post.id } }).catch(() => {});
     if (typeof navigator !== "undefined" && navigator.share) {
-      navigator.share({ title: post.title, url: window.location.href }).catch(() => {});
+      navigator
+        .share({ title: post.title, url: window.location.href })
+        .catch(() => {});
     }
   }
 
@@ -165,5 +191,16 @@ export function useInteractions(post: ContentCardFieldsFragment, options?: Optio
     await reportMutation({ variables: { contentId: post.id } });
   }
 
-  return { liked, likeCount, handleLike, saved, saveCount, handleSave, handleShare, fireView, syncSaved, handleReport };
+  return {
+    liked,
+    likeCount,
+    handleLike,
+    saved,
+    saveCount,
+    handleSave,
+    handleShare,
+    fireView,
+    syncSaved,
+    handleReport,
+  };
 }

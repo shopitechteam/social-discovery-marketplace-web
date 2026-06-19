@@ -1,21 +1,5 @@
 "use client";
 
-/**
- * PostCard — Facebook/LinkedIn-style full-width post card.
- *
- * Structure:
- *   ┌────────────────────────────────────────┐
- *   │ [avatar]  Creator name · time  [···]   │  ← header
- *   │ Title + caption text                   │  ← text
- *   │ ──────────────────────────────────────  │
- *   │         media (image or video)          │  ← media
- *   │ ──────────────────────────────────────  │
- *   │ 💬 32  ❤️ 62   👁 1.2K    KSH 310,000 │  ← stats + price
- *   │ ──────────────────────────────────────  │
- *   │  👍 Like   💬 Comment   ↗ Share        │  ← actions
- *   └────────────────────────────────────────┘
- */
-
 import {
   useRef,
   useEffect,
@@ -58,6 +42,7 @@ import { TikTokEmbedMedia } from "./TikTokEmbedMedia";
 import { TikTokIcon } from "@/components/ui/TikTokIcon";
 import { usePageFocused } from "../hooks/usePageFocused";
 import toBase64 from "@/lib/utils";
+import { timeAgo } from "@/lib/time";
 import {
   Popover,
   PopoverContent,
@@ -72,20 +57,6 @@ interface Props {
 }
 
 // ── helpers ──────────────────────────────────────────────────────────────────
-
-function timeAgo(raw: unknown): string {
-  if (!raw) return "";
-  const diff = Date.now() - new Date(raw as string).getTime();
-  const s = Math.floor(diff / 1000);
-  if (s < 60) return "just now";
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h`;
-  const d = Math.floor(h / 24);
-  if (d < 30) return `${d}d`;
-  return `${Math.floor(d / 30)}mo`;
-}
 
 function fmt(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;

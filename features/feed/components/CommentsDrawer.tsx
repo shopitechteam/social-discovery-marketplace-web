@@ -14,6 +14,7 @@ import { motion, AnimatePresence, type PanInfo } from "framer-motion";
 import { useVisualViewport } from "@/hooks/useKeyboardInset";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
+import { timeAgo } from "@/lib/time";
 
 type CommentItem = NonNullable<GetCommentsQuery["comments"]["items"]>[number];
 type ReplyItem = NonNullable<GetRepliesQuery["replies"]>[number];
@@ -28,18 +29,6 @@ interface Props {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function timeAgo(raw: unknown): string {
-  if (!raw) return "";
-  const diff = Date.now() - new Date(raw as string).getTime();
-  const s = Math.floor(diff / 1000);
-  if (s < 60) return "just now";
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h`;
-  return `${Math.floor(h / 24)}d`;
-}
 
 function formatCount(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;

@@ -2859,6 +2859,11 @@ dataloader@^2.2.3:
   resolved "https://registry.npmjs.org/dataloader/-/dataloader-2.2.3.tgz"
   integrity sha512-y2krtASINtPFS1rSDjacrFgn1dcUuoREVabwlOGOe4SdxenREqwjwjElAdwvbGM7kgZz9a3KVicWR7vcz8rnzA==
 
+dayjs@^1.11.21:
+  version "1.11.21"
+  resolved "https://registry.npmjs.org/dayjs/-/dayjs-1.11.21.tgz"
+  integrity sha512-98IT+HOahAisibz/yjKbzuOBwYcjJ7BCLPzARyHiyEBmRz4fatF+KPJszEHXsGYjUG234aH/cOjW1wwTbKUZlA==
+
 debounce@^3.0.0:
   version "3.0.0"
   resolved "https://registry.npmjs.org/debounce/-/debounce-3.0.0.tgz"
