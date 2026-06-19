@@ -298,11 +298,14 @@ function VideoMedia({
       onClick={toggleUserPaused}
       className="relative w-full bg-black overflow-hidden"
       style={{
-        // Portrait videos get a taller budget (70dvh) so they aren't squeezed;
+        // Portrait videos get a taller budget (70svh) so they aren't squeezed;
         // landscape keep their natural 16:9 box. `object-contain` below then
         // shows the WHOLE frame letterboxed rather than cropping it.
+        // NB: use svh (small viewport height), NOT dvh. dvh changes as iOS
+        // Safari's toolbar collapses/expands during scroll, which resizes every
+        // media box mid-scroll and makes the feed jump. svh is fixed.
         height: `min(${isLandscape ? "56.25vw" : "177.78vw"}, ${
-          isLandscape ? "53dvh" : "70dvh"
+          isLandscape ? "53svh" : "70svh"
         })`,
       }}
     >
@@ -591,7 +594,9 @@ function ImageMedia({
     onNavigate();
   };
 
-  const GRID_H = "clamp(40dvh, 72vw, 60dvh)";
+  // svh (not dvh) so the multi-image grid height stays constant while iOS
+  // Safari's toolbar shows/hides during scroll — prevents the feed jumping.
+  const GRID_H = "clamp(40svh, 72vw, 60svh)";
   const first = media[0];
   const firstSrc = mediaSrc(first, "large");
 
@@ -633,8 +638,8 @@ function ImageMedia({
         className="relative w-full cursor-pointer overflow-hidden bg-surface"
         style={{
           aspectRatio: String(clamped),
-          maxHeight: "60dvh",
-          minHeight: "40dvh",
+          maxHeight: "60svh",
+          minHeight: "40svh",
         }}
         onClick={nav}
       >
