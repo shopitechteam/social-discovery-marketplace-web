@@ -1186,118 +1186,121 @@ export function useInbox(lang: string) {
     });
   }, []);
 
-  const deleteSelectedConversation = useCallback(async () => {
-    const conversationId = selectedConversationIdRef.current;
-    if (!conversationId) return false;
+  const deleteSelectedConversation = useCallback(
+    async (targetId?: string) => {
+      const conversationId = targetId ?? selectedConversationIdRef.current;
+      if (!conversationId) return false;
 
-    setIsConversationActionPending(true);
-    try {
-      const { data } = await deleteDirectConversation({
-        variables: { conversationId },
-      });
-      const ok = (
-        data as { deleteDirectConversation?: boolean } | undefined
-      )?.deleteDirectConversation;
-      if (!ok) {
-        toast.error("Could not delete this conversation");
+      setIsConversationActionPending(true);
+      try {
+        const { data } = await deleteDirectConversation({
+          variables: { conversationId },
+        });
+        const ok = (
+          data as { deleteDirectConversation?: boolean } | undefined
+        )?.deleteDirectConversation;
+        if (!ok) {
+          toast.error("Could not delete this conversation");
+          return false;
+        }
+
+        setConversations((prev) => removeConversation(prev, conversationId));
+        // Only reset the open thread if we deleted the one currently open.
+        if (selectedConversationIdRef.current === conversationId) {
+          setActiveConversation(null);
+          setSelectedConversationId(null);
+          setMessages([]);
+          setTypingUserId(null);
+          router.push(`/${lang}/notifications`);
+        }
+        void refetchUnreadCount();
+        toast.success("Conversation deleted");
+        return true;
+      } catch (error) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Could not delete this conversation",
+        );
         return false;
+      } finally {
+        setIsConversationActionPending(false);
       }
+    },
+    [deleteDirectConversation, lang, refetchUnreadCount, router],
+  );
 
-      setConversations((prev) => removeConversation(prev, conversationId));
-      setActiveConversation(null);
-      setSelectedConversationId(null);
-      setMessages([]);
-      setTypingUserId(null);
-      router.push(`/${lang}/notifications`);
-      void refetchUnreadCount();
-      toast.success("Conversation deleted");
-      return true;
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Could not delete this conversation",
-      );
-      return false;
-    } finally {
-      setIsConversationActionPending(false);
-    }
-  }, [
-    deleteDirectConversation,
-    lang,
-    refetchUnreadCount,
-    router,
-  ]);
+  const blockSelectedConversation = useCallback(
+    async (targetId?: string) => {
+      const conversationId = targetId ?? selectedConversationIdRef.current;
+      if (!conversationId) return false;
 
-  const blockSelectedConversation = useCallback(async () => {
-    const conversationId = selectedConversationIdRef.current;
-    if (!conversationId) return false;
+      setIsConversationActionPending(true);
+      try {
+        const { data } = await blockDirectConversation({
+          variables: { conversationId },
+        });
+        const conversation = (
+          data as { blockDirectConversation?: Conversation } | undefined
+        )?.blockDirectConversation;
+        if (!conversation) {
+          toast.error("Could not block this user");
+          return false;
+        }
 
-    setIsConversationActionPending(true);
-    try {
-      const { data } = await blockDirectConversation({
-        variables: { conversationId },
-      });
-      const conversation = (
-        data as { blockDirectConversation?: Conversation } | undefined
-      )?.blockDirectConversation;
-      if (!conversation) {
-        toast.error("Could not block this user");
+        mergeConversationSnapshot(conversation);
+        void refetchConversations();
+        toast.success("User blocked");
+        return true;
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "Could not block this user",
+        );
         return false;
+      } finally {
+        setIsConversationActionPending(false);
       }
+    },
+    [blockDirectConversation, mergeConversationSnapshot, refetchConversations],
+  );
 
-      mergeConversationSnapshot(conversation);
-      void refetchConversations();
-      toast.success("User blocked");
-      return true;
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Could not block this user",
-      );
-      return false;
-    } finally {
-      setIsConversationActionPending(false);
-    }
-  }, [blockDirectConversation, mergeConversationSnapshot, refetchConversations]);
+  const unblockSelectedConversation = useCallback(
+    async (targetId?: string) => {
+      const conversationId = targetId ?? selectedConversationIdRef.current;
+      if (!conversationId) return false;
 
-  const unblockSelectedConversation = useCallback(async () => {
-    const conversationId = selectedConversationIdRef.current;
-    if (!conversationId) return false;
+      setIsConversationActionPending(true);
+      try {
+        const { data } = await unblockDirectConversation({
+          variables: { conversationId },
+        });
+        const conversation = (
+          data as { unblockDirectConversation?: Conversation } | undefined
+        )?.unblockDirectConversation;
+        if (!conversation) {
+          toast.error("Could not unblock this user");
+          return false;
+        }
 
-    setIsConversationActionPending(true);
-    try {
-      const { data } = await unblockDirectConversation({
-        variables: { conversationId },
-      });
-      const conversation = (
-        data as { unblockDirectConversation?: Conversation } | undefined
-      )?.unblockDirectConversation;
-      if (!conversation) {
-        toast.error("Could not unblock this user");
+        mergeConversationSnapshot(conversation);
+        void refetchConversations();
+        toast.success("User unblocked");
+        return true;
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "Could not unblock this user",
+        );
         return false;
+      } finally {
+        setIsConversationActionPending(false);
       }
-
-      mergeConversationSnapshot(conversation);
-      void refetchConversations();
-      toast.success("User unblocked");
-      return true;
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Could not unblock this user",
-      );
-      return false;
-    } finally {
-      setIsConversationActionPending(false);
-    }
-  }, [
-    mergeConversationSnapshot,
-    refetchConversations,
-    unblockDirectConversation,
-  ]);
+    },
+    [mergeConversationSnapshot, refetchConversations, unblockDirectConversation],
+  );
 
   const reportSelectedConversation = useCallback(
-    async (reason: string, details?: string) => {
-      const conversationId = selectedConversationIdRef.current;
+    async (reason: string, details?: string, targetId?: string) => {
+      const conversationId = targetId ?? selectedConversationIdRef.current;
       if (!conversationId) return false;
 
       setIsConversationActionPending(true);

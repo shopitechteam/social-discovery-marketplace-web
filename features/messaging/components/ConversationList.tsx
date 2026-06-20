@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import Image from "next/image";
 import { Bell, BellOff, Loader2, MessageCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -25,7 +26,11 @@ interface Props {
   pushUpdating: boolean;
   onTogglePush: () => void;
   onSelect: (conversationId: string) => void;
+  /** Long-press (mobile) / right-click (desktop) on a row → open its actions. */
+  onLongPress: (conversation: Conversation) => void;
 }
+
+const LONG_PRESS_MS = 450;
 
 /** Left-hand inbox: header + scrollable conversation rows. */
 export function ConversationList({
@@ -40,7 +45,30 @@ export function ConversationList({
   pushUpdating,
   onTogglePush,
   onSelect,
+  onLongPress,
 }: Props) {
+  // Long-press detection: a timer armed on press, cleared on release/move. When
+  // it fires we open the row's actions and flag the press so the following
+  // click (tap-to-open) is suppressed.
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressFired = useRef(false);
+
+  const clearLongPress = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  const startLongPress = (conversation: Conversation) => {
+    longPressFired.current = false;
+    clearLongPress();
+    longPressTimer.current = setTimeout(() => {
+      longPressFired.current = true;
+      onLongPress(conversation);
+    }, LONG_PRESS_MS);
+  };
+
   return (
     <section
       className="flex flex-col"
@@ -141,8 +169,30 @@ export function ConversationList({
               <button
                 key={conversation.id}
                 type="button"
-                onClick={() => onSelect(conversation.id)}
-                className="flex w-full items-start gap-3 border-b px-4 py-3 text-left transition-colors"
+                onClick={() => {
+                  // Suppress the click that follows a long-press release.
+                  if (longPressFired.current) {
+                    longPressFired.current = false;
+                    return;
+                  }
+                  onSelect(conversation.id);
+                }}
+                onContextMenu={(event) => {
+                  // Desktop: right-click opens the actions instead of the menu.
+                  event.preventDefault();
+                  onLongPress(conversation);
+                }}
+                onTouchStart={() => startLongPress(conversation)}
+                onTouchEnd={clearLongPress}
+                onTouchMove={clearLongPress}
+                onPointerDown={(event) => {
+                  // Mouse/pen long-press (touch is handled above). Skip touch
+                  // pointers to avoid double-arming the timer.
+                  if (event.pointerType !== "touch") startLongPress(conversation);
+                }}
+                onPointerUp={clearLongPress}
+                onPointerLeave={clearLongPress}
+                className="flex w-full select-none items-start gap-3 border-b px-4 py-3 text-left transition-colors"
                 style={{
                   borderColor: "rgb(var(--color-border) / 0.6)",
                   backgroundColor: selected

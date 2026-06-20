@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useInbox } from "../hooks/useInbox";
 import { usePushNotifications } from "../hooks/usePushNotifications";
+import { participantName } from "../lib/helpers";
+import type { Conversation } from "../types";
 import { ConversationList } from "./ConversationList";
+import { ConversationActionsSheet } from "./ConversationActionsSheet";
 import { ChatDetail } from "./ChatDetail";
 
 interface Props {
@@ -34,6 +37,12 @@ interface Props {
 export function MessagingShell({ lang, conversationId, mode = "conversation" }: Props) {
   const inbox = useInbox(lang);
   const pushNotifications = usePushNotifications(lang);
+
+  // The conversation whose actions sheet is open from a list long-press. Kept
+  // separate from the open thread so the actions target that row, not whichever
+  // chat happens to be selected.
+  const [actionsTarget, setActionsTarget] = useState<Conversation | null>(null);
+  const actionsTargetId = actionsTarget?.id ?? null;
 
   // Resolve the route param into the open conversation. For a content id we
   // ensure the thread in place (URL is swapped to the real id without remount).
@@ -94,6 +103,7 @@ export function MessagingShell({ lang, conversationId, mode = "conversation" }: 
               void pushNotifications.toggle();
             }}
             onSelect={inbox.navigateToConversation}
+            onLongPress={setActionsTarget}
           />
         </div>
 
@@ -131,6 +141,35 @@ export function MessagingShell({ lang, conversationId, mode = "conversation" }: 
           />
         </div>
       </div>
+
+      {/* Actions sheet opened by a long-press on a conversation row. The
+          callbacks target that row's id, independent of the open thread. */}
+      <ConversationActionsSheet
+        open={actionsTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setActionsTarget(null);
+        }}
+        participantName={participantName(actionsTarget?.otherParticipant)}
+        blockedByMe={actionsTarget?.blockedByMe}
+        blockedByOther={actionsTarget?.blockedByOther}
+        isPending={inbox.isConversationActionPending}
+        onDeleteConversation={() =>
+          inbox.deleteSelectedConversation(actionsTargetId ?? undefined)
+        }
+        onBlockConversation={() =>
+          inbox.blockSelectedConversation(actionsTargetId ?? undefined)
+        }
+        onUnblockConversation={() =>
+          inbox.unblockSelectedConversation(actionsTargetId ?? undefined)
+        }
+        onReportConversation={(reason, details) =>
+          inbox.reportSelectedConversation(
+            reason,
+            details,
+            actionsTargetId ?? undefined,
+          )
+        }
+      />
     </div>
   );
 }
