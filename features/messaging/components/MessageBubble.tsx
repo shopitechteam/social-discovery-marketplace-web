@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import { Loader2, Play, RotateCw, X } from "lucide-react";
 import type { Message } from "../types";
@@ -10,6 +11,7 @@ import {
   shortTime,
 } from "../lib/helpers";
 import { MessageTicks } from "./MessageTicks";
+import { ChatMediaDialog } from "./ChatMediaDialog";
 
 interface Props {
   message: Message;
@@ -43,6 +45,15 @@ export function MessageBubble({ message, mine, onRetry, onDiscard }: Props) {
     message.mediaAsset?.muxMeta?.thumbnailUrl ??
     message.mediaAsset?.thumbnailUrl ??
     null;
+
+  // A video is playable once Mux has produced a playback id (i.e. processed).
+  const playbackId = message.mediaAsset?.muxMeta?.playbackId ?? null;
+  const canPlayVideo =
+    kind === "video" && Boolean(playbackId) && !isUploading && !isFailed;
+  // Image is viewable once we have a real (non-blob) URL and it's settled.
+  const canViewImage =
+    kind === "image" && Boolean(imageUrl) && !isUploading && !isFailed;
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const mediaOverlay =
     isUploading || isFailed ? (
@@ -92,14 +103,22 @@ export function MessageBubble({ message, mine, onRetry, onDiscard }: Props) {
             <div className={MEDIA_BOX_CLASS} style={MEDIA_BOX_STYLE}>
               {kind === "image" ? (
                 imageUrl ? (
-                  <Image
-                    src={imageUrl}
-                    alt="Attachment"
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 260px"
-                    unoptimized={imageUrl.startsWith("blob:")}
-                  />
+                  <button
+                    type="button"
+                    onClick={() => canViewImage && setDialogOpen(true)}
+                    disabled={!canViewImage}
+                    aria-label="View image"
+                    className="absolute inset-0 h-full w-full"
+                  >
+                    <Image
+                      src={imageUrl}
+                      alt="Attachment"
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 260px"
+                      unoptimized={imageUrl.startsWith("blob:")}
+                    />
+                  </button>
                 ) : (
                   <div className="flex h-full w-full items-center justify-center">
                     <Loader2 size={22} className="animate-spin opacity-60" />
@@ -123,11 +142,17 @@ export function MessageBubble({ message, mine, onRetry, onDiscard }: Props) {
               )}
 
               {kind === "video" && !isUploading && !isFailed && videoThumb && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <button
+                  type="button"
+                  onClick={() => canPlayVideo && setDialogOpen(true)}
+                  disabled={!canPlayVideo}
+                  aria-label="Play video"
+                  className="absolute inset-0 flex items-center justify-center"
+                >
                   <div className="flex h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white transition-transform hover:scale-105">
                     <Play size={16} fill="currentColor" className="ml-0.5" />
                   </div>
-                </div>
+                </button>
               )}
 
               {mediaOverlay}
@@ -195,6 +220,23 @@ export function MessageBubble({ message, mine, onRetry, onDiscard }: Props) {
           {mine ? <MessageTicks message={message} /> : null}
         </div>
       </div>
+
+      {dialogOpen && canPlayVideo && playbackId ? (
+        <ChatMediaDialog
+          kind="video"
+          playbackId={playbackId}
+          poster={videoThumb}
+          onClose={() => setDialogOpen(false)}
+        />
+      ) : null}
+
+      {dialogOpen && canViewImage && imageUrl ? (
+        <ChatMediaDialog
+          kind="image"
+          src={imageUrl}
+          onClose={() => setDialogOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }
