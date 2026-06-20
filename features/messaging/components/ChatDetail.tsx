@@ -128,7 +128,7 @@ export function ChatDetail({
 
   return (
     <section
-      className={`flex h-full min-h-0 flex-col ${
+      className={`flex h-dvh min-h-0 flex-col md:h-full ${
         isOpen ? "flex" : "hidden md:flex"
       }`}
     >

@@ -60,11 +60,13 @@ export function Composer({
 
   return (
     <div
-      className="shrink-0 no-scroll-indicator border-t px-4 pt-3"
+      className="sticky bottom-0 z-10 shrink-0 no-scroll-indicator border-t px-4 pt-3"
       style={{
         borderColor: "rgb(var(--color-border))",
         backgroundColor: "rgb(var(--color-bg))",
-        paddingBottom: "calc(env(safe-area-inset-bottom) + 0.75rem)",
+        // Pin to the bottom of the viewport and keep clear of the home-indicator
+        // / device safe area, plus a little breathing room above it.
+        paddingBottom: "calc(env(safe-area-inset-bottom) + 1.25rem)",
       }}
     >
       {/* ── Quick-reply chips ("peels") — only when idle (no draft/media) ── */}
