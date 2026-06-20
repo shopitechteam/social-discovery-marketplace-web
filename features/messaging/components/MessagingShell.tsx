@@ -108,7 +108,18 @@ export function MessagingShell({ lang, conversationId, mode = "conversation" }: 
         </div>
 
         {/* ── Chat detail (right pane) ───────────────────────────────── */}
-        <div className="min-w-0">
+        {/* Mobile: lock to the dynamic viewport and contain overflow so the
+            header stays pinned at the top and the composer at the bottom (the
+            message list is the only thing that scrolls). Desktop: fill the
+            split pane. */}
+        <div
+          className={[
+            "min-w-0",
+            hasRouteConversation
+              ? "h-dvh overflow-hidden md:h-full md:overflow-visible"
+              : "",
+          ].join(" ")}
+        >
           <ChatDetail
             lang={lang}
             selectedConversationId={inbox.selectedConversationId}

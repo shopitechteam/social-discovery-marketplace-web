@@ -128,7 +128,7 @@ export function ChatDetail({
 
   return (
     <section
-      className={`flex h-svh min-h-0 flex-col md:h-full ${
+      className={`flex h-full min-h-0 flex-col ${
         isOpen ? "flex" : "hidden md:flex"
       }`}
     >
@@ -343,7 +343,7 @@ export function ChatDetail({
               selectedConversation?.blockedByMe
                 ? "You blocked this user"
                 : selectedConversation?.blockedByOther
-                  ? "This conversation is blocked"
+                  ? "This user blocked you"
                   : selectedConversation?.canSendMessages === false
                     ? "Messaging unavailable"
                     : null

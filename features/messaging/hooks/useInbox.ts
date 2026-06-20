@@ -614,6 +614,10 @@ export function useInbox(lang: string) {
    */
   const ensureConversationByContent = useCallback(
     async (contentId: string) => {
+      // Dedupe only the in-flight request (the resolving effect can fire twice
+      // for the same mount). The ref is released in `finally` so re-opening the
+      // SAME post later — e.g. tapping "Message" again after returning to the
+      // feed — runs the ensure again and swaps `?source=content` out of the URL.
       if (ensureKeyRef.current === contentId) return;
       ensureKeyRef.current = contentId;
       try {
@@ -641,10 +645,11 @@ export function useInbox(lang: string) {
         }
         void refetchConversations();
       } catch (error) {
-        ensureKeyRef.current = null;
         toast.error(
           error instanceof Error ? error.message : "Could not open the conversation",
         );
+      } finally {
+        ensureKeyRef.current = null;
       }
     },
     [ensureConversation, lang, refetchConversations],
