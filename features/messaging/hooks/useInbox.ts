@@ -72,6 +72,13 @@ export function useInbox(lang: string) {
     useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [composer, setComposer] = useState("");
+  // Media the user picked but hasn't sent yet — shown as a preview above the
+  // composer. Upload only happens on Send (with any typed caption attached).
+  const [stagedMedia, setStagedMedia] = useState<{
+    file: File;
+    kind: "image" | "video";
+    previewUrl: string;
+  } | null>(null);
   // Text sends are optimistic (the bubble renders instantly and the composer
   // clears + stays active), so there's no "sending" lock on text. Kept as a
   // constant for the Composer's prop contract; media uses `isUploading`.

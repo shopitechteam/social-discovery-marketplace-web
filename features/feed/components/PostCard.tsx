@@ -1270,16 +1270,16 @@ export function PostCard({ post, lang, priority }: Props) {
       {/* ── Stats row ──────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between px-4 pt-2.5 pb-1">
         <div className="flex items-center gap-3 text-muted-foreground text-xs font-medium">
-          {saveCount > 0 && <span>{fmt(saveCount)} saved</span>}
-          {(post.stats?.comments ?? 0) > 0 && (
+          {/* {saveCount > 0 && <span>{fmt(saveCount)} saved</span>} */}
+          {/* {(post.stats?.comments ?? 0) > 0 && (
             <span>
               · {fmt(post.stats!.comments!)} comment
               {post.stats.comments == 1 ? "" : "s"}
             </span>
-          )}
+          )} */}
           {(post.stats?.shares ?? 0) > 0 && (
             <span>
-              {saveCount > 0 ? "· " : ""}
+              {saveCount > 0 ? " " : ""}
               {fmt(post.stats!.shares!)} share
               {post.stats.shares == 1 ? "" : "s"}
             </span>
@@ -1306,7 +1306,7 @@ export function PostCard({ post, lang, priority }: Props) {
         {/* Save pill — outlined, active = filled primary */}
         <button
           onClick={() => handleSave()}
-          className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-full border text-xs font-semibold transition-all active:scale-95"
+          className="flex items-center gap-1.5 px-4 py-2.5 rounded-full border text-xs font-semibold transition-all active:scale-95"
           style={{
             borderColor: saved
               ? "rgb(var(--brand-primary))"
@@ -1330,22 +1330,28 @@ export function PostCard({ post, lang, priority }: Props) {
         {/* Comment pill — opens the lazy-loaded comments sheet */}
         <button
           onClick={() => setShowComments(true)}
-          className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-full border border-border text-xs font-semibold text-default transition-all active:scale-95"
+          className="flex items-center gap-1.5  px-4 py-2.5 rounded-full border border-border text-xs font-semibold text-default transition-all active:scale-95"
         >
           <svg
-            className="w-4 h-4"
+            xmlns="http://www.w3.org/2000/svg"
             fill="none"
-            stroke="currentColor"
-            strokeWidth={1.8}
             viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
+            className="size-4"
           >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
-              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+              d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z"
             />
           </svg>
-          <span>Comment</span>
+
+          {post?.stats.comments > 0 ? (
+            <span>{post?.stats.comments}</span>
+          ) : (
+            <span>Comment</span>
+          )}
         </button>
 
         {!isOwnPost && (
@@ -1413,7 +1419,7 @@ export function PostCard({ post, lang, priority }: Props) {
       {isOpeningChat &&
         typeof document !== "undefined" &&
         createPortal(
-          <div className="fixed inset-0 z-[60]">
+          <div className="fixed inset-0 z-60">
             <ChatShellSkeleton />
           </div>,
           document.body,
