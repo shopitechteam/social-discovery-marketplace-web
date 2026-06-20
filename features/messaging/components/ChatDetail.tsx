@@ -42,6 +42,7 @@ interface Props {
   onBack: () => void;
   onComposerChange: (value: string) => void;
   onSend: () => void;
+  onQuickReply: (text: string) => void;
   onStageMedia: (file: File, kind: "image" | "video") => void;
   onClearStagedMedia: () => void;
   onRetryMessage: (message: Message) => void;
@@ -77,6 +78,7 @@ export function ChatDetail({
   onBack,
   onComposerChange,
   onSend,
+  onQuickReply,
   onStageMedia,
   onClearStagedMedia,
   onRetryMessage,
@@ -313,6 +315,7 @@ export function ChatDetail({
             requireAuth={requireAuth}
             onChange={onComposerChange}
             onSend={handleSend}
+            onQuickReply={onQuickReply}
             onStageMedia={onStageMedia}
             onClearStagedMedia={onClearStagedMedia}
           />

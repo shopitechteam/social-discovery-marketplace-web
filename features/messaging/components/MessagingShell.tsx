@@ -129,6 +129,7 @@ export function MessagingShell({ lang, conversationId, mode = "conversation" }: 
             onBack={inbox.handleBack}
             onComposerChange={inbox.handleComposerChange}
             onSend={inbox.handleSend}
+            onQuickReply={inbox.sendQuickReply}
             onStageMedia={inbox.stageMedia}
             onClearStagedMedia={inbox.clearStagedMedia}
             onRetryMessage={inbox.retryMessage}

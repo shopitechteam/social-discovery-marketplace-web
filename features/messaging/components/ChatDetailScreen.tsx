@@ -22,7 +22,11 @@ interface Props {
  * Boots useInbox with the conversation pre-selected from the route param, or
  * ensures it from a content id when opened straight from a post's Message button.
  */
-export function ChatDetailScreen({ lang, conversationId, mode = "conversation" }: Props) {
+export function ChatDetailScreen({
+  lang,
+  conversationId,
+  mode = "conversation",
+}: Props) {
   const inbox = useInbox(lang);
   usePushNotifications(lang);
 
@@ -39,7 +43,8 @@ export function ChatDetailScreen({ lang, conversationId, mode = "conversation" }
 
   // While ensuring a conversation from a content id, the conversation isn't
   // selected yet — show a chat-style loading screen (never the inbox list).
-  const resolvingFromContent = mode === "content" && !inbox.selectedConversationId;
+  const resolvingFromContent =
+    mode === "content" && !inbox.selectedConversationId;
 
   if (resolvingFromContent) {
     return (
@@ -73,6 +78,7 @@ export function ChatDetailScreen({ lang, conversationId, mode = "conversation" }
         onBack={inbox.handleBack}
         onComposerChange={inbox.handleComposerChange}
         onSend={inbox.handleSend}
+        onQuickReply={inbox.sendQuickReply}
         onStageMedia={inbox.stageMedia}
         onClearStagedMedia={inbox.clearStagedMedia}
         onRetryMessage={inbox.retryMessage}

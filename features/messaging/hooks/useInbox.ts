@@ -712,49 +712,61 @@ export function useInbox(lang: string) {
     [refetchConversations, sendDirectMessage],
   );
 
-  const handleSendText = useCallback(() => {
-    const conversationId = selectedConversationIdRef.current;
-    const myId = currentUser?.id;
-    const text = composer.trim();
-    if (!conversationId || !text || !myId) return;
-    if (selectedConversation?.canSendMessages === false) {
-      toast.error(
-        selectedConversation.blockedByMe
-          ? "You have blocked this user"
-          : "You can no longer send messages in this conversation",
-      );
-      return;
-    }
+  /**
+   * Optimistically send a text message. With no argument it sends (and clears)
+   * the composer; with explicit text it sends that instead — used by the
+   * quick-reply chips, which send a canned message without touching the input.
+   */
+  const handleSendText = useCallback(
+    (explicitText?: string) => {
+      const conversationId = selectedConversationIdRef.current;
+      const myId = currentUser?.id;
+      const fromComposer = explicitText === undefined;
+      const text = (explicitText ?? composer).trim();
+      if (!conversationId || !text || !myId) return;
+      if (selectedConversation?.canSendMessages === false) {
+        toast.error(
+          selectedConversation.blockedByMe
+            ? "You have blocked this user"
+            : "You can no longer send messages in this conversation",
+        );
+        return;
+      }
 
-    const clientMessageId = crypto.randomUUID();
+      const clientMessageId = crypto.randomUUID();
 
-    // Optimistic: render the bubble and clear the input immediately so the
-    // composer stays active (send another right away — like WhatsApp).
-    const optimistic: Message = {
-      id: `optimistic:${clientMessageId}`,
-      conversationId,
-      contentId: selectedConversation?.contentId ?? "",
-      senderId: myId,
-      recipientId: selectedConversation?.otherParticipant?.id ?? "",
-      type: "TEXT",
-      text,
-      createdAt: new Date().toISOString(),
-      isMine: true,
-      deliveryStatus: "sent",
-      clientMessageId,
-      pendingStatus: "sending",
-    };
+      // Optimistic: render the bubble and clear the input immediately so the
+      // composer stays active (send another right away — like WhatsApp).
+      const optimistic: Message = {
+        id: `optimistic:${clientMessageId}`,
+        conversationId,
+        contentId: selectedConversation?.contentId ?? "",
+        senderId: myId,
+        recipientId: selectedConversation?.otherParticipant?.id ?? "",
+        type: "TEXT",
+        text,
+        createdAt: new Date().toISOString(),
+        isMine: true,
+        deliveryStatus: "sent",
+        clientMessageId,
+        pendingStatus: "sending",
+      };
 
-    setMessages((prev) => sortMessagesChronologically([...prev, optimistic]));
-    setComposer("");
+      setMessages((prev) => sortMessagesChronologically([...prev, optimistic]));
+      if (fromComposer) setComposer("");
 
-    void sendTextMessage(clientMessageId, conversationId, text);
-  }, [
-    composer,
-    currentUser?.id,
-    selectedConversation,
-    sendTextMessage,
-  ]);
+      void sendTextMessage(clientMessageId, conversationId, text);
+    },
+    [composer, currentUser?.id, selectedConversation, sendTextMessage],
+  );
+
+  /** Send a canned quick-reply ("peel") directly, bypassing the composer. */
+  const sendQuickReply = useCallback(
+    (text: string) => {
+      handleSendText(text);
+    },
+    [handleSendText],
+  );
 
   const runMediaUpload = useCallback(
     async (
@@ -1368,6 +1380,7 @@ export function useInbox(lang: string) {
     handleComposerChange,
     handleSendText,
     handleSend,
+    sendQuickReply,
     stageMedia,
     clearStagedMedia,
     retryMessage,

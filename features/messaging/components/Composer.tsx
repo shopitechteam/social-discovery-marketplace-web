@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Paperclip, Play, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { StagedMedia } from "../types";
+import { QuickReplies } from "./QuickReplies";
 
 interface Props {
   composer: string;
@@ -14,6 +15,7 @@ interface Props {
   requireAuth: () => boolean;
   onChange: (value: string) => void;
   onSend: () => void;
+  onQuickReply: (text: string) => void;
   onStageMedia: (file: File, kind: "image" | "video") => void;
   onClearStagedMedia: () => void;
 }
@@ -29,6 +31,7 @@ export function Composer({
   requireAuth,
   onChange,
   onSend,
+  onQuickReply,
   onStageMedia,
   onClearStagedMedia,
 }: Props) {
@@ -45,7 +48,8 @@ export function Composer({
   }, [composer]);
 
   const disabled = Boolean(disabledReason);
-  const canSend = !disabled && (Boolean(stagedMedia) || composer.trim().length > 0);
+  const canSend =
+    !disabled && (Boolean(stagedMedia) || composer.trim().length > 0);
 
   const handleSendClick = () => {
     if (!canSend) return;
@@ -56,13 +60,18 @@ export function Composer({
 
   return (
     <div
-      className="shrink-0 border-t px-4 pt-3"
+      className="shrink-0 no-scroll-indicator border-t px-4 pt-3"
       style={{
         borderColor: "rgb(var(--color-border))",
         backgroundColor: "rgb(var(--color-bg))",
         paddingBottom: "calc(env(safe-area-inset-bottom) + 0.75rem)",
       }}
     >
+      {/* ── Quick-reply chips ("peels") — only when idle (no draft/media) ── */}
+      {!stagedMedia && composer.trim().length === 0 ? (
+        <QuickReplies disabled={disabled} onSend={onQuickReply} />
+      ) : null}
+
       {/* ── Staged-media preview (above the input row) ── */}
       {stagedMedia ? (
         <div className="mb-2 flex items-center gap-3">
@@ -99,7 +108,7 @@ export function Composer({
         </div>
       ) : null}
 
-      <div className="flex items-end gap-2">
+      <div className="flex no-scroll-indicator items-end gap-2">
         <Button
           type="button"
           size="icon"
@@ -122,10 +131,16 @@ export function Composer({
           placeholder={disabledReason || "Message..."}
           rows={1}
           disabled={disabled}
-          className="flex-1 resize-none rounded-2xl border bg-transparent px-4 py-2 text-sm outline-none placeholder:text-sm focus:ring-1 focus:ring-gray-700"
+          className="flex-1 overflow-y-auto no-scroll-indicator resize-none rounded-2xl border bg-transparent px-4 py-2 text-sm outline-none placeholder:text-sm focus:ring-1 focus:ring-gray-700"
           style={{
             borderColor: "rgb(var(--color-border))",
             maxHeight: MAX_TEXTAREA_HEIGHT,
+            // Belt-and-suspenders: kill the scroll indicator + native textarea
+            // chrome inline so it doesn't depend on the utility class compiling.
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+            WebkitAppearance: "none",
+            resize: "none",
           }}
           onKeyDown={(event) => {
             if (event.key === "Enter" && !event.shiftKey) {

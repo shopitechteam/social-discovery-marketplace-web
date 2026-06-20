@@ -8,7 +8,11 @@ import { useHlsVideo } from "@/lib/useHlsVideo";
 import { VideoProgressBar } from "@/features/feed/components/VideoProgressBar";
 
 type ImageDialog = { kind: "image"; src: string };
-type VideoDialog = { kind: "video"; playbackId: string; poster?: string | null };
+type VideoDialog = {
+  kind: "video";
+  playbackId: string;
+  poster?: string | null;
+};
 
 type Props = (ImageDialog | VideoDialog) & {
   onClose: () => void;
@@ -31,7 +35,11 @@ export function ChatMediaDialog(props: Props) {
   // timer fires) never installs the history hooks — this is what stops the
   // open-then-instantly-close flicker.
   const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    // Update the ref after render to avoid mutating refs during render.
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   const closeRef = useRef<() => void>(() => onCloseRef.current());
 

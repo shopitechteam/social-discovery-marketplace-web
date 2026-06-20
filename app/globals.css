@@ -141,13 +141,13 @@
 /* ─── Desktop type scale override (≥1024px) ────────────────────── */
 @media (min-width: 1024px) {
   :root {
-    --text-xs: 0.8125rem;  /* 13px */
-    --text-sm: 0.9375rem;  /* 15px */
+    --text-xs: 0.8125rem; /* 13px */
+    --text-sm: 0.9375rem; /* 15px */
     --text-base: 1.0625rem; /* 17px */
-    --text-md: 1.1875rem;  /* 19px */
-    --text-lg: 1.25rem;    /* 20px */
-    --text-xl: 1.5rem;     /* 24px */
-    --text-2xl: 1.75rem;   /* 28px */
+    --text-md: 1.1875rem; /* 19px */
+    --text-lg: 1.25rem; /* 20px */
+    --text-xl: 1.5rem; /* 24px */
+    --text-2xl: 1.75rem; /* 28px */
   }
 }
 
@@ -259,4 +259,29 @@ body {
 /* ── Hide bottom nav while comments drawer is open ──────────────── */
 body.comments-open .bottom-nav {
   display: none !important;
+}
+
+.no-scroll-indicator {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.no-scroll-indicator::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important; /* Chrome, Safari, Opera */
+}
+
+/* Chat composer input must never show a scrollbar track, even while it scrolls
+   internally past its max height. Scoped + !important so nothing overrides it. */
+textarea.no-scroll-indicator {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+textarea.no-scroll-indicator::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+  background: transparent !important;
 }
