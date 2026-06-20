@@ -120,6 +120,32 @@ export function MessageBubble({ message, mine, onRetry, onDiscard }: Props) {
           <p style={{ fontSize: "var(--text-sm)", lineHeight: 1.45 }}>{message.text}</p>
         ) : null}
 
+        {/* Failed text message → tap-to-retry / discard (media has its own
+            overlay above, so this is only for text-only bubbles). */}
+        {isFailed && kind === "text" ? (
+          <div
+            className={`mt-1 flex items-center gap-2 ${mine ? "text-white/85" : "text-red-500"}`}
+            style={{ fontSize: "var(--text-xs)" }}
+          >
+            <span>Not sent</span>
+            <button
+              type="button"
+              onClick={() => onRetry?.(message)}
+              className="flex items-center gap-1 font-semibold underline underline-offset-2"
+            >
+              <RotateCw size={12} /> Retry
+            </button>
+            <button
+              type="button"
+              onClick={() => onDiscard?.(message)}
+              aria-label="Discard"
+              className="flex items-center"
+            >
+              <X size={13} />
+            </button>
+          </div>
+        ) : null}
+
         {/* Server-side processing note (after upload, not for optimistic states) */}
         {kind !== "text" && !isUploading && !isFailed && status !== "ready" ? (
           <p

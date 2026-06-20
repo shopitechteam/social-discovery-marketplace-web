@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { Loader2 } from "lucide-react";
 import { useInbox } from "../hooks/useInbox";
 import { usePushNotifications } from "../hooks/usePushNotifications";
 import { ConversationList } from "./ConversationList";
@@ -48,25 +47,18 @@ export function MessagingShell({ lang, conversationId, mode = "conversation" }: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId, mode]);
 
-  // While ensuring a conversation from a content id, the conversation isn't
-  // selected yet — show a chat-style loading screen (never the inbox list).
+  // While ensuring a conversation from a content id, the thread isn't selected
+  // yet. Rather than block on a full-screen loader (bad UX — the chat felt slow
+  // to open), we render the chat shell immediately and let the conversation
+  // resolve in the background. This `pending` flag tells ChatDetail to show the
+  // chat shell (header skeleton + composer) right away.
   const resolvingFromContent =
     mode === "content" && !inbox.selectedConversationId;
 
   // On a conversation route the mobile view should show only the chat; at the
   // inbox root it should show only the list. On desktop both are always visible.
+  // Content mode counts as having an open chat even before the id resolves.
   const hasRouteConversation = Boolean(conversationId);
-
-  if (resolvingFromContent) {
-    return (
-      <div className="fixed inset-0 flex flex-col items-center justify-center gap-3 bg-app md:static md:h-svh">
-        <Loader2 size={28} className="animate-spin text-primary opacity-70" />
-        <p className="text-muted" style={{ fontSize: "var(--text-sm)" }}>
-          Opening chat…
-        </p>
-      </div>
-    );
-  }
 
   // The desktop main area has no top nav; its height is the viewport minus the
   // mobile bottom-nav padding MainShell reserves — which it only reserves at the
@@ -111,6 +103,7 @@ export function MessagingShell({ lang, conversationId, mode = "conversation" }: 
             lang={lang}
             selectedConversationId={inbox.selectedConversationId}
             selectedConversation={inbox.selectedConversation}
+            pending={resolvingFromContent}
             messages={inbox.messages}
             currentUserId={inbox.currentUser?.id}
             typingUserId={inbox.typingUserId}

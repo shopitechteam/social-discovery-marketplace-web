@@ -72,7 +72,10 @@ export function useInbox(lang: string) {
     useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [composer, setComposer] = useState("");
-  const [isSending, setIsSending] = useState(false);
+  // Text sends are optimistic (the bubble renders instantly and the composer
+  // clears + stays active), so there's no "sending" lock on text. Kept as a
+  // constant for the Composer's prop contract; media uses `isUploading`.
+  const isSending = false;
   const [isUploading, setIsUploading] = useState(false);
   const [isConversationActionPending, setIsConversationActionPending] =
     useState(false);
@@ -88,6 +91,11 @@ export function useInbox(lang: string) {
   const typingPulseRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingFilesRef = useRef<
     Map<string, { file: File; kind: "image" | "video"; text?: string }>
+  >(new Map());
+  // Optimistic text messages awaiting/retrying server confirmation, keyed by
+  // clientMessageId so a failed send can be retried with the original text.
+  const pendingTextRef = useRef<
+    Map<string, { conversationId: string; text: string }>
   >(new Map());
 
   const contentIdParam = searchParams.get("contentId");
@@ -635,10 +643,49 @@ export function useInbox(lang: string) {
     [sendTypingPulse],
   );
 
-  const handleSendText = useCallback(async () => {
+  /**
+   * Fire the send mutation for an already-optimistically-rendered text message
+   * and reconcile the result. On failure the optimistic row is flipped to
+   * "failed" so it can be retried — the message is never dropped (sends are
+   * also queued server-side in a worker, so a confirmed send won't be lost).
+   */
+  const sendTextMessage = useCallback(
+    async (clientMessageId: string, conversationId: string, text: string) => {
+      pendingTextRef.current.set(clientMessageId, { conversationId, text });
+      try {
+        const { data } = await sendDirectMessage({
+          variables: { input: { conversationId, text, clientMessageId } },
+        });
+
+        const message = (data as { sendDirectMessage?: Message } | undefined)
+          ?.sendDirectMessage;
+        if (message) {
+          setMessages((prev) =>
+            upsertMessage(prev, { ...message, clientMessageId }),
+          );
+          pendingTextRef.current.delete(clientMessageId);
+          void refetchConversations();
+        }
+      } catch {
+        // Keep the message in the thread and let the user retry — don't toast on
+        // every transient failure (WhatsApp-style: a tap-to-retry indicator).
+        setMessages((prev) =>
+          prev.map((item) =>
+            item.clientMessageId === clientMessageId
+              ? { ...item, pendingStatus: "failed" }
+              : item,
+          ),
+        );
+      }
+    },
+    [refetchConversations, sendDirectMessage],
+  );
+
+  const handleSendText = useCallback(() => {
     const conversationId = selectedConversationIdRef.current;
+    const myId = currentUser?.id;
     const text = composer.trim();
-    if (!conversationId || !text) return;
+    if (!conversationId || !text || !myId) return;
     if (selectedConversation?.canSendMessages === false) {
       toast.error(
         selectedConversation.blockedByMe
@@ -648,42 +695,34 @@ export function useInbox(lang: string) {
       return;
     }
 
-    setIsSending(true);
     const clientMessageId = crypto.randomUUID();
 
-    try {
-      const { data } = await sendDirectMessage({
-        variables: {
-          input: {
-            conversationId,
-            text,
-            clientMessageId,
-          },
-        },
-      });
+    // Optimistic: render the bubble and clear the input immediately so the
+    // composer stays active (send another right away — like WhatsApp).
+    const optimistic: Message = {
+      id: `optimistic:${clientMessageId}`,
+      conversationId,
+      contentId: selectedConversation?.contentId ?? "",
+      senderId: myId,
+      recipientId: selectedConversation?.otherParticipant?.id ?? "",
+      type: "TEXT",
+      text,
+      createdAt: new Date().toISOString(),
+      isMine: true,
+      deliveryStatus: "sent",
+      clientMessageId,
+      pendingStatus: "sending",
+    };
 
-      const message = (data as { sendDirectMessage?: Message } | undefined)
-        ?.sendDirectMessage;
-      if (
-        message &&
-        message.conversationId === selectedConversationIdRef.current
-      ) {
-        setMessages((prev) => upsertMessage(prev, message));
-        setComposer("");
-        void refetchConversations();
-      }
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Message failed to send",
-      );
-    } finally {
-      setIsSending(false);
-    }
+    setMessages((prev) => sortMessagesChronologically([...prev, optimistic]));
+    setComposer("");
+
+    void sendTextMessage(clientMessageId, conversationId, text);
   }, [
     composer,
-    refetchConversations,
+    currentUser?.id,
     selectedConversation,
-    sendDirectMessage,
+    sendTextMessage,
   ]);
 
   const runMediaUpload = useCallback(
@@ -887,6 +926,25 @@ export function useInbox(lang: string) {
       const clientMessageId = message.clientMessageId;
       if (!clientMessageId) return;
 
+      // Text message retry.
+      const pendingText = pendingTextRef.current.get(clientMessageId);
+      if (pendingText) {
+        setMessages((prev) =>
+          prev.map((item) =>
+            item.clientMessageId === clientMessageId
+              ? { ...item, pendingStatus: "sending" }
+              : item,
+          ),
+        );
+        await sendTextMessage(
+          clientMessageId,
+          pendingText.conversationId,
+          pendingText.text,
+        );
+        return;
+      }
+
+      // Media message retry.
       const pending = pendingFilesRef.current.get(clientMessageId);
       if (!pending) return;
 
@@ -906,7 +964,7 @@ export function useInbox(lang: string) {
         pending.text,
       );
     },
-    [runMediaUpload],
+    [runMediaUpload, sendTextMessage],
   );
 
   const discardMessage = useCallback((message: Message) => {
@@ -920,6 +978,7 @@ export function useInbox(lang: string) {
       if (optimistic && previewUrl?.startsWith("blob:"))
         URL.revokeObjectURL(previewUrl);
       pendingFilesRef.current.delete(clientMessageId);
+      pendingTextRef.current.delete(clientMessageId);
     }
   }, []);
 

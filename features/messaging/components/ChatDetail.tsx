@@ -20,6 +20,12 @@ interface Props {
   lang: string;
   selectedConversationId: string | null;
   selectedConversation: Conversation | null;
+  /**
+   * True while we're ensuring (create-or-reuse) the conversation from a content
+   * id. The thread isn't resolved yet, but we render the chat shell immediately
+   * (header + composer) so opening a chat is instant — no blocking loader.
+   */
+  pending?: boolean;
   messages: Message[];
   currentUserId?: string | null;
   typingUserId: string | null;
@@ -53,6 +59,7 @@ export function ChatDetail({
   lang,
   selectedConversationId,
   selectedConversation,
+  pending = false,
   messages,
   currentUserId,
   typingUserId,
@@ -82,13 +89,25 @@ export function ChatDetail({
   const otherParticipant: UserLite | null | undefined =
     selectedConversation?.otherParticipant;
 
+  // The chat is "open" once a conversation is selected OR while we're resolving
+  // one from a content id. In the pending case we render the shell immediately
+  // (header skeleton + composer) so opening a chat is instant.
+  const isOpen = Boolean(selectedConversationId) || pending;
+
+  // Suppress the message-loading spinner when there's nothing to load: while
+  // resolving from a content id (the conversation creation must be invisible),
+  // or when the resolved conversation is brand-new/empty. This avoids the
+  // double-loader flash when opening a chat straight from a post.
+  const suppressInitialLoader =
+    pending || selectedConversation?.messageCount === 0;
+
   return (
     <section
       className={`flex h-svh min-h-0 flex-col md:h-full ${
-        selectedConversationId ? "flex" : "hidden md:flex"
+        isOpen ? "flex" : "hidden md:flex"
       }`}
     >
-      {!selectedConversationId ? (
+      {!isOpen ? (
         <div className="hidden h-full items-center justify-center md:flex">
           <div className="max-w-sm space-y-2 text-center">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
@@ -126,7 +145,11 @@ export function ChatDetail({
                 <ArrowLeft size={20} />
               </button>
 
-              {otherParticipant?.profile?.avatar ? (
+              {/* While resolving from a content id the participant isn't known
+                  yet — show a subtle skeleton instead of a fake "Shopi user". */}
+              {pending && !otherParticipant ? (
+                <div className="h-10 w-10 animate-pulse rounded-full bg-black/10 dark:bg-white/10" />
+              ) : otherParticipant?.profile?.avatar ? (
                 <div className="relative h-10 w-10 overflow-hidden rounded-full">
                   <Image
                     src={otherParticipant.profile.avatar}
@@ -147,18 +170,27 @@ export function ChatDetail({
               )}
 
               <div className="min-w-0 flex-1">
-                <p
-                  className="truncate font-semibold"
-                  style={{ fontSize: "var(--text-base)" }}
-                >
-                  {participantName(otherParticipant)}
-                </p>
-                <p
-                  className="truncate text-muted"
-                  style={{ fontSize: "var(--text-xs)" }}
-                >
-                  {lastSeenLabel(selectedConversation)}
-                </p>
+                {pending && !otherParticipant ? (
+                  <>
+                    <div className="h-3.5 w-28 animate-pulse rounded bg-black/10 dark:bg-white/10" />
+                    <div className="mt-1.5 h-2.5 w-16 animate-pulse rounded bg-black/10 dark:bg-white/10" />
+                  </>
+                ) : (
+                  <>
+                    <p
+                      className="truncate font-semibold"
+                      style={{ fontSize: "var(--text-base)" }}
+                    >
+                      {participantName(otherParticipant)}
+                    </p>
+                    <p
+                      className="truncate text-muted"
+                      style={{ fontSize: "var(--text-xs)" }}
+                    >
+                      {lastSeenLabel(selectedConversation)}
+                    </p>
+                  </>
+                )}
               </div>
 
               <div className="flex items-center gap-2">
@@ -242,7 +274,9 @@ export function ChatDetail({
             typingUserId={typingUserId}
             otherParticipantId={otherParticipant?.id}
             initialLoading={
-              (conversationLoading || messagesLoading) && messages.length === 0
+              !suppressInitialLoader &&
+              (conversationLoading || messagesLoading) &&
+              messages.length === 0
             }
             loadingOlder={loadingOlder}
             hasMoreOlder={hasMoreOlder}
