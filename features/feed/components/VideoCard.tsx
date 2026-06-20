@@ -10,6 +10,7 @@ import { useRef, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { SHIMMER_PORTRAIT } from "@/lib/shimmer";
+import { useHlsVideo } from "@/lib/useHlsVideo";
 import { PriceTag } from "./PriceTag";
 import { StatRow } from "./StatRow";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
@@ -22,7 +23,6 @@ interface Props {
 
 export function VideoCard({ post, lang, priority }: Props) {
   const router = useRouter();
-  const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   const [thumbError, setThumbError] = useState(false);
@@ -48,7 +48,13 @@ export function VideoCard({ post, lang, priority }: Props) {
   const aspectRatio =
     mux?.aspectRatio === "16:9" ? "16/9" : "9/16";
 
-  // IntersectionObserver: play when ≥60% visible, pause otherwise
+  // Adaptive HLS streaming (hls.js) — same engine as the fullscreen player.
+  // Plays only while ≥50% visible and buffers just a few seconds ahead, so the
+  // feed streams in chunks (never fully downloads) to save data, like TikTok.
+  // Plain <video src=".m3u8"> would NOT stream HLS on Chrome/Android.
+  const { videoRef } = useHlsVideo(hlsUrl, visible);
+
+  // IntersectionObserver: play when ≥50% visible, pause otherwise
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -59,16 +65,6 @@ export function VideoCard({ post, lang, priority }: Props) {
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
-
-  useEffect(() => {
-    const vid = videoRef.current;
-    if (!vid) return;
-    if (visible) {
-      vid.play().catch(() => {});
-    } else {
-      vid.pause();
-    }
-  }, [visible]);
 
   const durationFmt = mux?.duration
     ? mux.duration >= 60
@@ -108,11 +104,11 @@ export function VideoCard({ post, lang, priority }: Props) {
           />
         )}
 
-        {/* HLS video — autoplay muted loop */}
+        {/* HLS video — adaptive streaming via useHlsVideo (source attached by
+            the hook, not via src=). Muted autoplay loop, plays only when visible. */}
         {hlsUrl && (
           <video
             ref={videoRef}
-            src={hlsUrl}
             muted
             loop
             playsInline

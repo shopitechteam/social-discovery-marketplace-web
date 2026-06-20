@@ -26,9 +26,15 @@ export function useHlsVideo(
   useEffect(() => { pausedRef.current = paused; }, [paused]);
 
   // ── Init: load HLS source, wire buffering events, trigger first play ────────
+  // IMPORTANT: only attach hls.js (which immediately downloads the manifest and
+  // prebuffers segments) when the video is ACTIVE (in view). Otherwise every
+  // mounted card off-screen would start pulling .m4s chunks — wasting huge
+  // amounts of data. When the card leaves view (active=false) the cleanup tears
+  // the player down, stopping all downloads. Only the visible video streams,
+  // exactly like TikTok.
   useEffect(() => {
     const vid = videoRef.current;
-    if (!vid || !hlsUrl) return;
+    if (!vid || !hlsUrl || !active) return;
 
     const v = vid;
     const url = hlsUrl;
@@ -118,21 +124,21 @@ export function useHlsVideo(
       hls?.destroy();
       hls = null;
     };
-    // reinitKey forces a re-attach after the cleanup destroyed the player while
-    // the component stayed mounted across a route change.
-  }, [hlsUrl, reinitKey]);
+    // `active` is a dep so the player initialises when the card enters view and
+    // tears down (stopping downloads) when it leaves. reinitKey forces a
+    // re-attach after the cleanup destroyed the player while the component
+    // stayed mounted across a route change.
+  }, [hlsUrl, active, reinitKey]);
 
   // ── Play / pause: only act once HLS has the manifest ────────────────────────
   useEffect(() => {
     const vid = videoRef.current;
     if (!vid) return;
     if (active && !paused) {
-      if (!readyRef.current) {
-        // We want to play but the source isn't attached (e.g. it was torn down
-        // on a route change and never re-initialised). Re-init the player.
-        setReinitKey((k) => k + 1);
-        return;
-      }
+      // If the manifest isn't ready yet, the init effect (which runs whenever
+      // `active` is true) will start playback on MANIFEST_PARSED — don't force a
+      // redundant reinit here.
+      if (!readyRef.current) return;
       vid.play().catch(() => {});
     } else {
       if (!readyRef.current) return;

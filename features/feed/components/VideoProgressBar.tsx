@@ -24,6 +24,7 @@ export function VideoProgressBar({
 }: Props) {
   const trackRef = useRef<HTMLDivElement>(null);
   const fillRef = useRef<HTMLDivElement>(null);
+  const bufferRef = useRef<HTMLDivElement>(null);
   const thumbRef = useRef<HTMLDivElement>(null);
   const timeRef = useRef<HTMLSpanElement>(null);
   const rafRef = useRef<number | null>(null);
@@ -38,6 +39,23 @@ export function VideoProgressBar({
     if (fillRef.current) fillRef.current.style.width = `${pct}%`;
     if (thumbRef.current) thumbRef.current.style.left = `calc(${pct}% - 5px)`;
     if (timeRef.current) timeRef.current.textContent = fmtTime(video.currentTime);
+
+    // Buffered (loaded) chunks: width of the buffered range covering the current
+    // playhead. Mirrors YouTube's lighter "loaded" bar ahead of the played part.
+    if (bufferRef.current) {
+      let bufferedEnd = 0;
+      const ranges = video.buffered;
+      for (let i = 0; i < ranges.length; i++) {
+        if (ranges.start(i) <= video.currentTime && video.currentTime <= ranges.end(i)) {
+          bufferedEnd = ranges.end(i);
+          break;
+        }
+        // fall back to the furthest buffered point if no range covers the playhead
+        bufferedEnd = Math.max(bufferedEnd, ranges.end(i));
+      }
+      const bufPct = Math.max(0, Math.min(100, (bufferedEnd / video.duration) * 100));
+      bufferRef.current.style.width = `${bufPct}%`;
+    }
   }, [videoRef]);
 
   useEffect(() => {
@@ -49,14 +67,19 @@ export function VideoProgressBar({
       syncProgress();
     };
     const handleSeeked = () => syncProgress();
+    // `progress` fires as new chunks finish loading (even while paused) — keeps
+    // the buffered bar growing without needing the rAF loop to be running.
+    const handleProgress = () => syncProgress();
 
     video.addEventListener("loadedmetadata", handleMetadata);
     video.addEventListener("durationchange", handleMetadata);
     video.addEventListener("seeked", handleSeeked);
+    video.addEventListener("progress", handleProgress);
     return () => {
       video.removeEventListener("loadedmetadata", handleMetadata);
       video.removeEventListener("durationchange", handleMetadata);
       video.removeEventListener("seeked", handleSeeked);
+      video.removeEventListener("progress", handleProgress);
     };
   }, [syncProgress, videoRef]);
 
@@ -122,17 +145,25 @@ export function VideoProgressBar({
         onPointerCancel={() => setSeeking(false)}
       >
         <div
-          className="relative h-[3px] w-full overflow-visible bg-primary/25 transition-[height]"
-          style={{ height: seeking ? 4 : 3 }}
+          className="relative h-[3px] w-full overflow-visible rounded-full bg-white/20 transition-[height]"
+          style={{ height: seeking ? 5 : 3 }}
         >
+          {/* Buffered / loaded chunks — brighter than the track, dimmer than
+              played. Mirrors YouTube: white-ish "loaded" ahead of the playhead. */}
+          <div
+            ref={bufferRef}
+            className="absolute left-0 top-0 h-full rounded-full bg-white/55"
+            style={{ width: "0%" }}
+          />
+          {/* Played — primary colour, sits on top of the buffered layer. */}
           <div
             ref={fillRef}
-            className="absolute left-0 top-0 h-full bg-primary"
+            className="absolute left-0 top-0 h-full rounded-full bg-primary"
             style={{ width: "0%" }}
           />
           <div
             ref={thumbRef}
-            className="absolute top-1/2 h-2.5 w-2.5 -translate-y-1/2 rounded-full bg-primary opacity-0 shadow-[0_1px_8px_rgba(0,0,0,0.45)] transition-opacity group-hover:opacity-100"
+            className="absolute top-1/2 h-3 w-3 -translate-y-1/2 rounded-full bg-primary opacity-0 shadow-[0_1px_8px_rgba(0,0,0,0.55)] transition-opacity group-hover:opacity-100"
             style={{
               left: "-5px",
               opacity: seeking ? 1 : undefined,

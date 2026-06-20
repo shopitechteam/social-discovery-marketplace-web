@@ -168,9 +168,23 @@ function VideoMedia({
     ended || userPaused,
   );
 
+  // Tap to play/pause. Base the decision on the video's ACTUAL state, not a
+  // blind boolean toggle — otherwise, when the video is already not playing
+  // (autoplay blocked, buffering, just entered view), the first tap would only
+  // flip the flag and a second tap would be needed to actually start it.
   const toggleUserPaused = useCallback(() => {
-    setUserPaused((p) => !p);
-  }, []);
+    const video = videoRef.current;
+    // If it finished, let the dedicated replay control handle it.
+    if (ended) return;
+    const isPaused = video ? video.paused : userPaused;
+    if (isPaused) {
+      setUserPaused(false);
+      video?.play().catch(() => {});
+    } else {
+      setUserPaused(true);
+      video?.pause();
+    }
+  }, [videoRef, ended, userPaused]);
 
   const [trackInteractionMutation] = useMutation(gql`
     mutation TrackInteractionFeed(
