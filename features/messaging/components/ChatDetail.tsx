@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, MessageCircle } from "lucide-react";
+import { ArrowLeft, Handshake, MessageCircle } from "lucide-react";
 import type { Conversation, Message, StagedMedia, UserLite } from "../types";
 import {
   avatarGradient,
@@ -55,6 +55,7 @@ interface Props {
     reason: "SPAM" | "SCAM" | "HARASSMENT" | "OFF_TOPIC" | "OTHER",
     details?: string,
   ) => Promise<boolean>;
+  onMarkDeal: (closed: boolean) => Promise<boolean>;
 }
 
 /** Right-hand chat pane: header, listing summary, messages, typing, composer. */
@@ -88,6 +89,7 @@ export function ChatDetail({
   onBlockConversation,
   onUnblockConversation,
   onReportConversation,
+  onMarkDeal,
 }: Props) {
   const router = useRouter();
   const contentSummary = selectedConversation?.content;
@@ -208,12 +210,23 @@ export function ChatDetail({
                   </>
                 ) : (
                   <>
-                    <p
-                      className="truncate font-semibold"
-                      style={{ fontSize: "var(--text-base)" }}
-                    >
-                      {participantName(otherParticipant)}
-                    </p>
+                    <div className="flex items-center gap-1.5">
+                      <p
+                        className="truncate font-semibold"
+                        style={{ fontSize: "var(--text-base)" }}
+                      >
+                        {participantName(otherParticipant)}
+                      </p>
+                      {selectedConversation?.dealClosedAt ? (
+                        <span
+                          className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 font-medium text-emerald-600 dark:text-emerald-400"
+                          style={{ fontSize: "var(--text-xs)" }}
+                        >
+                          <Handshake size={12} />
+                          Deal closed
+                        </span>
+                      ) : null}
+                    </div>
                     <p
                       className="truncate text-muted"
                       style={{ fontSize: "var(--text-xs)" }}
@@ -242,11 +255,13 @@ export function ChatDetail({
                   participantName={participantName(otherParticipant)}
                   blockedByMe={selectedConversation?.blockedByMe}
                   blockedByOther={selectedConversation?.blockedByOther}
+                  dealClosed={Boolean(selectedConversation?.dealClosedAt)}
                   isPending={isConversationActionPending}
                   onDeleteConversation={onDeleteConversation}
                   onBlockConversation={onBlockConversation}
                   onUnblockConversation={onUnblockConversation}
                   onReportConversation={onReportConversation}
+                  onMarkDeal={onMarkDeal}
                 />
               </div>
             </div>

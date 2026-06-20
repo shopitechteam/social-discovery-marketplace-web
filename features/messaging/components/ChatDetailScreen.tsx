@@ -88,6 +88,7 @@ export function ChatDetailScreen({
         onBlockConversation={inbox.blockSelectedConversation}
         onUnblockConversation={inbox.unblockSelectedConversation}
         onReportConversation={inbox.reportSelectedConversation}
+        onMarkDeal={(closed) => inbox.markDealForConversation(closed)}
       />
     </div>
   );

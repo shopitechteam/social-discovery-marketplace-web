@@ -47,6 +47,7 @@ export function InboxScreen({ lang }: { lang: string }) {
         participantName={participantName(actionsTarget?.otherParticipant)}
         blockedByMe={actionsTarget?.blockedByMe}
         blockedByOther={actionsTarget?.blockedByOther}
+        dealClosed={Boolean(actionsTarget?.dealClosedAt)}
         isPending={inbox.isConversationActionPending}
         onDeleteConversation={() =>
           inbox.deleteSelectedConversation(actionsTargetId ?? undefined)
@@ -63,6 +64,9 @@ export function InboxScreen({ lang }: { lang: string }) {
             details,
             actionsTargetId ?? undefined,
           )
+        }
+        onMarkDeal={(closed) =>
+          inbox.markDealForConversation(closed, actionsTargetId ?? undefined)
         }
       />
     </div>

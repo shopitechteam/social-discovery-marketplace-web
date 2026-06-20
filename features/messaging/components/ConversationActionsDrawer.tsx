@@ -11,6 +11,7 @@ interface Props {
   participantName: string;
   blockedByMe?: boolean | null;
   blockedByOther?: boolean | null;
+  dealClosed?: boolean | null;
   isPending: boolean;
   onDeleteConversation: () => Promise<boolean>;
   onBlockConversation: () => Promise<boolean>;
@@ -19,6 +20,7 @@ interface Props {
     reason: ReportReason,
     details?: string,
   ) => Promise<boolean>;
+  onMarkDeal: (closed: boolean) => Promise<boolean>;
 }
 
 /**

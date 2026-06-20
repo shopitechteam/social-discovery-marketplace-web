@@ -139,6 +139,7 @@ export function MessagingShell({ lang, conversationId, mode = "conversation" }: 
             onBlockConversation={inbox.blockSelectedConversation}
             onUnblockConversation={inbox.unblockSelectedConversation}
             onReportConversation={inbox.reportSelectedConversation}
+            onMarkDeal={(closed) => inbox.markDealForConversation(closed)}
           />
         </div>
       </div>
@@ -153,6 +154,7 @@ export function MessagingShell({ lang, conversationId, mode = "conversation" }: 
         participantName={participantName(actionsTarget?.otherParticipant)}
         blockedByMe={actionsTarget?.blockedByMe}
         blockedByOther={actionsTarget?.blockedByOther}
+        dealClosed={Boolean(actionsTarget?.dealClosedAt)}
         isPending={inbox.isConversationActionPending}
         onDeleteConversation={() =>
           inbox.deleteSelectedConversation(actionsTargetId ?? undefined)
@@ -169,6 +171,9 @@ export function MessagingShell({ lang, conversationId, mode = "conversation" }: 
             details,
             actionsTargetId ?? undefined,
           )
+        }
+        onMarkDeal={(closed) =>
+          inbox.markDealForConversation(closed, actionsTargetId ?? undefined)
         }
       />
     </div>

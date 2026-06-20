@@ -58,6 +58,10 @@ export type Conversation = {
   blockedByMe?: boolean | null;
   blockedByOther?: boolean | null;
   canSendMessages?: boolean | null;
+  /** Set when either party marks the deal closed (completed/profitable chat). */
+  dealClosedAt?: string | null;
+  /** Which participant closed the deal. */
+  dealClosedByUserId?: string | null;
   content?: ContentLite | null;
 };
 

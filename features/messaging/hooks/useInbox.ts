@@ -34,6 +34,7 @@ import {
   DIRECT_CONVERSATION,
   DIRECT_MESSAGES,
   ENSURE_DIRECT_CONVERSATION,
+  MARK_DIRECT_CONVERSATION_DEAL,
   MARK_DIRECT_CONVERSATION_READ,
   MY_DIRECT_CONVERSATIONS,
   MY_UNREAD_CONVERSATION_COUNT,
@@ -181,6 +182,7 @@ export function useInbox(lang: string) {
   const [blockDirectConversation] = useMutation(BLOCK_DIRECT_CONVERSATION);
   const [unblockDirectConversation] = useMutation(UNBLOCK_DIRECT_CONVERSATION);
   const [reportDirectConversation] = useMutation(REPORT_DIRECT_CONVERSATION);
+  const [markDirectConversationDeal] = useMutation(MARK_DIRECT_CONVERSATION_DEAL);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -436,6 +438,8 @@ export function useInbox(lang: string) {
                     lastMessageSenderId: payload.lastMessageSenderId,
                     lastMessageAt: payload.lastMessageAt,
                     myUnreadCount: payload.myUnreadCount,
+                    dealClosedAt: payload.dealClosedAt ?? null,
+                    dealClosedByUserId: payload.dealClosedByUserId ?? null,
                   }
                 : prev,
             );
@@ -1194,6 +1198,8 @@ export function useInbox(lang: string) {
         blockedByMe: conversation.blockedByMe ?? undefined,
         blockedByOther: conversation.blockedByOther ?? undefined,
         canSendMessages: conversation.canSendMessages ?? undefined,
+        dealClosedAt: conversation.dealClosedAt ?? undefined,
+        dealClosedByUserId: conversation.dealClosedByUserId ?? undefined,
       });
     });
   }, []);
@@ -1349,6 +1355,42 @@ export function useInbox(lang: string) {
     [reportDirectConversation],
   );
 
+  const markDealForConversation = useCallback(
+    async (closed: boolean, targetId?: string) => {
+      const conversationId = targetId ?? selectedConversationIdRef.current;
+      if (!conversationId) return false;
+
+      setIsConversationActionPending(true);
+      try {
+        const { data } = await markDirectConversationDeal({
+          variables: { input: { conversationId, closed } },
+        });
+        const conversation = (
+          data as { markDirectConversationDeal?: Conversation } | undefined
+        )?.markDirectConversationDeal;
+        if (!conversation) {
+          toast.error("Could not update the deal status");
+          return false;
+        }
+
+        mergeConversationSnapshot(conversation);
+        void refetchConversations();
+        toast.success(closed ? "Deal marked as closed" : "Deal reopened");
+        return true;
+      } catch (error) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Could not update the deal status",
+        );
+        return false;
+      } finally {
+        setIsConversationActionPending(false);
+      }
+    },
+    [markDirectConversationDeal, mergeConversationSnapshot, refetchConversations],
+  );
+
   return {
     // identity / auth
     currentUser,
@@ -1391,6 +1433,7 @@ export function useInbox(lang: string) {
     blockSelectedConversation,
     unblockSelectedConversation,
     reportSelectedConversation,
+    markDealForConversation,
   };
 }
 

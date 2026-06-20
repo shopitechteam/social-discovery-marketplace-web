@@ -118,6 +118,8 @@ export interface DirectConversationUpdatedPayload {
   blockedByMe?: boolean;
   blockedByOther?: boolean;
   canSendMessages?: boolean;
+  dealClosedAt?: string;
+  dealClosedByUserId?: string;
 }
 
 export interface DirectConversationRemovedPayload {

@@ -1,7 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronLeft, Flag, Loader2, Trash2, UserX } from "lucide-react";
+import {
+  ChevronLeft,
+  Flag,
+  Handshake,
+  Loader2,
+  RotateCcw,
+  Trash2,
+  UserX,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Drawer,
@@ -20,7 +28,7 @@ export type ReportReason =
   | "HARASSMENT"
   | "OFF_TOPIC"
   | "OTHER";
-type ViewMode = "menu" | "block" | "delete" | "report";
+type ViewMode = "menu" | "block" | "delete" | "report" | "deal";
 
 const REPORT_OPTIONS: Array<{ value: ReportReason; label: string }> = [
   { value: "SPAM", label: "Spam" },
@@ -36,6 +44,7 @@ interface Props {
   participantName: string;
   blockedByMe?: boolean | null;
   blockedByOther?: boolean | null;
+  dealClosed?: boolean | null;
   isPending: boolean;
   onDeleteConversation: () => Promise<boolean>;
   onBlockConversation: () => Promise<boolean>;
@@ -44,6 +53,7 @@ interface Props {
     reason: ReportReason,
     details?: string,
   ) => Promise<boolean>;
+  onMarkDeal: (closed: boolean) => Promise<boolean>;
 }
 
 /**
@@ -58,11 +68,13 @@ export function ConversationActionsSheet({
   participantName,
   blockedByMe,
   blockedByOther,
+  dealClosed,
   isPending,
   onDeleteConversation,
   onBlockConversation,
   onUnblockConversation,
   onReportConversation,
+  onMarkDeal,
 }: Props) {
   const [view, setView] = useState<ViewMode>("menu");
   const [reason, setReason] = useState<ReportReason>("SPAM");
@@ -116,7 +128,11 @@ export function ConversationActionsSheet({
                 ? "Report conversation"
                 : view === "delete"
                   ? "Delete conversation"
-                  : blockTitle}
+                  : view === "deal"
+                    ? dealClosed
+                      ? "Reopen deal"
+                      : "Mark deal as closed"
+                    : blockTitle}
           </DrawerTitle>
           <DrawerDescription>
             {view === "menu"
@@ -127,7 +143,11 @@ export function ConversationActionsSheet({
                 ? "Tell us what went wrong so we can review it."
                 : view === "delete"
                   ? "This only clears the conversation from your inbox."
-                  : blockDescription}
+                  : view === "deal"
+                    ? dealClosed
+                      ? "Reopen this deal if the chat is still active."
+                      : "Mark this chat as a completed deal so you can track which conversations led to a sale."
+                    : blockDescription}
           </DrawerDescription>
         </DrawerHeader>
 
@@ -135,8 +155,19 @@ export function ConversationActionsSheet({
           <div className="px-4 pb-3">
             <button
               type="button"
-              onClick={() => setView("report")}
+              onClick={() => setView("deal")}
               className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left transition-colors hover:bg-accent"
+            >
+              {dealClosed ? <RotateCcw size={18} /> : <Handshake size={18} />}
+              <span className="text-sm font-semibold">
+                {dealClosed ? "Reopen deal" : "Mark deal as closed"}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setView("report")}
+              className="mt-1 flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left transition-colors hover:bg-accent"
             >
               <Flag size={18} />
               <span className="text-sm font-semibold">Report conversation</span>
@@ -204,11 +235,21 @@ export function ConversationActionsSheet({
           </div>
         ) : null}
 
+        {view === "deal" ? (
+          <div className="px-4 pb-3 text-sm text-muted">
+            {dealClosed
+              ? "This conversation is currently marked as a closed deal. Reopening clears that status for both of you."
+              : "You can both still chat afterwards — this just records the deal as done. You can reopen it anytime."}
+          </div>
+        ) : null}
+
         {view !== "menu" ? (
           <DrawerFooter className="pt-1">
             <Button
               type="button"
-              variant={view === "report" ? "default" : "destructive"}
+              variant={
+                view === "report" || view === "deal" ? "default" : "destructive"
+              }
               disabled={isPending}
               onClick={async () => {
                 const ok =
@@ -216,9 +257,11 @@ export function ConversationActionsSheet({
                     ? await onReportConversation(reason, details)
                     : view === "delete"
                       ? await onDeleteConversation()
-                      : blockedByMe
-                        ? await onUnblockConversation()
-                        : await onBlockConversation();
+                      : view === "deal"
+                        ? await onMarkDeal(!dealClosed)
+                        : blockedByMe
+                          ? await onUnblockConversation()
+                          : await onBlockConversation();
                 if (ok) close();
               }}
               className="rounded-full text-white bg-primary hover:bg-primary/90 disabled:opacity-60 disabled:hover:bg-primary"
@@ -228,7 +271,11 @@ export function ConversationActionsSheet({
                 ? "Submit report"
                 : view === "delete"
                   ? "Delete for me"
-                  : blockTitle}
+                  : view === "deal"
+                    ? dealClosed
+                      ? "Reopen deal"
+                      : "Mark as closed"
+                    : blockTitle}
             </Button>
             <Button
               type="button"

@@ -21,6 +21,8 @@ export const MY_DIRECT_CONVERSATIONS = gql`
     blockedByMe
     blockedByOther
     canSendMessages
+    dealClosedAt
+    dealClosedByUserId
     otherParticipant {
         id
         username
@@ -76,6 +78,8 @@ export const DIRECT_CONVERSATION = gql`
       blockedByMe
       blockedByOther
       canSendMessages
+      dealClosedAt
+      dealClosedByUserId
       otherParticipant {
         id
         username
@@ -283,6 +287,8 @@ export const BLOCK_DIRECT_CONVERSATION = gql`
       blockedByMe
       blockedByOther
       canSendMessages
+      dealClosedAt
+      dealClosedByUserId
       otherParticipantOnline
       otherParticipantLastSeenAt
       otherParticipant {
@@ -338,6 +344,65 @@ export const UNBLOCK_DIRECT_CONVERSATION = gql`
       blockedByMe
       blockedByOther
       canSendMessages
+      dealClosedAt
+      dealClosedByUserId
+      otherParticipantOnline
+      otherParticipantLastSeenAt
+      otherParticipant {
+        id
+        username
+        profile {
+          firstName
+          lastName
+          avatar
+        }
+      }
+      content {
+        id
+        title
+        price {
+          amount
+          currency
+        }
+        location {
+          placeName
+          county
+          subregion
+        }
+        media {
+          thumbnailUrl
+          imageUrl
+          muxMeta {
+            thumbnailUrl
+            playbackId
+          }
+          r2Variants {
+            url
+            variant
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const MARK_DIRECT_CONVERSATION_DEAL = gql`
+  mutation MarkDirectConversationDealInbox($input: MarkDirectConversationDealInput!) {
+    markDirectConversationDeal(input: $input) {
+      id
+      contentId
+      lastMessageId
+      lastMessageText
+      lastMessageType
+      lastMessageSenderId
+      lastMessageAt
+      messageCount
+      myUnreadCount
+      blockedByMe
+      blockedByOther
+      canSendMessages
+      dealClosedAt
+      dealClosedByUserId
       otherParticipantOnline
       otherParticipantLastSeenAt
       otherParticipant {

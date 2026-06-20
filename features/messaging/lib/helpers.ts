@@ -195,6 +195,10 @@ export function upsertConversation(
     blockedByMe: payload.blockedByMe ?? items[index].blockedByMe,
     blockedByOther: payload.blockedByOther ?? items[index].blockedByOther,
     canSendMessages: payload.canSendMessages ?? items[index].canSendMessages,
+    // Deal state is sent in full on every update (reopening clears it), so set
+    // it directly rather than coalescing — an absent value means "reopened".
+    dealClosedAt: payload.dealClosedAt ?? null,
+    dealClosedByUserId: payload.dealClosedByUserId ?? null,
   };
 
   const next = [...items];
