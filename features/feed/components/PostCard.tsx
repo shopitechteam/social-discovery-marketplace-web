@@ -18,7 +18,9 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 import Image from "next/image";
+import { ChatShellSkeleton } from "@/features/messaging/components/ChatShellSkeleton";
 import Shimmer, {
   SHIMMER,
   SHIMMER_AVATAR,
@@ -885,6 +887,10 @@ export function PostCard({ post, lang, priority }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [showCarousel, setShowCarousel] = useState(false);
+  // Paints the chat shell instantly when "Message" is tapped, covering the
+  // route-transition gap so opening a chat never flashes a blank page. The
+  // overlay unmounts with the PostCard once the conversation route takes over.
+  const [isOpeningChat, setIsOpeningChat] = useState(false);
 
   const mediaCount = post.media?.length ?? 0;
 
@@ -1344,9 +1350,19 @@ export function PostCard({ post, lang, priority }: Props) {
 
         {!isOwnPost && (
           <button
+            // Warm the conversation route's JS so the transition paints the chat
+            // shell (loading.tsx) instantly instead of a blank frame on tap.
+            onPointerEnter={() =>
+              router.prefetch(`/${lang}/notifications/${post.id}`)
+            }
             onClick={(e) => {
               e.stopPropagation();
               if (!requireAuth({ contentId: post.id })) return;
+              // Paint the chat shell immediately, before the navigation, so the
+              // transition shows the chat (not a blank frame). Auto-clear in case
+              // the user returns to the feed while this card stays mounted.
+              setIsOpeningChat(true);
+              window.setTimeout(() => setIsOpeningChat(false), 2500);
               // Go straight to the full-screen chat. `source=content` tells the
               // chat screen to ensure (create-or-reuse) the conversation in place,
               // so we never flash the inbox list.
@@ -1392,6 +1408,16 @@ export function PostCard({ post, lang, priority }: Props) {
           title={post.title}
         />
       )}
+
+      {/* ── Instant chat-shell overlay while the conversation route loads ── */}
+      {isOpeningChat &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div className="fixed inset-0 z-[60]">
+            <ChatShellSkeleton />
+          </div>,
+          document.body,
+        )}
     </article>
   );
 }
