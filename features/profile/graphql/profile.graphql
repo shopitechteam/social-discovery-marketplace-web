@@ -86,12 +86,12 @@ query GetMyPosts($limit: Int, $afterId: String) {
 query GetMyAnalytics {
   myAnalytics {
     last30DaysViews
-    last30DaysLikes
+    last30DaysSaves
     last30DaysFollowers
     topPost {
       contentId
       views
-      likes
+      saves
     }
     viewsByDay {
       date

@@ -66,6 +66,7 @@ function StackAvatar({
 
 interface Props {
   lang: string;
+  className?: string;
 }
 
 /**
@@ -73,7 +74,7 @@ interface Props {
  * avatars (initials fallback) + the total count. Tapping opens the full
  * visitors list. Owner-only data — render this on the user's own profile.
  */
-export function ProfileViewsCluster({ lang }: Props) {
+export function ProfileViewsCluster({ lang, className }: Props) {
   const router = useRouter();
   const { data, loading } = useQuery(MyProfileVisitorsPreviewDocument, {
     variables: { limit: 3 },
@@ -84,13 +85,19 @@ export function ProfileViewsCluster({ lang }: Props) {
   const recent = preview?.recent ?? [];
   const total = preview?.totalCount ?? 0;
 
+  // No profile views yet — hide the whole cluster rather than showing an empty
+  // "0 profile views" pill. Only once we've loaded (so it doesn't flash out).
+  if (!loading && total === 0) {
+    return null;
+  }
+
   // "Thinking" placeholder while loading the first time
   if (loading && !data) {
     return (
       <button
         type="button"
         disabled
-        className="flex items-center gap-2 rounded-full border px-3 py-1.5"
+        className={`flex items-center gap-2 rounded-full border px-3 py-1.5 ${className ?? ""}`}
         style={{
           backgroundColor: "rgb(var(--color-bg-elevated) / 0.6)",
           borderColor: "rgb(var(--color-border))",
@@ -124,7 +131,7 @@ export function ProfileViewsCluster({ lang }: Props) {
     <button
       type="button"
       onClick={() => router.push(`/${lang}/profile/visitors`)}
-      className="flex items-center gap-2 rounded-full border px-3 py-1.5 transition-opacity active:opacity-70"
+      className={`flex items-center gap-2 rounded-full border px-3 py-1.5 transition-opacity active:opacity-70 ${className ?? ""}`}
       style={{
         backgroundColor: "rgb(var(--color-bg-elevated) / 0.78)",
         borderColor: "rgb(var(--color-border))",

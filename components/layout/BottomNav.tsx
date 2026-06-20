@@ -32,7 +32,7 @@ const tabs: Tab[] = [
     key: "explore",
     path: "explore",
     label: "Explore",
-    icon: Compass,
+    icon: Search,
   },
   {
     key: "upload",

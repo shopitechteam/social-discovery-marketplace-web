@@ -157,11 +157,9 @@ export function ProfileHeader({ user, editHref, lang }: Props) {
                 </Button>
               </div>
 
-              <div className="mt-3">
-                <ProfileViewsCluster lang={lang} />
-              </div>
+              <ProfileViewsCluster lang={lang} className="mt-3" />
 
-              <div className="mt-3 grid grid-cols-4 gap-1.5">
+              <div className="mt-3 grid grid-cols-3 gap-1.5">
                 <StatTile label="Posts" value={formatCompact(user.postCount)} />
                 <StatTile
                   label="Followers"
@@ -171,10 +169,6 @@ export function ProfileHeader({ user, editHref, lang }: Props) {
                 <StatTile
                   label="Views"
                   value={formatCompact(user.totalViews)}
-                />
-                <StatTile
-                  label="Likes"
-                  value={formatCompact(user.totalLikes)}
                 />
               </div>
             </div>

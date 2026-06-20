@@ -4,10 +4,10 @@ import Link from "next/link";
 import {
   Activity,
   ArrowUpRight,
+  Bookmark,
   CalendarDays,
   ChartColumn,
   Eye,
-  Heart,
   Trophy,
   TrendingUp,
   Users,
@@ -381,7 +381,7 @@ export function AnalyticsPanel({ data, lang }: Props) {
     viewsByDay.length > 0 ? Math.round(sumViews(viewsByDay) / viewsByDay.length) : 0;
   const engagementRate =
     data.last30DaysViews > 0
-      ? (data.last30DaysLikes / data.last30DaysViews) * 100
+      ? (data.last30DaysSaves / data.last30DaysViews) * 100
       : Number.NaN;
 
   return (
@@ -436,10 +436,10 @@ export function AnalyticsPanel({ data, lang }: Props) {
             tone="--brand-accent"
           />
           <MetricCard
-            icon={Heart}
-            label="Likes"
-            value={formatCompact(data.last30DaysLikes)}
-            detail={`${formatPercent(engagementRate)} like rate`}
+            icon={Bookmark}
+            label="Saved"
+            value={formatCompact(data.last30DaysSaves)}
+            detail={`${formatPercent(engagementRate)} save rate`}
             tone="--brand-primary"
           />
           <MetricCard
@@ -547,7 +547,7 @@ export function AnalyticsPanel({ data, lang }: Props) {
                         fontSize: "var(--text-base)",
                       }}
                     >
-                      {formatCompact(data.topPost.likes)}
+                      {formatCompact(data.topPost.saves)}
                     </p>
                     <p
                       className="mt-1"
@@ -556,7 +556,7 @@ export function AnalyticsPanel({ data, lang }: Props) {
                         fontSize: "var(--text-xs)",
                       }}
                     >
-                      Likes
+                      Saved
                     </p>
                   </div>
                 </div>

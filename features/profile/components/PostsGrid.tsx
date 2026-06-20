@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -193,6 +194,27 @@ export function PostsGrid({
   loading,
   lang,
 }: Props) {
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  // Keep the latest onLoadMore without re-subscribing the observer each render.
+  const onLoadMoreRef = useRef(onLoadMore);
+  onLoadMoreRef.current = onLoadMore;
+
+  // Infinite scroll: load the next page when the sentinel scrolls into view.
+  // Guard against firing again while a page is in flight (the observer can keep
+  // intersecting until new rows push the sentinel out of view).
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !hasMore || loading) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) onLoadMoreRef.current();
+      },
+      { rootMargin: "400px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasMore, loading, posts.length]);
+
   if (posts.length === 0 && !loading) {
     return (
       <section className="px-4 py-12 sm:px-6 lg:px-8">
@@ -294,21 +316,17 @@ export function PostsGrid({
           ))}
         </div>
 
-        {hasMore && (
-          <div className="flex justify-center py-6">
-            <button
-              onClick={onLoadMore}
-              disabled={loading}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border px-5 font-semibold active:opacity-75 disabled:opacity-50"
-              style={{
-                fontSize: "var(--text-sm)",
-                backgroundColor: "rgb(var(--color-bg-elevated))",
-                borderColor: "rgb(var(--color-border))",
-                color: "rgb(var(--color-text))",
-              }}
-            >
-              {loading ? "Loading…" : "Load more"}
-            </button>
+        {/* Infinite scroll sentinel + loader */}
+        <div ref={sentinelRef} className="h-px" />
+        {hasMore && loading && (
+          <div
+            className="flex justify-center py-6"
+            style={{
+              fontSize: "var(--text-sm)",
+              color: "rgb(var(--color-text-muted))",
+            }}
+          >
+            Loading…
           </div>
         )}
       </div>
