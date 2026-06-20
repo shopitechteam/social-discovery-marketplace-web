@@ -211,7 +211,7 @@ export function MessageList({
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="h-full overflow-y-auto overscroll-contain bg-[rgb(var(--color-bg-subtle)/0.35)] px-4 py-4"
+        className="h-full overflow-y-auto overflow-x-hidden overscroll-contain bg-[rgb(var(--color-bg-subtle)/0.35)] px-4 py-4"
       >
         {/* Top sentinel + older-loading spinner */}
         <div ref={topSentinelRef} className="h-px" />

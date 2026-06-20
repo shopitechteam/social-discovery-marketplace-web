@@ -107,3 +107,10 @@ export type Message = {
   /** Correlates an optimistic row with the server's confirmed message. */
   clientMessageId?: string | null;
 };
+
+/** Media the user has picked but not yet sent (previewed above the composer). */
+export type StagedMedia = {
+  file: File;
+  kind: "image" | "video";
+  previewUrl: string;
+};

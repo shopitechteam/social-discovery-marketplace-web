@@ -24,6 +24,67 @@ export function mediaStatus(value?: string | null): string {
   return normalizeEnum(value) || "pending";
 }
 
+/**
+ * Grab a poster frame from a video File as a data URL, so we can show an actual
+ * preview/buffer while the video uploads (a raw video blob can't render as an
+ * <img>). Resolves to null if the frame can't be captured (caller falls back to
+ * a plain skeleton). Returns a data URL (not an object URL) so it never needs
+ * revoking and survives the message lifecycle.
+ */
+export function videoPosterFromFile(file: File): Promise<string | null> {
+  return new Promise((resolve) => {
+    if (typeof document === "undefined") return resolve(null);
+    const url = URL.createObjectURL(file);
+    const video = document.createElement("video");
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = "metadata";
+    video.src = url;
+
+    let settled = false;
+    const cleanup = () => {
+      URL.revokeObjectURL(url);
+      video.removeAttribute("src");
+      video.load();
+    };
+    const finish = (result: string | null) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve(result);
+    };
+
+    const capture = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = video.videoWidth || 320;
+        canvas.height = video.videoHeight || 320;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return finish(null);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        finish(canvas.toDataURL("image/jpeg", 0.7));
+      } catch {
+        finish(null);
+      }
+    };
+
+    video.onloadeddata = () => {
+      // Seek a touch past the very first frame (often black) for a better poster.
+      const target = Math.min(0.1, (video.duration || 1) / 2);
+      const onSeeked = () => capture();
+      video.onseeked = onSeeked;
+      try {
+        video.currentTime = target;
+      } catch {
+        capture();
+      }
+    };
+    video.onerror = () => finish(null);
+    // Safety timeout so a stubborn file never hangs staging.
+    setTimeout(() => finish(null), 3000);
+  });
+}
+
 export function participantName(user?: UserLite | null): string {
   const first = user?.profile?.firstName?.trim();
   const last = user?.profile?.lastName?.trim();
@@ -65,13 +126,16 @@ export function conversationThumb(conversation?: Conversation | null): string | 
 }
 
 export function imageForMessage(message: Message): string | null {
-  // Prefer an optimistic local preview while the upload is still resolving.
-  if (message.localPreviewUrl) return message.localPreviewUrl;
-  return (
+  // Prefer the uploaded/processed URL once it exists — the local blob preview is
+  // only a stand-in while the upload is in flight, and that blob gets revoked
+  // after the message settles (which would otherwise show a broken image until a
+  // refresh). Fall back to the blob only while still uploading.
+  const uploaded =
     message.mediaAsset?.r2Variants?.find((variant) => variant.variant === "medium")?.url ??
     message.mediaAsset?.thumbnailUrl ??
-    null
-  );
+    null;
+  if (uploaded) return uploaded;
+  return message.localPreviewUrl ?? null;
 }
 
 export function money(amount?: number | null, currency?: string | null): string {

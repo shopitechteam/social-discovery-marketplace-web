@@ -3,7 +3,12 @@
 import Image from "next/image";
 import { Loader2, Play, RotateCw, X } from "lucide-react";
 import type { Message } from "../types";
-import { imageForMessage, mediaStatus, messageKind, shortTime } from "../lib/helpers";
+import {
+  imageForMessage,
+  mediaStatus,
+  messageKind,
+  shortTime,
+} from "../lib/helpers";
 import { MessageTicks } from "./MessageTicks";
 
 interface Props {
@@ -13,22 +18,32 @@ interface Props {
   onDiscard?: (message: Message) => void;
 }
 
-/** A single chat bubble — text and/or media, timestamp, and (for mine) status. */
+// Fixed media container - no overflow, proper sizing
+const MEDIA_BOX_CLASS =
+  "relative w-full overflow-hidden rounded-xl bg-black/5 flex-shrink-0";
+const MEDIA_BOX_STYLE = {
+  height: "35svh",
+  maxHeight: "420px",
+  minHeight: "180px",
+
+  maxWidth: "100%",
+} as const;
+
 export function MessageBubble({ message, mine, onRetry, onDiscard }: Props) {
   const kind = messageKind(message.type);
   const status = mediaStatus(message.mediaAsset?.status);
   const imageUrl = imageForMessage(message);
+
+  const isFailed = message.pendingStatus === "failed";
+  const isUploading =
+    message.pendingStatus === "uploading" ||
+    message.pendingStatus === "sending";
+
   const videoThumb =
-    message.localPreviewUrl ??
     message.mediaAsset?.muxMeta?.thumbnailUrl ??
     message.mediaAsset?.thumbnailUrl ??
     null;
 
-  // Optimistic lifecycle (only set on messages I just sent locally)
-  const isFailed = message.pendingStatus === "failed";
-  const isUploading = message.pendingStatus === "uploading" || message.pendingStatus === "sending";
-
-  // Media overlay shown while the local upload is in flight or has failed.
   const mediaOverlay =
     isUploading || isFailed ? (
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/45 text-white">
@@ -39,7 +54,7 @@ export function MessageBubble({ message, mine, onRetry, onDiscard }: Props) {
               <button
                 type="button"
                 onClick={() => onRetry?.(message)}
-                className="flex items-center gap-1 rounded-full bg-white/90 px-3 py-1 font-semibold text-black"
+                className="flex items-center gap-1 rounded-full bg-white/90 px-3 py-1 font-semibold text-black transition-colors hover:bg-white"
                 style={{ fontSize: "var(--text-xs)" }}
               >
                 <RotateCw size={13} /> Retry
@@ -47,7 +62,7 @@ export function MessageBubble({ message, mine, onRetry, onDiscard }: Props) {
               <button
                 type="button"
                 onClick={() => onDiscard?.(message)}
-                className="flex h-7 w-7 items-center justify-center rounded-full bg-black/40"
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-black/40 transition-colors hover:bg-black/60"
                 aria-label="Discard"
               >
                 <X size={14} />
@@ -61,68 +76,93 @@ export function MessageBubble({ message, mine, onRetry, onDiscard }: Props) {
     ) : null;
 
   return (
-    <div className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+    <div className={`flex ${mine ? "justify-end" : "justify-start"} w-full`}>
       <div
-        className={`max-w-[82%] rounded-2xl px-3 py-2 ${mine ? "rounded-br-md text-white" : "rounded-bl-md"}`}
+        className={`w-[75%] relative rounded-2xl px-3 py-2 ${mine ? "rounded-br-md text-white" : "rounded-bl-md"}`}
         style={{
-          backgroundColor: mine ? "rgb(var(--brand-primary))" : "rgb(var(--color-bg-elevated))",
+          backgroundColor: mine
+            ? "rgb(var(--brand-primary))"
+            : "rgb(var(--color-bg-elevated))",
           border: mine ? "none" : "1px solid rgb(var(--color-border))",
         }}
       >
-        {kind === "image" && (
-          <div className="relative mb-2 overflow-hidden rounded-xl bg-black/5">
-            {imageUrl ? (
-              <Image
-                src={imageUrl}
-                alt="Attachment"
-                width={320}
-                height={320}
-                className="h-auto w-full object-cover"
-                unoptimized={imageUrl.startsWith("blob:")}
-              />
-            ) : (
-              <div className="flex h-40 items-center justify-center">
-                <Loader2 size={22} className="animate-spin opacity-60" />
-              </div>
-            )}
-            {mediaOverlay}
-          </div>
-        )}
-
-        {kind === "video" && (
-          <div className="relative mb-2 overflow-hidden rounded-xl bg-black/10">
-            {videoThumb ? (
-              <Image
-                src={videoThumb}
-                alt="Video attachment"
-                width={320}
-                height={200}
-                className="h-auto w-full object-cover"
-                unoptimized={videoThumb.startsWith("blob:")}
-              />
-            ) : (
-              <div className="flex h-40 items-center justify-center">
-                <Loader2 size={22} className="animate-spin opacity-60" />
-              </div>
-            )}
-            {!isUploading && !isFailed && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white">
-                  <Play size={16} fill="currentColor" />
+        {/* Media section - always at top */}
+        {(kind === "image" || kind === "video") && (
+          <div className="flex flex-col items-center w-full">
+            <div className={MEDIA_BOX_CLASS} style={MEDIA_BOX_STYLE}>
+              {kind === "image" ? (
+                imageUrl ? (
+                  <Image
+                    src={imageUrl}
+                    alt="Attachment"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 260px"
+                    unoptimized={imageUrl.startsWith("blob:")}
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center">
+                    <Loader2 size={22} className="animate-spin opacity-60" />
+                  </div>
+                )
+              ) : // Video
+              videoThumb ? (
+                <Image
+                  src={videoThumb}
+                  alt="Video attachment"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 260px"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-black/10">
+                  {!isUploading && !isFailed && (
+                    <Loader2 size={22} className="animate-spin opacity-60" />
+                  )}
                 </div>
-              </div>
+              )}
+
+              {kind === "video" && !isUploading && !isFailed && videoThumb && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white transition-transform hover:scale-105">
+                    <Play size={16} fill="currentColor" className="ml-0.5" />
+                  </div>
+                </div>
+              )}
+
+              {mediaOverlay}
+            </div>
+
+            {/* Server-side processing status */}
+            {!isUploading && !isFailed && status !== "ready" && (
+              <p
+                className={`mt-2 ${mine ? "text-white/75" : "text-muted"}`}
+                style={{ fontSize: "var(--text-xs)" }}
+              >
+                {status === "failed"
+                  ? message.mediaAsset?.errorMessage || "Upload failed"
+                  : status === "processing"
+                    ? "Processing media..."
+                    : "Uploading media..."}
+              </p>
             )}
-            {mediaOverlay}
           </div>
         )}
 
-        {message.text ? (
-          <p style={{ fontSize: "var(--text-sm)", lineHeight: 1.45 }}>{message.text}</p>
-        ) : null}
+        {/* Text section - always at bottom */}
+        {message.text && (
+          <div className={`${kind !== "text" ? "mt-3" : ""}`}>
+            <p
+              className="break-words whitespace-pre-wrap"
+              style={{ fontSize: "var(--text-sm)", lineHeight: 1.45 }}
+            >
+              {message.text}
+            </p>
+          </div>
+        )}
 
-        {/* Failed text message → tap-to-retry / discard (media has its own
-            overlay above, so this is only for text-only bubbles). */}
-        {isFailed && kind === "text" ? (
+        {/* Failed text message controls */}
+        {isFailed && kind === "text" && (
           <div
             className={`mt-1 flex items-center gap-2 ${mine ? "text-white/85" : "text-red-500"}`}
             style={{ fontSize: "var(--text-xs)" }}
@@ -131,7 +171,7 @@ export function MessageBubble({ message, mine, onRetry, onDiscard }: Props) {
             <button
               type="button"
               onClick={() => onRetry?.(message)}
-              className="flex items-center gap-1 font-semibold underline underline-offset-2"
+              className="flex items-center gap-1 font-semibold underline underline-offset-2 transition-opacity hover:opacity-80"
             >
               <RotateCw size={12} /> Retry
             </button>
@@ -139,29 +179,16 @@ export function MessageBubble({ message, mine, onRetry, onDiscard }: Props) {
               type="button"
               onClick={() => onDiscard?.(message)}
               aria-label="Discard"
-              className="flex items-center"
+              className="transition-opacity hover:opacity-80"
             >
               <X size={13} />
             </button>
           </div>
-        ) : null}
+        )}
 
-        {/* Server-side processing note (after upload, not for optimistic states) */}
-        {kind !== "text" && !isUploading && !isFailed && status !== "ready" ? (
-          <p
-            className={`mt-2 ${mine ? "text-white/75" : "text-muted"}`}
-            style={{ fontSize: "var(--text-xs)" }}
-          >
-            {status === "failed"
-              ? message.mediaAsset?.errorMessage || "Upload failed"
-              : status === "processing"
-                ? "Processing media..."
-                : "Uploading media..."}
-          </p>
-        ) : null}
-
+        {/* Timestamp and status */}
         <div
-          className={`mt-1 flex items-center gap-1 ${mine ? "justify-end text-white/70" : "justify-start text-muted"}`}
+          className={`mt-1.5 flex items-center gap-1 ${mine ? "justify-end text-white/70" : "justify-start text-muted"}`}
           style={{ fontSize: "11px" }}
         >
           <span>{shortTime(message.createdAt)}</span>

@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, MessageCircle } from "lucide-react";
-import type { Conversation, Message, UserLite } from "../types";
+import type { Conversation, Message, StagedMedia, UserLite } from "../types";
 import {
   avatarGradient,
   conversationThumb,
@@ -34,14 +34,15 @@ interface Props {
   loadingOlder: boolean;
   hasMoreOlder: boolean;
   composer: string;
-  isSending: boolean;
+  stagedMedia: StagedMedia | null;
   isUploading: boolean;
   isConversationActionPending: boolean;
   requireAuth: () => boolean;
   onBack: () => void;
   onComposerChange: (value: string) => void;
-  onSendText: () => void;
-  onPickMedia: (file: File, kind: "image" | "video") => void;
+  onSend: () => void;
+  onStageMedia: (file: File, kind: "image" | "video") => void;
+  onClearStagedMedia: () => void;
   onRetryMessage: (message: Message) => void;
   onDiscardMessage: (message: Message) => void;
   onLoadOlder: () => Promise<number>;
@@ -68,14 +69,15 @@ export function ChatDetail({
   loadingOlder,
   hasMoreOlder,
   composer,
-  isSending,
+  stagedMedia,
   isUploading,
   isConversationActionPending,
   requireAuth,
   onBack,
   onComposerChange,
-  onSendText,
-  onPickMedia,
+  onSend,
+  onStageMedia,
+  onClearStagedMedia,
   onRetryMessage,
   onDiscardMessage,
   onLoadOlder,
@@ -287,7 +289,7 @@ export function ChatDetail({
 
           <Composer
             composer={composer}
-            isSending={isSending}
+            stagedMedia={stagedMedia}
             isUploading={isUploading}
             disabledReason={
               selectedConversation?.blockedByMe
@@ -300,8 +302,9 @@ export function ChatDetail({
             }
             requireAuth={requireAuth}
             onChange={onComposerChange}
-            onSendText={onSendText}
-            onPickMedia={onPickMedia}
+            onSend={onSend}
+            onStageMedia={onStageMedia}
+            onClearStagedMedia={onClearStagedMedia}
           />
         </>
       )}

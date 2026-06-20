@@ -26,6 +26,7 @@ import {
   removeConversation,
   upsertConversation,
   upsertMessage,
+  videoPosterFromFile,
 } from "../lib/helpers";
 import {
   BLOCK_DIRECT_CONVERSATION,
@@ -506,18 +507,26 @@ export function useInbox(lang: string) {
     [currentUser?.id, on],
   );
 
+  // Revoke object URLs only on unmount — NOT on every message change. Revoking
+  // on each change used to kill a blob preview that was still on screen (e.g.
+  // right after an upload reconciled, or when an unrelated message arrived),
+  // leaving a broken image until refresh.
+  const blobUrlsRef = useRef<Set<string>>(new Set());
   useEffect(() => {
+    for (const message of messages) {
+      if (message.localPreviewUrl?.startsWith("blob:")) {
+        blobUrlsRef.current.add(message.localPreviewUrl);
+      }
+    }
+  }, [messages]);
+  useEffect(() => {
+    const blobUrls = blobUrlsRef.current;
     return () => {
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       if (typingPulseRef.current) clearTimeout(typingPulseRef.current);
-
-      for (const message of messages) {
-        if (message.localPreviewUrl?.startsWith("blob:")) {
-          URL.revokeObjectURL(message.localPreviewUrl);
-        }
-      }
+      for (const url of blobUrls) URL.revokeObjectURL(url);
     };
-  }, [messages]);
+  }, []);
 
   useEffect(() => {
     if (!selectedConversationId || messages.length === 0) return;
@@ -826,19 +835,25 @@ export function useInbox(lang: string) {
           result.data as { sendDirectMessage?: Message } | undefined
         )?.sendDirectMessage;
         if (message) {
-          const preview = pendingFilesRef.current.get(clientMessageId);
-
           setMessages((prev) => {
             const optimisticMessage = prev.find(
               (item) => item.clientMessageId === clientMessageId,
             );
+            const posterThumb = optimisticMessage?.mediaAsset?.thumbnailUrl;
             return upsertMessage(prev, {
               ...message,
               clientMessageId,
-              localPreviewUrl:
-                preview?.kind === "image"
-                  ? (optimisticMessage?.localPreviewUrl ?? null)
-                  : (optimisticMessage?.localPreviewUrl ?? null),
+              localPreviewUrl: optimisticMessage?.localPreviewUrl ?? null,
+              // Keep showing the optimistic still (image object URL / video poster)
+              // until the server has produced its own thumbnail, so the buffer
+              // doesn't blink out while processing finishes.
+              mediaAsset: message.mediaAsset
+                ? {
+                    ...message.mediaAsset,
+                    thumbnailUrl:
+                      message.mediaAsset.thumbnailUrl ?? posterThumb ?? null,
+                  }
+                : message.mediaAsset,
               pendingStatus: undefined,
             });
           });
@@ -863,11 +878,13 @@ export function useInbox(lang: string) {
     ],
   );
 
-  const uploadAndSendMedia = useCallback(
+  /**
+   * Stage a picked file as a preview above the composer. Nothing is uploaded
+   * yet — the user can type a caption and send (or remove) it. Replaces any
+   * previously staged media (revoking its object URL).
+   */
+  const stageMedia = useCallback(
     async (file: File, kind: "image" | "video") => {
-      const myId = currentUser?.id;
-      const conversationId = selectedConversationIdRef.current;
-      if (!conversationId || !myId) return;
       if (selectedConversation?.canSendMessages === false) {
         toast.error(
           selectedConversation.blockedByMe
@@ -877,9 +894,45 @@ export function useInbox(lang: string) {
         return;
       }
 
-      const textToSend = composer.trim() || undefined;
+      // For video, capture a poster frame (data URL) so the preview/buffer shows
+      // an actual still — a raw video blob can't render as an image. Images use
+      // a plain object URL (renders directly).
+      const previewUrl =
+        kind === "video"
+          ? ((await videoPosterFromFile(file)) ?? "")
+          : URL.createObjectURL(file);
+
+      setStagedMedia((prev) => {
+        if (prev?.previewUrl?.startsWith("blob:"))
+          URL.revokeObjectURL(prev.previewUrl);
+        return { file, kind, previewUrl };
+      });
+    },
+    [selectedConversation],
+  );
+
+  const clearStagedMedia = useCallback(() => {
+    setStagedMedia((prev) => {
+      if (prev?.previewUrl?.startsWith("blob:"))
+        URL.revokeObjectURL(prev.previewUrl);
+      return null;
+    });
+  }, []);
+
+  /** Optimistically render a media message and upload it (with optional caption). */
+  const sendMedia = useCallback(
+    async (
+      file: File,
+      kind: "image" | "video",
+      previewUrl: string,
+      text?: string,
+    ) => {
+      const myId = currentUser?.id;
+      const conversationId = selectedConversationIdRef.current;
+      if (!conversationId || !myId) return;
+
+      const textToSend = text?.trim() || undefined;
       const clientMessageId = crypto.randomUUID();
-      const localPreviewUrl = URL.createObjectURL(file);
 
       pendingFilesRef.current.set(clientMessageId, {
         file,
@@ -899,18 +952,21 @@ export function useInbox(lang: string) {
         isMine: true,
         deliveryStatus: "sent",
         clientMessageId,
-        localPreviewUrl,
+        localPreviewUrl: previewUrl,
         pendingStatus: "uploading",
         mediaAsset: {
           id: `optimistic-media:${clientMessageId}`,
           type: kind === "video" ? "VIDEO" : "IMAGE",
           status: "PENDING",
-          thumbnailUrl: localPreviewUrl,
+          // previewUrl is a renderable still in both cases — an object URL for an
+          // image, and a captured poster frame (data URL) for a video — so the
+          // bubble shows a real buffer during upload. The processed Mux/server
+          // thumbnail replaces it once it arrives.
+          thumbnailUrl: previewUrl || null,
         },
       };
 
       setMessages((prev) => sortMessagesChronologically([...prev, optimistic]));
-      setComposer("");
 
       await runMediaUpload(
         clientMessageId,
@@ -920,13 +976,51 @@ export function useInbox(lang: string) {
         textToSend,
       );
     },
-    [
-      composer,
-      currentUser?.id,
-      runMediaUpload,
-      selectedConversation,
-    ],
+    [currentUser?.id, runMediaUpload, selectedConversation],
   );
+
+  /**
+   * Unified send: if media is staged, upload it (with the typed caption); then
+   * send any remaining text as its own message. Mirrors WhatsApp — the caption
+   * rides with the media, and a separate text-only line also works.
+   */
+  const handleSend = useCallback(() => {
+    const conversationId = selectedConversationIdRef.current;
+    if (!conversationId || !currentUser?.id) return;
+    if (selectedConversation?.canSendMessages === false) {
+      toast.error(
+        selectedConversation.blockedByMe
+          ? "You have blocked this user"
+          : "You can no longer send messages in this conversation",
+      );
+      return;
+    }
+
+    const caption = composer.trim();
+
+    if (stagedMedia) {
+      // Caption travels with the media; clear the composer + staging up front so
+      // the input stays active for the next message.
+      void sendMedia(
+        stagedMedia.file,
+        stagedMedia.kind,
+        stagedMedia.previewUrl,
+        caption || undefined,
+      );
+      setStagedMedia(null);
+      setComposer("");
+      return;
+    }
+
+    if (caption) handleSendText();
+  }, [
+    composer,
+    currentUser?.id,
+    handleSendText,
+    selectedConversation,
+    sendMedia,
+    stagedMedia,
+  ]);
 
   const retryMessage = useCallback(
     async (message: Message) => {
@@ -1236,6 +1330,7 @@ export function useInbox(lang: string) {
     selectedConversationId,
     messages,
     composer,
+    stagedMedia,
     typingUserId,
     unreadThreads,
     // loading flags
@@ -1254,7 +1349,9 @@ export function useInbox(lang: string) {
     handleBack,
     handleComposerChange,
     handleSendText,
-    uploadAndSendMedia,
+    handleSend,
+    stageMedia,
+    clearStagedMedia,
     retryMessage,
     discardMessage,
     loadOlderMessages,

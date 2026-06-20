@@ -1,33 +1,58 @@
 "use client";
 
-import { useRef } from "react";
-import { Paperclip, Send } from "lucide-react";
+import { useEffect, useRef } from "react";
+import Image from "next/image";
+import { Paperclip, Play, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import type { StagedMedia } from "../types";
 
 interface Props {
   composer: string;
-  isSending: boolean;
+  stagedMedia: StagedMedia | null;
   isUploading: boolean;
   disabledReason?: string | null;
   requireAuth: () => boolean;
   onChange: (value: string) => void;
-  onSendText: () => void;
-  onPickMedia: (file: File, kind: "image" | "video") => void;
+  onSend: () => void;
+  onStageMedia: (file: File, kind: "image" | "video") => void;
+  onClearStagedMedia: () => void;
 }
 
-/** Message composer — media pickers, text input, send button. */
+const MAX_TEXTAREA_HEIGHT = 120; // px — ~5 lines before it scrolls internally
+
+/** Message composer — staged-media preview, auto-sizing input, send button. */
 export function Composer({
   composer,
-  isSending,
+  stagedMedia,
   isUploading,
   disabledReason,
   requireAuth,
   onChange,
-  onSendText,
-  onPickMedia,
+  onSend,
+  onStageMedia,
+  onClearStagedMedia,
 }: Props) {
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  // Auto-grow the textarea to fit its content (capped), so it behaves like
+  // WhatsApp: one line by default, expanding as you type.
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, MAX_TEXTAREA_HEIGHT)}px`;
+  }, [composer]);
+
+  const disabled = Boolean(disabledReason);
+  const canSend = !disabled && (Boolean(stagedMedia) || composer.trim().length > 0);
+
+  const handleSendClick = () => {
+    if (!canSend) return;
+    onSend();
+    // Keep focus so the keyboard stays open for the next message (WhatsApp UX).
+    textareaRef.current?.focus();
+  };
 
   return (
     <div
@@ -38,70 +63,104 @@ export function Composer({
         paddingBottom: "calc(env(safe-area-inset-bottom) + 0.75rem)",
       }}
     >
+      {/* ── Staged-media preview (above the input row) ── */}
+      {stagedMedia ? (
+        <div className="mb-2 flex items-center gap-3">
+          <div className="relative h-16 w-16 overflow-hidden rounded-xl bg-black/5">
+            {stagedMedia.previewUrl ? (
+              <Image
+                src={stagedMedia.previewUrl}
+                alt="Attachment preview"
+                fill
+                className="object-cover"
+                sizes="64px"
+                unoptimized
+              />
+            ) : (
+              <div className="absolute inset-0 bg-black/20" />
+            )}
+            {stagedMedia.kind === "video" ? (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                <Play size={16} className="text-white" fill="currentColor" />
+              </div>
+            ) : null}
+          </div>
+          <span className="flex-1 truncate text-xs text-muted">
+            {stagedMedia.kind === "video" ? "Video" : "Photo"} ready to send
+          </span>
+          <button
+            type="button"
+            onClick={onClearStagedMedia}
+            aria-label="Remove attachment"
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-black/10 dark:bg-white/10"
+          >
+            <X size={15} />
+          </button>
+        </div>
+      ) : null}
+
       <div className="flex items-end gap-2">
         <Button
           type="button"
           size="icon"
           variant="outline"
-          className="h-9 w-9 rounded-full"
+          className="h-9 w-9 shrink-0 rounded-full"
           onClick={() => {
             if (!requireAuth()) return;
             mediaInputRef.current?.click();
           }}
-          disabled={isUploading || isSending || Boolean(disabledReason)}
+          disabled={isUploading || disabled}
           aria-label="Attach photo or video"
         >
           <Paperclip size={15} />
         </Button>
 
-        <div className="flex-1">
-          <Input
-            value={composer}
-            onChange={(event) => onChange(event.target.value)}
-            placeholder={disabledReason || "Message..."}
-            className="h-10 text-sm outline-none outline-0 focus:ring-1 focus:ring-gray-700 placeholder:text-sm rounded-full"
-            disabled={Boolean(disabledReason)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault();
-                onSendText();
-              }
-            }}
-          />
-        </div>
+        <textarea
+          ref={textareaRef}
+          value={composer}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={disabledReason || "Message..."}
+          rows={1}
+          disabled={disabled}
+          className="flex-1 resize-none rounded-2xl border bg-transparent px-4 py-2 text-sm outline-none placeholder:text-sm focus:ring-1 focus:ring-gray-700"
+          style={{
+            borderColor: "rgb(var(--color-border))",
+            maxHeight: MAX_TEXTAREA_HEIGHT,
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault();
+              handleSendClick();
+            }
+          }}
+        />
 
         <Button
           type="button"
           size="icon"
-          className="h-9 w-9 rounded-full"
-          onClick={onSendText}
-          disabled={
-            isSending ||
-            isUploading ||
-            Boolean(disabledReason) ||
-            !composer.trim()
-          }
+          className="h-9 w-9 shrink-0 rounded-full"
+          onClick={handleSendClick}
+          disabled={!canSend}
         >
-          {isSending || isUploading ? (
-            <Send className="text-white disabled" size={18} />
-          ) : (
-            <Send className="text-white" size={18} />
-          )}
+          <Send className="text-white" size={18} />
         </Button>
       </div>
 
-      {/* One attachment input — kind is derived from the file's MIME type. */}
+      {/* One attachment input — kind is derived from the file's MIME type.
+          Selecting only STAGES the file; upload happens on Send. */}
       <input
         ref={mediaInputRef}
         type="file"
         accept="image/*,video/*"
         className="hidden"
-        disabled={Boolean(disabledReason)}
+        disabled={disabled}
         onChange={(event) => {
           const file = event.target.files?.[0];
           if (file) {
             const kind = file.type.startsWith("video/") ? "video" : "image";
-            onPickMedia(file, kind);
+            onStageMedia(file, kind);
+            // Refocus so the keyboard/caption flow stays active.
+            textareaRef.current?.focus();
           }
           event.currentTarget.value = "";
         }}
