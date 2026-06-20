@@ -131,7 +131,7 @@ export function Composer({
           placeholder={disabledReason || "Message..."}
           rows={1}
           disabled={disabled}
-          className="flex-1 overflow-y-auto no-scroll-indicator resize-none rounded-2xl border bg-transparent px-4 py-2 text-sm outline-none placeholder:text-sm focus:ring-1 focus:ring-gray-700"
+          className="flex-1 overflow-y-auto no-scroll-indicator resize-none rounded-2xl border bg-transparent px-4 py-3 text-sm outline-none placeholder:text-sm focus:ring-1 focus:ring-gray-700"
           style={{
             borderColor: "rgb(var(--color-border))",
             maxHeight: MAX_TEXTAREA_HEIGHT,
