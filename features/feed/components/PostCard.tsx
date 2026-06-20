@@ -78,9 +78,39 @@ interface AvatarProps {
   avatarUrl?: string | null;
   firstName?: string | null;
   lastName?: string | null;
+  isVerified?: boolean | null;
 }
 
-function Avatar({ creatorId, avatarUrl, firstName, lastName }: AvatarProps) {
+/** Blue verified check — same mark shown on the creator's profile page. */
+function VerifiedBadge() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 20 20"
+      fill="none"
+      className="absolute -bottom-0.5 -right-0.5 rounded-full ring-2 ring-[rgb(var(--color-bg-elevated))]"
+      aria-label="Verified"
+    >
+      <circle cx="10" cy="10" r="10" fill="#1D9BF0" />
+      <path
+        d="M6 10.5l2.5 2.5 5.5-5.5"
+        stroke="white"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function Avatar({
+  creatorId,
+  avatarUrl,
+  firstName,
+  lastName,
+  isVerified,
+}: AvatarProps) {
   const colors = [
     "from-primary to-secondary",
     "from-violet-500 to-purple-600",
@@ -95,25 +125,29 @@ function Avatar({ creatorId, avatarUrl, firstName, lastName }: AvatarProps) {
 
   if (avatarUrl) {
     return (
-      <div className="w-10 h-10 rounded-full relative shrink-0 overflow-hidden bg-surface">
-        <Image
-          src={avatarUrl}
-          alt={label}
-          className="w-full h-full object-cover"
-          fill
-          sizes="40px"
-          placeholder="blur"
-          blurDataURL={SHIMMER_AVATAR}
-        />
+      <div className="w-10 h-10 rounded-full relative shrink-0 bg-surface">
+        <div className="w-full h-full rounded-full overflow-hidden">
+          <Image
+            src={avatarUrl}
+            alt={label}
+            className="w-full h-full overflow-hidden rounded-full object-cover"
+            fill
+            sizes="40px"
+            placeholder="blur"
+            blurDataURL={SHIMMER_AVATAR}
+          />
+        </div>
+        {isVerified ? <VerifiedBadge /> : null}
       </div>
     );
   }
 
   return (
     <div
-      className={`w-10 h-10 rounded-full bg-linear-to-br ${color} flex items-center justify-center flex-shrink-0`}
+      className={`w-10 h-10 rounded-full relative bg-linear-to-br ${color} flex items-center justify-center flex-shrink-0`}
     >
       <span className="text-white text-xs font-bold">{label}</span>
+      {isVerified ? <VerifiedBadge /> : null}
     </div>
   );
 }
@@ -1020,6 +1054,7 @@ export function PostCard({ post, lang, priority }: Props) {
             avatarUrl={creator?.profile?.avatar}
             firstName={creator?.profile?.firstName}
             lastName={creator?.profile?.lastName}
+            isVerified={creator?.isVerified}
           />
         </button>
 

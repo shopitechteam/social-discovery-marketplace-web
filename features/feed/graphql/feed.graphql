@@ -53,6 +53,7 @@ fragment ContentCardFields on Content {
   creator {
     id
     username
+    isVerified
     isFollowedByMe
     followerCount
     profile {

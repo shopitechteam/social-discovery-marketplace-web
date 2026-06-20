@@ -173,7 +173,12 @@ export function ChatDetail({
               {pending && !otherParticipant ? (
                 <div className="h-10 w-10 animate-pulse rounded-full bg-black/10 dark:bg-white/10" />
               ) : otherParticipant?.profile?.avatar ? (
-                <div className="relative h-10 w-10 overflow-hidden rounded-full">
+                <div
+                  onClick={() => {
+                    router.push(`/profile/${otherParticipant?.id}`);
+                  }}
+                  className="relative h-10 w-10 overflow-hidden rounded-full"
+                >
                   <Image
                     src={otherParticipant.profile.avatar}
                     alt={participantName(otherParticipant)}
@@ -184,6 +189,9 @@ export function ChatDetail({
                 </div>
               ) : (
                 <div
+                  onClick={() => {
+                    router.push(`/profile/${otherParticipant?.id}`);
+                  }}
                   className={`flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br ${avatarGradient(
                     otherParticipant?.id ?? "0",
                   )} text-sm font-semibold text-white`}
@@ -245,6 +253,9 @@ export function ChatDetail({
 
             {contentSummary ? (
               <div
+                onClick={() =>
+                  router.push(`/${lang}/content/${contentSummary.id}`)
+                }
                 className="mt-3 flex items-center gap-3 rounded-2xl border p-3"
                 style={{
                   backgroundColor: "rgb(var(--color-bg-subtle))",
