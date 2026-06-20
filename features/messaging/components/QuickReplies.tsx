@@ -34,7 +34,7 @@ export function QuickReplies({ disabled, onSend }: Props) {
           key={text}
           type="button"
           onClick={() => onSend(text)}
-          className="shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-accent"
+          className="shrink-0 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent"
           style={{ borderColor: "rgb(var(--color-border))" }}
         >
           {text}
