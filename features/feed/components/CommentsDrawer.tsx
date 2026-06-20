@@ -151,24 +151,40 @@ function CommentRow({
   onReply,
   onLikeComment,
   contentCreatorId,
+  showReplies,
+  onToggleReplies,
 }: {
   comment: CommentItem;
   onReply: (comment: CommentItem) => void;
   onLikeComment: (id: string, liked: boolean, count: number) => void;
   contentCreatorId?: string;
+  showReplies: boolean;
+  onToggleReplies: (commentId: string, next: boolean) => void;
 }) {
   const [liked, setLiked] = useState(comment.isLikedByMe ?? false);
   const [likeCount, setLikeCount] = useState(comment.likeCount ?? 0);
-  const [showReplies, setShowReplies] = useState(false);
   const replyCount = comment.replyCount ?? 0;
   const [toggleLike] = useMutation(ToggleCommentLikeDocument);
 
+  // cache-and-network on the first open (fetch fresh replies), but fall back to
+  // cache-first afterwards so an optimistic reply we just wrote into the cache
+  // isn't clobbered by a late network response (which wouldn't yet include it).
   const { data: repliesData, loading: repliesLoading } = useQuery(GetRepliesDocument, {
     variables: { commentId: comment.id },
     skip: !showReplies,
     fetchPolicy: "cache-and-network",
+    nextFetchPolicy: "cache-first",
   });
-  const replies = repliesData?.replies ?? [];
+  // Dedupe by id — an optimistic reply and the server's canonical list can
+  // briefly overlap during reconciliation, which would emit duplicate keys.
+  const replies = (() => {
+    const seen = new Set<string>();
+    return (repliesData?.replies ?? []).filter((r) => {
+      if (!r?.id || seen.has(r.id)) return false;
+      seen.add(r.id);
+      return true;
+    });
+  })();
 
   async function handleLike() {
     const was = liked;
@@ -210,7 +226,7 @@ function CommentRow({
             </button>
             {replyCount > 0 && (
               <button
-                onClick={() => setShowReplies((v) => !v)}
+                onClick={() => onToggleReplies(comment.id, !showReplies)}
                 className="text-xs text-primary font-medium"
               >
                 {showReplies ? "Hide replies" : `View ${replyCount} ${replyCount === 1 ? "reply" : "replies"}`}
@@ -297,6 +313,9 @@ function CommentListSkeleton() {
 export function CommentsDrawer({ contentId, contentCreatorId, onClose, onCommentAdded, desktopInline = false }: Props) {
   const [text, setText] = useState("");
   const [replyingTo, setReplyingTo] = useState<CommentItem | null>(null);
+  // Which comment's replies are expanded. Lifted here (not local to CommentRow)
+  // so posting a reply can auto-open that thread to reveal the new reply.
+  const [expandedParentId, setExpandedParentId] = useState<string | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const client = useApolloClient();
@@ -345,6 +364,29 @@ export function CommentsDrawer({ contentId, contentCreatorId, onClose, onComment
     inputRef.current?.focus();
   }, []);
 
+  // Optimistically bump (or decrement) the content's cached comment count so the
+  // feed/post card updates instantly. The backend counts replies too, so this
+  // fires for every comment — top-level AND reply.
+  const bumpContentCommentCount = useCallback(
+    (delta: number) => {
+      const cacheId = client.cache.identify({ __typename: "Content", id: contentId });
+      if (!cacheId) return;
+      client.cache.modify({
+        id: cacheId,
+        fields: {
+          stats: (existing) => {
+            const stats = (existing ?? {}) as { comments?: number };
+            return {
+              ...stats,
+              comments: Math.max(0, (stats.comments ?? 0) + delta),
+            };
+          },
+        },
+      });
+    },
+    [client, contentId],
+  );
+
   const handleLikeComment = useCallback((id: string, liked: boolean, likeCount: number) => {
     const cacheId = client.cache.identify({ __typename: "Comment", id });
     if (cacheId) {
@@ -377,6 +419,7 @@ export function CommentsDrawer({ contentId, contentCreatorId, onClose, onComment
         author: null,
       };
       setOptimistic((prev) => [optimisticComment, ...prev]);
+      bumpContentCommentCount(1);
       onCommentAdded?.();
       requestAnimationFrame(() => { if (listRef.current) listRef.current.scrollTop = 0; });
 
@@ -392,37 +435,81 @@ export function CommentsDrawer({ contentId, contentCreatorId, onClose, onComment
         }
       } catch {
         setOptimistic((prev) => prev.filter((c) => c.id !== tempId));
+        bumpContentCommentCount(-1);
         onCommentAdded?.();
       }
     } else {
-      // Reply — write the new reply directly into the Apollo cache for
-      // only this parent's GetReplies query. No network calls to other rows.
+      // Reply — show it inline immediately (optimistic), bump counts, then
+      // reconcile with the server. The reply is written straight into this
+      // parent's cached GetReplies list so it appears without a refresh.
+      const tempId = `temp-${Date.now()}`;
+      const optimisticReply: ReplyItem = {
+        id: tempId,
+        text: trimmed,
+        creatorId: "me",
+        createdAt: new Date().toISOString() as unknown,
+        parentId,
+        likeCount: 0,
+        isLikedByMe: false,
+        author: null,
+      } as ReplyItem;
+
+      const parentCacheId = client.cache.identify({ __typename: "Comment", id: parentId });
+
+      // 1. Insert the optimistic reply into the cached replies list.
+      client.cache.updateQuery(
+        { query: GetRepliesDocument, variables: { commentId: parentId } },
+        (existing) => ({ replies: [...(existing?.replies ?? []), optimisticReply] }),
+      );
+      // 2. Bump parent replyCount + the content's comment count (backend counts replies).
+      if (parentCacheId) {
+        client.cache.modify({
+          id: parentCacheId,
+          fields: { replyCount: (prev: number) => (prev ?? 0) + 1 },
+        });
+      }
+      bumpContentCommentCount(1);
+      onCommentAdded?.();
+
+      // 3. Auto-expand this parent's replies so the user sees their reply land.
+      setExpandedParentId(parentId);
+
       try {
         const { data: res } = await addComment({
           variables: { input: { contentId, text: trimmed, parentId } },
         });
-
         if (res?.addComment) {
-          // 1. Append reply into the cached replies list for this parent only
+          // Swap the optimistic row for the real one (or drop it if the server
+          // already wrote the reply into the cache).
           client.cache.updateQuery(
             { query: GetRepliesDocument, variables: { commentId: parentId } },
             (existing) => {
-              const prev = existing?.replies ?? [];
-              // Avoid duplicates if the mutation already wrote it
-              if (prev.some((r: { id: string }) => r.id === res.addComment.id)) return existing;
-              return { replies: [...prev, res.addComment] };
+              const list = existing?.replies ?? [];
+              const withoutTemp = list.filter((r: { id: string }) => r.id !== tempId);
+              if (withoutTemp.some((r: { id: string }) => r.id === res.addComment.id)) {
+                return { replies: withoutTemp };
+              }
+              return { replies: [...withoutTemp, res.addComment] };
             },
           );
-          // 2. Increment replyCount on parent
-          const cacheId = client.cache.identify({ __typename: "Comment", id: parentId });
-          if (cacheId) {
-            client.cache.modify({
-              id: cacheId,
-              fields: { replyCount: (prev: number) => prev + 1 },
-            });
-          }
         }
-      } catch { /* silent */ }
+      } catch {
+        // Roll back the optimistic reply + counts.
+        client.cache.updateQuery(
+          { query: GetRepliesDocument, variables: { commentId: parentId } },
+          (existing) => ({
+            replies: (existing?.replies ?? []).filter((r: { id: string }) => r.id !== tempId),
+          }),
+        );
+        if (parentCacheId) {
+          client.cache.modify({
+            id: parentCacheId,
+            fields: { replyCount: (prev: number) => Math.max(0, (prev ?? 0) - 1) },
+          });
+        }
+        bumpContentCommentCount(-1);
+        onCommentAdded?.();
+      }
     }
   }
 
@@ -502,6 +589,8 @@ export function CommentsDrawer({ contentId, contentCreatorId, onClose, onComment
             onReply={handleReply}
             onLikeComment={handleLikeComment}
             contentCreatorId={contentCreatorId}
+            showReplies={expandedParentId === comment.id}
+            onToggleReplies={(id, next) => setExpandedParentId(next ? id : null)}
           />
         ))}
         {hasMore && (
