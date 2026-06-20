@@ -210,6 +210,28 @@ export function removeConversation(
 }
 
 export function upsertMessage(messages: Message[], incoming: Message): Message[] {
+  // Merge two media assets, keeping a renderable thumbnail from the previous one
+  // when the incoming asset doesn't have its own yet. This is what keeps a video
+  // poster (a client-side data URL) on screen after the server message arrives
+  // by id but before the processed thumbnail is ready — otherwise the poster got
+  // clobbered and the bubble went blank until a hard refresh.
+  const mergeMediaAsset = (
+    prev: Message["mediaAsset"],
+    next: Message["mediaAsset"],
+  ): Message["mediaAsset"] => {
+    if (!next) return prev ?? next;
+    if (!prev) return next;
+    return {
+      ...prev,
+      ...next,
+      thumbnailUrl: next.thumbnailUrl ?? prev.thumbnailUrl ?? null,
+      muxMeta: next.muxMeta?.thumbnailUrl
+        ? next.muxMeta
+        : (next.muxMeta ?? prev.muxMeta),
+      r2Variants: next.r2Variants ?? prev.r2Variants,
+    };
+  };
+
   // 1) Exact id match — already present (e.g. socket after mutation). Merge.
   const byId = messages.findIndex((m) => m.id === incoming.id);
   if (byId !== -1) {
@@ -217,6 +239,7 @@ export function upsertMessage(messages: Message[], incoming: Message): Message[]
     next[byId] = {
       ...next[byId],
       ...incoming,
+      mediaAsset: mergeMediaAsset(next[byId].mediaAsset, incoming.mediaAsset),
       localPreviewUrl: incoming.localPreviewUrl ?? next[byId].localPreviewUrl ?? null,
     };
     return next;

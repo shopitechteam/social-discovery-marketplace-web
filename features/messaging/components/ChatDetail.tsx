@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, MessageCircle } from "lucide-react";
@@ -90,6 +91,14 @@ export function ChatDetail({
   const contentSummary = selectedConversation?.content;
   const otherParticipant: UserLite | null | undefined =
     selectedConversation?.otherParticipant;
+
+  // Bumped on every send so the message list force-scrolls to the bottom even if
+  // the user had scrolled up — sending always reveals your new message.
+  const [scrollSignal, setScrollSignal] = useState(0);
+  const handleSend = useCallback(() => {
+    onSend();
+    setScrollSignal((n) => n + 1);
+  }, [onSend]);
 
   // The chat is "open" once a conversation is selected OR while we're resolving
   // one from a content id. In the pending case we render the shell immediately
@@ -282,6 +291,7 @@ export function ChatDetail({
             }
             loadingOlder={loadingOlder}
             hasMoreOlder={hasMoreOlder}
+            scrollToBottomSignal={scrollSignal}
             onLoadOlder={onLoadOlder}
             onRetryMessage={onRetryMessage}
             onDiscardMessage={onDiscardMessage}
@@ -302,7 +312,7 @@ export function ChatDetail({
             }
             requireAuth={requireAuth}
             onChange={onComposerChange}
-            onSend={onSend}
+            onSend={handleSend}
             onStageMedia={onStageMedia}
             onClearStagedMedia={onClearStagedMedia}
           />

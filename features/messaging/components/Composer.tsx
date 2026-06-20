@@ -50,8 +50,8 @@ export function Composer({
   const handleSendClick = () => {
     if (!canSend) return;
     onSend();
-    // Keep focus so the keyboard stays open for the next message (WhatsApp UX).
-    textareaRef.current?.focus();
+    // Close the keyboard on send and let the list scroll to the latest message.
+    textareaRef.current?.blur();
   };
 
   return (

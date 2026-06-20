@@ -60,11 +60,17 @@ function subscriptionMatchesKey(
 
 export function usePushNotifications(lang: string) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated());
-  const [permission, setPermission] = useState<PermissionState>(() =>
-    browserSupportsPush() ? Notification.permission : "unsupported",
-  );
+  // Start as "unsupported" so the first client render matches the server (which
+  // has no `window`/`Notification`) — otherwise the push button would render on
+  // the client but not the server and trip a hydration mismatch. The real
+  // permission is resolved right after mount, in the effect below.
+  const [permission, setPermission] = useState<PermissionState>("unsupported");
   const [isUpdating, setIsUpdating] = useState(false);
   const autoSyncRef = useRef(false);
+
+  useEffect(() => {
+    if (browserSupportsPush()) setPermission(Notification.permission);
+  }, []);
 
   const { data, refetch } = useQuery(MY_WEB_PUSH_STATUS, {
     skip: !isAuthenticated,

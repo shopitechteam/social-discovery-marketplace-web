@@ -22,6 +22,8 @@ interface Props {
   initialLoading: boolean;
   loadingOlder: boolean;
   hasMoreOlder: boolean;
+  /** Incremented by the parent on send to force a scroll-to-bottom. */
+  scrollToBottomSignal?: number;
   onLoadOlder: () => Promise<number>;
   onRetryMessage: (message: Message) => void;
   onDiscardMessage: (message: Message) => void;
@@ -60,6 +62,7 @@ export function MessageList({
   initialLoading,
   loadingOlder,
   hasMoreOlder,
+  scrollToBottomSignal,
   onLoadOlder,
   onRetryMessage,
   onDiscardMessage,
@@ -103,7 +106,23 @@ export function MessageList({
     return el.scrollHeight - el.scrollTop - el.clientHeight < 120;
   }, []);
 
-  // Auto-scroll to bottom: on first load, and on new messages when near bottom.
+  // Hard jump to the very bottom. Set scrollTop directly (more reliable than
+  // scrollIntoView when sibling heights are still settling) and repeat across a
+  // couple of frames so media/layout that grows after the first paint can't
+  // leave us stranded above the latest message.
+  const scrollToBottom = useCallback((smooth = false) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const jump = () => {
+      el.scrollTo({ top: el.scrollHeight, behavior: smooth ? "smooth" : "auto" });
+    };
+    jump();
+    requestAnimationFrame(jump);
+    setTimeout(jump, 60);
+  }, []);
+
+  // Auto-scroll to bottom on new messages when already near the bottom (so we
+  // don't yank the user up while they're reading history).
   useEffect(() => {
     const grew = messages.length > lastCountRef.current;
     const prependedOrSame = loadingOlderRef.current;
@@ -111,9 +130,15 @@ export function MessageList({
     if (initialLoading) return;
     if (prependedOrSame) return; // older load handles its own scroll restore
     if (grew && isNearBottom()) {
-      bottomRef.current?.scrollIntoView({ block: "end" });
+      scrollToBottom();
     }
-  }, [messages.length, initialLoading, isNearBottom]);
+  }, [messages.length, initialLoading, isNearBottom, scrollToBottom]);
+
+  // Force a scroll to the bottom whenever the parent signals a send.
+  useEffect(() => {
+    if (!scrollToBottomSignal) return;
+    scrollToBottom();
+  }, [scrollToBottomSignal, scrollToBottom]);
 
   // Jump to bottom when a conversation first renders its messages.
   const didInitialScrollRef = useRef(false);
@@ -124,9 +149,9 @@ export function MessageList({
     }
     if (!didInitialScrollRef.current) {
       didInitialScrollRef.current = true;
-      bottomRef.current?.scrollIntoView({ block: "end" });
+      scrollToBottom();
     }
-  }, [initialLoading, messages.length]);
+  }, [initialLoading, messages.length, scrollToBottom]);
 
   // Preserve scroll position after older messages are prepended.
   useLayoutEffect(() => {
@@ -141,14 +166,26 @@ export function MessageList({
 
   const triggerLoadOlder = useCallback(async () => {
     const el = scrollRef.current;
-    if (!el || loadingOlderRef.current || loadingOlder || !hasMoreOlder) return;
+    if (
+      !el ||
+      initialLoading ||
+      loadingOlderRef.current ||
+      loadingOlder ||
+      !hasMoreOlder
+    )
+      return;
     loadingOlderRef.current = true;
+    // Snapshot height so the layout effect can restore the exact scroll position
+    // after the older page is prepended (the fixed-height media boxes keep this
+    // delta accurate even before images finish loading).
     prevScrollHeightRef.current = el.scrollHeight;
     const added = await onLoadOlder();
     if (added === 0) loadingOlderRef.current = false;
-  }, [hasMoreOlder, loadingOlder, onLoadOlder]);
+  }, [hasMoreOlder, initialLoading, loadingOlder, onLoadOlder]);
 
-  // IntersectionObserver on the top sentinel drives infinite scroll.
+  // IntersectionObserver on the top sentinel drives infinite scroll. A small
+  // rootMargin prefetches the next page just before the user hits the top so it
+  // feels seamless, without firing so early it loops.
   useEffect(() => {
     const root = scrollRef.current;
     const sentinel = topSentinelRef.current;
@@ -157,7 +194,7 @@ export function MessageList({
       (entries) => {
         if (entries[0].isIntersecting) void triggerLoadOlder();
       },
-      { root, rootMargin: "120px 0px 0px 0px" },
+      { root, rootMargin: "200px 0px 0px 0px", threshold: 0 },
     );
     observer.observe(sentinel);
     return () => observer.disconnect();

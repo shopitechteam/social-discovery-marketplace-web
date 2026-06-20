@@ -298,10 +298,25 @@ export function useInbox(lang: string) {
           byId.delete(optimisticMatch.id);
         }
 
+        const prevForId = byId.get(message.id) ?? optimisticMatch;
+        const prevAsset = prevForId?.mediaAsset;
         byId.set(message.id, {
           ...optimisticMatch,
           ...byId.get(message.id),
           ...message,
+          // Keep a renderable thumbnail (e.g. a video poster data URL we already
+          // have) when the refetched message's asset doesn't carry one yet, so
+          // the media doesn't blank out on a list refetch before processing ends.
+          mediaAsset: message.mediaAsset
+            ? {
+                ...prevAsset,
+                ...message.mediaAsset,
+                thumbnailUrl:
+                  message.mediaAsset.thumbnailUrl ??
+                  prevAsset?.thumbnailUrl ??
+                  null,
+              }
+            : (message.mediaAsset ?? prevAsset),
           localPreviewUrl:
             optimisticMatch?.localPreviewUrl ??
             byId.get(message.id)?.localPreviewUrl,
