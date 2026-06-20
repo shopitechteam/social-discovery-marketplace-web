@@ -239,6 +239,16 @@ function VideoMedia({
     return () => video.removeEventListener("ended", handleEnded);
   }, [videoRef, post.id, trackInteractionMutation]);
 
+  // Keep the element's muted property in sync with the global preference. The
+  // `muted` JSX prop alone is unreliable (React doesn't always push it to the DOM
+  // after mount), and useHlsVideo may toggle muted imperatively when recovering
+  // from a blocked unmuted autoplay — this effect makes the store authoritative.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = muted;
+  }, [muted, videoRef]);
+
   // Reset ended state and check for skip when video scrolls away
   useEffect(() => {
     if (!active) {

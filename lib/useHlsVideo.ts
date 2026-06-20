@@ -2,6 +2,34 @@
 
 import { useEffect, useRef, useState } from "react";
 
+/**
+ * Play a video, surviving the browser's autoplay policy. An UNMUTED autoplay
+ * (e.g. the next in-view feed video after the user has unmuted) can be rejected
+ * when there isn't fresh user activation — which would leave the video stuck
+ * paused. So on rejection we retry MUTED (always allowed), then attempt to
+ * restore sound once it's actually playing. Net effect: in-view videos always
+ * autoplay, and stay unmuted whenever the browser permits — TikTok/IG behaviour.
+ */
+function playWithUnmuteFallback(v: HTMLVideoElement): void {
+  const wantedMuted = v.muted;
+  v.play().catch(() => {
+    if (wantedMuted) return; // already muted and still blocked — nothing to do
+    // Retry muted so it at least plays, then try to unmute again.
+    v.muted = true;
+    v.play()
+      .then(() => {
+        // Restore the user's unmuted intent now that playback has started.
+        v.muted = false;
+        // If unmuting re-pauses it (rare), fall back to muted playback.
+        v.play().catch(() => {
+          v.muted = true;
+          v.play().catch(() => {});
+        });
+      })
+      .catch(() => {});
+  });
+}
+
 export function useHlsVideo(
   hlsUrl: string | null,
   active: boolean,
@@ -86,7 +114,7 @@ export function useHlsVideo(
           if (destroyed) return;
           readyRef.current = true;
           if (activeRef.current && !pausedRef.current) {
-            v.play().catch(() => {});
+            playWithUnmuteFallback(v);
           }
         });
 
@@ -105,7 +133,7 @@ export function useHlsVideo(
         v.load();
         readyRef.current = true;
         if (activeRef.current && !pausedRef.current) {
-          v.play().catch(() => {});
+          playWithUnmuteFallback(v);
         }
       }
     }
@@ -139,7 +167,7 @@ export function useHlsVideo(
       // `active` is true) will start playback on MANIFEST_PARSED — don't force a
       // redundant reinit here.
       if (!readyRef.current) return;
-      vid.play().catch(() => {});
+      playWithUnmuteFallback(vid);
     } else {
       if (!readyRef.current) return;
       vid.pause();
