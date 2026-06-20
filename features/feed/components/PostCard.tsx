@@ -1265,14 +1265,24 @@ export function PostCard({ post, lang, priority }: Props) {
       <div className="flex items-center justify-between px-4 pt-2.5 pb-1">
         <div className="flex items-center gap-3 text-muted-foreground text-xs font-medium">
           {saveCount > 0 && <span>{fmt(saveCount)} saved</span>}
+          {(post.stats?.comments ?? 0) > 0 && (
+            <span>
+              · {fmt(post.stats!.comments!)} comment
+              {post.stats.comments == 1 ? "" : "s"}
+            </span>
+          )}
           {(post.stats?.shares ?? 0) > 0 && (
             <span>
               {saveCount > 0 ? "· " : ""}
-              {fmt(post.stats!.shares!)} shares
+              {fmt(post.stats!.shares!)} share
+              {post.stats.shares == 1 ? "" : "s"}
             </span>
           )}
           {(post.stats?.views ?? 0) > 0 && (
-            <span>· {fmt(post.stats!.views!)} views</span>
+            <span>
+              · {fmt(post.stats!.views!)} view
+              {post.stats.views == 1 ? "" : "s"}
+            </span>
           )}
         </div>
         {post.price && post.price.amount > 0 && (
