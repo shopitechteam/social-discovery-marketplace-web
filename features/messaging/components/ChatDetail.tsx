@@ -102,6 +102,16 @@ export function ChatDetail({
     setScrollSignal((n) => n + 1);
   }, [onSend]);
 
+  // Quick replies send immediately too, so they must also reveal the new
+  // message — bump the same scroll signal the normal send path uses.
+  const handleQuickReply = useCallback(
+    (text: string) => {
+      onQuickReply(text);
+      setScrollSignal((n) => n + 1);
+    },
+    [onQuickReply],
+  );
+
   // The chat is "open" once a conversation is selected OR while we're resolving
   // one from a content id. In the pending case we render the shell immediately
   // (header skeleton + composer) so opening a chat is instant.
@@ -315,7 +325,7 @@ export function ChatDetail({
             requireAuth={requireAuth}
             onChange={onComposerChange}
             onSend={handleSend}
-            onQuickReply={onQuickReply}
+            onQuickReply={handleQuickReply}
             onStageMedia={onStageMedia}
             onClearStagedMedia={onClearStagedMedia}
           />
