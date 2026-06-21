@@ -2,17 +2,20 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Loader2, MapPin, Play, RotateCw, X } from "lucide-react";
+import { Loader2, Play, RotateCw, X } from "lucide-react";
 import type { Message } from "../types";
 import {
+  firstUrl,
   imageForMessage,
-  mapsUrlFor,
+  linkifyParts,
   mediaStatus,
   messageKind,
   shortTime,
 } from "../lib/helpers";
 import { MessageTicks } from "./MessageTicks";
 import { ChatMediaDialog } from "./ChatMediaDialog";
+import { LinkPreviewCard } from "./LinkPreviewCard";
+import { LocationBubble } from "./LocationBubble";
 
 interface Props {
   message: Message;
@@ -189,52 +192,51 @@ export function MessageBubble({ message, mine, onRetry, onDiscard }: Props) {
           </div>
         )}
 
-        {/* Location pin — tap to open the coordinates in the device's default
-            maps app (Apple/Google Maps). */}
+        {/* Shared-location bubble — static map thumbnail + label, opens Maps. */}
         {kind === "location" &&
           typeof message.latitude === "number" &&
           typeof message.longitude === "number" && (
-            <a
-              href={mapsUrlFor(message.latitude, message.longitude)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`flex items-center gap-2 rounded-xl px-2.5 py-2 transition-opacity active:opacity-70 ${
-                mine ? "bg-white/15" : "bg-black/5"
-              }`}
-            >
-              <span
-                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
-                  mine ? "bg-white/20" : "bg-primary/15 text-primary"
-                }`}
-              >
-                <MapPin size={18} />
-              </span>
-              <span className="min-w-0">
-                <span
-                  className="block font-semibold leading-tight"
-                  style={{ fontSize: "var(--text-sm)" }}
-                >
-                  Shared location
-                </span>
-                <span
-                  className={`block truncate ${mine ? "text-white/75" : "text-muted"}`}
-                  style={{ fontSize: "var(--text-xs)" }}
-                >
-                  {message.locationLabel || "Tap to open in Maps"}
-                </span>
-              </span>
-            </a>
+            <LocationBubble
+              latitude={message.latitude}
+              longitude={message.longitude}
+              label={message.locationLabel}
+              mine={mine}
+            />
           )}
 
-        {/* Text section - always at bottom */}
+        {/* Text section - always at bottom. URLs are linkified inline, and the
+            first link gets an OG preview card below the text. */}
         {message.text && (
           <div className={`${kind !== "text" ? "mt-3" : ""}`}>
             <p
               className="wrap-break-word whitespace-pre-wrap"
               style={{ fontSize: "var(--text-sm)", lineHeight: 1.45 }}
             >
-              {message.text}
+              {linkifyParts(message.text).map((part, i) =>
+                part.type === "link" ? (
+                  <a
+                    key={i}
+                    href={part.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className={`underline underline-offset-2 break-all ${
+                      mine ? "text-white" : "text-primary"
+                    }`}
+                  >
+                    {part.value}
+                  </a>
+                ) : (
+                  <span key={i}>{part.value}</span>
+                ),
+              )}
             </p>
+            {!isUploading &&
+              !isFailed &&
+              (() => {
+                const link = firstUrl(message.text);
+                return link ? <LinkPreviewCard url={link} mine={mine} /> : null;
+              })()}
           </div>
         )}
 

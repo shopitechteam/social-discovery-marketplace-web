@@ -32,6 +32,70 @@ export function mapsUrlFor(latitude: number, longitude: number): string {
   return `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
 }
 
+/**
+ * Google Static Maps thumbnail centered on the pin, with a marker. Used as the
+ * preview image inside a location message bubble. Returns null when no Maps key
+ * is configured (the bubble then falls back to the pin icon only).
+ */
+export function staticMapUrl(
+  latitude: number,
+  longitude: number,
+  { width = 320, height = 160, zoom = 15 } = {},
+): string | null {
+  const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  if (!key) return null;
+  const center = `${latitude},${longitude}`;
+  const scale = 2; // crisp on retina
+  return (
+    `https://maps.googleapis.com/maps/api/staticmap?center=${center}` +
+    `&zoom=${zoom}&size=${width}x${height}&scale=${scale}` +
+    `&markers=color:red%7C${center}&key=${key}`
+  );
+}
+
+// Matches http(s) URLs and bare domains like "jiji.co.ke" / "jiji.co.ke/x".
+// The trailing class trims sentence punctuation so "see jiji.co.ke." links the
+// domain without the period.
+const URL_RE =
+  /\b((?:https?:\/\/)?(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/[^\s]*)?)/gi;
+
+/** Ensure a detected URL has a scheme so it's a valid href. */
+export function ensureHttp(url: string): string {
+  return /^https?:\/\//i.test(url) ? url : `https://${url}`;
+}
+
+/** The first URL in a string (scheme added), or null. Used for link previews. */
+export function firstUrl(text?: string | null): string | null {
+  if (!text) return null;
+  const match = text.match(URL_RE);
+  return match?.[0] ? ensureHttp(match[0]) : null;
+}
+
+/**
+ * Split text into plain + link segments so a bubble can render clickable links
+ * inline. Each segment is either text or a link with its href.
+ */
+export function linkifyParts(
+  text: string,
+): Array<{ type: "text"; value: string } | { type: "link"; value: string; href: string }> {
+  const parts: Array<
+    { type: "text"; value: string } | { type: "link"; value: string; href: string }
+  > = [];
+  let lastIndex = 0;
+  for (const match of text.matchAll(URL_RE)) {
+    const start = match.index ?? 0;
+    if (start > lastIndex) {
+      parts.push({ type: "text", value: text.slice(lastIndex, start) });
+    }
+    parts.push({ type: "link", value: match[0], href: ensureHttp(match[0]) });
+    lastIndex = start + match[0].length;
+  }
+  if (lastIndex < text.length) {
+    parts.push({ type: "text", value: text.slice(lastIndex) });
+  }
+  return parts;
+}
+
 export function mediaStatus(value?: string | null): string {
   return normalizeEnum(value) || "pending";
 }

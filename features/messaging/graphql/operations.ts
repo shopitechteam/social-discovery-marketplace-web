@@ -518,3 +518,15 @@ export const REMOVE_WEB_PUSH_SUBSCRIPTION = gql`
     removeWebPushSubscription(endpoint: $endpoint)
   }
 `;
+
+export const LINK_PREVIEW = gql`
+  query LinkPreviewInbox($url: String!) {
+    linkPreview(url: $url) {
+      url
+      title
+      description
+      image
+      siteName
+    }
+  }
+`;
