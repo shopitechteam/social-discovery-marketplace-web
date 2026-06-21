@@ -66,6 +66,46 @@ function fmt(n: number): string {
   return String(n);
 }
 
+/**
+ * Strip Google plus-codes (Open Location Codes) like "PVR+ER" or
+ * "X3W4+H9G" out of a place string — they're machine codes, not human place
+ * names, and can appear standalone OR prefixed to a real name (e.g.
+ * "X3W4+H9G Baraka Shopping Center" → "Baraka Shopping Center"). Returns the
+ * cleaned, trimmed remainder (empty string if the whole value was a code).
+ */
+function stripPlusCode(value: string): string {
+  return value
+    .replace(/\b[0-9A-Z]{2,}\+[0-9A-Z]+\b/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+/**
+ * Broad → specific location trail for a card, e.g. "Nyandarua › Nyahururu ›
+ * Sudav Apartments": county, then the town (first segment of formattedAddress,
+ * dropping the trailing country), then the place name. Blanks, duplicates, and
+ * embedded plus-codes (e.g. "X3W4+H9G Baraka …") are removed so we never repeat,
+ * show empty separators, or surface a machine code.
+ */
+function locationTrail(loc: {
+  county?: string | null;
+  placeName?: string | null;
+  formattedAddress?: string | null;
+}): string | null {
+  // "Nyahururu, Kenya" → "Nyahururu" (first part, minus the country tail).
+  const town = loc.formattedAddress?.split(",")[0]?.trim() || null;
+  const seen = new Set<string>();
+  const parts = [loc.county, town, loc.placeName]
+    .map((p) => stripPlusCode(p?.trim() || ""))
+    .filter((p) => {
+      const key = p.toLowerCase();
+      if (!p || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  return parts.length ? parts.join(" › ") : null;
+}
+
 function initials(id: string): string {
   // Until we have a user name, derive a 2-char placeholder from the id tail
   return id.slice(-2).toUpperCase();
@@ -1074,13 +1114,11 @@ export function PostCard({ post, lang, priority }: Props) {
           ) : (
             <div className="h-3.5 w-24 rounded-full bg-surface animate-pulse" />
           )}
-          {(post.location?.placeName || post.location?.county) && (
+          {post.location && locationTrail(post.location) && (
             <p className="flex items-center gap-0.5 text-muted-foreground text-[11px] mt-0.5 leading-tight">
               <MapPin className="w-3 h-3 shrink-0" />
               <span className="truncate">
-                {[post.location.placeName, post.location.county]
-                  .filter(Boolean)
-                  .join(", ")}
+                {locationTrail(post.location)}
               </span>
             </p>
           )}

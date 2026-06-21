@@ -393,7 +393,7 @@ export function AnalyticsPanel({ data, lang }: Props) {
               className="font-bold leading-tight"
               style={{
                 color: "rgb(var(--color-text))",
-                fontSize: "var(--text-lg)",
+                fontSize: "var(--text-base)",
               }}
             >
               Analytics

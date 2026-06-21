@@ -3,15 +3,9 @@
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import {
-  Bookmark,
-  Eye,
-  Image as ImageIcon,
-  Play,
-  Plus,
-  Upload,
-} from "lucide-react";
+import { Bookmark, Eye, MapPin, Play, Plus, Upload } from "lucide-react";
 import { SHIMMER_PORTRAIT } from "@/lib/shimmer";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { ProfilePostFieldsFragment } from "@/types/__generated__/graphql";
 
 interface Props {
@@ -38,6 +32,30 @@ function formatDate(value: unknown) {
   const date = new Date(String(value));
   if (Number.isNaN(date.getTime())) return "";
   return date.toLocaleDateString("en", { month: "short", day: "numeric" });
+}
+
+/** "KSh 12,500" — grouped thousands, no decimals. */
+function formatPrice(amount: number, currency: string) {
+  return `${currency} ${Math.round(amount).toLocaleString("en-KE")}`;
+}
+
+/**
+ * Readable location for a card: county first, then the more specific area, e.g.
+ * "Nairobi, Westlands". Falls back gracefully and de-dupes when the area and
+ * county are the same (so we never show "Nairobi, Nairobi").
+ */
+function locationLabel(loc: {
+  placeName?: string | null;
+  subregion?: string | null;
+  county?: string | null;
+}): string | null {
+  const county = loc.county?.trim() || null;
+  const area = loc.placeName?.trim() || loc.subregion?.trim() || null;
+  const parts = [county, area].filter(
+    (p, i, arr): p is string =>
+      Boolean(p) && arr.indexOf(p) === i, // drop falsy + duplicates
+  );
+  return parts.length ? parts.join(", ") : null;
 }
 
 function getPostThumb(post: ProfilePostFieldsFragment) {
@@ -86,6 +104,11 @@ function PostThumbnail({
   const thumb = getPostThumb(post);
   const isVideo = post.type === "VIDEO";
   const createdAt = formatDate(post.createdAt);
+  const priceText =
+    post.price.amount <= 0
+      ? "Custom"
+      : formatPrice(post.price.amount, post.price.currency);
+  const place = post.location ? locationLabel(post.location) : null;
 
   return (
     <Link
@@ -151,25 +174,52 @@ function PostThumbnail({
             </span>
           </span>
         )}
+
+        {/* Price badge — the primary marketplace signal, readable in 2s.
+            Listings without a set price show "Custom" (priced on inquiry). */}
+        <span
+          className="absolute bottom-2 left-2 rounded-lg bg-black/70 px-2 py-1 font-bold leading-none text-white backdrop-blur-sm"
+          style={{ fontSize: "var(--text-sm)" }}
+        >
+          {priceText}
+        </span>
+
+        {/* Video duration / type is implied by the play icon; keep the corner
+            clear so the price reads cleanly. */}
       </div>
 
-      {/* Meta — title / stats / date */}
+      {/* Meta — title / location / performance */}
       <div className="p-2.5">
         {post.title && (
           <p
-            className="line-clamp-2 leading-tight"
+            className="line-clamp-1 leading-tight"
             style={{
               fontSize: "var(--text-sm)",
               color: "rgb(var(--color-text))",
-              fontWeight: 500,
+              fontWeight: 600,
             }}
           >
             {post.title}
           </p>
         )}
 
+        {/* Location — where the buyer would collect it */}
+        {place && (
+          <p
+            className="mt-1 flex items-center gap-1 line-clamp-1"
+            style={{
+              fontSize: "var(--text-xs)",
+              color: "rgb(var(--color-text-muted))",
+            }}
+          >
+            <MapPin size={12} aria-hidden className="shrink-0" />
+            <span className="truncate">{place}</span>
+          </p>
+        )}
+
+        {/* Performance — views lead (reach), saves signal buying intent */}
         <div
-          className="mt-1 flex items-center gap-3"
+          className="mt-1.5 flex items-center gap-3"
           style={{
             fontSize: "var(--text-xs)",
             color: "rgb(var(--color-text-muted))",
@@ -177,17 +227,8 @@ function PostThumbnail({
         >
           <StatChip icon={Eye} value={post.stats.views} />
           <StatChip icon={Bookmark} value={post.stats.saves} />
+          <span className="ml-auto shrink-0">{createdAt}</span>
         </div>
-
-        <p
-          className="mt-1"
-          style={{
-            fontSize: "var(--text-xs)",
-            color: "rgb(var(--color-text-muted))",
-          }}
-        >
-          {createdAt}
-        </p>
       </div>
     </Link>
   );
@@ -205,7 +246,10 @@ export function PostsGrid({
   const sentinelRef = useRef<HTMLDivElement>(null);
   // Keep the latest onLoadMore without re-subscribing the observer each render.
   const onLoadMoreRef = useRef(onLoadMore);
-  onLoadMoreRef.current = onLoadMore;
+
+  useEffect(() => {
+    onLoadMoreRef.current = onLoadMore;
+  }, [onLoadMore]);
 
   // Infinite scroll: load the next page when the sentinel scrolls into view.
   // Guard against firing again while a page is in flight (the observer can keep
@@ -222,6 +266,36 @@ export function PostsGrid({
     observer.observe(el);
     return () => observer.disconnect();
   }, [hasMore, loading, posts.length]);
+
+  // Initial load (no rows yet) — show a grid of thumbnail skeletons that mirror
+  // the real tile layout, rather than a blank pane. Mainly hit by the Saved tab,
+  // whose query is deferred until the tab is opened.
+  if (posts.length === 0 && loading) {
+    return (
+      <section className="px-4 py-5 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-6xl">
+          <div className="grid grid-cols-2 gap-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                className="overflow-hidden rounded-xl border"
+                style={{
+                  borderColor: "rgb(var(--color-border))",
+                  backgroundColor: "rgb(var(--color-bg-elevated))",
+                }}
+              >
+                <Skeleton className="aspect-9/10 w-full rounded-none" />
+                <div className="space-y-2 p-2.5">
+                  <Skeleton className="h-3.5 w-4/5" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   if (posts.length === 0 && !loading) {
     return (
@@ -249,7 +323,7 @@ export function PostsGrid({
               color: "rgb(var(--color-text))",
             }}
           >
-            {isSaved ? "No saved posts yet" : "No posts yet"}
+            {isSaved ? "No saved posts yet" : "No listings yet"}
           </h2>
           <p
             className="mt-2 max-w-sm leading-snug"
@@ -260,7 +334,7 @@ export function PostsGrid({
           >
             {isSaved
               ? "Posts you save will appear here."
-              : "Create your first showcase and it will appear here."}
+              : "List your first item — add a photo or video, a price, and where buyers can find it."}
           </p>
           {!isSaved && (
             <Link
@@ -294,7 +368,7 @@ export function PostsGrid({
                 color: "rgb(var(--color-text))",
               }}
             >
-              {isSaved ? "Saved" : "Content library"}
+              {isSaved ? "Saved" : "My Storefront"}
             </h2>
             <p
               className="mt-1"
@@ -303,7 +377,14 @@ export function PostsGrid({
                 color: "rgb(var(--color-text-muted))",
               }}
             >
-              {posts.length} {posts.length === 1 ? "post" : "posts"}
+              {posts.length}{" "}
+              {isSaved
+                ? posts.length === 1
+                  ? "post"
+                  : "posts"
+                : posts.length === 1
+                  ? "listing"
+                  : "listings"}
             </p>
           </div>
           {!isSaved && (
@@ -318,7 +399,7 @@ export function PostsGrid({
               }}
             >
               <Plus size={15} strokeWidth={2.4} />
-              New
+              Create
             </Link>
           )}
         </div>

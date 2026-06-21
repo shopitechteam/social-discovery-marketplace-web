@@ -25,6 +25,16 @@ fragment ProfilePostFields on Content {
   title
   caption
   createdAt
+  price {
+    amount
+    currency
+    negotiable
+  }
+  location {
+    county
+    subregion
+    placeName
+  }
   stats {
     views
     likes

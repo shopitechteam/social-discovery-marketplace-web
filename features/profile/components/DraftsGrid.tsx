@@ -160,8 +160,32 @@ export function DraftsGrid({ lang }: Props) {
 
   return (
     <section className="px-4 py-5 sm:px-6 lg:px-8">
-      <div className="mx-auto grid w-full max-w-6xl grid-cols-2 gap-2">
-        {drafts.map((draft) => {
+      <div className="mx-auto w-full max-w-6xl">
+        {/* Header — same heading/description pattern + sizes as the Storefront
+            (Posts) tab for consistency across subtabs. */}
+        <div className="mb-4">
+          <h2
+            className="font-bold leading-tight"
+            style={{
+              fontSize: "var(--text-base)",
+              color: "rgb(var(--color-text))",
+            }}
+          >
+            Drafts
+          </h2>
+          <p
+            className="mt-1"
+            style={{
+              fontSize: "var(--text-sm)",
+              color: "rgb(var(--color-text-muted))",
+            }}
+          >
+            {drafts.length} {drafts.length === 1 ? "draft" : "drafts"}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          {drafts.map((draft) => {
           const busy = busyId === draft.id;
           const isVideo = mapType(draft.type) === "video";
           return (
@@ -271,6 +295,7 @@ export function DraftsGrid({ lang }: Props) {
             </div>
           );
         })}
+        </div>
       </div>
     </section>
   );

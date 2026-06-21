@@ -92,25 +92,19 @@ export function ProfileHeader({ user, editHref, lang }: Props) {
 
   return (
     <section
-      className="relative py-6 overflow-hidden border-b"
-      style={{
-        // Match the creator profile hero gradient for consistency
-        background:
-          "linear-gradient(160deg, rgb(var(--brand-primary) / 0.08) 0%, rgb(var(--color-bg)) 60%)",
-        borderColor: "rgb(var(--color-border))",
-      }}
+      // Subtle brand wash — Tailwind gradient (inline-style gradients don't
+      // render in this build). Matches the creator profile hero for consistency.
+      className="relative py-6 overflow-hidden border-b border-border bg-linear-160 from-primary/10 from-0% to-background to-60%"
     >
       <div className="mx-auto w-full max-w-6xl px-4 py-4 sm:px-6 lg:px-8 lg:py-6">
         <div className="flex min-w-0 flex-col gap-4">
           <div className="flex min-w-0 items-start gap-4">
             <div
-              className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full border sm:h-24 sm:w-24"
-              style={{
-                background: avatar
-                  ? "rgb(var(--color-bg-subtle))"
-                  : "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)) 62%, rgb(var(--brand-accent)))",
-                borderColor: "rgb(var(--color-bg-elevated))",
-              }}
+              className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-full border border-elevated sm:h-24 sm:w-24 ${
+                avatar
+                  ? "bg-surface"
+                  : "bg-linear-135 from-primary via-secondary via-62% to-accent"
+              }`}
             >
               {avatar ? (
                 <Image

@@ -11,6 +11,7 @@ import {
   Eye,
   Image as ImageIcon,
   Link2,
+  MapPin,
   Play,
   Share2,
   Video,
@@ -42,6 +43,30 @@ function formatDate(value: unknown) {
     day: "numeric",
     year: "numeric",
   });
+}
+
+/** "KSh 12,500" — grouped thousands, no decimals. */
+function formatPrice(amount: number, currency: string) {
+  return `${currency} ${Math.round(amount).toLocaleString("en-KE")}`;
+}
+
+/**
+ * Readable location for a card: county first, then the more specific area, e.g.
+ * "Nairobi, Westlands". Falls back gracefully and de-dupes when the area and
+ * county are the same (so we never show "Nairobi, Nairobi").
+ */
+function locationLabel(loc: {
+  placeName?: string | null;
+  subregion?: string | null;
+  county?: string | null;
+}): string | null {
+  const county = loc.county?.trim() || null;
+  const area = loc.placeName?.trim() || loc.subregion?.trim() || null;
+  const parts = [county, area].filter(
+    (p, i, arr): p is string =>
+      Boolean(p) && arr.indexOf(p) === i, // drop falsy + duplicates
+  );
+  return parts.length ? parts.join(", ") : null;
 }
 
 function getThumb(post: ProfilePostFieldsFragment): string | null {
@@ -103,6 +128,11 @@ function PostTile({
   const thumb = getThumb(post);
   const isVideo = post.type === "VIDEO";
   const [menuOpen, setMenuOpen] = useState(false);
+  const priceText =
+    post.price.amount <= 0
+      ? "Custom"
+      : formatPrice(post.price.amount, post.price.currency);
+  const place = post.location ? locationLabel(post.location) : null;
 
   return (
     <div
@@ -169,6 +199,15 @@ function PostTile({
             </span>
           </span>
         )}
+
+        {/* Price badge — primary marketplace signal. pointer-events-none so the
+            full-thumbnail Link overlay still handles taps. "Custom" when unpriced. */}
+        <span
+          className="pointer-events-none absolute bottom-2 left-2 z-20 rounded-lg bg-black/70 px-2 py-1 font-bold leading-none text-white backdrop-blur-sm"
+          style={{ fontSize: "var(--text-sm)" }}
+        >
+          {priceText}
+        </span>
 
         {/* action menu — sits above the Link overlay */}
         <div className="absolute right-2 top-2 z-20 opacity-0 transition-opacity group-hover:opacity-100">
@@ -251,23 +290,38 @@ function PostTile({
         </div>
       </div>
 
-      {/* Meta — title / stats / date (matches /profile cards) */}
+      {/* Meta — title / location / performance (matches /profile cards) */}
       <Link href={`/${lang}/content/${post.id}`} className="block p-2.5">
         {post.title && (
           <p
-            className="line-clamp-2 leading-tight"
+            className="line-clamp-1 leading-tight"
             style={{
               fontSize: "var(--text-sm)",
               color: "rgb(var(--color-text))",
-              fontWeight: 500,
+              fontWeight: 600,
             }}
           >
             {post.title}
           </p>
         )}
 
+        {/* Location — where the buyer would collect it */}
+        {place && (
+          <p
+            className="mt-1 flex items-center gap-1 line-clamp-1"
+            style={{
+              fontSize: "var(--text-xs)",
+              color: "rgb(var(--color-text-muted))",
+            }}
+          >
+            <MapPin size={12} aria-hidden className="shrink-0" />
+            <span className="truncate">{place}</span>
+          </p>
+        )}
+
+        {/* Performance — views lead (reach), saves signal buying intent */}
         <div
-          className="mt-1 flex items-center gap-3"
+          className="mt-1.5 flex items-center gap-3"
           style={{
             fontSize: "var(--text-xs)",
             color: "rgb(var(--color-text-muted))",
@@ -279,17 +333,8 @@ function PostTile({
           <span className="flex items-center gap-1">
             <Bookmark size={12} /> {formatCompact(post.stats.saves)}
           </span>
+          <span className="ml-auto shrink-0">{formatDate(post.createdAt)}</span>
         </div>
-
-        <p
-          className="mt-1"
-          style={{
-            fontSize: "var(--text-xs)",
-            color: "rgb(var(--color-text-muted))",
-          }}
-        >
-          {formatDate(post.createdAt)}
-        </p>
       </Link>
     </div>
   );
@@ -419,13 +464,9 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
       className="min-h-screen"
       style={{ backgroundColor: "rgb(var(--color-bg))" }}
     >
-      {/* ── Hero header ── */}
-      <div
-        style={{
-          background:
-            "linear-gradient(160deg, rgb(var(--brand-primary) / 0.08) 0%, rgb(var(--color-bg)) 60%)",
-        }}
-      >
+      {/* ── Hero header — subtle brand wash (Tailwind gradient; inline-style
+          gradients don't render in this build) ── */}
+      <div className="bg-linear-160 from-primary/10 from-0% to-background to-60%">
         <div className="mx-auto max-w-2xl px-4 pb-6 pt-4 sm:px-6">
           {/* Back button */}
           <div>
@@ -448,12 +489,12 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
           <div className="flex items-start gap-4">
             {/* Avatar */}
             <div
-              className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full border-2 sm:h-24 sm:w-24"
+              className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-full border-2 border-elevated sm:h-24 sm:w-24 ${
+                avatar
+                  ? "bg-surface"
+                  : "bg-linear-135 from-primary via-secondary via-60% to-accent"
+              }`}
               style={{
-                background: avatar
-                  ? "rgb(var(--color-bg-subtle))"
-                  : "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)) 60%, rgb(var(--brand-accent)))",
-                borderColor: "rgb(var(--color-bg-elevated))",
                 boxShadow: "0 12px 32px rgb(var(--brand-primary) / 0.18)",
               }}
             >
@@ -627,15 +668,14 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
               className="h-8 w-px"
               style={{ backgroundColor: "rgb(var(--color-border))" }}
             />
-            <StatPill
-              label="Following"
-              value={formatCompact(user.followingCount)}
-            />
+            {/* Views over Following — a storefront leads with reach, not who the
+                seller follows. */}
+            <StatPill label="Views" value={formatCompact(user.totalViews)} />
             <div
               className="h-8 w-px"
               style={{ backgroundColor: "rgb(var(--color-border))" }}
             />
-            <StatPill label="Posts" value={formatCompact(user.postCount)} />
+            <StatPill label="Listings" value={formatCompact(user.postCount)} />
           </div>
         </div>
       </div>
@@ -650,7 +690,7 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
               color: "rgb(var(--color-text))",
             }}
           >
-            Posts
+            Storefront
           </h2>
           <span
             style={{
@@ -690,7 +730,7 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
                 color: "rgb(var(--color-text))",
               }}
             >
-              No posts yet
+              No listings yet
             </p>
           </div>
         ) : (

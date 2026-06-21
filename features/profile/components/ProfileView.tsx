@@ -364,7 +364,7 @@ function SettingsPanel({ lang }: { lang: string }) {
           <h2
             className="font-bold leading-tight"
             style={{
-              fontSize: "var(--text-lg)",
+              fontSize: "var(--text-base)",
               color: "rgb(var(--color-text))",
             }}
           >
