@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { useQuery } from "@apollo/client/react";
 import {
@@ -35,10 +35,12 @@ function FollowerRow({
   user,
   lang,
   resolvingFollowState,
+  isNew,
 }: {
   user: VisitorFieldsFragment;
   lang: string;
   resolvingFollowState: boolean;
+  isNew: boolean;
 }) {
   const { following, toggle, loading } = useFollow({
     userId: user.id,
@@ -99,13 +101,24 @@ function FollowerRow({
 
         <div className="min-w-0 flex-1">
           <p
-            className="truncate font-semibold leading-tight"
+            className="flex items-center gap-1.5 truncate font-semibold leading-tight"
             style={{
               fontSize: "var(--text-sm)",
               color: "rgb(var(--color-text))",
             }}
           >
-            {name}
+            <span className="truncate">{name}</span>
+            {isNew && (
+              <span
+                className="shrink-0 rounded-full px-1.5 py-0.5 font-bold leading-none text-white"
+                style={{
+                  fontSize: "10px",
+                  backgroundColor: "rgb(59 130 246)",
+                }}
+              >
+                New
+              </span>
+            )}
           </p>
           {user.username && (
             <p
@@ -175,6 +188,13 @@ export function ProfileFollowersView({ lang }: Props) {
       fetchPolicy: "cache-and-network",
     },
   );
+
+  // Actor ids passed from a follow notification (?new=id1,id2) — flagged "New".
+  const searchParams = useSearchParams();
+  const newIds = useMemo(() => {
+    const raw = searchParams.get("new");
+    return new Set(raw ? raw.split(",").filter(Boolean) : []);
+  }, [searchParams]);
 
   const result = data?.myFollowers;
   const users = result?.users ?? [];
@@ -286,6 +306,7 @@ export function ProfileFollowersView({ lang }: Props) {
                 user={u}
                 lang={lang}
                 resolvingFollowState={resolvingFollowState}
+                isNew={newIds.has(u.id)}
               />
             ))}
       </ul>

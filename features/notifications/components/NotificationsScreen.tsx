@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { MessagingShell } from "@/features/messaging/components/MessagingShell";
 import { useUnreadConversationCount } from "@/features/messaging/hooks/useUnreadCount";
-import { NotificationsEmpty } from "./NotificationsEmpty";
+import { useNotifications } from "../hooks/useNotifications";
+import type { NotificationItem } from "../types";
+import { NotificationList } from "./NotificationList";
 
 type SubTab = "messages" | "notifications";
 
@@ -27,6 +29,7 @@ export function NotificationsScreen({ lang }: Props) {
     searchParams.get("tab") === "notifications" ? "notifications" : "messages";
   const [tab, setTab] = useState<SubTab>(initialTab);
   const unreadThreads = useUnreadConversationCount();
+  const notifications = useNotifications();
 
   // Always land at the top on mount. Returning from a chat detail otherwise
   // restores the previous scroll position, leaving the inbox scrolled down.
@@ -49,9 +52,27 @@ export function NotificationsScreen({ lang }: Props) {
     });
   }
 
+  async function handleNotificationSelect(notification: NotificationItem) {
+    if (!notification.isRead) {
+      await notifications.markRead(notification.id);
+    }
+    // Follow notifications open the Followers list with the actors from THIS
+    // notification flagged as "New" (via ?new=), so you can see exactly who
+    // just followed — not just one profile or the whole list unmarked.
+    if (notification.type === "FOLLOW") {
+      const newIds = notification.actors.map((a) => a.id).join(",");
+      const query = newIds ? `?new=${encodeURIComponent(newIds)}` : "";
+      router.push(`/${lang}/profile/followers${query}`);
+      return;
+    }
+    if (notification.actionPath) {
+      router.push(`/${lang}${notification.actionPath}`);
+    }
+  }
+
   const subtabs: { id: SubTab; label: string; badge?: number }[] = [
     { id: "messages", label: "Messages", badge: unreadThreads },
-    { id: "notifications", label: "Notifications" },
+    { id: "notifications", label: "Notifications", badge: notifications.unreadCount },
   ];
 
   return (
@@ -87,7 +108,22 @@ export function NotificationsScreen({ lang }: Props) {
       {tab === "messages" ? (
         <MessagingShell lang={lang} />
       ) : (
-        <NotificationsEmpty />
+        <NotificationList
+          notifications={notifications.notifications}
+          loading={notifications.loading}
+          unreadCount={notifications.unreadCount}
+          hasMore={notifications.hasMore}
+          markingAllRead={notifications.markingAllRead}
+          onSelect={(notification) => {
+            void handleNotificationSelect(notification);
+          }}
+          onMarkAllRead={() => {
+            void notifications.markAllRead();
+          }}
+          onLoadMore={() => {
+            void notifications.loadMore();
+          }}
+        />
       )}
     </div>
   );

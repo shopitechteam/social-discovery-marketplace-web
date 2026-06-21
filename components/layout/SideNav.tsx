@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSyncExternalStore } from "react";
+import { useInboxUnreadCount } from "@/features/messaging/hooks/useUnreadCount";
 
 type Tab = {
   key: string;
@@ -224,6 +225,7 @@ const tabs: Tab[] = [
 
 export function SideNav({ lang = "en" }: { lang: string }) {
   const pathname = usePathname();
+  const unreadCount = useInboxUnreadCount();
 
   // Hide on full create flow
   if (
@@ -287,6 +289,11 @@ export function SideNav({ lang = "en" }: { lang: string }) {
             >
               {tab.icon(isActive)}
               <span className="text-sm">{tab.label}</span>
+              {tab.key === "notifications" && unreadCount > 0 ? (
+                <span className="ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-[11px] font-semibold text-white">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              ) : null}
             </Link>
           );
         })}

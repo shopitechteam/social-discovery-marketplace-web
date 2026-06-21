@@ -3,16 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Compass,
   House,
   Inbox,
-  MessageCircle,
   Plus,
   Search,
   UserRound,
   type LucideIcon,
 } from "lucide-react";
-import { useUnreadConversationCount } from "@/features/messaging/hooks/useUnreadCount";
+import { useInboxUnreadCount } from "@/features/messaging/hooks/useUnreadCount";
 
 type Tab = {
   key: string;
@@ -66,7 +64,7 @@ export function shouldHideBottomNav(pathname: string) {
 
 export function BottomNav({ lang = "en" }: { lang: string }) {
   const pathname = usePathname();
-  const unreadCount = useUnreadConversationCount();
+  const unreadCount = useInboxUnreadCount();
 
   // Hide on the full create flow, content detail, creator profile, and chat detail pages
   if (shouldHideBottomNav(pathname)) return null;

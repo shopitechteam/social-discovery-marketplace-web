@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useQuery } from "@apollo/client/react";
 import { useAuthStore } from "@/stores/auth";
 import { useSocket } from "@/hooks/useSocket";
+import { useUnreadNotificationCount } from "@/features/notifications/hooks/useUnreadNotificationCount";
 import {
   DirectConversationRemovedPayload,
   DirectConversationUpdatedPayload,
@@ -60,4 +61,10 @@ export function useUnreadConversationCount(): number {
     (data as { myUnreadDirectConversationCount?: number } | undefined)
       ?.myUnreadDirectConversationCount ?? 0
   );
+}
+
+export function useInboxUnreadCount(): number {
+  const unreadConversations = useUnreadConversationCount();
+  const unreadNotifications = useUnreadNotificationCount();
+  return unreadConversations + unreadNotifications;
 }

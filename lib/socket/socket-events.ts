@@ -140,3 +140,30 @@ export interface DirectTypingUpdatedPayload {
   userId: string;
   isTyping: boolean;
 }
+
+export interface NotificationActorPayload {
+  id: string;
+  username?: string;
+  displayName: string;
+  avatar?: string;
+}
+
+export interface NotificationPayload {
+  id: string;
+  type: 'FOLLOW';
+  title: string;
+  body: string;
+  actorCount: number;
+  actors: NotificationActorPayload[];
+  isRead: boolean;
+  readAt?: string;
+  actionPath?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NotificationUpdatedPayload {
+  action: 'upserted' | 'read' | 'read_all';
+  notification?: NotificationPayload;
+  unreadCount: number;
+}
