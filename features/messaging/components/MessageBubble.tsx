@@ -178,7 +178,7 @@ export function MessageBubble({ message, mine, onRetry, onDiscard }: Props) {
         {message.text && (
           <div className={`${kind !== "text" ? "mt-3" : ""}`}>
             <p
-              className="break-words whitespace-pre-wrap"
+              className="wrap-break-word whitespace-pre-wrap"
               style={{ fontSize: "var(--text-sm)", lineHeight: 1.45 }}
             >
               {message.text}

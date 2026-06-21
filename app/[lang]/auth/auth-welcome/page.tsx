@@ -31,11 +31,7 @@ export default async function WelcomePage({
       {/* Email CTA */}
       <Link
         href={`/${lang}/auth/register${qs}`}
-        className="w-full flex items-center justify-center h-13 rounded-2xl font-semibold text-base text-white active:opacity-80 transition-opacity"
-        style={{
-          background:
-            "linear-gradient(95deg, rgb(var(--brand-primary)), rgb(var(--brand-primary) / 0.82))",
-        }}
+        className="w-full flex items-center justify-center h-13 rounded-2xl font-semibold text-base text-white bg-primary active:opacity-80 transition-opacity"
       >
         Sign up with Email
       </Link>
@@ -98,12 +94,15 @@ export default async function WelcomePage({
               className="absolute left-0 top-4 w-36 rounded-2xl rotate-[-10deg] shadow-lg overflow-hidden"
               style={{
                 height: 148,
-                background: "linear-gradient(145deg, rgb(var(--brand-primary)), rgb(var(--brand-primary) / 0.55))",
+                background:
+                  "linear-gradient(145deg, rgb(var(--brand-primary)), rgb(var(--brand-primary) / 0.55))",
               }}
             >
               <div className="absolute inset-0 bg-linear-to-b from-white/10 to-transparent" />
               <div className="absolute top-3 left-3">
-                <span className="text-white/70 text-xs font-semibold tracking-wide uppercase">Trending</span>
+                <span className="text-white/70 text-xs font-semibold tracking-wide uppercase">
+                  Trending
+                </span>
               </div>
               <div className="absolute bottom-3 left-3 flex items-center gap-2">
                 <div className="w-6 h-6 rounded-full bg-white/25 flex items-center justify-center">
@@ -117,7 +116,8 @@ export default async function WelcomePage({
               className="absolute right-0 top-2 w-32 rounded-2xl rotate-[9deg] shadow-lg overflow-hidden"
               style={{
                 height: 128,
-                background: "linear-gradient(145deg, rgb(var(--brand-accent)), rgb(var(--brand-accent) / 0.55))",
+                background:
+                  "linear-gradient(145deg, rgb(var(--brand-accent)), rgb(var(--brand-accent) / 0.55))",
               }}
             >
               <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent" />
@@ -128,7 +128,9 @@ export default async function WelcomePage({
                 <div className="w-6 h-6 rounded-full bg-white/25 flex items-center justify-center">
                   <span className="text-white text-xs font-bold">M</span>
                 </div>
-                <span className="text-white/80 text-xs font-medium">@marco</span>
+                <span className="text-white/80 text-xs font-medium">
+                  @marco
+                </span>
               </div>
             </div>
             {/* Center card — largest, on top */}
@@ -136,12 +138,15 @@ export default async function WelcomePage({
               className="absolute left-1/2 -translate-x-1/2 top-2 w-44 rounded-2xl shadow-xl overflow-hidden"
               style={{
                 height: 160,
-                background: "linear-gradient(145deg, rgb(var(--brand-secondary)), rgb(var(--brand-secondary) / 0.65))",
+                background:
+                  "linear-gradient(145deg, rgb(var(--brand-secondary)), rgb(var(--brand-secondary) / 0.65))",
               }}
             >
               <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent" />
               <div className="absolute top-3 left-3 bg-black/20 backdrop-blur-sm rounded-full px-2.5 py-1">
-                <span className="text-white text-xs font-bold">🔥 Trending</span>
+                <span className="text-white text-xs font-bold">
+                  🔥 Trending
+                </span>
               </div>
               <div className="absolute top-3 right-3 bg-white/20 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">
                 <span className="text-white text-xs">♥</span>
@@ -151,16 +156,18 @@ export default async function WelcomePage({
                 <div className="w-7 h-7 rounded-full bg-white/25 flex items-center justify-center ring-2 ring-white/30">
                   <span className="text-white text-xs font-bold">N</span>
                 </div>
-                <span className="text-white/90 text-xs font-semibold">@nia</span>
+                <span className="text-white/90 text-xs font-semibold">
+                  @nia
+                </span>
               </div>
             </div>
           </div>
 
-          <h1 className="text-2xl font-bold text-default font-display text-center leading-[1.2] tracking-tight">
-            Discover what people near you are selling
+          <h1 className="text-2xl font-bold text-default font-display text-center leading-[1.2] tracking-tight text-balance">
+            Everything for sale near you, in one feed.
           </h1>
           <p className="mt-2 text-sm text-muted text-center leading-relaxed">
-            Pick how you want to sign up.
+            Create your free account to start scrolling.
           </p>
         </div>
 
@@ -170,12 +177,12 @@ export default async function WelcomePage({
 
       {/* ── Desktop right-panel content ───────────────────────── */}
       <div className="hidden lg:flex flex-col gap-6">
-        <div className="">
+        <div>
           <h1 className="text-[28px] text-center font-bold text-default font-display leading-tight tracking-tight">
-            Join Shopi today
+            Create your free account
           </h1>
           <p className="mt-2 text-base text-center text-muted leading-relaxed">
-            Discover what people near you are selling
+            Start discovering what people near you are selling — in seconds.
           </p>
         </div>
         {CTAs}

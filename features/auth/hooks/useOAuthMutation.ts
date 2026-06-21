@@ -35,11 +35,37 @@ export function useOAuthMutation(lang: string, from?: string) {
     return from && from.startsWith("/") ? from : `/${lang}/feed`;
   }
 
+  // After a successful social login we MUST land on the destination — every time.
+  //
+  // Why a hard navigation instead of router.replace(): the destination is often a
+  // proxy-guarded route (see proxy.ts) that checks the "shopi-auth-hint" cookie.
+  // setAuth() writes that cookie via document.cookie, but a soft client navigation
+  // can fire its RSC request before the cookie write is committed/sent — so the
+  // proxy sees no session and bounces back to auth-welcome (the "reload fixes it"
+  // bug). A full-document navigation guarantees the freshly-set cookie is sent with
+  // the request, so the proxy always sees the session. It also gives the server a
+  // clean render with the new auth state (equivalent to the manual reload).
+  function goToDestination() {
+    const dest = getDestination();
+    if (typeof window !== "undefined") {
+      window.location.assign(dest);
+    } else {
+      router.replace(dest);
+    }
+  }
+
   function extractError(error: unknown): string {
     if (CombinedGraphQLErrors.is(error)) {
       return error.errors[0]?.message ?? "Something went wrong.";
     }
     if (error instanceof Error) return error.message;
+    // Never String(obj) a plain object — that yields "[object Object]".
+    if (typeof error === "object" && error !== null) {
+      const o = error as { message?: unknown; error?: unknown };
+      if (typeof o.message === "string") return o.message;
+      if (typeof o.error === "string") return o.error;
+    }
+    if (typeof error === "string" && error) return error;
     return "Something went wrong.";
   }
 
@@ -49,7 +75,7 @@ export function useOAuthMutation(lang: string, from?: string) {
       if (error) return extractError(error);
       if (!data?.loginWithGoogle) return "Something went wrong.";
       setAuth(data.loginWithGoogle as Parameters<typeof setAuth>[0]);
-      router.replace(getDestination());
+      goToDestination();
       return null;
     } catch (err) {
       return extractError(err);
@@ -62,7 +88,7 @@ export function useOAuthMutation(lang: string, from?: string) {
       if (error) return extractError(error);
       if (!data?.loginWithApple) return "Something went wrong.";
       setAuth(data.loginWithApple as Parameters<typeof setAuth>[0]);
-      router.replace(getDestination());
+      goToDestination();
       return null;
     } catch (err) {
       return extractError(err);
@@ -75,7 +101,7 @@ export function useOAuthMutation(lang: string, from?: string) {
       if (error) return extractError(error);
       if (!data?.loginWithFacebook) return "Something went wrong.";
       setAuth(data.loginWithFacebook as Parameters<typeof setAuth>[0]);
-      router.replace(getDestination());
+      goToDestination();
       return null;
     } catch (err) {
       return extractError(err);
@@ -207,8 +233,18 @@ export function useOAuthMutation(lang: string, from?: string) {
           const err = await loginWithApple(idToken);
           resolve(err);
         } catch (e: unknown) {
-          const msg = e instanceof Error ? e.message : String(e);
-          resolve(msg === "popup_closed_by_user" ? null : (msg || "Apple sign-in failed."));
+          // Apple's SDK rejects with a plain object like { error: "popup_closed_by_user" },
+          // not an Error — so reading e.error (and treating cancellations as a no-op)
+          // avoids surfacing "[object Object]" to the user.
+          const code =
+            e instanceof Error
+              ? e.message
+              : typeof e === "object" && e !== null && "error" in e
+                ? String((e as { error: unknown }).error)
+                : "";
+          const cancelled =
+            code === "popup_closed_by_user" || code === "user_cancelled_authorize";
+          resolve(cancelled ? null : (code || "Apple sign-in failed. Please try again."));
         }
       }
 

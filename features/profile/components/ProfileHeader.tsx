@@ -38,13 +38,19 @@ function StatTile({
     <>
       <p
         className="truncate font-bold leading-none"
-        style={{ fontSize: "var(--text-base)", color: "rgb(var(--color-text))" }}
+        style={{
+          fontSize: "var(--text-base)",
+          color: "rgb(var(--color-text))",
+        }}
       >
         {value}
       </p>
       <p
         className="mt-1 truncate font-semibold leading-tight"
-        style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}
+        style={{
+          fontSize: "var(--text-xs)",
+          color: "rgb(var(--color-text-muted))",
+        }}
       >
         {label}
       </p>
@@ -59,7 +65,11 @@ function StatTile({
 
   if (href) {
     return (
-      <Link href={href} className={`${className} transition-opacity active:opacity-70`} style={style}>
+      <Link
+        href={href}
+        className={`${className} transition-opacity active:opacity-70`}
+        style={style}
+      >
         {inner}
       </Link>
     );
@@ -82,12 +92,12 @@ export function ProfileHeader({ user, editHref, lang }: Props) {
 
   return (
     <section
-      className="relative overflow-hidden border-b"
+      className="relative py-6 overflow-hidden border-b"
       style={{
         // Match the creator profile hero gradient for consistency
         background:
           "linear-gradient(160deg, rgb(var(--brand-primary) / 0.08) 0%, rgb(var(--color-bg)) 60%)",
-        borderColor: "rgb(var(--color-border))"
+        borderColor: "rgb(var(--color-border))",
       }}
     >
       <div className="mx-auto w-full max-w-6xl px-4 py-4 sm:px-6 lg:px-8 lg:py-6">
@@ -99,7 +109,7 @@ export function ProfileHeader({ user, editHref, lang }: Props) {
                 background: avatar
                   ? "rgb(var(--color-bg-subtle))"
                   : "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)) 62%, rgb(var(--brand-accent)))",
-                borderColor: "rgb(var(--color-bg-elevated))"
+                borderColor: "rgb(var(--color-bg-elevated))",
               }}
             >
               {avatar ? (
@@ -116,7 +126,8 @@ export function ProfileHeader({ user, editHref, lang }: Props) {
                 <div className="flex h-full w-full items-center justify-center">
                   <span
                     className="select-none font-bold text-white"
-                   style={{ fontSize: "var(--text-lg)" }}>
+                    style={{ fontSize: "var(--text-lg)" }}
+                  >
                     {initials}
                   </span>
                 </div>
@@ -128,14 +139,20 @@ export function ProfileHeader({ user, editHref, lang }: Props) {
                 <div className="min-w-0">
                   <h1
                     className="truncate font-bold leading-tight"
-                    style={{ fontSize: "var(--text-lg)", color: "rgb(var(--color-text))" }}
+                    style={{
+                      fontSize: "var(--text-lg)",
+                      color: "rgb(var(--color-text))",
+                    }}
                   >
                     {displayName}
                   </h1>
                   {user.username && (
                     <p
                       className="truncate"
-                      style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text-muted))" }}
+                      style={{
+                        fontSize: "var(--text-sm)",
+                        color: "rgb(var(--color-text-muted))",
+                      }}
                     >
                       @{user.username}
                     </p>
@@ -146,9 +163,12 @@ export function ProfileHeader({ user, editHref, lang }: Props) {
                   variant="outline"
                   size="sm"
                   className="h-9 shrink-0 rounded-md px-3 font-semibold"
-                  style={{ fontSize: "var(--text-sm)", backgroundColor: "rgb(var(--color-bg-elevated))",
+                  style={{
+                    fontSize: "var(--text-sm)",
+                    backgroundColor: "rgb(var(--color-bg-elevated))",
                     borderColor: "rgb(var(--color-border-strong))",
-                    color: "rgb(var(--color-text))" }}
+                    color: "rgb(var(--color-text))",
+                  }}
                 >
                   <Link href={editHref}>
                     <PenLine size={16} strokeWidth={2.2} />
@@ -179,7 +199,10 @@ export function ProfileHeader({ user, editHref, lang }: Props) {
               {user.profile?.bio && (
                 <p
                   className="max-w-3xl leading-snug"
-                  style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text))" }}
+                  style={{
+                    fontSize: "var(--text-sm)",
+                    color: "rgb(var(--color-text))",
+                  }}
                 >
                   {user.profile.bio}
                 </p>
@@ -191,7 +214,10 @@ export function ProfileHeader({ user, editHref, lang }: Props) {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex w-fit items-center gap-1.5 font-semibold"
-                  style={{ fontSize: "var(--text-sm)", color: "rgb(var(--brand-accent))" }}
+                  style={{
+                    fontSize: "var(--text-sm)",
+                    color: "rgb(var(--brand-accent))",
+                  }}
                 >
                   <ExternalLink size={14} strokeWidth={2.2} />
                   {user.profile.website.replace(/^https?:\/\//, "")}
@@ -201,8 +227,11 @@ export function ProfileHeader({ user, editHref, lang }: Props) {
           )}
 
           <div className="hidden items-center gap-4 sm:flex">
-            <span 
-              style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text-muted))" }}
+            <span
+              style={{
+                fontSize: "var(--text-sm)",
+                color: "rgb(var(--color-text-muted))",
+              }}
             >
               {formatCompact(user.followingCount)} following
             </span>

@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ─── Brand palette ───────────────────────────────────────────────
-   Primary:   rgb(255, 59, 92)   — Shopi Red (energy, discovery)
+   Primary:   rgb(234, 25, 121)  — Shopi Pink (energy, discovery)
    Secondary: rgb(255, 159, 64)  — Warm Amber (warmth, commerce)
    Accent:    rgb(99, 91, 255)   — Electric Violet (social/creative)
    Success:   rgb(34, 197, 94)   — Emerald
@@ -11,7 +11,7 @@
 
 :root {
   /* Brand */
-  --brand-primary: 255 59 92;
+  --brand-primary: 234, 25, 121;
   --brand-secondary: 255 159 64;
   --brand-accent: 99 91 255;
 
@@ -206,6 +206,9 @@ body {
 }
 .text-muted {
   color: rgb(var(--color-text-muted));
+}
+.text-placeholder {
+  color: rgb(var(--color-text-placeholder));
 }
 
 .btn-primary {
