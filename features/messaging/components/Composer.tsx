@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { Paperclip, Play, Send, X } from "lucide-react";
+import { Loader2, MapPin, Paperclip, Play, Send, X } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import type { StagedMedia } from "../types";
 import { QuickReplies } from "./QuickReplies";
@@ -16,6 +17,11 @@ interface Props {
   onChange: (value: string) => void;
   onSend: () => void;
   onQuickReply: (text: string) => void;
+  onShareLocation: (
+    latitude: number,
+    longitude: number,
+    locationLabel?: string,
+  ) => void;
   onStageMedia: (file: File, kind: "image" | "video") => void;
   onClearStagedMedia: () => void;
 }
@@ -32,11 +38,52 @@ export function Composer({
   onChange,
   onSend,
   onQuickReply,
+  onShareLocation,
   onStageMedia,
   onClearStagedMedia,
 }: Props) {
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const [locating, setLocating] = useState(false);
+
+  // Capture the sender's current GPS position and share it as a location pin.
+  // Reverse-geocoding for a human label is best-effort — the coords are what
+  // matter (the receiver opens them in their maps app).
+  const handleShareLocation = () => {
+    if (!requireAuth()) return;
+    if (!navigator.geolocation) {
+      toast.error("Location isn't available on this device");
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        let label: string | undefined;
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&zoom=16`,
+            { headers: { "Accept-Language": "en" } },
+          );
+          const json = await res.json();
+          label = json?.display_name || undefined;
+        } catch {
+          // best-effort; send without a label
+        }
+        onShareLocation(latitude, longitude, label);
+        setLocating(false);
+      },
+      (err) => {
+        setLocating(false);
+        toast.error(
+          err.code === err.PERMISSION_DENIED
+            ? "Allow location access to share your location"
+            : "Couldn't get your location",
+        );
+      },
+      { enableHighAccuracy: true, timeout: 12_000, maximumAge: 60_000 },
+    );
+  };
 
   // Auto-grow the textarea to fit its content (capped), so it behaves like
   // WhatsApp: one line by default, expanding as you type.
@@ -126,6 +173,23 @@ export function Composer({
           aria-label="Attach photo or video"
         >
           <Paperclip size={15} />
+        </Button>
+
+        <Button
+          type="button"
+          size="icon"
+          variant="outline"
+          className="h-9 w-9 shrink-0 rounded-full"
+          onClick={handleShareLocation}
+          disabled={locating || disabled}
+          aria-label="Share my location"
+          title="Share my location"
+        >
+          {locating ? (
+            <Loader2 size={15} className="animate-spin" />
+          ) : (
+            <MapPin size={15} />
+          )}
         </Button>
 
         <textarea

@@ -89,8 +89,11 @@ export interface DirectMessageCreatedPayload {
   contentId: string;
   senderId: string;
   recipientId: string;
-  type: 'text' | 'image' | 'video';
+  type: 'text' | 'image' | 'video' | 'location';
   text?: string;
+  latitude?: number;
+  longitude?: number;
+  locationLabel?: string;
   media?: DirectMessageMediaSnapshot;
   createdAt: string;
   deliveredAt?: string;
@@ -111,7 +114,7 @@ export interface DirectConversationUpdatedPayload {
   contentId: string;
   lastMessageId?: string;
   lastMessageText?: string;
-  lastMessageType?: 'text' | 'image' | 'video';
+  lastMessageType?: 'text' | 'image' | 'video' | 'location';
   lastMessageSenderId?: string;
   lastMessageAt?: string;
   myUnreadCount: number;

@@ -13,11 +13,23 @@ export function normalizeEnum(value?: string | null): string {
   return (value ?? "").toLowerCase();
 }
 
-export function messageKind(value?: string | null): "text" | "image" | "video" {
+export function messageKind(
+  value?: string | null,
+): "text" | "image" | "video" | "location" {
   const normalized = normalizeEnum(value);
   if (normalized.includes("video")) return "video";
   if (normalized.includes("image")) return "image";
+  if (normalized.includes("location")) return "location";
   return "text";
+}
+
+/**
+ * Deep link to the pinned coordinates that opens the device's default maps app
+ * (Apple Maps on iOS, Google Maps elsewhere / web). Using the `geo:`-style
+ * Google query URL works as a universal link across platforms.
+ */
+export function mapsUrlFor(latitude: number, longitude: number): string {
+  return `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
 }
 
 export function mediaStatus(value?: string | null): string {
@@ -174,6 +186,7 @@ export function previewLabel(type?: string | null, text?: string | null): string
   const kind = messageKind(type);
   if (kind === "image") return "Photo";
   if (kind === "video") return "Video";
+  if (kind === "location") return "📍 Location";
   return "Message";
 }
 
@@ -357,6 +370,9 @@ export function fromSocketMessage(
     recipientId: payload.recipientId,
     type: payload.type.toUpperCase(),
     text: payload.text ?? null,
+    latitude: payload.latitude ?? null,
+    longitude: payload.longitude ?? null,
+    locationLabel: payload.locationLabel ?? null,
     deliveredAt: payload.deliveredAt ?? null,
     readAt: payload.readAt ?? null,
     createdAt: payload.createdAt,

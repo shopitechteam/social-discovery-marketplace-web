@@ -777,6 +777,71 @@ export function useInbox(lang: string) {
     [handleSendText],
   );
 
+  /**
+   * Optimistically share a pinned location (the sender's current GPS position).
+   * Renders a LOCATION bubble immediately, then fires the send mutation and
+   * reconciles — mirroring the text-send lifecycle (tap-to-retry on failure).
+   */
+  const sendLocation = useCallback(
+    (latitude: number, longitude: number, locationLabel?: string) => {
+      const conversationId = selectedConversationIdRef.current;
+      const myId = currentUser?.id;
+      if (!conversationId || !myId) return;
+      if (selectedConversation?.canSendMessages === false) {
+        toast.error(
+          selectedConversation.blockedByMe
+            ? "You have blocked this user"
+            : "You can no longer send messages in this conversation",
+        );
+        return;
+      }
+
+      const clientMessageId = crypto.randomUUID();
+      const optimistic: Message = {
+        id: `optimistic:${clientMessageId}`,
+        conversationId,
+        contentId: selectedConversation?.contentId ?? "",
+        senderId: myId,
+        recipientId: selectedConversation?.otherParticipant?.id ?? "",
+        type: "LOCATION",
+        latitude,
+        longitude,
+        locationLabel: locationLabel ?? null,
+        createdAt: new Date().toISOString(),
+        isMine: true,
+        deliveryStatus: "sent",
+        clientMessageId,
+        pendingStatus: "sending",
+      };
+      setMessages((prev) => sortMessagesChronologically([...prev, optimistic]));
+
+      void (async () => {
+        try {
+          const { data } = await sendDirectMessage({
+            variables: {
+              input: { conversationId, latitude, longitude, locationLabel, clientMessageId },
+            },
+          });
+          const message = (data as { sendDirectMessage?: Message } | undefined)
+            ?.sendDirectMessage;
+          if (message) {
+            setMessages((prev) => upsertMessage(prev, { ...message, clientMessageId }));
+            void refetchConversations();
+          }
+        } catch {
+          setMessages((prev) =>
+            prev.map((item) =>
+              item.clientMessageId === clientMessageId
+                ? { ...item, pendingStatus: "failed" }
+                : item,
+            ),
+          );
+        }
+      })();
+    },
+    [currentUser?.id, selectedConversation, sendDirectMessage, refetchConversations],
+  );
+
   const runMediaUpload = useCallback(
     async (
       clientMessageId: string,
@@ -1428,6 +1493,7 @@ export function useInbox(lang: string) {
     handleSendText,
     handleSend,
     sendQuickReply,
+    sendLocation,
     stageMedia,
     clearStagedMedia,
     retryMessage,

@@ -128,6 +128,9 @@ export const DIRECT_MESSAGES = gql`
       recipientId
       type
       text
+      latitude
+      longitude
+      locationLabel
       mediaAssetId
       clientMessageId
       deliveredAt
@@ -227,6 +230,9 @@ export const SEND_DIRECT_MESSAGE = gql`
       recipientId
       type
       text
+      latitude
+      longitude
+      locationLabel
       mediaAssetId
       clientMessageId
       deliveredAt

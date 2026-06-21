@@ -43,6 +43,11 @@ interface Props {
   onComposerChange: (value: string) => void;
   onSend: () => void;
   onQuickReply: (text: string) => void;
+  onShareLocation: (
+    latitude: number,
+    longitude: number,
+    locationLabel?: string,
+  ) => void;
   onStageMedia: (file: File, kind: "image" | "video") => void;
   onClearStagedMedia: () => void;
   onRetryMessage: (message: Message) => void;
@@ -80,6 +85,7 @@ export function ChatDetail({
   onComposerChange,
   onSend,
   onQuickReply,
+  onShareLocation,
   onStageMedia,
   onClearStagedMedia,
   onRetryMessage,
@@ -352,6 +358,7 @@ export function ChatDetail({
             onChange={onComposerChange}
             onSend={handleSend}
             onQuickReply={handleQuickReply}
+            onShareLocation={onShareLocation}
             onStageMedia={onStageMedia}
             onClearStagedMedia={onClearStagedMedia}
           />

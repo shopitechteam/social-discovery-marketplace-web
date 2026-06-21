@@ -96,6 +96,9 @@ export type Message = {
   recipientId: string;
   type: string;
   text?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  locationLabel?: string | null;
   mediaAssetId?: string | null;
   deliveredAt?: string | null;
   readAt?: string | null;

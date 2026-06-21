@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Loader2, Play, RotateCw, X } from "lucide-react";
+import { Loader2, MapPin, Play, RotateCw, X } from "lucide-react";
 import type { Message } from "../types";
 import {
   imageForMessage,
+  mapsUrlFor,
   mediaStatus,
   messageKind,
   shortTime,
@@ -187,6 +188,43 @@ export function MessageBubble({ message, mine, onRetry, onDiscard }: Props) {
             )}
           </div>
         )}
+
+        {/* Location pin — tap to open the coordinates in the device's default
+            maps app (Apple/Google Maps). */}
+        {kind === "location" &&
+          typeof message.latitude === "number" &&
+          typeof message.longitude === "number" && (
+            <a
+              href={mapsUrlFor(message.latitude, message.longitude)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`flex items-center gap-2 rounded-xl px-2.5 py-2 transition-opacity active:opacity-70 ${
+                mine ? "bg-white/15" : "bg-black/5"
+              }`}
+            >
+              <span
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                  mine ? "bg-white/20" : "bg-primary/15 text-primary"
+                }`}
+              >
+                <MapPin size={18} />
+              </span>
+              <span className="min-w-0">
+                <span
+                  className="block font-semibold leading-tight"
+                  style={{ fontSize: "var(--text-sm)" }}
+                >
+                  Shared location
+                </span>
+                <span
+                  className={`block truncate ${mine ? "text-white/75" : "text-muted"}`}
+                  style={{ fontSize: "var(--text-xs)" }}
+                >
+                  {message.locationLabel || "Tap to open in Maps"}
+                </span>
+              </span>
+            </a>
+          )}
 
         {/* Text section - always at bottom */}
         {message.text && (

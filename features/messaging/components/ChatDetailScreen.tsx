@@ -79,6 +79,7 @@ export function ChatDetailScreen({
         onComposerChange={inbox.handleComposerChange}
         onSend={inbox.handleSend}
         onQuickReply={inbox.sendQuickReply}
+        onShareLocation={inbox.sendLocation}
         onStageMedia={inbox.stageMedia}
         onClearStagedMedia={inbox.clearStagedMedia}
         onRetryMessage={inbox.retryMessage}
