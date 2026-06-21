@@ -33,24 +33,57 @@ export function mapsUrlFor(latitude: number, longitude: number): string {
 }
 
 /**
- * Google Static Maps thumbnail centered on the pin, with a marker. Used as the
- * preview image inside a location message bubble. Returns null when no Maps key
- * is configured (the bubble then falls back to the pin icon only).
+ * A single OpenStreetMap raster tile (keyless, reliable: tile.openstreetmap.org)
+ * that contains the pin. The bubble overlays its own marker at the center, so we
+ * pick a zoom where the location sits roughly mid-tile. Used as the location
+ * message preview without needing any Maps API key or billing.
+ *
+ * If a Google key is set AND the Static Maps API is explicitly enabled via
+ * NEXT_PUBLIC_USE_GOOGLE_STATIC_MAPS, prefer Google's nicer marked thumbnail.
  */
-export function staticMapUrl(
+export function googleStaticMapUrl(
   latitude: number,
   longitude: number,
   { width = 320, height = 160, zoom = 15 } = {},
 ): string | null {
   const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-  if (!key) return null;
+  if (!key || process.env.NEXT_PUBLIC_USE_GOOGLE_STATIC_MAPS !== "true") {
+    return null;
+  }
   const center = `${latitude},${longitude}`;
-  const scale = 2; // crisp on retina
   return (
     `https://maps.googleapis.com/maps/api/staticmap?center=${center}` +
-    `&zoom=${zoom}&size=${width}x${height}&scale=${scale}` +
+    `&zoom=${zoom}&size=${width}x${height}&scale=2` +
     `&markers=color:red%7C${center}&key=${key}`
   );
+}
+
+/** Web-mercator tile coords for a lat/lng at a zoom level. */
+function lngLatToTile(latitude: number, longitude: number, zoom: number) {
+  const n = 2 ** zoom;
+  const x = Math.floor(((longitude + 180) / 360) * n);
+  const latRad = (latitude * Math.PI) / 180;
+  const y = Math.floor(
+    ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * n,
+  );
+  return { x, y };
+}
+
+/**
+ * Static map thumbnail for a location bubble. Prefers Google (when enabled),
+ * else a keyless OSM tile. The bubble draws the marker on top, so a plain tile
+ * is fine. Returns the image src.
+ */
+export function staticMapUrl(
+  latitude: number,
+  longitude: number,
+  opts: { width?: number; height?: number; zoom?: number } = {},
+): string | null {
+  const google = googleStaticMapUrl(latitude, longitude, opts);
+  if (google) return google;
+  const zoom = opts.zoom ?? 15;
+  const { x, y } = lngLatToTile(latitude, longitude, zoom);
+  return `https://tile.openstreetmap.org/${zoom}/${x}/${y}.png`;
 }
 
 // Matches http(s) URLs and bare domains like "jiji.co.ke" / "jiji.co.ke/x".

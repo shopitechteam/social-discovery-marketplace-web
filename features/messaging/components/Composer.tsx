@@ -5,6 +5,14 @@ import Image from "next/image";
 import { Loader2, MapPin, Paperclip, Play, Send, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type { StagedMedia } from "../types";
 import { QuickReplies } from "./QuickReplies";
 
@@ -45,16 +53,24 @@ export function Composer({
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const [locating, setLocating] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
-  // Capture the sender's current GPS position and share it as a location pin.
-  // Reverse-geocoding for a human label is best-effort — the coords are what
-  // matter (the receiver opens them in their maps app).
-  const handleShareLocation = () => {
+  // Tapping the pin opens a confirm dialog first (sharing your live location is
+  // privacy-sensitive). Auth + availability are checked before showing it.
+  const openLocationConfirm = () => {
     if (!requireAuth()) return;
     if (!navigator.geolocation) {
       toast.error("Location isn't available on this device");
       return;
     }
+    setConfirmOpen(true);
+  };
+
+  // Confirmed: capture the sender's current GPS position and share it as a
+  // location pin. Reverse-geocoding for a human label is best-effort — the
+  // coords are what matter (the receiver opens them in their maps app).
+  const handleShareLocation = () => {
+    setConfirmOpen(false);
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
@@ -180,7 +196,7 @@ export function Composer({
           size="icon"
           variant="outline"
           className="h-9 w-9 shrink-0 rounded-full"
-          onClick={handleShareLocation}
+          onClick={openLocationConfirm}
           disabled={locating || disabled}
           aria-label="Share my location"
           title="Share my location"
@@ -248,6 +264,38 @@ export function Composer({
           event.currentTarget.value = "";
         }}
       />
+
+      {/* Confirm before sharing live location — privacy-sensitive action. */}
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="max-w-sm rounded-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MapPin size={18} className="text-primary" />
+              Share your location
+            </DialogTitle>
+            <DialogDescription>
+              This sends your current location to this chat. The other person
+              can open it in their maps app to find you.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setConfirmOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="text-white"
+              type="button"
+              onClick={handleShareLocation}
+            >
+              Share location
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

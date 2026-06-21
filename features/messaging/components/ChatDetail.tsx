@@ -120,6 +120,15 @@ export function ChatDetail({
     [onQuickReply],
   );
 
+  // Sharing a location inserts a message too — reveal it like any other send.
+  const handleShareLocation = useCallback(
+    (latitude: number, longitude: number, locationLabel?: string) => {
+      onShareLocation(latitude, longitude, locationLabel);
+      setScrollSignal((n) => n + 1);
+    },
+    [onShareLocation],
+  );
+
   // The chat is "open" once a conversation is selected OR while we're resolving
   // one from a content id. In the pending case we render the shell immediately
   // (header skeleton + composer) so opening a chat is instant.
@@ -358,7 +367,7 @@ export function ChatDetail({
             onChange={onComposerChange}
             onSend={handleSend}
             onQuickReply={handleQuickReply}
-            onShareLocation={onShareLocation}
+            onShareLocation={handleShareLocation}
             onStageMedia={onStageMedia}
             onClearStagedMedia={onClearStagedMedia}
           />

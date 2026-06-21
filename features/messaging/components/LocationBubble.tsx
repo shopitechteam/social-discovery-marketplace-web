@@ -46,6 +46,15 @@ export function LocationBubble({
             unoptimized
             onError={() => setMapBroken(true)}
           />
+          {/* Marker overlay — the OSM tile has no built-in pin, so we drop one
+              at the center (the location sits ~mid-tile at this zoom). */}
+          <span className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-full drop-shadow">
+            <MapPin
+              size={26}
+              className="fill-red-500 text-white"
+              strokeWidth={2}
+            />
+          </span>
         </div>
       ) : null}
       <div className="flex items-center gap-2 px-2.5 py-2">
