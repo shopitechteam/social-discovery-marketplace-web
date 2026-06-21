@@ -27,9 +27,13 @@
 
   /* Text */
   --color-text: 15 15 20;
+  --color-text-main: 9 10 10; /* #090A0A — primary text (text-main) */
   --color-text-muted: 100 100 115;
   --color-text-placeholder: 160 160 175;
   --color-text-on-brand: 255 255 255;
+
+  /* Subtle surface — incoming chat bubbles, muted fills (#F2F4F5) */
+  --color-subtle: 242 244 245;
 
   /* State */
   --color-success: 34 197 94;
@@ -59,8 +63,11 @@
   --color-border-strong: 60 60 78;
 
   --color-text: 240 240 245;
+  --color-text-main: 240 240 245; /* dark mode: main text reads light */
   --color-text-muted: 148 148 165;
   --color-text-placeholder: 90 90 105;
+
+  --color-subtle: 26 26 34; /* dark mode: incoming bubble surface */
 
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3);
@@ -84,9 +91,11 @@
   --color-background: rgb(var(--color-bg));
   --color-surface: rgb(var(--color-bg-subtle));
   --color-elevated: rgb(var(--color-bg-elevated));
+  --color-subtle: rgb(var(--color-subtle));
 
   --color-border: rgb(var(--color-border));
   --color-foreground: rgb(var(--color-text));
+  --color-main: rgb(var(--color-text-main));
   --color-muted: rgb(var(--color-text-muted));
 
   --color-success: rgb(var(--color-success));

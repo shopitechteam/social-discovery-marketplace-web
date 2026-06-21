@@ -89,14 +89,28 @@ export function MessageBubble({ message, mine, onRetry, onDiscard }: Props) {
   return (
     <div className={`flex ${mine ? "justify-end" : "justify-start"} w-full`}>
       <div
-        className={`w-[75%] relative rounded-2xl px-3 py-2 ${mine ? "rounded-br-md text-white" : "rounded-bl-md"}`}
-        style={{
-          backgroundColor: mine
-            ? "rgb(var(--brand-primary))"
-            : "rgb(var(--color-bg-elevated))",
-          border: mine ? "none" : "1px solid rgb(var(--color-border))",
-        }}
+        className={`w-[75%] relative rounded-2xl px-3 py-2 ${
+          mine
+            ? "rounded-br-sm text-white bg-primary"
+            : "rounded-bl-sm bg-subtle text-main"
+        }`}
       >
+        {/* Tail — a little protruding flap at the bottom corner, like SMS/WhatsApp.
+            mine → bottom-right, primary color. theirs → bottom-left, elevated +
+            border so it matches the bubble edge. */}
+        {mine ? (
+          <span
+            aria-hidden
+            className="absolute bottom-0 -right-1.5 h-3 w-3 bg-primary"
+            style={{ clipPath: "polygon(0 0, 0 100%, 100% 100%)" }}
+          />
+        ) : (
+          <span
+            aria-hidden
+            className="absolute bottom-0 -left-1.5 h-3 w-3 bg-subtle"
+            style={{ clipPath: "polygon(100% 0, 0 100%, 100% 100%)" }}
+          />
+        )}
         {/* Media section - always at top */}
         {(kind === "image" || kind === "video") && (
           <div className="flex flex-col items-center w-full">

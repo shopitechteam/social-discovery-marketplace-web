@@ -266,6 +266,22 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [titleValue, watchCaption, tags, location]);
 
+  // ── Form validity (drives the sticky Next button's disabled state) ──────────
+  // Mirrors the synchronously-checkable rules in onNext: a non-empty title, a
+  // location, at least one media item that isn't broken, and a valid price.
+  // The async upload-still-attaching wait stays inside onNext.
+  const parsedPriceValue = priceInput.trim() ? Number(priceInput) : 0;
+  const priceValid = Number.isFinite(parsedPriceValue) && parsedPriceValue >= 0;
+  const hasUsableMedia =
+    mediaItems.length > 0 && !mediaItems.every((m) => m.status === "error");
+  const canProceed =
+    !!draftId &&
+    titleValue.trim().length > 0 &&
+    !!location &&
+    hasUsableMedia &&
+    priceValid &&
+    !isExtracting;
+
   async function onNext(values: EditFormValues) {
     if (!draftId) {
       setError("Draft is not ready yet - please wait a moment and try again.");
@@ -798,24 +814,14 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
           >
             Details
           </h2>
-          <button
-            onClick={handleSubmit(onNext)}
-            disabled={advancing}
-            className="font-semibold px-4 py-1.5 rounded-full"
-            style={{
-              backgroundColor: "rgb(var(--brand-primary))",
-              color: "white",
-              fontSize: "var(--text-sm)",
-              opacity: advancing ? 0.6 : 1,
-            }}
-          >
-            {advancing ? "…" : "Next"}
-          </button>
+          {/* Spacer balances the back button so the title stays centred.
+              The primary action now lives in the sticky bottom bar. */}
+          <span aria-hidden className="w-12" />
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 pb-8">
           {/* Mobile-only: media picker (dotted picker / photo grid / video) */}
-          <div className="mb-5 md:hidden">
+          <div className="mb-5 mt-4 md:hidden">
             <MediaPicker />
           </div>
 
@@ -851,6 +857,27 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
 
           {/* Error */}
           {error && <div className="mt-4">{errorBlock}</div>}
+        </div>
+
+        {/* Sticky bottom action bar — full-width Next, disabled until the
+            required fields are valid. Replaces the old top-right button so the
+            primary action sits where the thumb is. */}
+        <div
+          className="sticky bottom-0 z-50 shrink-0 border-t px-4 pt-3"
+          style={{
+            backgroundColor: "rgb(var(--color-bg))",
+            borderColor: "rgb(var(--color-border))",
+            paddingBottom: "calc(0.75rem + var(--safe-bottom))",
+          }}
+        >
+          <button
+            onClick={handleSubmit(onNext)}
+            disabled={!canProceed || advancing}
+            className="w-full h-12 rounded-full font-semibold bg-primary text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
+            style={{ fontSize: "var(--text-base)" }}
+          >
+            {advancing ? "Saving…" : "Next"}
+          </button>
         </div>
       </div>
     </div>

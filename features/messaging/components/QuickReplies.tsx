@@ -26,7 +26,7 @@ export function QuickReplies({ disabled, onSend }: Props) {
 
   return (
     <div
-      className="-mx-4 mb-2 flex gap-2 overflow-x-auto px-4 pb-1"
+      className="mb-2 flex gap-2 overflow-x-auto pb-1"
       style={{ scrollbarWidth: "none" }}
     >
       {QUICK_REPLIES.map((text) => (

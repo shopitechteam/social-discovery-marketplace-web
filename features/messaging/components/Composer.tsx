@@ -71,7 +71,9 @@ export function Composer({
     >
       {/* ── Quick-reply chips ("peels") — only when idle (no draft/media) ── */}
       {!stagedMedia && composer.trim().length === 0 ? (
-        <QuickReplies disabled={disabled} onSend={onQuickReply} />
+        <div>
+          <QuickReplies disabled={disabled} onSend={onQuickReply} />
+        </div>
       ) : null}
 
       {/* ── Staged-media preview (above the input row) ── */}

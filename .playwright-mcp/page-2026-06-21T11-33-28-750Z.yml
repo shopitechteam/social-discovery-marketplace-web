@@ -1,0 +1,68 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - link "Shopi" [ref=e6] [cursor=pointer]:
+          - /url: /en
+          - img "Shopi" [ref=e7]:
+            - generic [ref=e16]: shopi
+        - generic [ref=e17]:
+          - generic [ref=e19]:
+            - generic [ref=e20]:
+              - generic [ref=e22]: Trending
+              - generic [ref=e23]:
+                - generic [ref=e25]: K
+                - generic [ref=e26]: "@kali"
+            - generic [ref=e27]:
+              - generic [ref=e29]: New
+              - generic [ref=e30]:
+                - generic [ref=e32]: M
+                - generic [ref=e33]: "@marco.s"
+            - generic [ref=e34]:
+              - generic [ref=e36]: 🔥 Trending
+              - generic [ref=e37]:
+                - generic [ref=e38]: ♥
+                - generic [ref=e39]: 42K
+              - generic [ref=e40]:
+                - generic [ref=e42]: "N"
+                - generic [ref=e43]: "@nia"
+          - generic [ref=e44]:
+            - heading "Everything for sale near you, in one feed." [level=2] [ref=e45]
+            - paragraph [ref=e46]: Scroll your local feed, message the seller, agree on a price — done. No checkout, no fees, no middleman.
+          - generic [ref=e47]:
+            - generic [ref=e48]: Scroll
+            - generic [ref=e49]: →
+            - generic [ref=e50]: Message
+            - generic [ref=e51]: →
+            - generic [ref=e52]: Agree
+        - generic [ref=e53]:
+          - link "Terms" [ref=e54] [cursor=pointer]:
+            - /url: /en/terms
+          - link "Privacy" [ref=e55] [cursor=pointer]:
+            - /url: /en/privacy
+          - link "About" [ref=e56] [cursor=pointer]:
+            - /url: /en/about
+      - generic [ref=e59]:
+        - generic [ref=e60]:
+          - heading "Create your free account" [level=1] [ref=e61]
+          - paragraph [ref=e62]: Start discovering what people near you are selling — in seconds.
+        - generic [ref=e63]:
+          - button "Continue with Google" [ref=e65]:
+            - img [ref=e66]
+            - generic [ref=e71]: Continue with Google
+          - generic [ref=e74]: or use email
+          - link "Sign up with Email" [ref=e76] [cursor=pointer]:
+            - /url: /en/auth/register
+          - paragraph [ref=e77]:
+            - text: By continuing you agree to our
+            - link "Terms" [ref=e78] [cursor=pointer]:
+              - /url: /en/terms
+            - text: "&"
+            - link "Privacy Policy" [ref=e79] [cursor=pointer]:
+              - /url: /en/privacy
+            - text: .
+          - paragraph [ref=e80]:
+            - text: Already a member?
+            - link "Sign in" [ref=e81] [cursor=pointer]:
+              - /url: /en/auth/login
+  - region "Notifications alt+T"
