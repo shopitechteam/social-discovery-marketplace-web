@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import {
+  Bookmark,
   ChartColumn,
   FileEdit,
   LayoutGrid,
@@ -12,7 +13,6 @@ import {
   Settings,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { TikTokIcon } from "@/components/ui/TikTokIcon";
 
 // Icon may be a lucide icon or a custom SVG component (both take size/className)
 type TabIcon = React.ComponentType<{
@@ -23,6 +23,7 @@ type TabIcon = React.ComponentType<{
 import {
   useMyProfile,
   useMyPosts,
+  useMySavedContent,
   useMyAnalytics,
 } from "../hooks/useMyProfile";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -34,7 +35,7 @@ import { TiktokImportPanel } from "./TiktokImportPanel";
 import { LogoutButton } from "@/features/auth/components/LogoutButton";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
-type Tab = "posts" | "drafts" | "analytics" | "tiktok" | "settings";
+type Tab = "posts" | "drafts" | "saved" | "analytics" | "tiktok" | "settings";
 
 interface Props {
   lang: string;
@@ -105,10 +106,13 @@ function ProfileSkeleton() {
   );
 }
 
+// NOTE: the "tiktok" tab is intentionally omitted here so it's hidden from the
+// UI, but the TiktokImportPanel component and its render branch below are kept
+// intact (the functionality is preserved, just not surfaced as a subtab).
 const tabConfig: { key: Tab; label: string; icon: TabIcon }[] = [
   { key: "posts", label: "Posts", icon: LayoutGrid },
   { key: "drafts", label: "Drafts", icon: FileEdit },
-  { key: "tiktok", label: "TikTok", icon: TikTokIcon },
+  { key: "saved", label: "Saved", icon: Bookmark },
   { key: "analytics", label: "Analytics", icon: ChartColumn },
 
   { key: "settings", label: "Settings", icon: Settings },
@@ -124,6 +128,11 @@ export function ProfileView({ lang }: Props) {
     loading: postsLoading,
     fetchMore,
   } = useMyPosts(postsLimit);
+  const {
+    data: savedData,
+    loading: savedLoading,
+    fetchMore: fetchMoreSaved,
+  } = useMySavedContent(postsLimit, tab === "saved");
   const { data: analyticsData, loading: analyticsLoading } = useMyAnalytics(
     tab === "analytics",
   );
@@ -147,6 +156,29 @@ export function ProfileView({ lang }: Props) {
           myPosts: {
             ...fetchMoreResult.myPosts,
             posts: [...prev.myPosts.posts, ...fetchMoreResult.myPosts.posts],
+          },
+        };
+      },
+    });
+  }
+
+  const savedPosts = savedData?.mySavedContent.items ?? [];
+  const savedHasMore = savedData?.mySavedContent.hasMore ?? false;
+  const savedNextCursor = savedData?.mySavedContent.nextCursor;
+
+  function handleLoadMoreSaved() {
+    if (!savedNextCursor) return;
+    fetchMoreSaved({
+      variables: { afterId: savedNextCursor, limit: postsLimit },
+      updateQuery(prev, { fetchMoreResult }) {
+        if (!fetchMoreResult) return prev;
+        return {
+          mySavedContent: {
+            ...fetchMoreResult.mySavedContent,
+            items: [
+              ...prev.mySavedContent.items,
+              ...fetchMoreResult.mySavedContent.items,
+            ],
           },
         };
       },
@@ -217,6 +249,17 @@ export function ProfileView({ lang }: Props) {
           hasMore={hasMore}
           onLoadMore={handleLoadMore}
           loading={postsLoading}
+          lang={lang}
+        />
+      )}
+
+      {tab === "saved" && (
+        <PostsGrid
+          variant="saved"
+          posts={savedPosts}
+          hasMore={savedHasMore}
+          onLoadMore={handleLoadMoreSaved}
+          loading={savedLoading}
           lang={lang}
         />
       )}

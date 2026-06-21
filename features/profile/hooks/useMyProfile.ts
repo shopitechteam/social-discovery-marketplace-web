@@ -5,6 +5,7 @@ import { useLazyQuery } from "@apollo/client/react";
 import {
   GetMyProfileDocument,
   GetMyPostsDocument,
+  GetMySavedContentDocument,
   GetMyAnalyticsDocument,
   UpdateMyProfileDocument,
   CheckUsernameAvailabilityDocument,
@@ -18,6 +19,14 @@ export function useMyPosts(limit = 18) {
   return useQuery(GetMyPostsDocument, {
     variables: { limit },
     fetchPolicy: "cache-and-network",
+  });
+}
+
+export function useMySavedContent(limit = 18, enabled = true) {
+  return useQuery(GetMySavedContentDocument, {
+    variables: { limit },
+    fetchPolicy: "cache-and-network",
+    skip: !enabled,
   });
 }
 

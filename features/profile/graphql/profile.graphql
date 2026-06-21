@@ -83,6 +83,16 @@ query GetMyPosts($limit: Int, $afterId: String) {
   }
 }
 
+query GetMySavedContent($limit: Int, $afterId: String) {
+  mySavedContent(limit: $limit, afterId: $afterId) {
+    hasMore
+    nextCursor
+    items {
+      ...ProfilePostFields
+    }
+  }
+}
+
 query GetMyAnalytics {
   myAnalytics {
     last30DaysViews

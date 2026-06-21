@@ -20,6 +20,12 @@ interface Props {
   onLoadMore: () => void;
   loading: boolean;
   lang: string;
+  /**
+   * "posts" (default) → the user's own content library, with the "New post"
+   * upload affordances. "saved" → posts the user has saved, with a neutral
+   * header and empty state (no upload prompt).
+   */
+  variant?: "posts" | "saved";
 }
 
 function formatCompact(value: number) {
@@ -193,7 +199,9 @@ export function PostsGrid({
   onLoadMore,
   loading,
   lang,
+  variant = "posts",
 }: Props) {
+  const isSaved = variant === "saved";
   const sentinelRef = useRef<HTMLDivElement>(null);
   // Keep the latest onLoadMore without re-subscribing the observer each render.
   const onLoadMoreRef = useRef(onLoadMore);
@@ -228,7 +236,11 @@ export function PostsGrid({
               boxShadow: "var(--shadow-sm)",
             }}
           >
-            <Upload size={26} strokeWidth={2} />
+            {isSaved ? (
+              <Bookmark size={26} strokeWidth={2} />
+            ) : (
+              <Upload size={26} strokeWidth={2} />
+            )}
           </div>
           <h2
             className="font-bold"
@@ -237,7 +249,7 @@ export function PostsGrid({
               color: "rgb(var(--color-text))",
             }}
           >
-            No posts yet
+            {isSaved ? "No saved posts yet" : "No posts yet"}
           </h2>
           <p
             className="mt-2 max-w-sm leading-snug"
@@ -246,21 +258,25 @@ export function PostsGrid({
               color: "rgb(var(--color-text-muted))",
             }}
           >
-            Create your first showcase and it will appear here.
+            {isSaved
+              ? "Posts you save will appear here."
+              : "Create your first showcase and it will appear here."}
           </p>
-          <Link
-            href={`/${lang}/upload`}
-            className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-lg px-4 font-semibold text-white active:opacity-80"
-            style={{
-              fontSize: "var(--text-sm)",
-              background:
-                "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)))",
-              boxShadow: "0 10px 24px rgb(var(--brand-primary) / 0.24)",
-            }}
-          >
-            <Plus size={16} strokeWidth={2.4} />
-            New post
-          </Link>
+          {!isSaved && (
+            <Link
+              href={`/${lang}/upload`}
+              className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-lg px-4 font-semibold text-white active:opacity-80"
+              style={{
+                fontSize: "var(--text-sm)",
+                background:
+                  "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)))",
+                boxShadow: "0 10px 24px rgb(var(--brand-primary) / 0.24)",
+              }}
+            >
+              <Plus size={16} strokeWidth={2.4} />
+              New post
+            </Link>
+          )}
         </div>
       </section>
     );
@@ -278,7 +294,7 @@ export function PostsGrid({
                 color: "rgb(var(--color-text))",
               }}
             >
-              Content library
+              {isSaved ? "Saved" : "Content library"}
             </h2>
             <p
               className="mt-1"
@@ -290,19 +306,21 @@ export function PostsGrid({
               {posts.length} {posts.length === 1 ? "post" : "posts"}
             </p>
           </div>
-          <Link
-            href={`/${lang}/upload`}
-            className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border px-3 font-semibold active:opacity-75"
-            style={{
-              fontSize: "var(--text-sm)",
-              backgroundColor: "rgb(var(--color-bg-elevated))",
-              borderColor: "rgb(var(--color-border))",
-              color: "rgb(var(--color-text))",
-            }}
-          >
-            <Plus size={15} strokeWidth={2.4} />
-            New
-          </Link>
+          {!isSaved && (
+            <Link
+              href={`/${lang}/upload`}
+              className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border px-3 font-semibold active:opacity-75"
+              style={{
+                fontSize: "var(--text-sm)",
+                backgroundColor: "rgb(var(--color-bg-elevated))",
+                borderColor: "rgb(var(--color-border))",
+                color: "rgb(var(--color-text))",
+              }}
+            >
+              <Plus size={15} strokeWidth={2.4} />
+              New
+            </Link>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-2">
