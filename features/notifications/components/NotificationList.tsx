@@ -1,7 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import { Bell, Bookmark, CheckCheck, Loader2, UserPlus } from "lucide-react";
+import {
+  Bell,
+  Bookmark,
+  CheckCheck,
+  Loader2,
+  PlayCircle,
+  UserPlus,
+} from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { shortTime } from "@/features/messaging/lib/helpers";
 import type { NotificationItem } from "../types";
@@ -135,6 +142,8 @@ export function NotificationList({
                     <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white ring-2 ring-[rgb(var(--color-bg))]">
                       {notification.type === "SAVE" ? (
                         <Bookmark size={13} />
+                      ) : notification.type === "POST_LIVE" ? (
+                        <PlayCircle size={13} />
                       ) : (
                         <UserPlus size={13} />
                       )}
