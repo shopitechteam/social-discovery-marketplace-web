@@ -286,20 +286,20 @@ export function ChatDetail({
                 onClick={() =>
                   router.push(`/${lang}/content/${contentSummary.id}`)
                 }
-                className="mt-3 flex items-center gap-3 rounded-2xl border p-3"
+                className="mt-3 flex items-center gap-3 rounded-2xl border p-1"
                 style={{
                   backgroundColor: "rgb(var(--color-bg-subtle))",
                   borderColor: "rgb(var(--color-border))",
                 }}
               >
-                <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-white">
+                <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-xl bg-white">
                   {conversationThumb(selectedConversation) ? (
                     <Image
                       src={conversationThumb(selectedConversation)!}
                       alt={contentSummary.title}
                       fill
                       className="object-cover"
-                      sizes="56px"
+                      sizes="36px"
                     />
                   ) : null}
                 </div>
@@ -310,7 +310,7 @@ export function ChatDetail({
                   >
                     {contentSummary.title}
                   </p>
-                  <p
+                  {/* <p
                     className="truncate text-muted"
                     style={{ fontSize: "var(--text-xs)" }}
                   >
@@ -318,7 +318,7 @@ export function ChatDetail({
                       contentSummary.price?.amount,
                       contentSummary.price?.currency,
                     )}
-                  </p>
+                  </p> */}
                   <p
                     className="truncate text-muted"
                     style={{ fontSize: "var(--text-xs)" }}
