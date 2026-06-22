@@ -169,7 +169,9 @@ export type MediaAssetType =
   | 'VIDEO';
 
 export type NotificationType =
-  | 'FOLLOW';
+  | 'FOLLOW'
+  | 'POST_LIVE'
+  | 'SAVE';
 
 export type OAuthInput = {
   idToken: string;

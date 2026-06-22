@@ -11,6 +11,7 @@ export const WS_EVENTS = {
   MEDIA_PROGRESS: 'media:progress',
   NOTIFICATION:   'notification',
   TIKTOK_IMPORT_UPDATED: 'tiktok:import:updated',
+  CONTENT_PUBLISH_UPDATED: 'content:publish:updated',
   STORY_READY:  'story:ready',
   STORY_FAILED: 'story:failed',
   DM_MESSAGE_CREATED: 'dm:message:created',
@@ -66,6 +67,13 @@ export interface TiktokImportUpdatedPayload {
   hlsUrl?: string;
   thumbnailUrl?: string;
   title?: string;
+  errorMessage?: string;
+}
+
+export interface ContentPublishUpdatedPayload {
+  contentId: string;
+  status: 'LIVE' | 'FAILED';
+  muxPlaybackId?: string;
   errorMessage?: string;
 }
 
@@ -150,7 +158,7 @@ export interface NotificationActorPayload {
 
 export interface NotificationPayload {
   id: string;
-  type: 'FOLLOW';
+  type: 'FOLLOW' | 'SAVE' | 'POST_LIVE';
   title: string;
   body: string;
   actorCount: number;

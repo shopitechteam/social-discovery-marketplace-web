@@ -14,28 +14,9 @@ import {
   useState,
   useRef,
   useCallback,
-  type DetailedHTMLProps,
-  type HTMLAttributes,
 } from "react";
 import Image from "next/image";
-import { TikTokIcon } from "@/components/ui/TikTokIcon";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
-
-// `<tiktok-video>` is a custom element (from tiktok-video-element). Declare it
-// for JSX so we get type-checking on the props we use.
-type TiktokVideoAttributes = DetailedHTMLProps<
-  HTMLAttributes<HTMLElement>,
-  HTMLElement
-> & { src?: string; controls?: boolean };
-
-declare module "react" {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
-  namespace JSX {
-    interface IntrinsicElements {
-      "tiktok-video": TiktokVideoAttributes;
-    }
-  }
-}
 
 let registerPromise: Promise<unknown> | null = null;
 /** Register the custom element once, lazily, on first play. */

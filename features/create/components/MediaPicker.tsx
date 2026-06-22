@@ -11,6 +11,7 @@ import {
   getMediaPreviewSrc,
   shouldUnoptimizeMedia,
 } from "@/features/create/utils/mediaPreview";
+import { TikTokCreatePreview } from "./TikTokCreatePreview";
 
 const MAX_IMAGES = 10;
 
@@ -29,7 +30,7 @@ const MAX_IMAGES = 10;
  */
 export function MediaPicker() {
   const inputRef = useRef<HTMLInputElement>(null);
-  const { draftId, contentType, mediaItems } = useCreateStore();
+  const { draftId, contentType, mediaItems, tiktokEmbed } = useCreateStore();
   const { startImageUpload, startVideoUpload } = useMediaUpload();
   const [detachMediaAsset] = useMutation(DetachMediaAssetDocument);
 
@@ -123,6 +124,21 @@ export function MediaPicker() {
 
   // ── Video — always show the buffer/preview ─────────────────────────────────
   if (isVideo) {
+    if (tiktokEmbed) {
+      return (
+        <div>
+          <TikTokCreatePreview
+            embed={tiktokEmbed}
+            className="mx-auto rounded-2xl border"
+            style={{
+              maxWidth: 240,
+              borderColor: "rgb(var(--color-border))",
+            }}
+          />
+        </div>
+      );
+    }
+
     const item = mediaItems[0];
     const src = getMediaPreviewSrc(item);
     return (

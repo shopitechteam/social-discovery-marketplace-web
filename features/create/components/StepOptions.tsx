@@ -16,6 +16,7 @@ import {
 import type { VisibilityMode } from "@/types/__generated__/graphql";
 import { getMediaPreviewSrc } from "@/features/create/utils/mediaPreview";
 import { Celebration, SuccessBadge } from "./Celebration";
+import { TikTokCreatePreview } from "./TikTokCreatePreview";
 
 const POST_TO_TIKTOK = gql`
   mutation PostToTiktokOptions($contentId: String!) {
@@ -61,6 +62,7 @@ export function StepOptions({ lang }: StepOptionsProps) {
     isFree,
     mediaItems,
     contentType,
+    tiktokEmbed,
     visibilityMode,
     allowDownload,
     hdEnabled,
@@ -472,7 +474,14 @@ export function StepOptions({ lang }: StepOptionsProps) {
               border: "1px solid rgb(var(--color-border))",
             }}
           >
-            {cover.type === "video" && cover.localUri ? (
+            {tiktokEmbed ? (
+              <TikTokCreatePreview
+                embed={tiktokEmbed}
+                className="absolute inset-0 h-full w-full"
+                style={{ aspectRatio: "auto" }}
+                sizes="160px"
+              />
+            ) : cover.type === "video" && cover.localUri ? (
               <video
                 src={cover.localUri}
                 className="absolute inset-0 w-full h-full object-contain"

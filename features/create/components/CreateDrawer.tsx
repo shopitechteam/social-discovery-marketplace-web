@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { useMutation } from "@apollo/client/react";
 import { useCreateStore } from "@/stores/create";
@@ -26,6 +26,22 @@ export function CreateDrawer({ lang }: { lang: string }) {
   } = useCreateStore();
   const [createDraft] = useMutation(CreateDraftDocument);
   const { startImageUpload, startVideoUpload } = useMediaUpload();
+
+  // Full-screen "Preparing…" overlay shown while navigating to the TikTok
+  // import page — that route loads + fetches the user's TikTok videos, which
+  // takes a moment, so we give immediate feedback instead of a frozen tab bar.
+  const [preparingTiktok, setPreparingTiktok] = useState(false);
+
+  // Prefetch the TikTok import route as soon as the drawer opens so the
+  // navigation itself is near-instant once the user taps.
+  useEffect(() => {
+    router.prefetch(`/${lang}/upload/tiktok`);
+  }, [router, lang]);
+
+  function handleTiktokImport() {
+    setPreparingTiktok(true);
+    router.push(`/${lang}/upload/tiktok`);
+  }
 
   function handleClose() {
     // If there's a draft in progress, resume it instead of going to feed
@@ -97,6 +113,27 @@ export function CreateDrawer({ lang }: { lang: string }) {
 
   return (
     <>
+      {/* Preparing overlay — covers the screen the moment TikTok import is
+          tapped, until the import page mounts and takes over. */}
+      {preparingTiktok && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="flex flex-col items-center gap-4 rounded-3xl bg-app px-8 py-7 shadow-2xl">
+            <span
+              className="inline-block h-9 w-9 animate-spin rounded-full border-[3px] border-transparent"
+              style={{
+                borderColor: "rgb(var(--color-border))",
+                borderTopColor: "rgb(var(--brand-primary))",
+              }}
+            />
+            <p className="text-md font-medium text-default">Preparing TikTok import…</p>
+          </div>
+        </div>
+      )}
+
       <Drawer
         open
         onOpenChange={(open) => {
@@ -144,9 +181,8 @@ export function CreateDrawer({ lang }: { lang: string }) {
             {/* TikTok import */}
             <Button
               variant="ghost"
-              onClick={() => {
-                window.location.href = `/${lang}/upload/tiktok`;
-              }}
+              onClick={handleTiktokImport}
+              disabled={preparingTiktok}
               className="w-full h-14 rounded-none active:bg-surface transition-colors"
             >
               <span className="text-md font-medium">TikTok Imports</span>
