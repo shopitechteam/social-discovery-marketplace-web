@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState, KeyboardEvent } from "react";
-import { useMutation } from "@apollo/client/react";
+import { useMutation, useQuery } from "@apollo/client/react";
 import { useForm, useWatch } from "react-hook-form";
 import { useCreateStore } from "@/stores/create";
 import {
   AutosaveDraftDocument,
   AdvanceDraftStepDocument,
   ExtractDraftDetailsDocument,
+  SuggestedPostLocationDocument,
 } from "@/types/__generated__/graphql";
 import { LocationPicker } from "./LocationPicker";
 import { SpecsEditor } from "./SpecsEditor";
@@ -39,6 +40,16 @@ function focusTitle() {
   );
   const visible = inputs.find((el) => el.offsetParent !== null) ?? inputs[0];
   visible?.focus();
+}
+
+/** Scroll a required field into view so its inline error is visible when the
+ *  user taps Next from the bottom of a long, scrolled form. */
+function scrollFieldIntoView(field: string) {
+  const els = Array.from(
+    document.querySelectorAll<HTMLElement>(`[data-field="${field}"]`),
+  );
+  const visible = els.find((el) => el.offsetParent !== null) ?? els[0];
+  visible?.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
 export function StepEdit({ onBack }: { onBack?: () => void }) {
@@ -87,6 +98,8 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
   const [titleValue, setTitleValue] = useState(title);
   const [titleError, setTitleError] = useState<string | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [categoryError, setCategoryError] = useState<string | null>(null);
+  const [mediaError, setMediaError] = useState<string | null>(null);
   // Resize every rendered title textarea (mobile + desktop copies) whenever the
   // value changes programmatically (e.g. AI auto-fill). Per-element so the hidden
   // copy doesn't starve the visible one.
@@ -127,11 +140,39 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
   );
 
   // ── Caption (react-hook-form) ──────────────────────────────────────────────
-  const { register, control, handleSubmit, setValue } = useForm<EditFormValues>({
-    defaultValues: { caption },
-    mode: "onChange",
-  });
+  const { register, control, handleSubmit, setValue } = useForm<EditFormValues>(
+    {
+      defaultValues: { caption },
+      mode: "onChange",
+    },
+  );
   const watchCaption = useWatch({ control, name: "caption" }) ?? caption;
+
+  // ── Location auto-fill ─────────────────────────────────────────────────────
+  // Pre-fill the location with the user's suggested location — their latest
+  // post's location, falling back to their saved profile location (resolved
+  // server-side). Runs once; never overrides a location the user (or a restored
+  // draft) already has, so it's freely editable and a manual clear sticks.
+  const locationAutofilledRef = useRef(false);
+  const { data: suggestedLocationData } = useQuery(
+    SuggestedPostLocationDocument,
+    { fetchPolicy: "cache-first" },
+  );
+  useEffect(() => {
+    if (locationAutofilledRef.current) return;
+    if (location) return; // user/draft already has one — don't clobber it
+    const suggested = suggestedLocationData?.suggestedPostLocation;
+    if (!suggested?.placeName || !suggested.placeId) return;
+    locationAutofilledRef.current = true;
+    setLocation({
+      placeName: suggested.placeName,
+      formattedAddress: suggested.formattedAddress ?? "",
+      placeId: suggested.placeId,
+      county: suggested.county ?? undefined,
+      subregion: suggested.subregion ?? undefined,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [suggestedLocationData, location]);
 
   // ── AI auto-fill: fills title, description, price and specs ─────────────────
   // The "killer feature". Whatever it returns is fully editable; the user can
@@ -285,10 +326,12 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
   const priceValid = Number.isFinite(parsedPriceValue) && parsedPriceValue >= 0;
   const hasUsableMedia =
     mediaItems.length > 0 && !mediaItems.every((m) => m.status === "error");
+
   const canProceed =
     !!draftId &&
     titleValue.trim().length > 0 &&
     !!location &&
+    !!categoryId &&
     hasUsableMedia &&
     priceValid &&
     !isExtracting;
@@ -300,6 +343,9 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
     }
     setError(null);
     setTitleError(null);
+    setLocationError(null);
+    setCategoryError(null);
+    setMediaError(null);
 
     const trimmedTitle = titleValue.trim();
     if (!trimmedTitle) {
@@ -326,20 +372,32 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
     if (
       useCreateStore.getState().mediaItems.some((m) => m.status === "uploading")
     ) {
-      setError("Upload is taking too long — please try again.");
+      setMediaError("Upload is taking too long — please try again.");
+      scrollFieldIntoView("media");
       return;
     }
     const attachedMedia = useCreateStore.getState().mediaItems;
     if (attachedMedia.length === 0) {
-      setError("Add at least one photo or video before continuing.");
+      setMediaError("Add at least one photo or video before continuing.");
+      scrollFieldIntoView("media");
       return;
     }
     if (attachedMedia.every((m) => m.status === "error")) {
-      setError("Your upload failed. Please go back and choose media again.");
+      setMediaError(
+        "Your upload failed. Please go back and choose media again.",
+      );
+      scrollFieldIntoView("media");
       return;
     }
     if (!location) {
       setLocationError("Add a location before moving to settings.");
+      scrollFieldIntoView("location");
+      return;
+    }
+
+    if (!categoryId) {
+      setCategoryError("Choose a category before moving to settings.");
+      scrollFieldIntoView("category");
       return;
     }
 
@@ -549,7 +607,7 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
           color: "rgb(var(--color-text-muted))",
         }}
       >
-        Tags
+        Tags (optional)
       </label>
       <div
         className="flex flex-wrap gap-1.5 rounded-xl px-3 py-2.5 min-h-[44px]"
@@ -596,7 +654,7 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
           placeholder={
             tags.length === 0 ? "fashion, style… (Enter to add)" : ""
           }
-          className="flex-1 min-w-[120px] bg-transparent outline-none"
+          className="flex-1 min-w-30 bg-transparent outline-none"
           style={{
             fontSize: "var(--text-base)",
             color: "rgb(var(--color-text))",
@@ -617,7 +675,7 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
   );
 
   const categoryBlock = (
-    <div>
+    <div data-field="category">
       <label
         className="block mb-1.5 font-medium"
         style={{
@@ -630,8 +688,23 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
       <CategoryPickerDrawer
         value={categoryId}
         fallbackLabel={categoryName}
-        onChange={(id, name) => setCategory(id, name, "manual")}
+        onChange={(id, name) => {
+          setCategory(id, name, "manual");
+          setCategoryError(null);
+        }}
       />
+      {categoryError && (
+        <p
+          className="font-medium"
+          style={{
+            fontSize: "var(--text-xs)",
+            color: "rgb(var(--color-error))",
+            marginTop: 6,
+          }}
+        >
+          {categoryError}
+        </p>
+      )}
       {hasExtracted && categoryId && categorySource === "ai" && (
         <p
           style={{
@@ -655,7 +728,7 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
           color: "rgb(var(--color-text-muted))",
         }}
       >
-        Price
+        Price (optional)
       </label>
       <div className="flex items-center gap-3">
         <div
@@ -695,7 +768,7 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
             setPriceInput("");
             setPrice(0, true);
           }}
-          className="rounded-xl px-3 py-2 font-medium"
+          className="rounded-xl  px-3 py-2 font-medium"
           style={{
             backgroundColor:
               !priceInput || priceInput === "0"
@@ -708,7 +781,7 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
             fontSize: "var(--text-sm)",
           }}
         >
-          Free
+          Custom
         </button>
       </div>
       <p
@@ -718,13 +791,13 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
           marginTop: 6,
         }}
       >
-        Set a price in {currency} or leave at 0 for free
+        Set a price in {currency} or leave at 0 for custom
       </p>
     </div>
   );
 
   const locationBlock = (
-    <div>
+    <div data-field="location">
       <label
         className="block mb-1.5 font-medium"
         style={{
@@ -773,6 +846,23 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
     <SpecsEditor specs={specs} onChange={setSpecs} aiGenerated={hasExtracted} />
   );
 
+  // Inline media validation message — rendered directly under the MediaPicker
+  // (both mobile + desktop copies) so "add at least one photo" appears where the
+  // media is, not buried in the bottom error bar.
+  const mediaErrorBlock =
+    mediaError && !hasUsableMedia ? (
+      <p
+        className="font-medium"
+        style={{
+          fontSize: "var(--text-xs)",
+          color: "rgb(var(--color-error))",
+          marginTop: 8,
+        }}
+      >
+        {mediaError}
+      </p>
+    ) : null;
+
   const errorBlock = error ? (
     <div
       className="rounded-xl px-4 py-3"
@@ -798,7 +888,10 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
         backgroundColor: "rgb(var(--color-bg-subtle))",
       }}
     >
-      <MediaPicker />
+      <div data-field="media">
+        <MediaPicker />
+        {mediaErrorBlock}
+      </div>
 
       {/* Title preview */}
       {titleValue && (
@@ -865,8 +958,9 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
 
         <div className="flex-1 overflow-y-auto px-4 pb-8">
           {/* Mobile-only: media picker (dotted picker / photo grid / video) */}
-          <div className="mb-5 mt-4 md:hidden">
+          <div className="mb-5 mt-4 md:hidden" data-field="media">
             <MediaPicker />
+            {mediaErrorBlock}
           </div>
 
           {/* Title — full width on both layouts (media lives above/in left panel) */}
@@ -921,9 +1015,18 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
         >
           <button
             onClick={handleSubmit(onNext)}
-            disabled={!canProceed || advancing}
-            className="w-full h-12 rounded-full font-semibold bg-primary text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
-            style={{ fontSize: "var(--text-base)" }}
+            // Always clickable (except while a save is in flight). Instead of a
+            // dead/disabled button that hides WHAT is missing, onNext validates
+            // each required field and surfaces a specific inline error so the
+            // user knows exactly what to fix. `canProceed` only dims the button
+            // as a soft hint that something still needs attention.
+            disabled={advancing}
+            aria-disabled={!canProceed}
+            className="w-full h-12 rounded-full font-semibold bg-primary text-white transition-opacity disabled:cursor-not-allowed"
+            style={{
+              fontSize: "var(--text-base)",
+              opacity: advancing ? 0.6 : canProceed ? 1 : 0.55,
+            }}
           >
             {advancing ? "Saving…" : "Next"}
           </button>

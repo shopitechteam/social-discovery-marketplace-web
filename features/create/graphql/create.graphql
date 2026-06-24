@@ -186,6 +186,16 @@ mutation CreateDraftFromTiktokEmbed($input: TiktokEmbedInput!) {
   }
 }
 
+query SuggestedPostLocation {
+  suggestedPostLocation {
+    placeName
+    formattedAddress
+    placeId
+    county
+    subregion
+  }
+}
+
 query GetDraft($id: String!) {
   draft(id: $id) {
     ...DraftFields

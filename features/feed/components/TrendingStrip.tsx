@@ -139,17 +139,33 @@ export function TrendingStrip({ lang, county }: Props) {
   const { items, loading } = useTrending(county);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Skeleton mirrors the loaded markup exactly — same <section>, header row and
+  // scroll container with identical spacing — so swapping skeleton → real strip
+  // produces zero layout shift. Only the card faces are placeholder blocks.
   if (loading) {
     return (
-      <div className="flex gap-2.5 px-4 overflow-hidden">
-        {[...Array(5)].map((_, i) => (
-          <div
-            key={i}
-            className="flex-none w-28  rounded-xl bg-black/10 dark:bg-white/10 animate-pulse"
-            style={{ aspectRatio: "9/14" }}
-          />
-        ))}
-      </div>
+      <section>
+        <div className="flex items-center justify-between px-4 mb-2.5">
+          <h2 className="text-sm font-bold text-default flex items-center gap-1.5">
+            <span>🔥</span> Trending
+          </h2>
+          <span className="text-xs text-muted-foreground">
+            {county ?? "Nationwide"}
+          </span>
+        </div>
+        <div
+          className="flex gap-2.5 mx-4 overflow-hidden pb-0.5"
+          aria-hidden
+        >
+          {[...Array(5)].map((_, i) => (
+            <div
+              key={i}
+              className="flex-none w-28 rounded-xl bg-black/10 dark:bg-white/10 animate-pulse"
+              style={{ aspectRatio: "9/14" }}
+            />
+          ))}
+        </div>
+      </section>
     );
   }
 
