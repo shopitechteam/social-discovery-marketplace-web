@@ -6,17 +6,21 @@ import { FeedPaginationSkeleton, FeedSkeleton } from "./FeedSkeleton";
 import { TrendingStrip } from "./TrendingStrip";
 //import { StoriesBar } from "@/features/stories/components/StoriesBar";
 import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
+import { useScrollRestoration } from "../hooks/useScrollRestoration";
 
 interface Props {
   lang: string;
 }
 
 export function FeedGrid({ lang }: Props) {
-  const { items, loading, hasMore, loadMore } = useForYouFeed();
+  const { items, loading, loadingMore, hasMore, loadMore } = useForYouFeed();
+
+  // Restore scroll on return from another tab once the cached list has painted.
+  useScrollRestoration("for-you", items.length > 0);
 
   const { sentinelRef } = useInfiniteScroll({
     hasMore,
-    loading,
+    loading: loading || loadingMore,
     onLoadMore: loadMore,
     rootMargin: "1400px",
   });
@@ -57,7 +61,7 @@ export function FeedGrid({ lang }: Props) {
       {/* ── Infinite scroll sentinel ─────────────────────────────────── */}
       <div ref={sentinelRef} className="h-1" />
 
-      {loading && items.length > 0 && <FeedPaginationSkeleton />}
+      {loadingMore && <FeedPaginationSkeleton />}
 
       {!hasMore && items.length > 0 && (
         <p className="text-center text-muted-foreground text-xs py-6">

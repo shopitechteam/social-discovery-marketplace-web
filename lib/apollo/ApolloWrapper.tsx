@@ -77,14 +77,24 @@ async function doRefresh(
 /**
  * Shared merge for cursor-paginated feeds (forYouFeed/followingFeed/localFeed).
  *
- * - First page (no `after`): replace the window.
- * - Subsequent pages: append, but dedupe by the item's normalized ref/id so an
- *   overlapping cursor window can't insert a post twice. A duplicate key in the
- *   list makes React remount that subtree, which is what causes the flicker /
- *   scroll jump when paginating back and forth.
+ * - Paginating (`after` present): append, deduped by normalized ref/id so an
+ *   overlapping cursor window can't insert a post twice. A duplicate key makes
+ *   React remount that subtree → flicker / scroll jump when paging back/forth.
+ *
+ * - First page (no `after`): this fires both on the very first load AND on every
+ *   background `cache-and-network` refetch when revisiting the screen (tab away →
+ *   back). We must NOT blindly replace the window here: if we did, a single
+ *   page-1 refetch would collapse an accumulated 200-item window down to 10 and
+ *   snap scroll to the top. Instead we splice the fresh page-1 over the head of
+ *   the existing list (so newly-published posts appear at the top and updated
+ *   fields refresh) while KEEPING the accumulated tail the user already scrolled
+ *   through. Only when there is no existing window do we take the incoming page
+ *   verbatim.
  */
 type FeedItem = { __ref?: string; id?: string };
 type FeedPage = { items?: FeedItem[] } & Record<string, unknown>;
+
+const itemKey = (it: FeedItem) => it.__ref ?? it.id;
 
 function mergeFeedPage(
   existing: FeedPage | undefined,
@@ -92,12 +102,24 @@ function mergeFeedPage(
   { args }: { args: Record<string, unknown> | null },
 ): FeedPage {
   const incomingItems = incoming?.items ?? [];
-  if (!args?.after) return { ...incoming, items: incomingItems };
-
   const prevItems = existing?.items ?? [];
-  const seen = new Set(prevItems.map((it) => it.__ref ?? it.id));
-  const deduped = incomingItems.filter((it) => !seen.has(it.__ref ?? it.id));
-  return { ...incoming, items: [...prevItems, ...deduped] };
+
+  // Pagination (fetchMore): append, deduped against everything we already have.
+  if (args?.after) {
+    const seen = new Set(prevItems.map(itemKey));
+    const deduped = incomingItems.filter((it) => !seen.has(itemKey(it)));
+    return { ...incoming, items: [...prevItems, ...deduped] };
+  }
+
+  // First page on a fresh cache → nothing to preserve, take it as-is.
+  if (prevItems.length === 0) return { ...incoming, items: incomingItems };
+
+  // First page on a populated cache (background refresh). Keep the accumulated
+  // window intact: put the refreshed page-1 items first, then everything from
+  // the old window that isn't in page-1 (i.e. the scrolled-past tail).
+  const incomingKeys = new Set(incomingItems.map(itemKey));
+  const tail = prevItems.filter((it) => !incomingKeys.has(itemKey(it)));
+  return { ...incoming, items: [...incomingItems, ...tail] };
 }
 
 function createClient() {

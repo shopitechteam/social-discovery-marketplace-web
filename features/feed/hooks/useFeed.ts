@@ -17,13 +17,16 @@ export function useForYouFeed() {
     ForYouFeedDocument,
     {
       variables: { limit: PAGE_SIZE },
-      // IMPORTANT: cache-first (NOT cache-and-network). cache-and-network
-      // refetches the first page on every mount/re-render, and our merge()
-      // replaces the whole window for a cursor-less response — collapsing the
-      // accumulated pages and snapping scroll back to the top. cache-first
-      // reads the full paginated window straight from cache on revisit
-      // (instant, scroll preserved); fetchMore still appends new pages.
-      fetchPolicy: "cache-first",
+      // cache-and-network: on revisit (tab away → back) the full accumulated
+      // window renders INSTANTLY from cache, then a single background page-1
+      // refetch runs to pull in newly-published posts / fresh fields. This is
+      // only safe because mergeFeedPage() now splices page-1 over the head of
+      // the existing window instead of replacing it — so the background refresh
+      // can't collapse the accumulated pages or snap scroll to the top.
+      // nextFetchPolicy keeps later re-renders on cache-first so fetchMore
+      // pagination doesn't re-trigger a page-1 network read.
+      fetchPolicy: "cache-and-network",
+      nextFetchPolicy: "cache-first",
       notifyOnNetworkStatusChange: true,
     },
   );
@@ -41,7 +44,11 @@ export function useForYouFeed() {
 
   return {
     items,
-    loading,
+    // Only an initial, dataless load should drive the full-screen skeleton.
+    loading: loading && items.length === 0,
+    // True only while a fetchMore page is in flight — drives the pagination
+    // spinner WITHOUT firing during the silent cache-and-network refresh.
+    loadingMore: networkStatus === NetworkStatus.fetchMore,
     error,
     hasMore: pageInfo?.hasNextPage ?? false,
     loadMore,
@@ -53,8 +60,10 @@ export function useFollowingFeed() {
     FollowingFeedDocument,
     {
       variables: { limit: PAGE_SIZE },
-      // See useForYouFeed: cache-first keeps the paginated window stable.
-      fetchPolicy: "cache-first",
+      // See useForYouFeed: cache-and-network restores instantly + refreshes in
+      // the background; mergeFeedPage keeps the accumulated window stable.
+      fetchPolicy: "cache-and-network",
+      nextFetchPolicy: "cache-first",
       notifyOnNetworkStatusChange: true,
     },
   );
@@ -70,7 +79,8 @@ export function useFollowingFeed() {
 
   return {
     items,
-    loading,
+    loading: loading && items.length === 0,
+    loadingMore: networkStatus === NetworkStatus.fetchMore,
     error,
     hasMore: pageInfo?.hasNextPage ?? false,
     loadMore,
@@ -90,8 +100,10 @@ export function useNearbyFeed(
         limit: PAGE_SIZE,
       },
       skip: !county,
-      // See useForYouFeed: cache-first keeps the paginated window stable.
-      fetchPolicy: "cache-first",
+      // See useForYouFeed: cache-and-network restores instantly + refreshes in
+      // the background; mergeFeedPage keeps the accumulated window stable.
+      fetchPolicy: "cache-and-network",
+      nextFetchPolicy: "cache-first",
       notifyOnNetworkStatusChange: true,
     },
   );
@@ -114,7 +126,8 @@ export function useNearbyFeed(
 
   return {
     items,
-    loading,
+    loading: loading && items.length === 0,
+    loadingMore: networkStatus === NetworkStatus.fetchMore,
     error,
     hasMore: pageInfo?.hasNextPage ?? false,
     loadMore,

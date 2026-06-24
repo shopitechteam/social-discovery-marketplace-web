@@ -6,6 +6,7 @@ import { PostCard } from "./PostCard";
 import { FeedPaginationSkeleton, FeedSkeleton } from "./FeedSkeleton";
 import { useFollowingFeed } from "../hooks/useFeed";
 import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
+import { useScrollRestoration } from "../hooks/useScrollRestoration";
 
 interface Props {
   lang: string;
@@ -75,11 +76,14 @@ function LoginWall({ lang }: { lang: string }) {
 export function FollowingGrid({ lang }: Props) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated());
 
-  const { items, loading, hasMore, loadMore } = useFollowingFeed();
+  const { items, loading, loadingMore, hasMore, loadMore } = useFollowingFeed();
+
+  // Restore scroll on return from another tab once the cached list has painted.
+  useScrollRestoration("following", items.length > 0);
 
   const { sentinelRef } = useInfiniteScroll({
     hasMore,
-    loading,
+    loading: loading || loadingMore,
     onLoadMore: loadMore,
     rootMargin: "1400px",
   });
@@ -118,7 +122,7 @@ export function FollowingGrid({ lang }: Props) {
 
       <div ref={sentinelRef} className="h-1" />
 
-      {loading && items.length > 0 && <FeedPaginationSkeleton />}
+      {loadingMore && <FeedPaginationSkeleton />}
 
       {!hasMore && items.length > 0 && (
         <p
