@@ -124,8 +124,8 @@ export function useInbox(lang: string) {
   } = useQuery(MY_DIRECT_CONVERSATIONS, {
     variables: { limit: 40 },
     skip: !isAuthenticated,
-    fetchPolicy: "cache-and-network",
-    nextFetchPolicy: "cache-first",
+    // fetchPolicy: "cache-and-network",
+    //nextFetchPolicy: "cache-first",
     notifyOnNetworkStatusChange: true,
   });
 
@@ -182,7 +182,9 @@ export function useInbox(lang: string) {
   const [blockDirectConversation] = useMutation(BLOCK_DIRECT_CONVERSATION);
   const [unblockDirectConversation] = useMutation(UNBLOCK_DIRECT_CONVERSATION);
   const [reportDirectConversation] = useMutation(REPORT_DIRECT_CONVERSATION);
-  const [markDirectConversationDeal] = useMutation(MARK_DIRECT_CONVERSATION_DEAL);
+  const [markDirectConversationDeal] = useMutation(
+    MARK_DIRECT_CONVERSATION_DEAL,
+  );
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -360,13 +362,7 @@ export function useInbox(lang: string) {
             : "Could not open the conversation",
         );
       });
-  }, [
-    contentIdParam,
-    ensureConversation,
-    lang,
-    refetchConversations,
-    router,
-  ]);
+  }, [contentIdParam, ensureConversation, lang, refetchConversations, router]);
 
   useEffect(() => {
     if (!selectedConversationId || !isAuthenticated) return;
@@ -632,7 +628,9 @@ export function useInbox(lang: string) {
         setSelectedConversationId(conversation.id);
         setActiveConversation(conversation);
         setConversations((prev) => {
-          const withoutCurrent = prev.filter((item) => item.id !== conversation.id);
+          const withoutCurrent = prev.filter(
+            (item) => item.id !== conversation.id,
+          );
           return [conversation, ...withoutCurrent];
         });
         // Replace the URL without a navigation so we stay on the same chat screen.
@@ -646,7 +644,9 @@ export function useInbox(lang: string) {
         void refetchConversations();
       } catch (error) {
         toast.error(
-          error instanceof Error ? error.message : "Could not open the conversation",
+          error instanceof Error
+            ? error.message
+            : "Could not open the conversation",
         );
       } finally {
         ensureKeyRef.current = null;
@@ -819,13 +819,21 @@ export function useInbox(lang: string) {
         try {
           const { data } = await sendDirectMessage({
             variables: {
-              input: { conversationId, latitude, longitude, locationLabel, clientMessageId },
+              input: {
+                conversationId,
+                latitude,
+                longitude,
+                locationLabel,
+                clientMessageId,
+              },
             },
           });
           const message = (data as { sendDirectMessage?: Message } | undefined)
             ?.sendDirectMessage;
           if (message) {
-            setMessages((prev) => upsertMessage(prev, { ...message, clientMessageId }));
+            setMessages((prev) =>
+              upsertMessage(prev, { ...message, clientMessageId }),
+            );
             void refetchConversations();
           }
         } catch {
@@ -839,7 +847,12 @@ export function useInbox(lang: string) {
         }
       })();
     },
-    [currentUser?.id, selectedConversation, sendDirectMessage, refetchConversations],
+    [
+      currentUser?.id,
+      selectedConversation,
+      sendDirectMessage,
+      refetchConversations,
+    ],
   );
 
   const runMediaUpload = useCallback(
@@ -1244,35 +1257,38 @@ export function useInbox(lang: string) {
     if (conversations[0]) navigateToConversation(conversations[0].id);
   }, [conversations, navigateToConversation, requireAuth]);
 
-  const mergeConversationSnapshot = useCallback((conversation: Conversation) => {
-    setActiveConversation((prev) =>
-      prev?.id === conversation.id ? { ...prev, ...conversation } : prev,
-    );
-    setConversations((prev) => {
-      const existing = prev.find((item) => item.id === conversation.id);
-      if (!existing) return [conversation, ...prev];
-      return upsertConversation(prev, {
-        conversationId: conversation.id,
-        contentId: conversation.contentId,
-        lastMessageId: conversation.lastMessageId ?? undefined,
-        lastMessageText: conversation.lastMessageText ?? undefined,
-        lastMessageType:
-          (conversation.lastMessageType?.toLowerCase() as
-            | "text"
-            | "image"
-            | "video"
-            | undefined) ?? undefined,
-        lastMessageSenderId: conversation.lastMessageSenderId ?? undefined,
-        lastMessageAt: conversation.lastMessageAt ?? undefined,
-        myUnreadCount: conversation.myUnreadCount ?? 0,
-        blockedByMe: conversation.blockedByMe ?? undefined,
-        blockedByOther: conversation.blockedByOther ?? undefined,
-        canSendMessages: conversation.canSendMessages ?? undefined,
-        dealClosedAt: conversation.dealClosedAt ?? undefined,
-        dealClosedByUserId: conversation.dealClosedByUserId ?? undefined,
+  const mergeConversationSnapshot = useCallback(
+    (conversation: Conversation) => {
+      setActiveConversation((prev) =>
+        prev?.id === conversation.id ? { ...prev, ...conversation } : prev,
+      );
+      setConversations((prev) => {
+        const existing = prev.find((item) => item.id === conversation.id);
+        if (!existing) return [conversation, ...prev];
+        return upsertConversation(prev, {
+          conversationId: conversation.id,
+          contentId: conversation.contentId,
+          lastMessageId: conversation.lastMessageId ?? undefined,
+          lastMessageText: conversation.lastMessageText ?? undefined,
+          lastMessageType:
+            (conversation.lastMessageType?.toLowerCase() as
+              | "text"
+              | "image"
+              | "video"
+              | undefined) ?? undefined,
+          lastMessageSenderId: conversation.lastMessageSenderId ?? undefined,
+          lastMessageAt: conversation.lastMessageAt ?? undefined,
+          myUnreadCount: conversation.myUnreadCount ?? 0,
+          blockedByMe: conversation.blockedByMe ?? undefined,
+          blockedByOther: conversation.blockedByOther ?? undefined,
+          canSendMessages: conversation.canSendMessages ?? undefined,
+          dealClosedAt: conversation.dealClosedAt ?? undefined,
+          dealClosedByUserId: conversation.dealClosedByUserId ?? undefined,
+        });
       });
-    });
-  }, []);
+    },
+    [],
+  );
 
   const deleteSelectedConversation = useCallback(
     async (targetId?: string) => {
@@ -1284,9 +1300,8 @@ export function useInbox(lang: string) {
         const { data } = await deleteDirectConversation({
           variables: { conversationId },
         });
-        const ok = (
-          data as { deleteDirectConversation?: boolean } | undefined
-        )?.deleteDirectConversation;
+        const ok = (data as { deleteDirectConversation?: boolean } | undefined)
+          ?.deleteDirectConversation;
         if (!ok) {
           toast.error("Could not delete this conversation");
           return false;
@@ -1376,14 +1391,20 @@ export function useInbox(lang: string) {
         return true;
       } catch (error) {
         toast.error(
-          error instanceof Error ? error.message : "Could not unblock this user",
+          error instanceof Error
+            ? error.message
+            : "Could not unblock this user",
         );
         return false;
       } finally {
         setIsConversationActionPending(false);
       }
     },
-    [mergeConversationSnapshot, refetchConversations, unblockDirectConversation],
+    [
+      mergeConversationSnapshot,
+      refetchConversations,
+      unblockDirectConversation,
+    ],
   );
 
   const reportSelectedConversation = useCallback(
@@ -1402,9 +1423,8 @@ export function useInbox(lang: string) {
             },
           },
         });
-        const ok = (
-          data as { reportDirectConversation?: boolean } | undefined
-        )?.reportDirectConversation;
+        const ok = (data as { reportDirectConversation?: boolean } | undefined)
+          ?.reportDirectConversation;
         if (!ok) {
           toast.error("Could not submit this report");
           return false;
@@ -1458,7 +1478,11 @@ export function useInbox(lang: string) {
         setIsConversationActionPending(false);
       }
     },
-    [markDirectConversationDeal, mergeConversationSnapshot, refetchConversations],
+    [
+      markDirectConversationDeal,
+      mergeConversationSnapshot,
+      refetchConversations,
+    ],
   );
 
   return {
