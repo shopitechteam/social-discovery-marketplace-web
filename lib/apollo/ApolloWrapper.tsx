@@ -30,13 +30,11 @@ async function doRefresh(
   refreshToken: string,
 ): Promise<string | null> {
   try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/graphql`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query: `
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/graphql`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        query: `
             mutation RefreshToken($input: RefreshTokenInput!) {
               refreshToken(input: $input) {
                 accessToken
@@ -51,10 +49,9 @@ async function doRefresh(
               }
             }
           `,
-          variables: { input: { refreshToken } },
-        }),
-      },
-    );
+        variables: { input: { refreshToken } },
+      }),
+    });
 
     const json = (await res.json()) as {
       data?: RefreshTokenMutation;
@@ -63,8 +60,14 @@ async function doRefresh(
 
     if (json.errors || !json.data?.refreshToken) return null;
 
-    const { accessToken, refreshToken: newRefreshToken, user } = json.data.refreshToken;
-    useAuthStore.getState().setAuth({ accessToken, refreshToken: newRefreshToken, user });
+    const {
+      accessToken,
+      refreshToken: newRefreshToken,
+      user,
+    } = json.data.refreshToken;
+    useAuthStore
+      .getState()
+      .setAuth({ accessToken, refreshToken: newRefreshToken, user });
     return accessToken;
   } catch {
     return null;
@@ -100,7 +103,6 @@ function mergeFeedPage(
 function createClient() {
   const httpLink = new HttpLink({
     uri: `${process.env.NEXT_PUBLIC_API_URL}/graphql`,
-    fetchOptions: { cache: "no-store" },
   });
 
   // Attach Authorization header from store on every request
@@ -231,9 +233,9 @@ function createClient() {
             // These are FieldResolver values that differ per-viewer.
             // merge: false tells Apollo to always take the incoming value
             // rather than trying to deep-merge, which prevents stale data.
-            isLikedByMe:  { merge: false },
-            isMyContent:  { merge: false },
-            creator:      { merge: false },
+            isLikedByMe: { merge: false },
+            isMyContent: { merge: false },
+            creator: { merge: false },
           },
         },
 
@@ -285,13 +287,16 @@ function createClient() {
 
     defaultOptions: {
       watchQuery: {
-        // Always hit network + show cached data while fresh arrives.
-        // No nextFetchPolicy — keep cache-and-network on every re-render
-        // so revisiting the feed never shows stale data.
-        fetchPolicy: "cache-and-network",
+        // Default to cache-first so revisiting a screen (tab away → back)
+        // renders instantly from the normalized cache and preserves scroll.
+        // Screens that genuinely need freshness opt into a one-time background
+        // refresh via per-hook fetchPolicy / manual refetch.
+        fetchPolicy: "cache-first",
       },
       query: {
-        fetchPolicy: "network-only",
+        // One-shot reads should still prefer the cache; callers that need
+        // a forced network read can override per-call.
+        fetchPolicy: "cache-first",
         errorPolicy: "all",
       },
       mutate: {

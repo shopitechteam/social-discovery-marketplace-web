@@ -142,7 +142,7 @@ export function BottomNav({ lang = "en" }: { lang: string }) {
                 />
                 {tab.key === "notifications" && unreadCount > 0 ? (
                   <span
-                    className="absolute -right-2 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 font-bold text-white"
+                    className="absolute -right-2 -top-1.5 flex h-4.5 min-w-4.5 items-center justify-center rounded-full px-1 font-bold text-white"
                     style={{
                       fontSize: "10px",
                       lineHeight: 1,

@@ -67,6 +67,7 @@ export function CreateFlow({ lang }: CreateFlowProps) {
     setTitle,
     setCaption,
     setHashtags,
+    setCategory,
     setContentType,
     setPrice,
     setSpecs,
@@ -170,6 +171,7 @@ export function CreateFlow({ lang }: CreateFlowProps) {
         setTitle(d.title ?? "");
         setCaption(d.caption ?? "");
         setHashtags(d.hashtags ?? []);
+        setCategory(d.categoryId ?? null);
         setSpecs((d.specs ?? []).map((s) => ({ key: s.key, value: s.value })));
         setVisibilityMode(
           (d.visibilityMode?.toLowerCase() as

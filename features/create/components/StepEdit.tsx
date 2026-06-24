@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, KeyboardEvent } from "react";
 import { useMutation } from "@apollo/client/react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { useCreateStore } from "@/stores/create";
 import {
   AutosaveDraftDocument,
@@ -12,6 +12,7 @@ import {
 import { LocationPicker } from "./LocationPicker";
 import { SpecsEditor } from "./SpecsEditor";
 import { MediaPicker } from "./MediaPicker";
+import { CategoryPickerDrawer } from "./CategoryPickerDrawer";
 import { useVideoFrameExtract } from "@/features/create/hooks/useVideoFrameExtract";
 import { takeCachedVideoFrames } from "@/features/create/utils/captureVideoFrames";
 
@@ -46,6 +47,9 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
     title,
     caption,
     hashtags,
+    categoryId,
+    categoryName,
+    categorySource,
     price,
     currency,
     isFree,
@@ -59,6 +63,7 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
     setTitle,
     setCaption,
     setHashtags,
+    setCategory,
     setPrice,
     setSpecs,
     setIsExtracting,
@@ -122,11 +127,11 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
   );
 
   // ── Caption (react-hook-form) ──────────────────────────────────────────────
-  const { register, watch, handleSubmit, setValue } = useForm<EditFormValues>({
+  const { register, control, handleSubmit, setValue } = useForm<EditFormValues>({
     defaultValues: { caption },
     mode: "onChange",
   });
-  const watchCaption = watch("caption", caption);
+  const watchCaption = useWatch({ control, name: "caption" }) ?? caption;
 
   // ── AI auto-fill: fills title, description, price and specs ─────────────────
   // The "killer feature". Whatever it returns is fully editable; the user can
@@ -149,9 +154,11 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
     description?: string | null;
     price?: number | null;
     specs?: { key: string; value: string }[] | null;
+    level1?: string | null;
+    categoryId?: string | null;
   }) {
     if (r.title && !titleValue.trim()) setTitleValue(r.title);
-    if (r.description && !watch("caption")?.trim()) {
+    if (r.description && !watchCaption?.trim()) {
       setValue("caption", r.description);
     }
     if (r.price != null && !priceInput.trim()) {
@@ -162,6 +169,9 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
       .filter((s) => s.key.trim() && s.value.trim());
     if (cleanSpecs.length > 0 && specs.length === 0) {
       setSpecs(cleanSpecs);
+    }
+    if (r.categoryId && !categoryId) {
+      setCategory(r.categoryId, r.level1 ?? null, "ai");
     }
   }
 
@@ -240,8 +250,9 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
           id: draftId,
           input: {
             title: titleValue || undefined,
-            caption: watch("caption") || undefined,
+            caption: watchCaption || undefined,
             hashtags: tags.length ? tags : undefined,
+            categoryId: categoryId ?? undefined,
             specs: specs.length
               ? specs
                   .filter((s) => s.key.trim() && s.value.trim())
@@ -264,7 +275,7 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
     }, 800);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [titleValue, watchCaption, tags, location]);
+  }, [titleValue, watchCaption, tags, categoryId, location]);
 
   // ── Form validity (drives the sticky Next button's disabled state) ──────────
   // Mirrors the synchronously-checkable rules in onNext: a non-empty title, a
@@ -301,14 +312,16 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
     // attached to the draft yet (attach happens after the R2 PUT completes).
     // Items in "processing" or "ready" are already attached server-side.
     const ATTACH_TIMEOUT_MS = 30_000;
-    const started = Date.now();
+    const ATTACH_POLL_MS = 300;
+    let remainingAttachChecks = Math.ceil(ATTACH_TIMEOUT_MS / ATTACH_POLL_MS);
     while (
       useCreateStore
         .getState()
         .mediaItems.some((m) => m.status === "uploading") &&
-      Date.now() - started < ATTACH_TIMEOUT_MS
+      remainingAttachChecks > 0
     ) {
-      await new Promise((r) => setTimeout(r, 300));
+      remainingAttachChecks -= 1;
+      await new Promise((r) => setTimeout(r, ATTACH_POLL_MS));
     }
     if (
       useCreateStore.getState().mediaItems.some((m) => m.status === "uploading")
@@ -348,6 +361,7 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
             title: trimmedTitle,
             caption: values.caption,
             hashtags: tags,
+            categoryId: categoryId ?? undefined,
             specs: specs
               .filter((s) => s.key.trim() && s.value.trim())
               .map((s) => ({ key: s.key.trim(), value: s.value.trim() })),
@@ -602,6 +616,36 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
     </div>
   );
 
+  const categoryBlock = (
+    <div>
+      <label
+        className="block mb-1.5 font-medium"
+        style={{
+          fontSize: "var(--text-sm)",
+          color: "rgb(var(--color-text-muted))",
+        }}
+      >
+        Category
+      </label>
+      <CategoryPickerDrawer
+        value={categoryId}
+        fallbackLabel={categoryName}
+        onChange={(id, name) => setCategory(id, name, "manual")}
+      />
+      {hasExtracted && categoryId && categorySource === "ai" && (
+        <p
+          style={{
+            fontSize: "var(--text-xs)",
+            color: "rgb(var(--brand-primary))",
+            marginTop: 6,
+          }}
+        >
+          AI suggestion
+        </p>
+      )}
+    </div>
+  );
+
   const priceBlock = (
     <div>
       <label
@@ -837,6 +881,11 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
 
           {/* Tags */}
           <div className="mt-4">{tagsBlock}</div>
+
+          <Divider className="mt-4" />
+
+          {/* Category */}
+          <div className="mt-4">{categoryBlock}</div>
 
           <Divider className="mt-4" />
 

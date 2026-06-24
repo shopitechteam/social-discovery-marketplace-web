@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { useCreateStore } from "@/stores/create";
 import { PublishDraftDocument } from "@/types/__generated__/graphql";
 import { gql } from "@apollo/client";
+import { invalidatePublishedContentCache } from "@/lib/apollo/feedCache";
 
 const POST_TO_TIKTOK = gql`
   mutation PostToTiktok($contentId: String!) {

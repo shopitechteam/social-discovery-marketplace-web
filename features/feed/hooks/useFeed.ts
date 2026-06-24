@@ -17,12 +17,13 @@ export function useForYouFeed() {
     ForYouFeedDocument,
     {
       variables: { limit: PAGE_SIZE },
-      // IMPORTANT: do NOT use cache-and-network here. That policy refetches the
-      // first page on every re-render, and our merge() replaces the whole window
-      // for a cursor-less response — collapsing everything we've paginated and
-      // snapping the scroll position. cache-first keeps the accumulated window
-      // stable across re-renders; fetchMore still appends new pages.
-      fetchPolicy: "cache-and-network",
+      // IMPORTANT: cache-first (NOT cache-and-network). cache-and-network
+      // refetches the first page on every mount/re-render, and our merge()
+      // replaces the whole window for a cursor-less response — collapsing the
+      // accumulated pages and snapping scroll back to the top. cache-first
+      // reads the full paginated window straight from cache on revisit
+      // (instant, scroll preserved); fetchMore still appends new pages.
+      fetchPolicy: "cache-first",
       notifyOnNetworkStatusChange: true,
     },
   );
@@ -53,8 +54,7 @@ export function useFollowingFeed() {
     {
       variables: { limit: PAGE_SIZE },
       // See useForYouFeed: cache-first keeps the paginated window stable.
-      //  fetchPolicy: "cache-first",
-      fetchPolicy: "cache-and-network",
+      fetchPolicy: "cache-first",
       notifyOnNetworkStatusChange: true,
     },
   );
@@ -91,7 +91,7 @@ export function useNearbyFeed(
       },
       skip: !county,
       // See useForYouFeed: cache-first keeps the paginated window stable.
-      fetchPolicy: "cache-and-network",
+      fetchPolicy: "cache-first",
       notifyOnNetworkStatusChange: true,
     },
   );

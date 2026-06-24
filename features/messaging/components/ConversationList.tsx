@@ -144,7 +144,7 @@ export function ConversationList({
             ))}
           </div>
         ) : conversations.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
+          <div className="flex h-full mt-12 flex-col items-center justify-center gap-3 px-6 text-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
               <MessageCircle size={24} />
             </div>
@@ -188,7 +188,8 @@ export function ConversationList({
                 onPointerDown={(event) => {
                   // Mouse/pen long-press (touch is handled above). Skip touch
                   // pointers to avoid double-arming the timer.
-                  if (event.pointerType !== "touch") startLongPress(conversation);
+                  if (event.pointerType !== "touch")
+                    startLongPress(conversation);
                 }}
                 onPointerUp={clearLongPress}
                 onPointerLeave={clearLongPress}

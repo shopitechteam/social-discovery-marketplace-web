@@ -6,6 +6,7 @@ fragment DraftFields on DraftContent {
   title
   caption
   hashtags
+  categoryId
   mediaAssetIds
   visibilityMode
   allowDownload
@@ -44,6 +45,24 @@ fragment DraftFields on DraftContent {
   }
   createdAt
   updatedAt
+}
+
+fragment CategoryFields on Category {
+  id
+  name
+  slug
+  description
+  icon
+  parentId
+  depth
+  sortOrder
+  contentCount
+}
+
+query Categories {
+  categories {
+    ...CategoryFields
+  }
 }
 
 fragment MediaAssetFields on MediaAsset {

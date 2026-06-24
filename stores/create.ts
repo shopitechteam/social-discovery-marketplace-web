@@ -57,6 +57,9 @@ export type CreateFlowState = {
   title: string;
   caption: string;
   hashtags: string[];
+  categoryId: string | null;
+  categoryName: string | null;
+  categorySource: "ai" | "manual" | null;
   contentType: "image" | "video" | null;
   /** Set when the draft embeds a TikTok video instead of uploaded media. */
   tiktokEmbed: TiktokEmbed | null;
@@ -95,6 +98,11 @@ type CreateFlowActions = {
   setTitle: (title: string) => void;
   setCaption: (caption: string) => void;
   setHashtags: (tags: string[]) => void;
+  setCategory: (
+    id: string | null,
+    name?: string | null,
+    source?: "ai" | "manual" | null,
+  ) => void;
   setContentType: (type: "image" | "video" | null) => void;
   setTiktokEmbed: (embed: TiktokEmbed | null) => void;
   setPrice: (price: number | null, isFree: boolean) => void;
@@ -121,6 +129,9 @@ const DEFAULT_STATE: CreateFlowState = {
   title: "",
   caption: "",
   hashtags: [],
+  categoryId: null,
+  categoryName: null,
+  categorySource: null,
   contentType: null,
   tiktokEmbed: null,
   price: null,
@@ -181,6 +192,8 @@ export const useCreateStore = create<CreateFlowState & CreateFlowActions>()(
       setTitle: (title) => set({ title }),
       setCaption: (caption) => set({ caption }),
       setHashtags: (hashtags) => set({ hashtags }),
+      setCategory: (categoryId, categoryName = null, categorySource = null) =>
+        set({ categoryId, categoryName, categorySource }),
       setContentType: (contentType) => set({ contentType }),
       setTiktokEmbed: (tiktokEmbed) => set({ tiktokEmbed }),
       setPrice: (price, isFree) => set({ price, isFree }),
@@ -209,10 +222,17 @@ export const useCreateStore = create<CreateFlowState & CreateFlowActions>()(
         contentType: s.contentType,
         tiktokEmbed: s.tiktokEmbed,
         // Strip blob localUris — they're only valid in the originating tab's memory
-        mediaItems: s.mediaItems.map(({ localUri: _, ...rest }) => rest as MediaItem),
+        mediaItems: s.mediaItems.map((item) => {
+          const { localUri, ...rest } = item;
+          void localUri;
+          return rest as MediaItem;
+        }),
         title: s.title,
         caption: s.caption,
         hashtags: s.hashtags,
+        categoryId: s.categoryId,
+        categoryName: s.categoryName,
+        categorySource: s.categorySource,
         price: s.price,
         currency: s.currency,
         isFree: s.isFree,
