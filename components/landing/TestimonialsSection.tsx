@@ -22,9 +22,9 @@ const useCases: { node: React.ReactNode; who: string; accent: string }[] = [
   {
     node: (
       <>
-        A farmer in Kiambu films the cows, adds a price and the location, and
-        posts. Buyers across the country see it and message directly — no broker
-        deciding the price for them.
+        A farmer in Kiambu records the animals, adds a price and location, then
+        posts. Buyers can see the listing in the feed and message directly,
+        without a broker setting the conversation for them.
       </>
     ),
     who: "Farm produce & livestock",
@@ -33,9 +33,9 @@ const useCases: { node: React.ReactNode; who: string; accent: string }[] = [
   {
     node: (
       <>
-        A phone dealer in town posts a short video of a clean iPhone. Someone
-        scrolling nearby sees it, asks a question, and they agree to meet — the
-        same day, no listing fees.
+        A phone dealer in town posts a clean iPhone with clear photos, video and
+        a price. Someone nearby spots it while scrolling, asks a few questions,
+        and they decide where to meet.
       </>
     ),
     who: "Electronics & phones",
@@ -44,10 +44,10 @@ const useCases: { node: React.ReactNode; who: string; accent: string }[] = [
   {
     node: (
       <>
-        Used to post on <EL href="https://jiji.co.ke">Jiji</EL> and wait? On
-        Shopi the product finds the buyer while they scroll, like{" "}
-        <EL href="https://www.tiktok.com">TikTok</EL> — but everything in the
-        feed is for sale, near you.
+        Shopi keeps the classifieds idea people know from sites like{" "}
+        <EL href="https://jiji.co.ke">Jiji</EL>, but makes discovery feel closer
+        to a social feed. The difference is simple: every post is something for
+        sale, with a seller you can message.
       </>
     ),
     who: "Fashion, furniture & more",
@@ -84,7 +84,7 @@ export function TestimonialsSection({ dict }: { dict: Dictionary }) {
               fontFamily: "var(--font-display)",
               fontWeight: 700,
               fontSize: "clamp(1.75rem, 4vw, 3rem)",
-              letterSpacing: "-0.025em",
+              letterSpacing: 0,
               color: "rgb(var(--color-text))",
             }}
           >

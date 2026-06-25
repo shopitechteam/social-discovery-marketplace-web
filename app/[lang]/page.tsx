@@ -24,23 +24,27 @@ import {
 const HOME_FAQ = [
   {
     q: "What is Shopi?",
-    a: "Shopi is Kenya's social discovery marketplace. Sellers post short videos and photos of what they're selling, and buyers find products by scrolling a local feed — then message the seller directly to agree on price and pickup. It works like TikTok for things that are actually for sale near you.",
+    a: "Shopi is a social discovery classifieds marketplace for Kenya. Sellers post what they are selling, buyers discover items in a nearby feed, and both sides message each other directly to agree on price, pickup, delivery and payment.",
   },
   {
-    q: "Is Shopi free to use?",
-    a: "Yes. Posting products and messaging sellers is completely free. Shopi does not charge listing fees, take a commission on sales, or hold your money. Buyers and sellers deal directly with each other.",
+    q: "Does Shopi handle payments or delivery?",
+    a: "No. Shopi does not process payments, hold money, arrange delivery or take commission. The app helps buyers and sellers find each other, then they agree on the deal directly.",
+  },
+  {
+    q: "How is Shopi different from normal classified ads sites?",
+    a: "Most classifieds start with search filters. Shopi starts with discovery: short posts from nearby sellers appear in a feed, so buyers can find useful items even when they did not know exactly what to search for.",
+  },
+  {
+    q: "How does Shopi personalize my feed?",
+    a: "Shopi learns from what you open, like, save and message about. If you keep engaging with cars, your feed can show more cars. If your interest moves to fashion, furniture, phones or farm produce, the feed can adjust.",
   },
   {
     q: "What can I buy and sell on Shopi?",
-    a: "Almost anything — cars, phones, electronics, fashion, furniture, home items, and farm produce or livestock like cows and goats. If you have a product and a phone camera, you can post it.",
-  },
-  {
-    q: "How is Shopi different from Jiji?",
-    a: "Jiji is search-based: you type what you want and browse listings. Shopi is discovery-based: real products from sellers near you appear in your feed as short videos, like TikTok — combining social discovery with local classifieds in one place.",
+    a: "Shopi is built for everyday local selling: cars, phones, electronics, fashion, furniture, home items, farm produce, livestock and other goods that people in Kenya already buy and sell.",
   },
   {
     q: "Does Shopi work across Kenya?",
-    a: "Yes. Shopi surfaces sellers near you first using location tags, so a buyer in Meru, Nairobi, Kisumu or anywhere in Kenya sees relevant local products. Sellers and buyers arrange delivery or pickup directly.",
+    a: "Yes. Shopi is built for local discovery across Kenya, including Nairobi, Mombasa, Kisumu, Nakuru, Meru and smaller towns. Nearby posts are prioritized, but buyers and sellers can still connect across locations.",
   },
 ];
 
@@ -51,11 +55,13 @@ export async function generateMetadata({
   const safeLang = isValidLocale(lang) ? lang : "en";
   const canonical = `${siteConfig.url}/${safeLang}`;
 
-  const title = `${siteConfig.name} — ${siteConfig.tagline}`;
+  const title = `${siteConfig.name} | Kenya Local Marketplace & Classified Ads Feed`;
   const description = siteConfig.description;
 
   return {
-    title,
+    title: {
+      absolute: title,
+    },
     description,
     keywords: [...siteConfig.keywords],
     alternates: {
@@ -154,7 +160,7 @@ function HomeFaq() {
             fontFamily: "var(--font-display)",
             fontWeight: 700,
             fontSize: "clamp(1.75rem, 4vw, 2.75rem)",
-            letterSpacing: "-0.025em",
+            letterSpacing: 0,
             color: "rgb(var(--color-text))",
           }}
         >

@@ -29,8 +29,10 @@ export function FeedPage({ lang }: Props) {
   }, [searchParams]);
 
   function handleTabChange(next: Tab) {
+    // Don't force scroll-to-top: each sub-tab grid restores its own saved
+    // position via useScrollRestoration, so switching back to a tab returns the
+    // user to where they left off instead of jumping to the top.
     setTab(next);
-    window.scrollTo({ top: 0, behavior: "instant" });
   }
 
   return (

@@ -1,9 +1,10 @@
 "use client";
 
 import React from "react";
+import { Handshake, Heart, MapPin, MessageCircle, Search } from "lucide-react";
 import type { Dictionary } from "@/i18n/getDictionary";
 
-/* ─── Small building blocks for the illustrative panels (no emojis, no icons) ─── */
+/* ─── Small building blocks for the illustrative panels ─── */
 
 function Panel({ children }: { children: React.ReactNode }) {
   return (
@@ -81,7 +82,15 @@ function Tile({
   );
 }
 
-function Dot({ from, to, initials }: { from: string; to: string; initials: string }) {
+function Dot({
+  from,
+  to,
+  initials,
+}: {
+  from: string;
+  to: string;
+  initials: string;
+}) {
   return (
     <div
       style={{
@@ -103,18 +112,408 @@ function Dot({ from, to, initials }: { from: string; to: string; initials: strin
   );
 }
 
+function PhotoTile({
+  src,
+  alt,
+  label,
+  objectPosition = "center",
+  size = 48,
+  radius = 12,
+}: {
+  src: string;
+  alt: string;
+  label?: string;
+  objectPosition?: string;
+  size?: number | string;
+  radius?: number;
+}) {
+  return (
+    <div
+      role="img"
+      aria-label={alt}
+      style={{
+        width: size,
+        height: size,
+        borderRadius: radius,
+        backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.02), rgba(0,0,0,0.18)), url(${JSON.stringify(
+          src,
+        )})`,
+        backgroundSize: "cover",
+        backgroundPosition: objectPosition,
+        backgroundColor: "rgb(var(--color-bg-subtle))",
+        color: "#fff",
+        display: "flex",
+        alignItems: "flex-end",
+        justifyContent: "flex-start",
+        padding: 6,
+        overflow: "hidden",
+        flexShrink: 0,
+      }}
+    >
+      {label ? (
+        <span
+          style={{
+            fontSize: 8,
+            lineHeight: 1.2,
+            fontWeight: 800,
+            textShadow: "0 1px 2px rgba(0,0,0,0.45)",
+          }}
+        >
+          {label}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+function DealFlowIllustration() {
+  const productCards = [
+    {
+      title: "Shamba in Kitengela",
+      meta: "KSh 2.8M · Near the tarmac",
+      src: "https://propscout.co.ke/storage/properties/files/100-acres-land-for-sale-in-kitengela-jzlsm.jpg",
+      alt: "Open land for sale",
+      objectPosition: "center 55%",
+    },
+    {
+      title: "55-inch Samsung TV",
+      meta: "KSh 46k · Nairobi CBD",
+      src: "https://images.unsplash.com/photo-1593784991095-a205069470b6?auto=format&fit=crop&w=600&q=80",
+      alt: "Television on display",
+      objectPosition: "center 48%",
+    },
+  ];
+
+  return (
+    <div
+      className="deal-flow"
+      aria-label="How Shopi connects a nearby product post to a buyer and seller chat"
+    >
+      <div className="deal-flow-path" aria-hidden />
+
+      <div className="deal-node deal-seller">
+        <div className="deal-node-kicker">Seller posts</div>
+        <div className="deal-product-stack">
+          {productCards.map(({ title, meta, src, alt, objectPosition }) => (
+            <div key={title} className="deal-product-card mb-4 h-12 relative">
+              <PhotoTile
+                src={src}
+                alt={alt}
+                objectPosition={objectPosition}
+                label=""
+                size={56}
+                radius={12}
+              />
+              <div>
+                <div className="deal-product-title">{title}</div>
+                <div className="deal-product-meta">{meta}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="deal-node deal-feed">
+        <div className="deal-phone">
+          <div className="deal-phone-top">
+            <span>For you nearby</span>
+            <MapPin size={14} />
+          </div>
+          <div className="deal-feed-card">
+            <div className="deal-feed-media">
+              <div
+                className="deal-feed-photo"
+                role="img"
+                aria-label="Plot listing image"
+              />
+              <div className="deal-distance">
+                <MapPin size={11} />
+                2.4km
+              </div>
+            </div>
+            <div className="deal-feed-copy">
+              <strong>More of what you keep opening</strong>
+              <span>because you keep opening nearby listings</span>
+            </div>
+            <div className="deal-actions">
+              <span>
+                <Heart size={13} />
+                Save
+              </span>
+              <span>
+                <Search size={13} />
+                Similar
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="deal-node deal-chat">
+        <div className="deal-node-kicker">Buyer messages</div>
+        <div className="deal-chat-card">
+          <div className="deal-bubble deal-bubble-left">
+            Is it still available?
+          </div>
+          <div className="deal-bubble deal-bubble-right">
+            Yes. Come view it today.
+          </div>
+          <div className="deal-close-row">
+            <MessageCircle size={17} />
+            <span>Direct chat</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="deal-node deal-close">
+        <div className="deal-close-badge">
+          <Handshake size={22} />
+        </div>
+        <div>
+          <div className="deal-close-title">Deal agreed outside checkout</div>
+          <div className="deal-close-meta">Shopi connects. You decide.</div>
+        </div>
+      </div>
+
+      <style>{`
+        .deal-flow {
+          position: relative;
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 1rem;
+          padding: clamp(1rem, 3vw, 2rem);
+          margin: 0 auto 4.5rem;
+          border: 1px solid rgb(var(--color-border));
+          border-radius: var(--radius-lg);
+          background: rgb(var(--color-bg-subtle));
+          overflow: hidden;
+        }
+        .deal-flow-path {
+          position: absolute;
+          inset: 14% 8%;
+          border: 2px dashed rgb(var(--brand-primary) / 0.22);
+          border-radius: 24px;
+          pointer-events: none;
+        }
+        .deal-node {
+          position: relative;
+          z-index: 1;
+          background: rgb(var(--color-bg-elevated));
+          border: 1px solid rgb(var(--color-border));
+          border-radius: 14px;
+          box-shadow: var(--shadow-sm);
+        }
+        .deal-node-kicker {
+          padding: 0.8rem 0.9rem 0;
+          font-size: 0.72rem;
+          font-weight: 800;
+          color: rgb(var(--brand-primary));
+        }
+        .deal-product-stack {
+          display: grid;
+          gap: 0.65rem;
+          padding: 0.85rem;
+        }
+        .deal-product-card {
+          display: flex;
+          align-items: center;
+          gap: 0.7rem;
+        }
+        .deal-product-title,
+        .deal-close-title {
+          font-size: 0.9rem;
+          font-weight: 800;
+          color: rgb(var(--color-text));
+        }
+        .deal-product-meta,
+        .deal-close-meta {
+          margin-top: 0.15rem;
+          font-size: 0.78rem;
+          color: rgb(var(--color-text-muted));
+        }
+        .deal-phone {
+          padding: 0.75rem;
+          border-radius: 22px;
+          background: rgb(var(--color-bg));
+          border: 1px solid rgb(var(--color-border));
+        }
+        .deal-phone-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0.1rem 0.25rem 0.65rem;
+          font-size: 0.76rem;
+          font-weight: 800;
+          color: rgb(var(--color-text));
+        }
+        .deal-feed-card {
+          border-radius: 16px;
+          overflow: hidden;
+          border: 1px solid rgb(var(--color-border));
+          background: rgb(var(--color-bg-elevated));
+        }
+        .deal-feed-media {
+          min-height: 140px;
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          background: rgb(var(--color-bg-subtle));
+        }
+        .deal-feed-photo {
+          position: absolute;
+          inset: 0;
+          background-image:
+            linear-gradient(180deg, rgba(0,0,0,0.1), rgba(0,0,0,0.28)),
+            url("https://lscdn.blob.core.windows.net/add-post/subcategoryid/11433062-add-17059990430099750.jpeg");
+          background-size: cover;
+          background-position: center 58%;
+        }
+        .deal-distance {
+          position: absolute;
+          top: 0.7rem;
+          left: 0.7rem;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.25rem;
+          padding: 0.28rem 0.52rem;
+          border-radius: 999px;
+          background: rgba(0, 0, 0, 0.3);
+          font-size: 0.7rem;
+          font-weight: 800;
+        }
+        .deal-feed-copy {
+          display: grid;
+          gap: 0.2rem;
+          padding: 0.75rem;
+          color: rgb(var(--color-text));
+        }
+        .deal-feed-copy span {
+          font-size: 0.78rem;
+          color: rgb(var(--color-text-muted));
+        }
+        .deal-actions {
+          display: flex;
+          gap: 0.45rem;
+          padding: 0 0.75rem 0.75rem;
+        }
+        .deal-actions span,
+        .deal-close-row {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.3rem;
+          font-size: 0.75rem;
+          font-weight: 800;
+          color: rgb(var(--brand-primary));
+        }
+        .deal-chat-card {
+          display: grid;
+          gap: 0.55rem;
+          padding: 0.85rem;
+        }
+        .deal-bubble {
+          max-width: 86%;
+          padding: 0.58rem 0.72rem;
+          border-radius: 13px;
+          font-size: 0.78rem;
+          line-height: 1.4;
+        }
+        .deal-bubble-left {
+          justify-self: start;
+          color: rgb(var(--color-text));
+          background: rgb(var(--color-bg-subtle));
+          border: 1px solid rgb(var(--color-border));
+        }
+        .deal-bubble-right {
+          justify-self: end;
+          color: white;
+          background: rgb(var(--brand-primary));
+        }
+        .deal-close-row {
+          padding-top: 0.25rem;
+        }
+        .deal-close {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          padding: 0.95rem;
+        }
+        .deal-close-badge {
+          width: 46px;
+          height: 46px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          background: rgb(var(--brand-secondary));
+          flex-shrink: 0;
+        }
+        @media (min-width: 820px) {
+          .deal-flow {
+            grid-template-columns: 1fr 1.05fr 1fr;
+            grid-template-areas:
+              "seller feed chat"
+              "seller feed close";
+            align-items: center;
+            gap: 1.25rem;
+            min-height: 380px;
+          }
+          .deal-seller { grid-area: seller; }
+          .deal-feed { grid-area: feed; }
+          .deal-chat { grid-area: chat; }
+          .deal-close { grid-area: close; }
+          .deal-feed {
+            transform: translateY(-0.25rem);
+          }
+        }
+      `}</style>
+    </div>
+  );
+}
+
 /* ─── Per-feature visual panels ─── */
 
 function ScrollPanel() {
   return (
     <Panel>
-      <Card style={{ width: 200, padding: 10 }}>
-        <Tile from="#c9a87c" to="#8b6b3d" height={96} />
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
-          <Dot from="#10b981" to="#3b82f6" initials="JW" />
+      <Card style={{ width: 220, height: 160, padding: 10 }}>
+        <PhotoTile
+          src="https://www.crotonmotors.com/wp-content/uploads/2024/08/img0001-12-400x300.jpg.webp"
+          alt="Land listing in an open field"
+          label="Mazda Cx8 for sale"
+          objectPosition="center 55%"
+          size="100%"
+          radius={12}
+        />
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            marginTop: 16,
+          }}
+        >
+          <Dot from="#10b981" to="#3b82f6" initials="AK" />
           <div style={{ flex: 1 }}>
-            <div style={{ height: 6, width: "70%", borderRadius: 4, background: "rgb(var(--color-border-strong))" }} />
-            <div style={{ height: 5, width: "45%", borderRadius: 4, background: "rgb(var(--color-border))", marginTop: 5 }} />
+            <div
+              style={{
+                height: 6,
+                width: "72%",
+                borderRadius: 4,
+                background: "rgb(var(--color-border-strong))",
+              }}
+            />
+            <div
+              style={{
+                height: 5,
+                width: "50%",
+                borderRadius: 4,
+                background: "rgb(var(--color-border))",
+                marginTop: 5,
+              }}
+            />
           </div>
           <div
             style={{
@@ -123,7 +522,7 @@ function ScrollPanel() {
               color: "rgb(var(--brand-primary))",
             }}
           >
-            KSh 3,500
+            KSh 3.4M
           </div>
         </div>
       </Card>
@@ -134,7 +533,9 @@ function ScrollPanel() {
 function MessagePanel() {
   return (
     <Panel>
-      <div style={{ width: 210, display: "flex", flexDirection: "column", gap: 8 }}>
+      <div
+        style={{ width: 210, display: "flex", flexDirection: "column", gap: 8 }}
+      >
         <div style={{ display: "flex", justifyContent: "flex-start" }}>
           <div
             style={{
@@ -245,7 +646,9 @@ function LocalPanel() {
 function AiPanel() {
   return (
     <Panel>
-      <div style={{ width: 220, display: "flex", flexDirection: "column", gap: 8 }}>
+      <div
+        style={{ width: 220, display: "flex", flexDirection: "column", gap: 8 }}
+      >
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
           <div
             style={{
@@ -258,7 +661,7 @@ function AiPanel() {
               lineHeight: 1.45,
             }}
           >
-            Black Mazda Demio, 2015, under 1M, in Meru
+            Plot in Kitengela, near the tarmac, under 3M
           </div>
         </div>
         <Card style={{ padding: 10 }}>
@@ -273,8 +676,8 @@ function AiPanel() {
             Shopi found 3 near you
           </div>
           {[
-            { p: "KSh 880,000", l: "Meru town" },
-            { p: "KSh 940,000", l: "Makutano" },
+            { p: "KSh 2.8M", l: "Athi River" },
+            { p: "KSh 3.1M", l: "Kitengela" },
           ].map((r) => (
             <div
               key={r.p}
@@ -287,10 +690,18 @@ function AiPanel() {
             >
               <Tile from="#1e3a5f" to="#0f172a" height={28} radius={6} />
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "rgb(var(--color-text))" }}>
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: "rgb(var(--color-text))",
+                  }}
+                >
                   {r.p}
                 </div>
-                <div style={{ fontSize: 9, color: "rgb(var(--color-text-muted))" }}>
+                <div
+                  style={{ fontSize: 9, color: "rgb(var(--color-text-muted))" }}
+                >
                   {r.l}
                 </div>
               </div>
@@ -306,21 +717,64 @@ function TiktokPanel() {
   return (
     <Panel>
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-        <Card style={{ width: 86, padding: 8, textAlign: "center" }}>
-          <Tile from="#7c3aed" to="#a855f7" height={70} />
-          <div style={{ fontSize: 9, fontWeight: 700, color: "rgb(var(--color-text))", marginTop: 6 }}>
+        <Card style={{ width: 94, padding: 8, textAlign: "center" }}>
+          <PhotoTile
+            src="https://images.unsplash.com/photo-1593784991095-a205069470b6?auto=format&fit=crop&w=500&q=80"
+            alt="Television product photo"
+            label="Shopi post"
+            objectPosition="center 48%"
+            size={78}
+            radius={10}
+          />
+          <div
+            style={{
+              fontSize: 9,
+              fontWeight: 700,
+              color: "rgb(var(--color-text))",
+              marginTop: 6,
+            }}
+          >
             Shopi post
           </div>
         </Card>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-          <span style={{ fontSize: 18, color: "rgb(var(--color-text-muted))" }}>→</span>
-          <span style={{ fontSize: 8, color: "rgb(var(--color-text-muted))", whiteSpace: "nowrap" }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 2,
+          }}
+        >
+          <span style={{ fontSize: 18, color: "rgb(var(--color-text-muted))" }}>
+            →
+          </span>
+          <span
+            style={{
+              fontSize: 8,
+              color: "rgb(var(--color-text-muted))",
+              whiteSpace: "nowrap",
+            }}
+          >
             auto-publish
           </span>
         </div>
-        <Card style={{ width: 86, padding: 8, textAlign: "center" }}>
-          <Tile from="#111827" to="#000000" height={70} />
-          <div style={{ fontSize: 9, fontWeight: 700, color: "rgb(var(--color-text))", marginTop: 6 }}>
+        <Card style={{ width: 94, padding: 8, textAlign: "center" }}>
+          <PhotoTile
+            src="https://sf-static.tiktokcdn.com/obj/eden-sg/uhtyvueh7nulogpoguhm/tiktok-icon2.png"
+            alt="Vertical social feed listing"
+            label="TikTok"
+            objectPosition="center 55%"
+            size={78}
+            radius={10}
+          />
+          <div
+            style={{
+              fontSize: 9,
+              fontWeight: 700,
+              color: "rgb(var(--color-text))",
+              marginTop: 6,
+            }}
+          >
             TikTok
           </div>
           <div
@@ -383,7 +837,9 @@ function FreePanel() {
                 <path d="M20 6L9 17l-5-5" />
               </svg>
             </span>
-            <span style={{ fontSize: 12.5, color: "rgb(var(--color-text))" }}>{t}</span>
+            <span style={{ fontSize: 12.5, color: "rgb(var(--color-text))" }}>
+              {t}
+            </span>
           </div>
         ))}
       </Card>
@@ -426,7 +882,7 @@ export function FeaturesSection({ dict }: { dict: Dictionary }) {
             fontFamily: "var(--font-display)",
             fontWeight: 700,
             fontSize: "clamp(1.75rem, 4vw, 3rem)",
-            letterSpacing: "-0.025em",
+            letterSpacing: 0,
             lineHeight: 1.15,
             color: "rgb(var(--color-text))",
             maxWidth: 620,
@@ -436,6 +892,8 @@ export function FeaturesSection({ dict }: { dict: Dictionary }) {
           {dict.features.headline}
         </h2>
       </div>
+
+      <DealFlowIllustration />
 
       {/* Alternating blocks */}
       <div style={{ display: "flex", flexDirection: "column", gap: "4.5rem" }}>
@@ -450,7 +908,7 @@ export function FeaturesSection({ dict }: { dict: Dictionary }) {
                   fontFamily: "var(--font-display)",
                   fontWeight: 700,
                   fontSize: "clamp(1.35rem, 2.5vw, 1.9rem)",
-                  letterSpacing: "-0.02em",
+                  letterSpacing: 0,
                   lineHeight: 1.2,
                   color: "rgb(var(--color-text))",
                   marginBottom: "0.85rem",

@@ -42,7 +42,7 @@ export function DownloadSection({ dict }: { dict: Dictionary }) {
               fontFamily: "var(--font-display)",
               fontWeight: 700,
               fontSize: "clamp(1.9rem, 4.5vw, 3.25rem)",
-              letterSpacing: "-0.03em",
+              letterSpacing: 0,
               lineHeight: 1.12,
               color: "rgb(var(--color-text))",
               maxWidth: 640,
@@ -86,7 +86,7 @@ export function DownloadSection({ dict }: { dict: Dictionary }) {
               marginTop: "1.25rem",
             }}
           >
-            Free to use · No fees · No commission
+            Free to browse · No checkout · No commission
           </p>
         </div>
       </div>

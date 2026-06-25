@@ -19,7 +19,7 @@ export function HowItWorksSection({ dict }: { dict: Dictionary }) {
           <p className="text-(length:--text-sm) font-bold tracking-widest uppercase text-accent mb-3">
             {dict.howItWorks.sectionLabel}
           </p>
-          <h2 className="font-display font-bold text-[clamp(1.75rem,3.5vw,3rem)] tracking-tight leading-[1.15] text-foreground">
+          <h2 className="font-display font-bold text-[clamp(1.75rem,3.5vw,3rem)] leading-[1.15] text-foreground">
             {dict.howItWorks.headline}
           </h2>
         </div>
@@ -32,7 +32,8 @@ export function HowItWorksSection({ dict }: { dict: Dictionary }) {
               <div
                 className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-6 font-display font-bold text-(length:--text-base) text-white relative z-1"
                 style={{
-                  background: "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-accent)))",
+                  background:
+                    "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-accent)))",
                   boxShadow: "0 0 0 6px rgb(var(--color-bg-subtle))",
                 }}
               >

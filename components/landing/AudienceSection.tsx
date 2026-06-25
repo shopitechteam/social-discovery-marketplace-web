@@ -46,7 +46,7 @@ export function AudienceSection({ dict }: { dict: Dictionary }) {
             fontFamily: "var(--font-display)",
             fontWeight: 700,
             fontSize: "clamp(1.75rem, 4vw, 3rem)",
-            letterSpacing: "-0.025em",
+            letterSpacing: 0,
             lineHeight: 1.15,
             color: "rgb(var(--color-text))",
           }}

@@ -1,8 +1,8 @@
 export const siteConfig = {
   name: "Shopi",
-  tagline: "Everything for sale near you, in one feed",
+  tagline: "Kenya's local marketplace, in one feed",
   description:
-    "Shopi is Kenya's social discovery marketplace. Scroll a feed of real products from sellers near you — cars, phones, fashion, furniture, farm produce and livestock — then message the seller directly. Free to use, no commission, no middleman.",
+    "Shopi is Kenya's social discovery classifieds marketplace for buyers and sellers. Discover cars, phones, fashion, furniture, farm produce, livestock and everyday finds in a personalized nearby feed, then message the seller directly. Shopi does not process payments, take commission or sit between the deal.",
   // Default canonical domain. Override per-environment with NEXT_PUBLIC_APP_URL.
   url: process.env.NEXT_PUBLIC_APP_URL || "https://shopi.co.ke",
   ogImage: "/opengraph-image",
@@ -13,20 +13,34 @@ export const siteConfig = {
   // Primary search/discovery terms we want Shopi to surface for.
   keywords: [
     "Shopi",
+    "Shopi Kenya",
+    "local marketplace Kenya",
     "social marketplace Kenya",
     "social discovery marketplace",
+    "social discovery classifieds",
     "buy and sell Kenya",
     "classifieds Kenya",
+    "classified ads Kenya",
     "marketplace Kenya",
     "online marketplace Kenya",
+    "nearby marketplace Kenya",
+    "discover products near me Kenya",
+    "personalized shopping feed Kenya",
     "cows for sale Kenya",
     "livestock for sale Kenya",
     "farm produce Kenya",
     "cars for sale Kenya",
     "phones for sale Kenya",
+    "furniture for sale Kenya",
+    "fashion marketplace Kenya",
     "sell online Kenya",
     "Jiji alternative Kenya",
+    "TikTok marketplace Kenya",
     "Nairobi marketplace",
+    "Mombasa marketplace",
+    "Kisumu marketplace",
+    "Nakuru marketplace",
+    "Meru marketplace",
   ],
 
   routes: {

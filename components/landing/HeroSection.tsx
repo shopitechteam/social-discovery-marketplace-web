@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
 import React from "react";
 import { useRouter } from "next/navigation";
@@ -58,6 +59,17 @@ export function HeroSection({ dict }: { dict: Dictionary }) {
         />
       </div>
 
+      <p
+        style={{
+          fontSize: "var(--text-sm)",
+          fontWeight: 800,
+          color: "rgb(var(--brand-primary))",
+          marginBottom: "0.9rem",
+        }}
+      >
+        {dict.hero.badge}
+      </p>
+
       {/* Headline */}
       <h1
         style={{
@@ -65,17 +77,13 @@ export function HeroSection({ dict }: { dict: Dictionary }) {
           fontWeight: 700,
           fontSize: "clamp(2.25rem, 6.5vw, 4.5rem)",
           lineHeight: 1.08,
-          letterSpacing: "-0.03em",
+          letterSpacing: 0,
           color: "rgb(var(--color-text))",
           maxWidth: "820px",
           marginBottom: "1.25rem",
         }}
       >
-        Everything for sale near you,
-        <br />
-        <span style={{ color: "rgb(var(--brand-primary))" }}>
-          in one feed.
-        </span>
+        {dict.hero.headline}
       </h1>
 
       {/* Subheadline */}
@@ -88,9 +96,7 @@ export function HeroSection({ dict }: { dict: Dictionary }) {
           marginBottom: "2rem",
         }}
       >
-        Cars, clothes, phones, furniture, fresh farm produce — posted by people
-        around you. Scroll to find it, message the seller, agree, done. No
-        checkout, no commission, no middleman.
+        {dict.hero.subheadline}
       </p>
 
       {/* CTAs */}
@@ -134,7 +140,7 @@ export function HeroSection({ dict }: { dict: Dictionary }) {
           marginBottom: "1rem",
         }}
       >
-        Free to use · No account needed to start looking · Kenya-wide
+        {dict.hero.reassurance}
       </p>
 
       {/* Phone mockups — single clean phone on mobile, three on desktop */}
@@ -212,9 +218,7 @@ function MockBottomNav({
   active: "home" | "explore" | "inbox" | "me";
 }) {
   const col = (k: typeof active) =>
-    active === k
-      ? "rgb(var(--brand-primary))"
-      : "rgb(var(--color-text-muted))";
+    active === k ? "rgb(var(--brand-primary))" : "rgb(var(--color-text-muted))";
   const sw = (k: typeof active) => (active === k ? 2.2 : 1.7);
   const label = (k: typeof active, text: string) => (
     <span
@@ -464,48 +468,63 @@ function IPhoneShell({
   );
 }
 
-/* ─── Reusable clean visual tile (no emoji) ─── */
-function Tile({
-  from,
-  to,
+function PhotoTile({
+  src,
+  alt,
   label,
+  objectPosition = "center",
 }: {
-  from: string;
-  to: string;
+  src: string;
+  alt: string;
   label?: string;
+  objectPosition?: string;
 }) {
   return (
     <div
       style={{
         position: "absolute",
         inset: 0,
-        background: `linear-gradient(135deg, ${from}, ${to})`,
-        display: "flex",
-        alignItems: "flex-end",
-        padding: 8,
+        overflow: "hidden",
+        background: "rgb(var(--color-bg-subtle))",
       }}
     >
+      <img
+        src={src}
+        alt={alt}
+        loading="eager"
+        decoding="async"
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          objectPosition,
+          display: "block",
+        }}
+      />
       <div
         style={{
           position: "absolute",
           inset: 0,
           background:
-            "repeating-linear-gradient(45deg, rgba(255,255,255,0.05) 0px, rgba(255,255,255,0.05) 1px, transparent 1px, transparent 14px)",
+            "linear-gradient(180deg, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0.2) 100%)",
         }}
       />
       {label && (
-        <span
+        <div
           style={{
-            position: "relative",
-            color: "rgba(255,255,255,0.95)",
+            position: "absolute",
+            left: 8,
+            right: 8,
+            bottom: 8,
+            color: "#fff",
             fontSize: 9,
-            fontWeight: 700,
-            fontFamily: "system-ui",
-            textShadow: "0 1px 2px rgba(0,0,0,0.3)",
+            fontWeight: 800,
+            lineHeight: 1.3,
+            textShadow: "0 1px 2px rgba(0,0,0,0.45)",
           }}
         >
           {label}
-        </span>
+        </div>
       )}
     </div>
   );
@@ -652,7 +671,12 @@ function FeedScreen() {
             <div
               style={{ width: "100%", aspectRatio: "1", position: "relative" }}
             >
-              <Tile from="#c9a87c" to="#8b6b3d" label="Solid mahogany table" />
+              <PhotoTile
+                src="https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=80"
+                alt="Warm wooden dining table in a furnished room"
+                label="Solid mahogany table"
+                objectPosition="center 58%"
+              />
               <div
                 style={{
                   position: "absolute",
@@ -716,10 +740,13 @@ function FeedScreen() {
                 </div>
               </div>
             </div>
-            <div
-              style={{ width: "100%", height: 110, position: "relative" }}
-            >
-              <Tile from="#1e3a5f" to="#0f172a" label="iPhone 13 Pro · clean" />
+            <div style={{ width: "100%", height: 110, position: "relative" }}>
+              <PhotoTile
+                src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=1200&q=80"
+                alt="Close up of a smartphone in hand"
+                label="iPhone 13 Pro · clean"
+                objectPosition="center 42%"
+              />
               <div
                 style={{
                   position: "absolute",
@@ -746,16 +773,13 @@ function FeedScreen() {
 }
 
 /* ─── Chat bubble ─── */
-function Bubble({
-  me,
-  children,
-}: {
-  me?: boolean;
-  children: React.ReactNode;
-}) {
+function Bubble({ me, children }: { me?: boolean; children: React.ReactNode }) {
   return (
     <div
-      style={{ display: "flex", justifyContent: me ? "flex-end" : "flex-start" }}
+      style={{
+        display: "flex",
+        justifyContent: me ? "flex-end" : "flex-start",
+      }}
     >
       <div
         style={{
@@ -803,9 +827,7 @@ function ChatScreen() {
             background: "rgb(var(--color-bg-elevated))",
           }}
         >
-          <span
-            style={{ color: "rgb(var(--color-text-muted))", fontSize: 16 }}
-          >
+          <span style={{ color: "rgb(var(--color-text-muted))", fontSize: 16 }}>
             ‹
           </span>
           <Avatar initials="MK" from="#8b6b3d" to="#c9a87c" size={30} />
@@ -840,18 +862,22 @@ function ChatScreen() {
             flexShrink: 0,
           }}
         >
-          <div
-            style={{
-              width: 38,
-              height: 38,
+            <div
+              style={{
+                width: 38,
+                height: 38,
               borderRadius: 8,
               position: "relative",
               overflow: "hidden",
               flexShrink: 0,
-            }}
-          >
-            <Tile from="#c9a87c" to="#8b6b3d" />
-          </div>
+              }}
+            >
+              <PhotoTile
+                src="https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=80"
+                alt="Furniture preview for the product context card"
+                objectPosition="center 58%"
+              />
+            </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div
               style={{
@@ -891,8 +917,8 @@ function ChatScreen() {
           <Bubble me>Yes it is. Solid mahogany, seats six.</Bubble>
           <Bubble>Can you deliver to Ruaka? And is the price fixed?</Bubble>
           <Bubble me>
-            I can deliver to Ruaka for 800. We can talk on the price, come see it
-            first.
+            I can deliver to Ruaka for 800. We can talk on the price, come see
+            it first.
           </Bubble>
           <Bubble>Perfect, I&apos;ll pass by today. Sending my number.</Bubble>
         </div>
@@ -954,13 +980,43 @@ function ChatScreen() {
 
 /* ─── Profile Screen ─── */
 function ProfileScreen() {
-  const items: { from: string; to: string; price: string }[] = [
-    { from: "#fde68a", to: "#f59e0b", price: "KSh 1,200" },
-    { from: "#a7f3d0", to: "#10b981", price: "KSh 2,800" },
-    { from: "#ddd6fe", to: "#8b5cf6", price: "KSh 950" },
-    { from: "#fecaca", to: "#ef4444", price: "KSh 600" },
-    { from: "#bfdbfe", to: "#3b82f6", price: "KSh 4,500" },
-    { from: "#fbcfe8", to: "#ec4899", price: "KSh 780" },
+  const items: { src: string; alt: string; price: string; objectPosition?: string }[] = [
+    {
+      src: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=900&q=80",
+      alt: "Running shoes for sale",
+      price: "KSh 1,200",
+      objectPosition: "center 48%",
+    },
+    {
+      src: "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=900&q=80",
+      alt: "Black car for sale",
+      price: "KSh 2,800",
+      objectPosition: "center 62%",
+    },
+    {
+      src: "https://images.unsplash.com/photo-1464226184884-fa280b87c399?auto=format&fit=crop&w=900&q=80",
+      alt: "Fresh produce for sale",
+      price: "KSh 950",
+      objectPosition: "center 55%",
+    },
+    {
+      src: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=900&q=80",
+      alt: "Phone for sale",
+      price: "KSh 600",
+      objectPosition: "center 42%",
+    },
+    {
+      src: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=900&q=80",
+      alt: "Fashion items for sale",
+      price: "KSh 4,500",
+      objectPosition: "center 42%",
+    },
+    {
+      src: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=900&q=80",
+      alt: "Home furniture for sale",
+      price: "KSh 780",
+      objectPosition: "center 58%",
+    },
   ];
   return (
     <IPhoneShell>
@@ -1077,9 +1133,13 @@ function ProfileScreen() {
             overflow: "hidden",
           }}
         >
-          {items.map(({ from, to, price }, i) => (
+          {items.map(({ src, alt, price, objectPosition }, i) => (
             <div key={i} style={{ aspectRatio: "1", position: "relative" }}>
-              <Tile from={from} to={to} />
+              <PhotoTile
+                src={src}
+                alt={alt}
+                objectPosition={objectPosition}
+              />
               <div
                 style={{
                   position: "absolute",

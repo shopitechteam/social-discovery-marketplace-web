@@ -100,5 +100,8 @@ export function breadcrumbSchema(items: { name: string; url: string }[]) {
 
 /** Renders one or more schema objects as a single JSON-LD script payload. */
 export function jsonLd(...schemas: object[]): string {
-  return JSON.stringify(schemas.length === 1 ? schemas[0] : schemas);
+  return JSON.stringify(schemas.length === 1 ? schemas[0] : schemas).replace(
+    /</g,
+    "\\u003c",
+  );
 }

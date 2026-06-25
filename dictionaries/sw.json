@@ -1,7 +1,7 @@
 {
   "common": {
     "appName": "Shopi",
-    "tagline": "Gundua. Zungumza. Nunua.",
+    "tagline": "Pata kilicho karibu. Mtumie muuzaji ujumbe.",
     "loading": "Inapakia…",
     "error": "Kuna hitilafu fulani",
     "continueWeb": "Fungua malisho →",
@@ -20,98 +20,99 @@
   },
 
   "hero": {
-    "badge": "Soko la Ugunduzi wa Kijamii Kenya",
-    "headline": "Kila kitu kinachouzwa karibu nawe, katika malisho moja.",
-    "subheadline": "Shopi ni mahali ambapo watu huweka wanachouza nawe unakipata kwa kuteleza — magari, nguo, simu, samani, mazao ya shamba. Kione, tuma ujumbe kwa muuzaji, kubaliana, imekamilika.",
+    "badge": "Malisho ya matangazo ya kijamii Kenya",
+    "headline": "Soko la kijamii la Kenya, limepangwa kulingana na unachopenda.",
+    "subheadline": "Teleza uone vitu halisi vinavyouzwa karibu nawe: magari Rongai, simu mjini, samani mtaani, mazao kutoka kwa mkulima aliye karibu. Shopi pia hujifunza kile unachofungua mara kwa mara na kuweka feed yako kuwa ya karibu na yenye relevance. Ukipenda kitu, mtumie muuzaji ujumbe na mkubaliane moja kwa moja. Shopi haishiki malipo wala haichukui commission.",
+    "reassurance": "Ni bure kubrowse · Ni bure kupost · Mnunuzi na muuzaji hukubaliana moja kwa moja",
     "ctaExplore": "Fungua malisho",
     "ctaHowItWorks": "Ona jinsi inavyofanya kazi"
   },
 
   "features": {
     "sectionLabel": "Kwa nini Shopi",
-    "headline": "Kipate. Tuma ujumbe kwa muuzaji. Funga biashara.",
+    "headline": "Kipate karibu nawe. Mtumie muuzaji ujumbe. Mkubaliane wenyewe.",
     "items": {
       "scroll": {
-        "title": "Unateleza, bidhaa inakupata",
-        "body": "Hakuna kutafuta maneno sahihi. Wauzaji huweka video fupi na picha za walicho nacho. Wewe unateleza tu malisho yako ya karibu na kugundua vitu ambavyo hata hukujua kutafuta."
+        "title": "Kugundua ni rahisi kuliko kuandika na kubahatisha",
+        "body": "Search husaidia ukiwa unajua maneno kamili. Shopi pia ni ya zile dakika nyingine: unateleza feed ya karibu na kuona sofa, simu safi, gari, viatu, au mazao ambayo hata hukupanga kutafuta."
       },
       "message": {
-        "title": "Kione, tuma ujumbe, kubaliana",
-        "body": "Hakuna kikapu. Hakuna malipo ya mtandao. Hakuna mtu wa kati. Kitu kikikuvutia, gonga uzungumze na muuzaji, uliza maswali na mkubaliane bei na uchukuaji kwa masharti yenu."
+        "title": "Biashara inabaki kati ya mnunuzi na muuzaji",
+        "body": "Hakuna cart, checkout, escrow au agent wa Shopi anayeshika pesa. Gonga uchat, uliza picha zaidi, ongea bei, chagua pa kukutana au delivery, kisha funga biashara kwa njia yenu."
       },
       "local": {
-        "title": "Muuzaji aliye karibu nawe, sasa anaonekana",
-        "body": "Mkulima wa Kiambu. Muuzaji wa simu mjini. Mama anayeuza samani njia ya chini. Wote wako hapa — na sasa wanunuzi kote nchini wanaweza kuwapata."
+        "title": "Wauzaji wa karibu wanaonekana kwanza",
+        "body": "Mnunuzi wa Meru asianze na listings za mbali bila sababu. Shopi hutumia location kuleta posts za karibu mbele, na bado bidhaa nzuri inaweza kuonekana Kenya nzima ikilingana na kile watu wanapenda."
       },
       "ai": {
-        "title": "Mwambie Shopi unachotaka tu",
-        "body": "Fungua Explore na uulize kwa maneno rahisi: \"Mazda Demio nyeusi, 2015, chini ya milioni moja, Meru.\" Shopi inatafuta, inalinganisha na kupendekeza. Unahitaji zaidi? Inaweza kumuuliza muuzaji kwa niaba yako."
+        "title": "Feed yako inazidi kuwa relevant kadri unavyotumia",
+        "body": "Shopi huangalia unachofungua, kusave na kuzungumzia, kisha inaonyesha zaidi ya aina hiyo. Ukiendelea kufungua listings za plots utaona plots zaidi. Ukiangalia TVs, simu au fashion, feed hubadilika pamoja nawe."
       },
       "tiktok": {
-        "title": "Weka Shopi, uonekane TikTok pia",
-        "body": "Unganisha TikTok yako na uchague chapisho lako la Shopi lijiweke pia huko, na maoni ya kwanza yakirudisha kwa bidhaa yako. Unaweka mara moja na kuvuta wanunuzi pande zote mbili — bila kuweka mara mbili."
+        "title": "Ina feel ya social, lakini inafanya kazi kama classifieds",
+        "body": "Posts ni fupi, rahisi kuangalia na rahisi kushare, lakini kila kitu kina context ya soko: bei, location, muuzaji, picha au video, na njia ya kumtumia ujumbe moja kwa moja."
       },
       "free": {
-        "title": "Ni bure, na inabaki bure kutumia",
-        "body": "Hakuna ada ya kuweka. Hakuna asilimia kwenye mauzo yako. Shopi haichukui sehemu wala haishiki pesa yako. Wewe na mnunuzi mnazungumza moja kwa moja na kubaki na kila kitu kati yenu."
+        "title": "Ni bure kupost. Ni bure kubrowse.",
+        "body": "Shopi iko hapa kuunganisha watu, si kukaa ndani ya transaction. Muuzaji hubaki na bei yake, mnunuzi huongea moja kwa moja, na nyinyi wawili mnaamua kinachofuata."
       }
     }
   },
 
   "howItWorks": {
     "sectionLabel": "Jinsi inavyofanya kazi",
-    "headline": "Teleza. Tuma ujumbe. Kubaliana. Ndiyo yote.",
+    "headline": "Biashara ya karibu bila njia ndefu.",
     "steps": {
       "1": {
         "title": "Fungua malisho",
-        "body": "Hakuna fomu ndefu za kuanza kuangalia. Chagua unachopenda — magari, simu, mitindo, mazao ya shamba — na malisho yako ya karibu yatakuwa tayari sekunde chache."
+        "body": "Anza na feed. Magari, simu, fashion, samani, mazao, mifugo na vitu vya nyumbani vinaonekana kama posts halisi kutoka kwa wauzaji halisi."
       },
       "2": {
-        "title": "Teleza kilicho karibu nawe",
-        "body": "Tazama video na picha halisi kutoka kwa wauzaji halisi karibu nawe. Kila chapisho ni kitu kinachouzwa, kikiwa na eneo na bei."
+        "title": "Ona kilicho karibu",
+        "body": "Location husaidia kuleta wauzaji wa karibu kwanza, kisha interests zako husaidia kupangilia kilicho muhimu juu zaidi, ili feed ibaki ya maana na relevant."
       },
       "3": {
         "title": "Tuma ujumbe kwa muuzaji",
-        "body": "Umependa? Gonga uzungumze moja kwa moja. Uliza maswali, kubaliana bei, panga uchukuaji au uwasilishaji. Hakuna mtu wa kati, hakuna asilimia."
+        "body": "Uliza kama bado iko, omba details, ongea bei, kisha mpange pickup au delivery. Mazungumzo ni ya moja kwa moja."
       },
       "4": {
-        "title": "Unauza? Weka tu",
-        "body": "Piga video ya unachouza, ongeza bei na eneo, kisha weka. Wanunuzi wanakupata wanapoteleza, na kukutumia ujumbe papo hapo."
+        "title": "Mkikubaliana ni nje ya checkout",
+        "body": "Shopi haiprocess malipo wala haichukui sehemu. Mnunuzi na muuzaji huamua bei, malipo, pa kukutana na delivery wenyewe."
       }
     }
   },
 
   "audience": {
     "sectionLabel": "Ni kwa ajili ya nani",
-    "headline": "Yeyote anayenunua au kuuza karibu nao.",
+    "headline": "Kwa watu wanaonunua na kuuza Kenya kila siku.",
     "buyers": {
       "tag": "Kwa wanunuzi",
-      "title": "Acha kutafuta. Anza kugundua.",
-      "body": "Sahau kuandika kwenye kisanduku cha utafutaji ukitumaini. Malisho yako yanakuonyesha bidhaa halisi kutoka kwa wauzaji halisi karibu nawe, nawe unatuma ujumbe kwa yeyote moja kwa moja unapokiona unachotaka.",
+      "title": "Pata vitu vya maana kabla hujafikiria kuvitafuta.",
+      "body": "Labda uliingia kutafuta simu, kisha ukaona sofa, bale ya mitumba, gari used, au mazao safi karibu nawe. Shopi inaacha discovery wazi, hutumia interests zako kurekebisha feed, halafu unamtumia muuzaji ujumbe kitu kikimake sense.",
       "cta": "Fungua malisho"
     },
     "sellers": {
       "tag": "Kwa wauzaji",
-      "title": "Simu yako ni duka lako.",
-      "body": "Piga video fupi, ongeza bei na eneo lako, kisha weka. Wanunuzi wanakupata wanapoteleza na kukutumia ujumbe moja kwa moja. Hakuna tovuti, hakuna bajeti ya matangazo, hakuna asilimia inayochukuliwa kwenye mauzo yako.",
+      "title": "Simu yako inaweza kuweka bidhaa mbele ya wanunuzi wa karibu.",
+      "body": "Record unachouza, ongeza bei na location, kisha post. Wanunuzi wanaiona kwenye feed na kukutumia ujumbe moja kwa moja. Hakuna website, hakuna setup ya checkout, hakuna commission inayotolewa kwenye mauzo yako.",
       "cta": "Anza kuuza bure"
     }
   },
 
   "testimonials": {
-    "sectionLabel": "Watu halisi. Biashara halisi.",
-    "headline": "Imeundwa kwa jinsi Kenya inavyonunua na kuuza tayari."
+    "sectionLabel": "Matumizi ya karibu",
+    "headline": "Imejengwa kwa maisha ya kununua na kuuza Kenya."
   },
 
   "download": {
-    "sectionLabel": "Tayari unapotaka",
-    "headline": "Unachotafuta tayari kiko kwenye malisho.",
-    "body": "Wauzaji karibu nawe wanaweka sasa hivi. Fungua malisho, pata unachohitaji, na utume ujumbe kwa muuzaji moja kwa moja. Hakuna ada, hakuna malipo ya mtandao, hakuna akaunti inayohitajika kuanza kuangalia.",
+    "sectionLabel": "Anza kuangalia",
+    "headline": "Kitu kizuri kinaweza kuwa scroll chache mbele.",
+    "body": "Fungua feed uone watu wa karibu wanauza nini leo. Hakuna checkout, hakuna commission, hakuna pressure ya kufungua account kabla hujaanza kubrowse.",
     "webCta": "Fungua malisho →"
   },
 
   "footer": {
-    "tagline": "Soko la kijamii la Kenya. Lione, tuma ujumbe kwa muuzaji, imekamilika.",
+    "tagline": "Feed ya soko la karibu Kenya. Kigundue, mtumie muuzaji ujumbe, mkubaliane moja kwa moja.",
     "links": {
       "product": "Bidhaa",
       "company": "Kampuni",
