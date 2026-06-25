@@ -213,7 +213,7 @@ function DealFlowIllustration() {
         </div>
       </div>
 
-      <div className="deal-node deal-feed">
+      <div className=" deal-feed">
         <div className="deal-phone">
           <div className="deal-phone-top">
             <span>For you nearby</span>
@@ -721,7 +721,7 @@ function TiktokPanel() {
           <PhotoTile
             src="https://images.unsplash.com/photo-1593784991095-a205069470b6?auto=format&fit=crop&w=500&q=80"
             alt="Television product photo"
-            label="Shopi post"
+            label=""
             objectPosition="center 48%"
             size={78}
             radius={10}
@@ -762,7 +762,7 @@ function TiktokPanel() {
           <PhotoTile
             src="https://sf-static.tiktokcdn.com/obj/eden-sg/uhtyvueh7nulogpoguhm/tiktok-icon2.png"
             alt="Vertical social feed listing"
-            label="TikTok"
+            label=""
             objectPosition="center 55%"
             size={78}
             radius={10}
