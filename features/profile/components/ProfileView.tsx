@@ -206,7 +206,7 @@ export function ProfileView({ lang }: Props) {
           WebkitBackdropFilter: "blur(14px) saturate(150%)",
         }}
       >
-        <div className="mx-auto w-full max-w-6xl px-2 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full  px-2 sm:px-6 ">
           <div
             className="grid h-12 w-full grid-cols-5 md:hidden"
             role="tablist"
@@ -262,10 +262,10 @@ export function ProfileView({ lang }: Props) {
                     aria-selected={active}
                     onClick={() => setTab(item.key)}
                     className={cn(
-                      "inline-flex h-11 min-w-[8.5rem] items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition-colors",
+                      "inline-flex h-11 min-w-34 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition-colors",
                       active
                         ? "bg-primary/10 text-foreground"
-                        : "text-muted-foreground hover:bg-[rgb(var(--color-bg-subtle))] hover:text-foreground",
+                        : "text-muted-foreground hover:bg-surface hover:text-foreground",
                     )}
                   >
                     <Icon size={18} strokeWidth={2.15} />
@@ -393,8 +393,8 @@ export function ProfileView({ lang }: Props) {
 
 function SettingsPanel({ lang }: { lang: string }) {
   return (
-    <section className="px-4 py-5 sm:px-6 lg:px-8">
-      <div className="mx-auto w-full max-w-3xl">
+    <section className="px-4 py-5 w-full  sm:px-6 lg:px-8">
+      <div className="mx-auto">
         <div className="mb-4">
           <h2
             className="font-bold leading-tight"

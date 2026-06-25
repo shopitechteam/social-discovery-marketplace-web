@@ -94,7 +94,7 @@ export function DraftsGrid({ lang }: Props) {
   if (loading && drafts.length === 0) {
     return (
       <section className="px-4 py-5 sm:px-6 lg:px-8">
-        <div className="mx-auto grid w-full max-w-6xl grid-cols-2 gap-2 md:grid-cols-3 md:gap-3 xl:grid-cols-4 xl:gap-4">
+        <div className="mx-auto grid w-full max-w-6xl grid-cols-2 gap-2 md:grid-cols-3 md:gap-3 xl:grid-cols-5 xl:gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
@@ -111,7 +111,7 @@ export function DraftsGrid({ lang }: Props) {
   if (!loading && drafts.length === 0) {
     return (
       <section className="px-4 py-12 sm:px-6 lg:px-8">
-        <div className="mx-auto flex min-h-80 max-w-xl flex-col items-center justify-center text-center">
+        <div className="mx-auto flex min-h-80  flex-col items-center justify-center text-center">
           <div
             className="mb-4 flex h-16 w-16 items-center justify-center rounded-lg border"
             style={{
@@ -160,7 +160,7 @@ export function DraftsGrid({ lang }: Props) {
 
   return (
     <section className="px-4 py-5 sm:px-6 lg:px-8">
-      <div className="mx-auto w-full max-w-6xl">
+      <div className="mx-auto w-full ">
         {/* Header — same heading/description pattern + sizes as the Storefront
             (Posts) tab for consistency across subtabs. */}
         <div className="mb-4">
@@ -184,117 +184,117 @@ export function DraftsGrid({ lang }: Props) {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3 xl:grid-cols-4 xl:gap-4">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3 xl:grid-cols-5 xl:gap-4">
           {drafts.map((draft) => {
-          const busy = busyId === draft.id;
-          const isVideo = mapType(draft.type) === "video";
-          return (
-            <div
-              key={draft.id}
-              className="flex flex-col overflow-hidden rounded-xl border"
-              style={{
-                backgroundColor: "rgb(var(--color-bg-elevated))",
-                borderColor: "rgb(var(--color-border))",
-              }}
-            >
-              {/* Thumbnail — tap to continue editing */}
-              <button
-                type="button"
-                onClick={() => continueEditing(draft)}
-                className="relative block aspect-9/10 w-full overflow-hidden bg-black/5"
-                aria-label="Continue editing draft"
+            const busy = busyId === draft.id;
+            const isVideo = mapType(draft.type) === "video";
+            return (
+              <div
+                key={draft.id}
+                className="flex flex-col overflow-hidden rounded-xl border"
+                style={{
+                  backgroundColor: "rgb(var(--color-bg-elevated))",
+                  borderColor: "rgb(var(--color-border))",
+                }}
               >
-                {draft.coverThumbnailUrl ? (
-                  <Image
-                    src={draft.coverThumbnailUrl}
-                    alt={draft.title ?? "Draft"}
-                    fill
-                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1536px) 25vw, 22vw"
-                    className="object-cover"
-                  />
-                ) : (
-                  <div
-                    className="flex h-full w-full items-center justify-center"
-                    style={{ color: "rgb(var(--color-text-muted))" }}
-                  >
-                    <FileEdit size={28} />
-                  </div>
-                )}
+                {/* Thumbnail — tap to continue editing */}
+                <button
+                  type="button"
+                  onClick={() => continueEditing(draft)}
+                  className="relative block aspect-9/10 w-full overflow-hidden bg-black/5"
+                  aria-label="Continue editing draft"
+                >
+                  {draft.coverThumbnailUrl ? (
+                    <Image
+                      src={draft.coverThumbnailUrl}
+                      alt={draft.title ?? "Draft"}
+                      fill
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1536px) 25vw, 22vw"
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div
+                      className="flex h-full w-full items-center justify-center"
+                      style={{ color: "rgb(var(--color-text-muted))" }}
+                    >
+                      <FileEdit size={28} />
+                    </div>
+                  )}
 
-                {isVideo && draft.coverThumbnailUrl && (
-                  <span className="absolute inset-0 flex items-center justify-center">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-white">
-                      <Play size={15} fill="currentColor" />
+                  {isVideo && draft.coverThumbnailUrl && (
+                    <span className="absolute inset-0 flex items-center justify-center">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-white">
+                        <Play size={15} fill="currentColor" />
+                      </span>
                     </span>
+                  )}
+
+                  {/* Draft badge */}
+                  <span
+                    className="absolute left-2 top-2 rounded-full px-2 py-0.5 font-semibold text-white"
+                    style={{
+                      fontSize: "11px",
+                      backgroundColor: "rgb(0 0 0 / 0.6)",
+                    }}
+                  >
+                    Draft
                   </span>
-                )}
-
-                {/* Draft badge */}
-                <span
-                  className="absolute left-2 top-2 rounded-full px-2 py-0.5 font-semibold text-white"
-                  style={{
-                    fontSize: "11px",
-                    backgroundColor: "rgb(0 0 0 / 0.6)",
-                  }}
-                >
-                  Draft
-                </span>
-              </button>
-
-              {/* Meta — title / date (matches TikTok & Posts cards) */}
-              <div className="px-2.5 pt-2.5">
-                <p
-                  className="line-clamp-2 leading-tight"
-                  style={{
-                    fontSize: "var(--text-sm)",
-                    color: "rgb(var(--color-text))",
-                    fontWeight: 500,
-                  }}
-                >
-                  {draft.title?.trim() || "Untitled draft"}
-                </p>
-                <p
-                  className="mt-1"
-                  style={{
-                    fontSize: "var(--text-xs)",
-                    color: "rgb(var(--color-text-muted))",
-                  }}
-                >
-                  {formatDate(draft.updatedAt ?? draft.createdAt)}
-                </p>
-              </div>
-
-              {/* Actions */}
-              <div className="mt-2 flex items-center gap-2 px-2.5 pb-3">
-                <button
-                  type="button"
-                  onClick={() => handlePublish(draft)}
-                  disabled={busy}
-                  className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg font-semibold text-white disabled:opacity-60"
-                  style={{
-                    fontSize: "var(--text-sm)",
-                    backgroundColor: "rgb(var(--brand-primary))",
-                  }}
-                >
-                  <Send size={14} /> {busy ? "Posting…" : "Post"}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => handleDiscard(draft)}
-                  disabled={busy}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg disabled:opacity-60"
-                  style={{
-                    color: "rgb(var(--color-error))",
-                    backgroundColor: "rgb(var(--color-error) / 0.1)",
-                  }}
-                  aria-label="Discard draft"
-                >
-                  <Trash2 size={15} />
-                </button>
+
+                {/* Meta — title / date (matches TikTok & Posts cards) */}
+                <div className="px-2.5 pt-2.5">
+                  <p
+                    className="line-clamp-2 leading-tight"
+                    style={{
+                      fontSize: "var(--text-sm)",
+                      color: "rgb(var(--color-text))",
+                      fontWeight: 500,
+                    }}
+                  >
+                    {draft.title?.trim() || "Untitled draft"}
+                  </p>
+                  <p
+                    className="mt-1"
+                    style={{
+                      fontSize: "var(--text-xs)",
+                      color: "rgb(var(--color-text-muted))",
+                    }}
+                  >
+                    {formatDate(draft.updatedAt ?? draft.createdAt)}
+                  </p>
+                </div>
+
+                {/* Actions */}
+                <div className="mt-2 flex items-center gap-2 px-2.5 pb-3">
+                  <button
+                    type="button"
+                    onClick={() => handlePublish(draft)}
+                    disabled={busy}
+                    className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg font-semibold text-white disabled:opacity-60"
+                    style={{
+                      fontSize: "var(--text-sm)",
+                      backgroundColor: "rgb(var(--brand-primary))",
+                    }}
+                  >
+                    <Send size={14} /> {busy ? "Posting…" : "Post"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDiscard(draft)}
+                    disabled={busy}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg disabled:opacity-60"
+                    style={{
+                      color: "rgb(var(--color-error))",
+                      backgroundColor: "rgb(var(--color-error) / 0.1)",
+                    }}
+                    aria-label="Discard draft"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
         </div>
       </div>
     </section>

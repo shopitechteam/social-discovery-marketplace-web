@@ -52,8 +52,7 @@ function locationLabel(loc: {
   const county = loc.county?.trim() || null;
   const area = loc.placeName?.trim() || loc.subregion?.trim() || null;
   const parts = [county, area].filter(
-    (p, i, arr): p is string =>
-      Boolean(p) && arr.indexOf(p) === i, // drop falsy + duplicates
+    (p, i, arr): p is string => Boolean(p) && arr.indexOf(p) === i, // drop falsy + duplicates
   );
   return parts.length ? parts.join(", ") : null;
 }
@@ -274,7 +273,7 @@ export function PostsGrid({
     return (
       <section className="px-4 py-5 sm:px-6 lg:px-8">
         <div className="mx-auto w-full max-w-6xl">
-          <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3 xl:grid-cols-4 xl:gap-4">
+          <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3 xl:grid-cols-5 xl:gap-4">
             {Array.from({ length: 6 }).map((_, i) => (
               <div
                 key={i}
@@ -358,7 +357,7 @@ export function PostsGrid({
 
   return (
     <section className="px-4 py-5 sm:px-6 lg:px-8">
-      <div className="mx-auto w-full max-w-6xl">
+      <div className="mx-auto w-full">
         <div className="mb-4 flex items-end justify-between gap-3">
           <div className="min-w-0">
             <h2
@@ -404,7 +403,7 @@ export function PostsGrid({
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3 xl:grid-cols-4 xl:gap-4">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3 xl:grid-cols-5 xl:gap-4">
           {posts.map((post, index) => (
             <PostThumbnail
               key={post.id}

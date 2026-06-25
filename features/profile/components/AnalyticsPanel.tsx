@@ -133,7 +133,10 @@ function EmptyGraph() {
       <ChartColumn size={28} strokeWidth={1.8} aria-hidden />
       <p
         className="mt-3 font-semibold"
-        style={{ color: "rgb(var(--color-text))", fontSize: "var(--text-base)" }}
+        style={{
+          color: "rgb(var(--color-text))",
+          fontSize: "var(--text-base)",
+        }}
       >
         No view activity yet
       </p>
@@ -161,7 +164,9 @@ function TrendChart({ data }: { data: ViewPoint[] }) {
   const coords = points.map((point, index) => {
     const x =
       paddingX +
-      (points.length === 1 ? usableWidth / 2 : (index / (points.length - 1)) * usableWidth);
+      (points.length === 1
+        ? usableWidth / 2
+        : (index / (points.length - 1)) * usableWidth);
     const y = paddingY + usableHeight - (point.views / maxViews) * usableHeight;
     return { x, y, point };
   });
@@ -238,8 +243,16 @@ function TrendChart({ data }: { data: ViewPoint[] }) {
         >
           <defs>
             <linearGradient id="profile-views-area" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor="rgb(var(--brand-primary))" stopOpacity="0.28" />
-              <stop offset="100%" stopColor="rgb(var(--brand-primary))" stopOpacity="0.02" />
+              <stop
+                offset="0%"
+                stopColor="rgb(var(--brand-primary))"
+                stopOpacity="0.28"
+              />
+              <stop
+                offset="100%"
+                stopColor="rgb(var(--brand-primary))"
+                stopOpacity="0.02"
+              />
             </linearGradient>
             <linearGradient id="profile-views-line" x1="0" x2="1" y1="0" y2="0">
               <stop offset="0%" stopColor="rgb(var(--brand-primary))" />
@@ -298,7 +311,10 @@ function TrendChart({ data }: { data: ViewPoint[] }) {
 
       <div
         className="mt-2 flex items-center justify-between"
-        style={{ color: "rgb(var(--color-text-muted))", fontSize: "var(--text-xs)" }}
+        style={{
+          color: "rgb(var(--color-text-muted))",
+          fontSize: "var(--text-xs)",
+        }}
       >
         <span>{formatDay(points[0].date)}</span>
         <span>{formatDay(points[points.length - 1].date)}</span>
@@ -325,7 +341,10 @@ function LastSevenBars({ data }: { data: ViewPoint[] }) {
         <div>
           <p
             className="font-bold"
-            style={{ color: "rgb(var(--color-text))", fontSize: "var(--text-base)" }}
+            style={{
+              color: "rgb(var(--color-text))",
+              fontSize: "var(--text-base)",
+            }}
           >
             Daily pulse
           </p>
@@ -347,7 +366,10 @@ function LastSevenBars({ data }: { data: ViewPoint[] }) {
       </div>
       <div className="flex h-40 items-end gap-2">
         {points.map((point) => (
-          <div key={point.date} className="flex h-full flex-1 flex-col justify-end gap-2">
+          <div
+            key={point.date}
+            className="flex h-full flex-1 flex-col justify-end gap-2"
+          >
             <div
               className="w-full rounded-lg"
               style={{
@@ -365,7 +387,9 @@ function LastSevenBars({ data }: { data: ViewPoint[] }) {
                 fontSize: "var(--text-xs)",
               }}
             >
-              {new Date(point.date).toLocaleDateString("en", { weekday: "narrow" })}
+              {new Date(point.date).toLocaleDateString("en", {
+                weekday: "narrow",
+              })}
             </span>
           </div>
         ))}
@@ -378,7 +402,9 @@ export function AnalyticsPanel({ data, lang }: Props) {
   const viewsByDay = data.viewsByDay ?? [];
   const weekChange = getWeekChange(viewsByDay);
   const averageDailyViews =
-    viewsByDay.length > 0 ? Math.round(sumViews(viewsByDay) / viewsByDay.length) : 0;
+    viewsByDay.length > 0
+      ? Math.round(sumViews(viewsByDay) / viewsByDay.length)
+      : 0;
   const engagementRate =
     data.last30DaysViews > 0
       ? (data.last30DaysSaves / data.last30DaysViews) * 100
@@ -386,7 +412,7 @@ export function AnalyticsPanel({ data, lang }: Props) {
 
   return (
     <section className="px-4 py-5 sm:px-6 lg:px-8">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
+      <div className="mx-auto flex w-full flex-col gap-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2
@@ -413,9 +439,10 @@ export function AnalyticsPanel({ data, lang }: Props) {
             style={{
               backgroundColor: "rgb(var(--color-bg-elevated))",
               borderColor: "rgb(var(--color-border))",
-              color: weekChange >= 0
-                ? "rgb(var(--color-success))"
-                : "rgb(var(--color-error))",
+              color:
+                weekChange >= 0
+                  ? "rgb(var(--color-success))"
+                  : "rgb(var(--color-error))",
               fontSize: "var(--text-sm)",
             }}
           >
@@ -427,7 +454,7 @@ export function AnalyticsPanel({ data, lang }: Props) {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 lg:grid-cols-4 lg:gap-3">
+        <div className="grid grid-cols-2 gap-2 lg:grid-cols-5 lg:gap-3">
           <MetricCard
             icon={Eye}
             label="Views"
