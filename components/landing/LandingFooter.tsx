@@ -113,7 +113,7 @@ export function LandingFooter({ dict }: { dict?: Dictionary }) {
             links: [
               { label: "Features", href: "#features" },
               { label: "How It Works", href: "#how-it-works" },
-              { label: "For Creators", href: "#creators" },
+              { label: "For Buyers", href: "#creators" },
               { label: "For Sellers", href: "#sellers" },
             ],
           },
