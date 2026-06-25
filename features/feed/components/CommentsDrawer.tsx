@@ -837,9 +837,9 @@ export function CommentsDrawer({
             transition={{ duration: 0.25 }}
           />
 
-          {/* Sheet — slides up; drag the handle down to dismiss. */}
+          {/* Mobile sheet — keep the existing TikTok-style bottom drawer intact. */}
           <motion.div
-            className="absolute inset-x-0 bottom-0 mx-auto flex max-w-107.5 flex-col overflow-hidden rounded-t-3xl bg-app shadow-2xl"
+            className="absolute inset-x-0 bottom-0 mx-auto flex max-w-107.5 flex-col overflow-hidden rounded-t-3xl bg-app shadow-2xl md:hidden"
             style={{ height: "75dvh" }}
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
@@ -863,6 +863,37 @@ export function CommentsDrawer({
                   onClick={requestClose}
                   aria-label="Close"
                   className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-surface"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {inner}
+          </motion.div>
+
+          {/* Desktop / tablet dialog — centered, wider, and not draggable. */}
+          <motion.div
+            className="absolute left-1/2 top-1/2 hidden w-[min(760px,calc(100vw-3rem))] max-w-[760px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[28px] border border-default bg-app shadow-2xl md:flex lg:w-[min(860px,calc(100vw-5rem))] lg:max-w-[860px]"
+            style={{ height: "min(82dvh, 860px)" }}
+            initial={{ opacity: 0, scale: 0.96, y: 18 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 18 }}
+            transition={{ duration: 0.22, ease: "easeOut" }}
+          >
+            <div className="shrink-0 border-b border-default bg-[rgb(var(--color-bg)/0.96)] backdrop-blur-md">
+              <div className="flex items-center justify-between px-5 py-4 lg:px-6">
+                <div>
+                  <h2 className="text-base font-bold text-default">Comments</h2>
+                  <p className="mt-0.5 text-sm text-muted-foreground">
+                    Join the conversation
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={requestClose}
+                  aria-label="Close"
+                  className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-surface hover:text-default"
                 >
                   <X className="h-5 w-5" />
                 </button>

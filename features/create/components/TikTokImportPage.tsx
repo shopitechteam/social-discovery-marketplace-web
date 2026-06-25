@@ -15,12 +15,19 @@
  *     → "Use This Video" → createDraftFromTiktokEmbed → enter edit flow
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "@apollo/client/react";
 import { useCreateStore } from "@/stores/create";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   MeDocument,
   MyTiktokVideosDocument,
@@ -286,6 +293,21 @@ export function TikTokImportPage({ lang }: Props) {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const query = window.matchMedia("(min-width: 768px)");
+    const update = () => setIsDesktop(query.matches);
+
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+
+  return isDesktop;
+}
+
 function PageShell({
   lang,
   children,
@@ -294,48 +316,78 @@ function PageShell({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const isDesktop = useIsDesktop();
+
+  function goBackToPicker() {
+    router.replace(`/${lang}/upload`);
+  }
+
+  const shellBody = (
+    <div
+      className="flex flex-col bg-app overflow-hidden fixed inset-0 md:static md:inset-auto md:w-[860px] md:max-w-[95vw] md:max-h-[90vh] md:min-h-[600px]"
+    >
+      <div
+        className="shrink-0 flex items-center gap-3 px-4 pt-4 pb-4"
+        style={{ borderBottom: "1px solid rgb(var(--color-border))" }}
+      >
+        <button
+          onClick={goBackToPicker}
+          className="flex h-9 w-9 items-center justify-center rounded-full"
+          style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </button>
+        <h1
+          className="font-semibold"
+          style={{
+            fontSize: "var(--text-xl)",
+            color: "rgb(var(--color-text))",
+          }}
+        >
+          Add from TikTok
+        </h1>
+      </div>
+      {children}
+    </div>
+  );
+
+  if (isDesktop) {
+    return (
+      <Dialog
+        open
+        onOpenChange={(open) => {
+          if (!open) goBackToPicker();
+        }}
+      >
+        <DialogContent className="w-[min(94vw,900px)] max-w-none overflow-hidden rounded-3xl border border-[rgb(229_231_235)] bg-app p-0">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Add from TikTok</DialogTitle>
+            <DialogDescription>
+              Pick one of your TikTok videos to create a Shopi post.
+            </DialogDescription>
+          </DialogHeader>
+          {shellBody}
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     /*
-     * Mobile  (< md): fixed full-viewport column, only list scrolls.
-     * Desktop (≥ md): dimmed backdrop + centred dialog card (860px wide, 90vh tall).
+     * Mobile: fixed full-viewport column, only list scrolls.
      */
-    <div className="md:fixed md:inset-0 md:z-50 md:flex md:items-center md:justify-center md:bg-black/50 md:backdrop-blur-sm">
-      <div
-        className="flex flex-col bg-app overflow-hidden
-                   fixed inset-0
-                   md:static md:inset-auto md:w-[860px] md:max-w-[95vw] md:max-h-[90vh] md:min-h-[600px]
-                   md:rounded-2xl md:shadow-2xl"
-      >
-        {/* Header */}
-        <div className="shrink-0 flex items-center gap-3 px-4 pt-4 pb-4" style={{ borderBottom: "1px solid rgb(var(--color-border))" }}>
-          <button
-            onClick={() => router.push(`/${lang}/upload`)}
-            className="w-9 h-9 rounded-full flex items-center justify-center"
-            style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
-          </button>
-          <h1
-            className="font-semibold"
-            style={{ fontSize: "var(--text-xl)", color: "rgb(var(--color-text))" }}
-          >
-            Add from TikTok
-          </h1>
-        </div>
-        {children}
-      </div>
-    </div>
+    shellBody
   );
 }
 

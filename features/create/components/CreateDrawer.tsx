@@ -40,7 +40,7 @@ export function CreateDrawer({ lang }: { lang: string }) {
 
   function handleTiktokImport() {
     setPreparingTiktok(true);
-    router.push(`/${lang}/upload/tiktok`);
+    router.replace(`/${lang}/upload/tiktok`);
   }
 
   function handleClose() {
