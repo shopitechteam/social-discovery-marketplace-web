@@ -4,6 +4,7 @@ import { useRef } from "react";
 import Image from "next/image";
 import { Bell, BellOff, Loader2, MessageCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import type { Conversation } from "../types";
 import {
   avatarGradient,
@@ -18,7 +19,6 @@ interface Props {
   conversations: Conversation[];
   selectedConversationId: string | null;
   conversationsLoading: boolean;
-  ensuringConversation: boolean;
   unreadThreads: number;
   pushSupported: boolean;
   pushAvailable: boolean;
@@ -37,7 +37,6 @@ export function ConversationList({
   conversations,
   selectedConversationId,
   conversationsLoading,
-  ensuringConversation,
   unreadThreads,
   pushSupported,
   pushAvailable,
@@ -75,7 +74,7 @@ export function ConversationList({
       style={{ borderColor: "rgb(var(--color-border))" }}
     >
       <div
-        className="border-b px-4 py-4"
+        className="border-b px-4 py-4 md:px-6 md:py-5"
         style={{ borderColor: "rgb(var(--color-border))" }}
       >
         <div className="flex sticky top-0 left-0 right-0 items-center justify-between">
@@ -122,16 +121,16 @@ export function ConversationList({
               </button>
             ) : null}
 
-            {/* {(conversationsLoading || ensuringConversation) && (
+            {/* {(conversationsLoading) && (
               <Loader2 className="animate-spin text-muted" size={18} />
             )} */}
           </div>
         </div>
       </div>
 
-      <div className="flex-1 pb-14 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto pb-14 md:pb-6">
         {conversationsLoading && conversations.length === 0 ? (
-          <div className="space-y-3 px-4 py-4">
+          <div className="space-y-3 px-4 py-4 md:px-6 md:py-5">
             {Array.from({ length: 12 }).map((_, index) => (
               <div key={index} className="flex gap-3">
                 <Skeleton className="h-14 w-14 rounded-2xl" />
@@ -144,7 +143,7 @@ export function ConversationList({
             ))}
           </div>
         ) : conversations.length === 0 ? (
-          <div className="flex h-full mt-12 flex-col items-center justify-center gap-3 px-6 text-center">
+          <div className="flex h-full mt-12 flex-col items-center justify-center gap-3 px-6 text-center md:min-h-[36svh] md:px-10">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
               <MessageCircle size={24} />
             </div>
@@ -193,13 +192,11 @@ export function ConversationList({
                 }}
                 onPointerUp={clearLongPress}
                 onPointerLeave={clearLongPress}
-                className="flex w-full select-none items-start gap-3 border-b px-4 py-3 text-left transition-colors"
-                style={{
-                  borderColor: "rgb(var(--color-border) / 0.6)",
-                  backgroundColor: selected
-                    ? "rgb(var(--brand-primary) / 0.06)"
-                    : "transparent",
-                }}
+                className={cn(
+                  "flex w-full lg:cursor-pointer select-none items-start gap-3 border-b border-[rgb(var(--color-border)/0.6)] px-4 py-3 text-left transition-colors md:px-6 md:py-4",
+                  selected &&
+                    "bg-primary/10 shadow-[inset_3px_0_0_0_rgb(var(--brand-primary)/0.8),inset_0_0_0_1px_rgb(var(--brand-primary)/0.14)]",
+                )}
               >
                 <div className="relative h-12 w-12 shrink-0">
                   {/* Square post image */}

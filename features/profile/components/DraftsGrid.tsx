@@ -94,7 +94,7 @@ export function DraftsGrid({ lang }: Props) {
   if (loading && drafts.length === 0) {
     return (
       <section className="px-4 py-5 sm:px-6 lg:px-8">
-        <div className="mx-auto grid w-full max-w-6xl grid-cols-2 gap-2">
+        <div className="mx-auto grid w-full max-w-6xl grid-cols-2 gap-2 md:grid-cols-3 md:gap-3 xl:grid-cols-4 xl:gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
@@ -184,7 +184,7 @@ export function DraftsGrid({ lang }: Props) {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3 xl:grid-cols-4 xl:gap-4">
           {drafts.map((draft) => {
           const busy = busyId === draft.id;
           const isVideo = mapType(draft.type) === "video";
@@ -209,7 +209,7 @@ export function DraftsGrid({ lang }: Props) {
                     src={draft.coverThumbnailUrl}
                     alt={draft.title ?? "Draft"}
                     fill
-                    sizes="(max-width: 640px) 50vw, 25vw"
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1536px) 25vw, 22vw"
                     className="object-cover"
                   />
                 ) : (

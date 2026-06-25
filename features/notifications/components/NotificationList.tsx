@@ -26,12 +26,14 @@ interface Props {
 
 function actorInitials(notification: NotificationItem): string {
   const name = notification.actors[0]?.displayName ?? "S";
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("") || "S";
+  return (
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join("") || "S"
+  );
 }
 
 export function NotificationList({
@@ -45,9 +47,9 @@ export function NotificationList({
   onLoadMore,
 }: Props) {
   return (
-    <section className="flex min-h-[calc(100svh-48px)] flex-col">
+    <section className="flex min-h-[calc(100svh-48px)] flex-col md:mx-auto md:h-full md:w-full md:max-w-[1600px] md:bg-app">
       <div
-        className="flex items-center justify-between border-b px-4 py-4"
+        className="flex items-center justify-between border-b px-4 py-4 md:px-6 md:py-5"
         style={{ borderColor: "rgb(var(--color-border))" }}
       >
         <div>
@@ -80,9 +82,9 @@ export function NotificationList({
         ) : null}
       </div>
 
-      <div className="flex-1 overflow-y-auto pb-14">
+      <div className="flex-1 overflow-y-auto pb-14 md:pb-6">
         {loading && notifications.length === 0 ? (
-          <div className="space-y-3 px-4 py-4">
+          <div className="space-y-3 px-4 py-4 md:px-6 md:py-5">
             {Array.from({ length: 10 }).map((_, index) => (
               <div key={index} className="flex gap-3">
                 <Skeleton className="h-12 w-12 rounded-full" />
@@ -94,15 +96,21 @@ export function NotificationList({
             ))}
           </div>
         ) : notifications.length === 0 ? (
-          <div className="flex min-h-[52svh] flex-col items-center justify-center gap-4 px-6 text-center">
+          <div className="flex min-h-[52svh] flex-col items-center justify-center gap-4 px-6 text-center md:min-h-[42svh] md:px-10">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
               <Bell size={28} />
             </div>
             <div className="space-y-1.5">
-              <h2 className="font-semibold text-default" style={{ fontSize: "var(--text-lg)" }}>
+              <h2
+                className="font-semibold text-default"
+                style={{ fontSize: "var(--text-lg)" }}
+              >
                 No notifications yet
               </h2>
-              <p className="mx-auto max-w-[18rem] text-muted leading-relaxed" style={{ fontSize: "var(--text-sm)" }}>
+              <p
+                className="mx-auto max-w-[18rem] text-muted leading-relaxed"
+                style={{ fontSize: "var(--text-sm)" }}
+              >
                 New followers and account updates will appear here.
               </p>
             </div>
@@ -116,7 +124,7 @@ export function NotificationList({
                   key={notification.id}
                   type="button"
                   onClick={() => onSelect(notification)}
-                  className="flex w-full items-start gap-3 border-b px-4 py-3 text-left transition-colors"
+                  className="flex w-full items-start gap-3 border-b px-4 py-3 text-left transition-colors md:px-6 md:py-4"
                   style={{
                     borderColor: "rgb(var(--color-border) / 0.6)",
                     // LinkedIn-style: unread rows get a subtle blue wash.
@@ -154,7 +162,9 @@ export function NotificationList({
                     <div className="flex items-start justify-between gap-3">
                       <p
                         className={`min-w-0 leading-snug ${
-                          notification.isRead ? "text-default" : "font-semibold text-default"
+                          notification.isRead
+                            ? "text-default"
+                            : "font-semibold text-default"
                         }`}
                         style={{ fontSize: "var(--text-sm)" }}
                       >
@@ -180,7 +190,7 @@ export function NotificationList({
             })}
 
             {hasMore ? (
-              <div className="px-4 py-4">
+              <div className="px-4 py-4 md:px-6 md:py-5">
                 <button
                   type="button"
                   onClick={onLoadMore}

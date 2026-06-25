@@ -312,8 +312,8 @@ export function upsertConversation(
   };
 
   const next = [...items];
-  next.splice(index, 1);
-  return [updated, ...next];
+  next[index] = updated;
+  return next;
 }
 
 export function removeConversation(

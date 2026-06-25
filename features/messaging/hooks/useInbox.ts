@@ -210,18 +210,11 @@ export function useInbox(lang: string) {
 
       const byId = new Map<string, Conversation>();
       for (const conversation of prev) byId.set(conversation.id, conversation);
-      for (const conversation of latest) {
-        byId.set(conversation.id, {
-          ...byId.get(conversation.id),
-          ...conversation,
-        });
-      }
 
-      return Array.from(byId.values()).sort(
-        (a, b) =>
-          new Date(b.lastMessageAt ?? b.updatedAt ?? 0).getTime() -
-          new Date(a.lastMessageAt ?? a.updatedAt ?? 0).getTime(),
-      );
+      return latest.map((conversation) => ({
+        ...byId.get(conversation.id),
+        ...conversation,
+      }));
     });
   }, [conversationsData]);
 
@@ -236,12 +229,6 @@ export function useInbox(lang: string) {
     if (directConversation.id !== selectedConversationIdRef.current) return;
 
     setActiveConversation(directConversation as Conversation);
-    setConversations((prev) => {
-      const withoutCurrent = prev.filter(
-        (item) => item.id !== directConversation.id,
-      );
-      return [directConversation as Conversation, ...withoutCurrent];
-    });
   }, [conversationData]);
 
   useEffect(() => {
@@ -627,12 +614,6 @@ export function useInbox(lang: string) {
 
         setSelectedConversationId(conversation.id);
         setActiveConversation(conversation);
-        setConversations((prev) => {
-          const withoutCurrent = prev.filter(
-            (item) => item.id !== conversation.id,
-          );
-          return [conversation, ...withoutCurrent];
-        });
         // Replace the URL without a navigation so we stay on the same chat screen.
         if (typeof window !== "undefined") {
           window.history.replaceState(

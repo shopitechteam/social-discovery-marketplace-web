@@ -23,6 +23,7 @@ import { useAuthStore } from "@/stores/auth";
 import { PostCard } from "./PostCard";
 import { PostCardSkeleton } from "./FeedSkeleton";
 import { DesktopTrendingRail } from "./DesktopTrendingRail";
+import { TrendingStrip } from "./TrendingStrip";
 import { DesktopNearbyColumn } from "./DesktopNearbyColumn";
 
 type Tab = "for-you" | "following" | "nearby";
@@ -221,48 +222,54 @@ export default function DesktopFeed({ lang = "en" }: { lang?: string }) {
 
   return (
     <div className="min-h-svh bg-app">
-      <div className="mx-auto grid w-full max-w-275 grid-cols-1 gap-8 px-6 py-6 lg:grid-cols-[minmax(0,640px)_minmax(280px,1fr)]">
-        {/* ── Feed column ───────────────────────────────────────────── */}
-        <div className="min-w-0">
-          {/* Tabs — sticky so they stay reachable while scrolling */}
-          <div className="sticky top-0 z-20 -mx-1 mb-4 bg-app/80 px-1 pb-2 pt-1 backdrop-blur-md">
-            <div className="flex items-center gap-1 rounded-full border border-default bg-elevated p-1">
-              {TABS.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => {
-                    setTab(t.id);
-                    window.scrollTo({ top: 0, behavior: "instant" });
-                  }}
-                  className={[
-                    "flex-1 rounded-full px-4 py-2.5 text-sm font-semibold transition-colors",
-                    tab === t.id
-                      ? "bg-primary text-white"
-                      : "text-muted-foreground hover:text-default",
-                  ].join(" ")}
-                  style={
-                    tab === t.id
-                      ? { backgroundColor: "rgb(var(--brand-primary))" }
-                      : undefined
-                  }
-                >
-                  {t.label}
-                </button>
-              ))}
+      <div className="mx-auto w-full max-w-[1680px] px-4 py-4 md:px-6 md:py-6 xl:px-8">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,360px)] xl:items-start">
+          {/* ── Feed column ───────────────────────────────────────────── */}
+          <div className="min-w-0 w-full max-w-[780px] mx-auto xl:max-w-none xl:mx-0">
+            <div className="xl:hidden mb-4">
+              <TrendingStrip lang={lang} />
             </div>
+
+            {/* Tabs — sticky so they stay reachable while scrolling */}
+            <div className="sticky top-0 z-20 -mx-1 mb-4 bg-app/85 px-1 pb-2 pt-1 backdrop-blur-md">
+              <div className="flex items-center gap-1 rounded-full border border-default bg-elevated p-1 shadow-sm">
+                {TABS.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => {
+                      setTab(t.id);
+                      window.scrollTo({ top: 0, behavior: "instant" });
+                    }}
+                    className={[
+                      "flex-1 rounded-full px-4 py-2.5 text-sm font-semibold transition-colors",
+                      tab === t.id
+                        ? "bg-primary text-white"
+                        : "text-muted-foreground hover:text-default",
+                    ].join(" ")}
+                    style={
+                      tab === t.id
+                        ? { backgroundColor: "rgb(var(--brand-primary))" }
+                        : undefined
+                    }
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {tab === "for-you" && <ForYouColumn lang={lang} />}
+            {tab === "following" && <FollowingColumn lang={lang} />}
+            {tab === "nearby" && <DesktopNearbyColumn lang={lang} />}
           </div>
 
-          {tab === "for-you" && <ForYouColumn lang={lang} />}
-          {tab === "following" && <FollowingColumn lang={lang} />}
-          {tab === "nearby" && <DesktopNearbyColumn lang={lang} />}
+          {/* ── Right rail ────────────────────────────────────────────── */}
+          <aside className="hidden xl:block sticky top-6 h-[calc(100svh-3rem)] self-start">
+            <div className="h-full">
+              <DesktopTrendingRail lang={lang} />
+            </div>
+          </aside>
         </div>
-
-        {/* ── Right rail ────────────────────────────────────────────── */}
-        <aside className="hidden lg:block">
-          <div className="sticky top-6">
-            <DesktopTrendingRail lang={lang} />
-          </div>
-        </aside>
       </div>
     </div>
   );

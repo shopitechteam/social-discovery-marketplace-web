@@ -138,7 +138,7 @@ export function DesktopTrendingRail({
   const { items, loading } = useTrending(county);
 
   return (
-    <div className="rounded-3xl border border-default bg-elevated p-4">
+    <div className="h-full rounded-3xl border border-default bg-elevated p-4 overflow-y-auto">
       <div className="mb-3 flex items-center justify-between px-1">
         <h2 className="flex items-center gap-1.5 text-base font-bold text-default">
           <span>🔥</span> Trending

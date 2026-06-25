@@ -51,6 +51,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 interface Props {
   post: ContentCardFieldsFragment;
@@ -1083,6 +1084,7 @@ export function PostCard({ post, lang, priority }: Props) {
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 px-4 pt-3.5 pb-2.5">
         <button
+          className="lg:cursor-pointer"
           onClick={() =>
             creator?.id
               ? router.push(`/${lang}/profile/${creator.id}`)
@@ -1117,9 +1119,7 @@ export function PostCard({ post, lang, priority }: Props) {
           {post.location && locationTrail(post.location) && (
             <p className="flex items-center gap-0.5 text-muted-foreground text-[11px] mt-0.5 leading-tight">
               <MapPin className="w-3 h-3 shrink-0" />
-              <span className="truncate">
-                {locationTrail(post.location)}
-              </span>
+              <span className="truncate">{locationTrail(post.location)}</span>
             </p>
           )}
           <p className="text-muted-foreground text-[11px] mt-0.5">
@@ -1132,7 +1132,7 @@ export function PostCard({ post, lang, priority }: Props) {
           <button
             onClick={handleFollow}
             className={[
-              "flex items-center gap-1 text-[13px] font-semibold px-3 py-1.5 rounded-full transition-all active:scale-95",
+              "flex items-center lg:cursor-pointer gap-1 text-[13px] font-semibold px-3 py-1.5 rounded-full transition-all active:scale-95",
               following
                 ? "text-muted-foreground bg-surface"
                 : "text-primary bg-primary/10 hover:bg-primary/20",
@@ -1161,7 +1161,7 @@ export function PostCard({ post, lang, priority }: Props) {
             <button
               type="button"
               onClick={(e) => e.stopPropagation()}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface text-muted-foreground"
+              className="w-8 h-8 lg:cursor-pointer flex items-center justify-center rounded-full hover:bg-surface text-muted-foreground"
               aria-label="Post options"
             >
               <MoreHorizontal className="w-5 h-5" strokeWidth={2.6} />
@@ -1179,7 +1179,7 @@ export function PostCard({ post, lang, priority }: Props) {
                 e.stopPropagation();
                 void handleCopyLink();
               }}
-              className="flex w-full text-sm items-center gap-3 px-4 py-3 rounded-xl  font-semibold text-default hover:bg-surface transition-colors"
+              className="flex lg:cursor-pointer w-full text-sm items-center gap-3 px-4 py-3 rounded-xl  font-semibold text-default hover:bg-surface transition-colors"
             >
               <Link2
                 className="w-4 h-4 shrink-0 text-muted-foreground"
@@ -1192,7 +1192,7 @@ export function PostCard({ post, lang, priority }: Props) {
               <button
                 onClick={handleDownload}
                 disabled={isDownloading}
-                className="flex text-sm w-full items-center gap-3 px-4 py-3 rounded-xl  font-semibold text-default hover:bg-surface transition-colors"
+                className="flex text-sm lg:cursor-pointer w-full items-center gap-3 px-4 py-3 rounded-xl  font-semibold text-default hover:bg-surface transition-colors"
               >
                 {isDownloading ? (
                   <>
@@ -1233,7 +1233,7 @@ export function PostCard({ post, lang, priority }: Props) {
                 setMenuOpen(false);
                 handleShare();
               }}
-              className="flex w-full text-sm items-center gap-3 px-4 py-3 rounded-xl  font-semibold text-default hover:bg-surface transition-colors"
+              className="flex lg:cursor-pointer w-full text-sm items-center gap-3 px-4 py-3 rounded-xl  font-semibold text-default hover:bg-surface transition-colors"
             >
               <Share2
                 className="w-4 h-4 shrink-0 text-muted-foreground"
@@ -1252,7 +1252,7 @@ export function PostCard({ post, lang, priority }: Props) {
                   toast.success("Report submitted"),
                 );
               }}
-              className="flex text-sm w-full items-center gap-3 px-4 py-3 rounded-xl  font-semibold text-default hover:bg-surface transition-colors"
+              className="flex lg:cursor-pointer text-sm w-full items-center gap-3 px-4 py-3 rounded-xl  font-semibold text-default hover:bg-surface transition-colors"
             >
               <Flag
                 className="w-4 h-4 shrink-0 text-muted-foreground"
@@ -1332,7 +1332,7 @@ export function PostCard({ post, lang, priority }: Props) {
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="absolute right-3 top-3 z-20 flex items-center gap-1.5 rounded-full bg-black/65 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm"
+              className="absolute right-3 lg:cursor-pointer top-3 z-20 flex items-center gap-1.5 rounded-full bg-black/65 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm"
             >
               <TikTokIcon size={14} className="h-3.5 w-3.5" />
               View on TikTok
@@ -1379,7 +1379,7 @@ export function PostCard({ post, lang, priority }: Props) {
         {/* Save pill — outlined, active = filled primary */}
         <button
           onClick={() => handleSave()}
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded-full border text-xs font-semibold transition-all active:scale-95"
+          className="flex lg:cursor-pointer items-center gap-1.5 px-4 py-2.5 rounded-full border text-xs font-semibold transition-all active:scale-95"
           style={{
             borderColor: saved
               ? "rgb(var(--brand-primary))"
@@ -1403,7 +1403,7 @@ export function PostCard({ post, lang, priority }: Props) {
         {/* Comment pill — opens the lazy-loaded comments sheet */}
         <button
           onClick={() => setShowComments(true)}
-          className="flex items-center gap-1.5  px-4 py-2.5 rounded-full border border-border text-xs font-semibold text-default transition-all active:scale-95"
+          className="flex lg:cursor-pointer items-center gap-1.5  px-4 py-2.5 rounded-full border border-border text-xs font-semibold text-default transition-all active:scale-95"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -1428,7 +1428,7 @@ export function PostCard({ post, lang, priority }: Props) {
         </button>
 
         {!isOwnPost && (
-          <button
+          <Button
             // Warm the conversation route's JS so the transition paints the chat
             // shell (loading.tsx) instantly instead of a blank frame on tap.
             onPointerEnter={() =>
@@ -1447,7 +1447,7 @@ export function PostCard({ post, lang, priority }: Props) {
               // so we never flash the inbox list.
               router.push(`/${lang}/notifications/${post.id}?source=content`);
             }}
-            className="flex-1 bg-primary/90 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-xs font-semibold text-[#f1f1f1] transition-all active:scale-95"
+            className="flex-1 lg:flex-0 bg-primary/90 lg:w-fit lg:px-8 lg:cursor-pointer flex items-center justify-center gap-1.5 py-2.5 rounded-full text-xs font-semibold text-[#f1f1f1] transition-all active:scale-95"
           >
             <svg
               className="w-4 h-4"
@@ -1463,7 +1463,7 @@ export function PostCard({ post, lang, priority }: Props) {
               />
             </svg>
             Message
-          </button>
+          </Button>
         )}
       </div>
 

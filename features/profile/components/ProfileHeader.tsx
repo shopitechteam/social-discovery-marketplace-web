@@ -96,11 +96,11 @@ export function ProfileHeader({ user, editHref, lang }: Props) {
       // render in this build). Matches the creator profile hero for consistency.
       className="relative py-6 overflow-hidden border-b border-border bg-linear-160 from-primary/10 from-0% to-background to-60%"
     >
-      <div className="mx-auto w-full max-w-6xl px-4 py-4 sm:px-6 lg:px-8 lg:py-6">
-        <div className="flex min-w-0 flex-col gap-4">
-          <div className="flex min-w-0 items-start gap-4">
+      <div className="mx-auto w-full max-w-6xl px-4 py-4 sm:px-6 lg:px-8 lg:py-8">
+        <div className="flex min-w-0 flex-col gap-4 lg:gap-6">
+          <div className="flex min-w-0 items-start gap-4 lg:gap-5">
             <div
-              className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-full border border-elevated sm:h-24 sm:w-24 ${
+              className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-full border border-elevated sm:h-24 sm:w-24 lg:h-28 lg:w-28 ${
                 avatar
                   ? "bg-surface"
                   : "bg-linear-135 from-primary via-secondary via-62% to-accent"
@@ -173,7 +173,7 @@ export function ProfileHeader({ user, editHref, lang }: Props) {
 
               <ProfileViewsCluster lang={lang} className="mt-3" />
 
-              <div className="mt-3 grid grid-cols-3 gap-1.5">
+              <div className="mt-3 grid grid-cols-3 gap-1.5 md:max-w-xl md:gap-2 lg:max-w-2xl lg:grid-cols-4">
                 <StatTile label="Posts" value={formatCompact(user.postCount)} />
                 <StatTile
                   label="Followers"
@@ -184,6 +184,12 @@ export function ProfileHeader({ user, editHref, lang }: Props) {
                   label="Views"
                   value={formatCompact(user.totalViews)}
                 />
+                <div className="hidden lg:block">
+                  <StatTile
+                    label="Following"
+                    value={formatCompact(user.followingCount)}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -219,8 +225,7 @@ export function ProfileHeader({ user, editHref, lang }: Props) {
               )}
             </div>
           )}
-
-          <div className="hidden items-center gap-4 sm:flex">
+          <div className="hidden items-center gap-4 sm:flex lg:hidden">
             <span
               style={{
                 fontSize: "var(--text-sm)",

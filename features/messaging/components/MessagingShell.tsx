@@ -34,7 +34,11 @@ interface Props {
  * conversation route the chat fills the screen (the list is hidden, the chat's
  * own back button returns to the list). This preserves the existing mobile UX.
  */
-export function MessagingShell({ lang, conversationId, mode = "conversation" }: Props) {
+export function MessagingShell({
+  lang,
+  conversationId,
+  mode = "conversation",
+}: Props) {
   const inbox = useInbox(lang);
   const pushNotifications = usePushNotifications(lang);
 
@@ -78,7 +82,10 @@ export function MessagingShell({ lang, conversationId, mode = "conversation" }: 
     : "calc(100svh - var(--nav-height, 0px) - var(--safe-bottom, 0px))";
 
   return (
-    <div className="bg-app md:overflow-hidden" style={{ ["--ms-h" as string]: desktopHeight }}>
+    <div
+      className="bg-app md:mx-auto md:w-full md:max-w-400 md:overflow-hidden md:bg-app"
+      style={{ ["--ms-h" as string]: desktopHeight }}
+    >
       <div className="md:grid md:h-(--ms-h) md:grid-cols-[minmax(300px,360px)_minmax(0,1fr)]">
         {/* ── Conversation list (left pane) ──────────────────────────── */}
         <div
@@ -93,7 +100,6 @@ export function MessagingShell({ lang, conversationId, mode = "conversation" }: 
             conversations={inbox.conversations}
             selectedConversationId={inbox.selectedConversationId}
             conversationsLoading={inbox.conversationsLoading}
-            ensuringConversation={inbox.ensuringConversation}
             unreadThreads={inbox.unreadThreads}
             pushSupported={pushNotifications.isSupported}
             pushAvailable={pushNotifications.isAvailable}

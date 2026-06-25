@@ -128,7 +128,7 @@ function PostThumbnail({
             alt={post.title}
             fill
             className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-            sizes="(max-width: 430px) 50vw, 215px"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1536px) 25vw, 22vw"
             priority={priority}
             loading={priority ? "eager" : "lazy"}
             placeholder="blur"
@@ -146,7 +146,7 @@ function PostThumbnail({
               alt={post.title}
               fill
               className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-              sizes="(max-width: 430px) 50vw, 215px"
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1536px) 25vw, 22vw"
               priority={priority}
               loading={priority ? "eager" : "lazy"}
               placeholder="blur"
@@ -274,7 +274,7 @@ export function PostsGrid({
     return (
       <section className="px-4 py-5 sm:px-6 lg:px-8">
         <div className="mx-auto w-full max-w-6xl">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3 xl:grid-cols-4 xl:gap-4">
             {Array.from({ length: 6 }).map((_, i) => (
               <div
                 key={i}
@@ -404,7 +404,7 @@ export function PostsGrid({
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3 xl:grid-cols-4 xl:gap-4">
           {posts.map((post, index) => (
             <PostThumbnail
               key={post.id}

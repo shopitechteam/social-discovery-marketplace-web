@@ -26,7 +26,6 @@ export function InboxScreen({ lang }: { lang: string }) {
         conversations={inbox.conversations}
         selectedConversationId={inbox.selectedConversationId}
         conversationsLoading={inbox.conversationsLoading}
-        ensuringConversation={inbox.ensuringConversation}
         unreadThreads={inbox.unreadThreads}
         pushSupported={pushNotifications.isSupported}
         pushAvailable={pushNotifications.isAvailable}

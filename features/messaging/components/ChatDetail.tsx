@@ -3,14 +3,13 @@
 import { useCallback, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Handshake, MessageCircle } from "lucide-react";
+import { ArrowLeft, ChevronLeft, Handshake, MessageCircle } from "lucide-react";
 import type { Conversation, Message, StagedMedia, UserLite } from "../types";
 import {
   avatarGradient,
   conversationThumb,
   initialsForUser,
   lastSeenLabel,
-  money,
   participantName,
 } from "../lib/helpers";
 import { MessageList } from "./MessageList";
@@ -175,7 +174,7 @@ export function ChatDetail({
               paddingTop: "calc(env(safe-area-inset-top) + 0.75rem)",
             }}
           >
-            <div className="flex items-center  gap-3">
+            <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={onBack}
@@ -183,6 +182,20 @@ export function ChatDetail({
                 aria-label="Back to inbox"
               >
                 <ArrowLeft size={20} />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  router.push(`/${lang}/notifications`);
+                }}
+                className="hidden items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors md:inline-flex"
+                style={{ borderColor: "rgb(var(--color-border))" }}
+                aria-label="Back to inbox tabs"
+                title="Back to inbox tabs"
+              >
+                <ChevronLeft size={16} />
+                Back to tabs
               </button>
 
               {/* While resolving from a content id the participant isn't known

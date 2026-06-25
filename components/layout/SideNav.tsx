@@ -17,7 +17,7 @@ const tabs: Tab[] = [
   {
     key: "feed",
     path: "feed",
-    label: "For you",
+    label: "Feed",
     icon: (active) => (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
         <path
@@ -32,37 +32,6 @@ const tabs: Tab[] = [
           d="M9 21V12h6v9"
           stroke="currentColor"
           strokeWidth={active ? 2.2 : 1.7}
-          strokeLinejoin="round"
-        />
-      </svg>
-    ),
-  },
-  {
-    key: "following",
-    path: "following",
-    label: "Following",
-    icon: (active) => (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <circle
-          cx="10"
-          cy="8"
-          r="3.5"
-          stroke="currentColor"
-          strokeWidth={active ? 2.2 : 1.7}
-          fill={active ? "currentColor" : "none"}
-          fillOpacity={active ? 0.15 : 0}
-        />
-        <path
-          d="M2 20c0-3.314 3.582-6 8-6s8 2.686 8 6"
-          stroke="currentColor"
-          strokeWidth={active ? 2.2 : 1.7}
-          strokeLinecap="round"
-        />
-        <path
-          d="M17 11l2 2 4-4"
-          stroke="currentColor"
-          strokeWidth={active ? 2.2 : 1.7}
-          strokeLinecap="round"
           strokeLinejoin="round"
         />
       </svg>
@@ -151,31 +120,6 @@ const tabs: Tab[] = [
           stroke="currentColor"
           strokeWidth={active ? 2 : 1.5}
           strokeLinecap="round"
-        />
-      </svg>
-    ),
-  },
-  {
-    key: "nearby",
-    path: "nearby",
-    label: "Near Me",
-    icon: (active) => (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <path
-          d="M12 2C8.686 2 6 4.686 6 8c0 4.418 6 12 6 12s6-7.582 6-12c0-3.314-2.686-6-6-6Z"
-          stroke="currentColor"
-          strokeWidth={active ? 2.2 : 1.7}
-          fill={active ? "currentColor" : "none"}
-          fillOpacity={active ? 0.12 : 0}
-        />
-        <circle
-          cx="12"
-          cy="8"
-          r="2"
-          stroke="currentColor"
-          strokeWidth={active ? 2 : 1.5}
-          fill={active ? "currentColor" : "none"}
-          fillOpacity={active ? 0.4 : 0}
         />
       </svg>
     ),

@@ -72,59 +72,69 @@ export function NotificationsScreen({ lang }: Props) {
 
   const subtabs: { id: SubTab; label: string; badge?: number }[] = [
     { id: "messages", label: "Messages", badge: unreadThreads },
-    { id: "notifications", label: "Notifications", badge: notifications.unreadCount },
+    {
+      id: "notifications",
+      label: "Notifications",
+      badge: notifications.unreadCount,
+    },
   ];
 
   return (
-    <div className="min-h-svh bg-app">
-      {/* ── Sticky subtab header ──────────────────────────────────────── */}
-      <header className="sticky top-0 z-30 bg-app/80 backdrop-blur-md border-b border-default">
-        <div className="flex gap-0 px-4">
-          {subtabs.map((sub) => (
-            <button
-              key={sub.id}
-              type="button"
-              onClick={() => handleTabChange(sub.id)}
-              className={`relative flex-1 border-b-2 pt-3 pb-2.5 text-[14.5px] font-semibold transition-colors ${
-                tab === sub.id
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <span className="inline-flex items-center justify-center gap-1.5">
-                {sub.label}
-                {sub.badge && sub.badge > 0 ? (
-                  <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold leading-none text-white">
-                    {sub.badge > 99 ? "99+" : sub.badge}
+    <div className="min-h-svh bg-app md:px-6">
+      <div className="mx-auto flex min-h-svh w-full max-w-400 flex-col">
+        {/* ── Sticky subtab header ──────────────────────────────────────── */}
+        <header className="sticky top-0 z-30 bg-app/80 backdrop-blur-md border-b border-default">
+          <div className="flex gap-0 px-4  md:px-6 md:py-4">
+            <div className="flex w-full gap-0 md:w-fit md:inline-flex md:rounded-2xl md:border md:border-default md:bg-elevated md:p-1">
+              {subtabs.map((sub) => (
+                <button
+                  key={sub.id}
+                  type="button"
+                  onClick={() => handleTabChange(sub.id)}
+                  className={`relative flex-1 border-b-2 px-4 py-3 text-[14.5px] font-semibold transition-colors md:flex-none md:min-w-42 md:rounded-xl md:border-b-0 md:px-4 md:py-2.5 ${
+                    tab === sub.id
+                      ? "border-primary text-primary md:bg-primary/10"
+                      : "border-transparent text-muted-foreground hover:text-foreground md:hover:bg-surface"
+                  }`}
+                >
+                  <span className="inline-flex items-center justify-center gap-1.5 md:gap-2">
+                    {sub.label}
+                    {sub.badge && sub.badge > 0 ? (
+                      <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold leading-none text-white">
+                        {sub.badge > 99 ? "99+" : sub.badge}
+                      </span>
+                    ) : null}
                   </span>
-                ) : null}
-              </span>
-            </button>
-          ))}
-        </div>
-      </header>
+                </button>
+              ))}
+            </div>
+          </div>
+        </header>
 
-      {/* ── Tab panels ────────────────────────────────────────────────── */}
-      {tab === "messages" ? (
-        <MessagingShell lang={lang} />
-      ) : (
-        <NotificationList
-          notifications={notifications.notifications}
-          loading={notifications.loading}
-          unreadCount={notifications.unreadCount}
-          hasMore={notifications.hasMore}
-          markingAllRead={notifications.markingAllRead}
-          onSelect={(notification) => {
-            void handleNotificationSelect(notification);
-          }}
-          onMarkAllRead={() => {
-            void notifications.markAllRead();
-          }}
-          onLoadMore={() => {
-            void notifications.loadMore();
-          }}
-        />
-      )}
+        {/* ── Tab panels ────────────────────────────────────────────────── */}
+        <div className="flex-1">
+          {tab === "messages" ? (
+            <MessagingShell lang={lang} />
+          ) : (
+            <NotificationList
+              notifications={notifications.notifications}
+              loading={notifications.loading}
+              unreadCount={notifications.unreadCount}
+              hasMore={notifications.hasMore}
+              markingAllRead={notifications.markingAllRead}
+              onSelect={(notification) => {
+                void handleNotificationSelect(notification);
+              }}
+              onMarkAllRead={() => {
+                void notifications.markAllRead();
+              }}
+              onLoadMore={() => {
+                void notifications.loadMore();
+              }}
+            />
+          )}
+        </div>
+      </div>
     </div>
   );
 }

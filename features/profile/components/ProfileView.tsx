@@ -34,6 +34,7 @@ import { AnalyticsPanel } from "./AnalyticsPanel";
 import { TiktokImportPanel } from "./TiktokImportPanel";
 import { LogoutButton } from "@/features/auth/components/LogoutButton";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { cn } from "@/lib/utils";
 
 type Tab = "posts" | "drafts" | "saved" | "analytics" | "tiktok" | "settings";
 
@@ -90,7 +91,7 @@ function ProfileSkeleton() {
         </div>
       </div>
       <div className="mx-auto max-w-6xl px-4 py-5 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3 xl:grid-cols-4 xl:gap-4">
           {Array.from({ length: 6 }).map((_, index) => (
             <div
               key={index}
@@ -187,7 +188,7 @@ export function ProfileView({ lang }: Props) {
 
   return (
     <div
-      className="min-h-screen"
+      className="min-h-screen pb-8"
       style={{ backgroundColor: "rgb(var(--color-bg))" }}
     >
       <ProfileHeader
@@ -205,41 +206,75 @@ export function ProfileView({ lang }: Props) {
           WebkitBackdropFilter: "blur(14px) saturate(150%)",
         }}
       >
-        <div
-          className="mx-auto grid h-12 w-full max-w-6xl grid-cols-5 px-2 sm:px-6 lg:px-8"
-          role="tablist"
-          aria-label="Profile sections"
-        >
-          {tabConfig.map((item) => {
-            const active = tab === item.key;
-            const Icon = item.icon;
+        <div className="mx-auto w-full max-w-6xl px-2 sm:px-6 lg:px-8">
+          <div
+            className="grid h-12 w-full grid-cols-5 md:hidden"
+            role="tablist"
+            aria-label="Profile sections"
+          >
+            {tabConfig.map((item) => {
+              const active = tab === item.key;
+              const Icon = item.icon;
 
-            return (
-              <button
-                key={item.key}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                aria-label={item.label}
-                title={item.label}
-                onClick={() => setTab(item.key)}
-                className="relative flex h-12 min-w-0 items-center justify-center transition-opacity active:opacity-60"
-                style={{
-                  color: active
-                    ? "rgb(var(--color-text))"
-                    : "rgb(var(--color-text-muted))",
-                }}
-              >
-                <Icon size={24} strokeWidth={2.2} />
-                {active && (
-                  <span
-                    className="absolute bottom-0 h-0.5 w-8 rounded-full"
-                    style={{ backgroundColor: "rgb(var(--color-text))" }}
-                  />
-                )}
-              </button>
-            );
-          })}
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  aria-label={item.label}
+                  title={item.label}
+                  onClick={() => setTab(item.key)}
+                  className="relative flex h-12 min-w-0 items-center justify-center transition-opacity active:opacity-60"
+                  style={{
+                    color: active
+                      ? "rgb(var(--color-text))"
+                      : "rgb(var(--color-text-muted))",
+                  }}
+                >
+                  <Icon size={24} strokeWidth={2.2} />
+                  {active && (
+                    <span
+                      className="absolute bottom-0 h-0.5 w-8 rounded-full"
+                      style={{ backgroundColor: "rgb(var(--color-text))" }}
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          <div
+            className="hidden py-3 md:flex"
+            role="tablist"
+            aria-label="Profile sections"
+          >
+            <div className="inline-flex w-fit items-center gap-1 rounded-2xl border border-default bg-[rgb(var(--color-bg-elevated))] p-1">
+              {tabConfig.map((item) => {
+                const active = tab === item.key;
+                const Icon = item.icon;
+
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => setTab(item.key)}
+                    className={cn(
+                      "inline-flex h-11 min-w-[8.5rem] items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition-colors",
+                      active
+                        ? "bg-primary/10 text-foreground"
+                        : "text-muted-foreground hover:bg-[rgb(var(--color-bg-subtle))] hover:text-foreground",
+                    )}
+                  >
+                    <Icon size={18} strokeWidth={2.15} />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
 
