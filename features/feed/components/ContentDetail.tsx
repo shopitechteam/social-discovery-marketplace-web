@@ -229,7 +229,7 @@ function ContentVideo({
   hlsUrl,
   thumbnailUrl,
   muted,
-  onToggleMuted,
+  setMuted,
   fill = false,
   showMuteButton = false,
   showSpinner = false,
@@ -239,7 +239,7 @@ function ContentVideo({
   hlsUrl: string;
   thumbnailUrl?: string | null;
   muted: boolean;
-  onToggleMuted?: () => void;
+  setMuted?: (muted: boolean) => void;
   fill?: boolean;
   showMuteButton?: boolean;
   showSpinner?: boolean;
@@ -250,7 +250,29 @@ function ContentVideo({
   const [manualPaused, setManualPaused] = useState(false);
   const [videoEnded, setVideoEnded] = useState(false);
   const shouldPlay = pageFocused && !manualPaused;
-  const { videoRef, buffering } = useHlsVideo(hlsUrl, shouldPlay, videoEnded);
+  // Reconcile mute state when the browser forces the element muted to satisfy
+  // autoplay policy, so the speaker icon matches the video's real audio state.
+  const onMutedChange = useCallback(
+    (forcedMuted: boolean) => setMuted?.(forcedMuted),
+    [setMuted],
+  );
+  const { videoRef, buffering } = useHlsVideo(
+    hlsUrl,
+    shouldPlay,
+    videoEnded,
+    onMutedChange,
+  );
+
+  // Authoritative mute toggle — apply to the element AND the store in one tap.
+  const toggleMuted = useCallback(() => {
+    const next = !muted;
+    const video = videoRef.current;
+    if (video) {
+      video.muted = next;
+      if (!next) video.play().catch(() => {});
+    }
+    setMuted?.(next);
+  }, [muted, videoRef, setMuted]);
   const [playing, setPlaying] = useState(false);
   const endedCountRef = useRef(0);
 
@@ -261,6 +283,10 @@ function ContentVideo({
     video.muted = muted;
     video.defaultMuted = muted;
     video.playsInline = true;
+    // Unmuting requires the user gesture's activation to actually emit audio;
+    // re-issue play so a video that autoplayed muted starts sounding on one tap
+    // (covers the parent-chrome mute button which only flips the store).
+    if (!muted && shouldPlay) video.play().catch(() => {});
 
     const markPlaying = () => setPlaying(true);
     const markStopped = () => setPlaying(false);
@@ -287,7 +313,7 @@ function ContentVideo({
       video.removeEventListener("pause", markStopped);
       video.removeEventListener("ended", handleEnded);
     };
-  }, [hlsUrl, muted, videoRef, onVideoCompleted, onVideoReplayed]);
+  }, [hlsUrl, muted, shouldPlay, videoRef, onVideoCompleted, onVideoReplayed]);
 
   function handleReplay() {
     const video = videoRef.current;
@@ -394,11 +420,11 @@ function ContentVideo({
 
       <VideoProgressBar videoRef={videoRef} active={playing} showTime={!fill} />
 
-      {showMuteButton && onToggleMuted && (
+      {showMuteButton && setMuted && (
         <button
           onClick={(e) => {
             e.stopPropagation();
-            onToggleMuted();
+            toggleMuted();
           }}
           className="absolute bottom-12 right-4 z-50 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white"
         >
@@ -491,7 +517,7 @@ export function ContentDetail({ id, lang }: Props) {
   const post = data?.content;
   const [imgIdx, setImgIdx] = useState(0);
   const muted = useFeedPreferencesStore((s) => s.videoMuted);
-  const toggleVideoMuted = useFeedPreferencesStore((s) => s.toggleVideoMuted);
+  const setVideoMuted = useFeedPreferencesStore((s) => s.setVideoMuted);
   const isDesktop = useIsDesktop();
   const [showCommentDrawer, setShowCommentDrawer] = useState(false);
   const keyboardInset = useKeyboardInset();
@@ -1146,7 +1172,7 @@ export function ContentDetail({ id, lang }: Props) {
                 hlsUrl={hlsUrl}
                 thumbnailUrl={videoThumbnail}
                 muted={muted}
-                onToggleMuted={toggleVideoMuted}
+                setMuted={setVideoMuted}
                 showMuteButton
                 onVideoCompleted={handleVideoCompleted}
                 onVideoReplayed={handleVideoReplayed}
@@ -1297,6 +1323,7 @@ export function ContentDetail({ id, lang }: Props) {
                 hlsUrl={hlsUrl}
                 thumbnailUrl={videoThumbnail}
                 muted={muted}
+                setMuted={setVideoMuted}
                 fill
                 showSpinner
                 onVideoCompleted={handleVideoCompleted}
@@ -1335,7 +1362,7 @@ export function ContentDetail({ id, lang }: Props) {
             {/* Video mute — top-right */}
             {isVideo && (
               <button
-                onClick={toggleVideoMuted}
+                onClick={() => setVideoMuted(!muted)}
                 className="absolute z-30 w-12 h-12 rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center text-white"
                 style={{
                   top: "max(env(safe-area-inset-top, 0px), 16px)",

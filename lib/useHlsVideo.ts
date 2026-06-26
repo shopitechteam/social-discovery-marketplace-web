@@ -9,8 +9,17 @@ import { useEffect, useRef, useState } from "react";
  * paused. So on rejection we retry MUTED (always allowed), then attempt to
  * restore sound once it's actually playing. Net effect: in-view videos always
  * autoplay, and stay unmuted whenever the browser permits — TikTok/IG behaviour.
+ *
+ * `onMutedChange` is fired whenever we end up forcing the element muted against
+ * the caller's wishes (autoplay was blocked unmuted). The caller uses it to keep
+ * its own mute UI/state in sync with the element's REAL muted state — otherwise
+ * the speaker icon shows "unmuted" while the video plays silently, and the user
+ * has to tap twice to actually get sound.
  */
-function playWithUnmuteFallback(v: HTMLVideoElement): void {
+function playWithUnmuteFallback(
+  v: HTMLVideoElement,
+  onMutedChange?: (muted: boolean) => void,
+): void {
   const wantedMuted = v.muted;
   v.play().catch(() => {
     if (wantedMuted) return; // already muted and still blocked — nothing to do
@@ -23,10 +32,15 @@ function playWithUnmuteFallback(v: HTMLVideoElement): void {
         // If unmuting re-pauses it (rare), fall back to muted playback.
         v.play().catch(() => {
           v.muted = true;
+          onMutedChange?.(true);
           v.play().catch(() => {});
         });
       })
-      .catch(() => {});
+      .catch(() => {
+        // Couldn't unmute at all — we're stuck playing muted. Tell the caller so
+        // its mute state matches reality (single tap then unmutes correctly).
+        onMutedChange?.(true);
+      });
   });
 }
 
@@ -34,11 +48,15 @@ export function useHlsVideo(
   hlsUrl: string | null,
   active: boolean,
   paused = false,
+  onMutedChange?: (muted: boolean) => void,
 ) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [buffering, setBuffering] = useState(false);
   const activeRef = useRef(active);
   const pausedRef = useRef(paused);
+  // Keep the latest callback in a ref so passing an inline fn doesn't re-run the
+  // init effect (which would tear down and re-create the hls.js player).
+  const onMutedChangeRef = useRef(onMutedChange);
   // Track whether HLS has parsed the manifest so we can play/pause safely
   const readyRef = useRef(false);
   // Bumped to force a re-init of the HLS source. Needed when the component is
@@ -52,6 +70,7 @@ export function useHlsVideo(
   // Keep refs in sync without re-running the init effect
   useEffect(() => { activeRef.current = active; }, [active]);
   useEffect(() => { pausedRef.current = paused; }, [paused]);
+  useEffect(() => { onMutedChangeRef.current = onMutedChange; }, [onMutedChange]);
 
   // ── Init: load HLS source, wire buffering events, trigger first play ────────
   // IMPORTANT: only attach hls.js (which immediately downloads the manifest and
@@ -114,7 +133,7 @@ export function useHlsVideo(
           if (destroyed) return;
           readyRef.current = true;
           if (activeRef.current && !pausedRef.current) {
-            playWithUnmuteFallback(v);
+            playWithUnmuteFallback(v, onMutedChangeRef.current);
           }
         });
 
@@ -133,7 +152,7 @@ export function useHlsVideo(
         v.load();
         readyRef.current = true;
         if (activeRef.current && !pausedRef.current) {
-          playWithUnmuteFallback(v);
+          playWithUnmuteFallback(v, onMutedChangeRef.current);
         }
       }
     }
@@ -167,7 +186,7 @@ export function useHlsVideo(
       // `active` is true) will start playback on MANIFEST_PARSED — don't force a
       // redundant reinit here.
       if (!readyRef.current) return;
-      playWithUnmuteFallback(vid);
+      playWithUnmuteFallback(vid, onMutedChangeRef.current);
     } else {
       if (!readyRef.current) return;
       vid.pause();

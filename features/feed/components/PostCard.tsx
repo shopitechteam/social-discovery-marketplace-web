@@ -206,7 +206,7 @@ function VideoMedia({
   const [active, setActive] = useState(false);
   const [thumbLoaded, setThumbLoaded] = useState(false);
   const muted = useFeedPreferencesStore((s) => s.videoMuted);
-  const toggleVideoMuted = useFeedPreferencesStore((s) => s.toggleVideoMuted);
+  const setVideoMuted = useFeedPreferencesStore((s) => s.setVideoMuted);
   const onThumbLoad = useCallback(() => setThumbLoaded(true), []);
   const pageFocused = usePageFocused();
   const id = useId();
@@ -239,11 +239,35 @@ function VideoMedia({
   // Pause when the video ended OR the user tapped to pause, so useHlsVideo
   // doesn't resume on its own.
   const shouldPlay = active && pageFocused;
+  // When the browser blocks unmuted autoplay, useHlsVideo forces the element
+  // muted to keep it playing. Reconcile the store so the speaker icon reflects
+  // the video's REAL muted state — otherwise it shows "unmuted" over a silent
+  // video and the user has to tap twice to actually get sound.
+  const onMutedChange = useCallback(
+    (forcedMuted: boolean) => setVideoMuted(forcedMuted),
+    [setVideoMuted],
+  );
   const { videoRef, buffering } = useHlsVideo(
     hlsUrl,
     shouldPlay,
     ended || userPaused,
+    onMutedChange,
   );
+
+  // Single, authoritative mute toggle. Apply directly to the element AND the
+  // store so one tap always takes effect — never relying on a store→effect round
+  // trip that could lag a frame behind reality.
+  const toggleMuted = useCallback(() => {
+    const next = !muted;
+    const video = videoRef.current;
+    if (video) {
+      video.muted = next;
+      // Unmuting needs the click's user activation to actually produce sound;
+      // re-issue play so an autoplay-muted video starts emitting audio now.
+      if (!next) video.play().catch(() => {});
+    }
+    setVideoMuted(next);
+  }, [muted, videoRef, setVideoMuted]);
 
   // Tap to play/pause. Base the decision on the video's ACTUAL state, not a
   // blind boolean toggle — otherwise, when the video is already not playing
@@ -514,7 +538,7 @@ function VideoMedia({
         <button
           onClick={(e) => {
             e.stopPropagation();
-            toggleVideoMuted();
+            toggleMuted();
           }}
           className="absolute bottom-5 left-2 z-50 bg-black/60 backdrop-blur-sm rounded-full p-1.5 text-white/90 active:scale-95 transition-transform"
           aria-label={muted ? "Unmute" : "Mute"}
