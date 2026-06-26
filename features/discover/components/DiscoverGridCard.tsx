@@ -109,7 +109,12 @@ export function DiscoverGridCard({
       >
         {thumb ? (
           <Image
-            src={thumb}
+            src={
+              post.media.filter((m) => m.mediaType === "IMAGE")[0]
+                ?.r2Variants?.[0]?.url ??
+              thumb ??
+              "/images/placeholder.png"
+            }
             alt={post.title}
             fill
             className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
@@ -128,7 +133,12 @@ export function DiscoverGridCard({
         {isVideo && thumb && (
           <span className="absolute inset-0 flex items-center justify-center">
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white">
-              <Play size={18} fill="currentColor" strokeWidth={0} className="ml-0.5" />
+              <Play
+                size={18}
+                fill="currentColor"
+                strokeWidth={0}
+                className="ml-0.5"
+              />
             </span>
           </span>
         )}
@@ -177,9 +187,7 @@ export function DiscoverGridCard({
             color: "rgb(var(--color-text-muted))",
           }}
         >
-          {creatorName ? (
-            <span className="truncate">{creatorName}</span>
-          ) : null}
+          {creatorName ? <span className="truncate">{creatorName}</span> : null}
           <span className="ml-auto flex shrink-0 items-center gap-3">
             <StatChip icon={Eye} value={post.stats?.views ?? 0} />
             <StatChip icon={Bookmark} value={post.stats?.saves ?? 0} />
