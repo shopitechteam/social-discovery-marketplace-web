@@ -1,0 +1,191 @@
+"use client";
+
+import Link from "next/link";
+import Image from "next/image";
+import { Bookmark, Eye, MapPin, Play } from "lucide-react";
+import { SHIMMER_PORTRAIT } from "@/lib/shimmer";
+import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
+
+/**
+ * Compact discovery tile — the RedNote-style explore card. Mirrors the profile
+ * grid tile (`PostThumbnail`) but takes the discover feed's
+ * `ContentCardFieldsFragment`. Every tile uses the same fixed cover ratio so the
+ * two-column grid stays uniform (no staggered/masonry heights).
+ */
+
+// Uniform cover ratio for every tile — keeps the grid rows aligned.
+const COVER_RATIO = 3 / 4;
+
+function formatCompact(value: number) {
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
+  return String(value);
+}
+
+/** "KSh 12,500" — grouped thousands, no decimals. */
+function formatPrice(amount: number, currency: string) {
+  return `${currency} ${Math.round(amount).toLocaleString("en-KE")}`;
+}
+
+/**
+ * Readable location for a card: county first, then the more specific area, e.g.
+ * "Nairobi, Westlands". De-dupes so we never show "Nairobi, Nairobi".
+ */
+function locationLabel(loc: {
+  placeName?: string | null;
+  subregion?: string | null;
+  county?: string | null;
+}): string | null {
+  const county = loc.county?.trim() || null;
+  const area = loc.placeName?.trim() || loc.subregion?.trim() || null;
+  const parts = [county, area].filter(
+    (p, i, arr): p is string => Boolean(p) && arr.indexOf(p) === i,
+  );
+  return parts.length ? parts.join(", ") : null;
+}
+
+function getThumb(post: ContentCardFieldsFragment): string | null {
+  const first = post.media?.[0];
+  const muxPlaybackId = first?.muxMeta?.playbackId;
+  const muxDerivedThumb = muxPlaybackId
+    ? `https://image.mux.com/${muxPlaybackId}/thumbnail.jpg?time=0&width=540&fit_mode=smartcrop`
+    : null;
+
+  return (
+    first?.muxMeta?.thumbnailUrl ??
+    first?.thumbnailUrl ??
+    first?.r2Variants?.find((v) => v.variant === "medium")?.url ??
+    first?.r2Variants?.[0]?.url ??
+    first?.url ??
+    first?.imageUrl ??
+    muxDerivedThumb ??
+    null
+  );
+}
+
+function StatChip({ icon: Icon, value }: { icon: typeof Eye; value: number }) {
+  return (
+    <span className="flex items-center gap-1">
+      <Icon size={12} aria-hidden /> {formatCompact(value)}
+    </span>
+  );
+}
+
+export function DiscoverGridCard({
+  post,
+  lang,
+  priority,
+}: {
+  post: ContentCardFieldsFragment;
+  lang: string;
+  priority: boolean;
+}) {
+  const thumb = getThumb(post);
+  const isVideo = post.type === "VIDEO";
+  const priceText =
+    !post.price || post.price.amount <= 0
+      ? "Custom"
+      : formatPrice(post.price.amount, post.price.currency);
+  const place = post.location ? locationLabel(post.location) : null;
+  const creator = post.creator;
+  const creatorName = creator?.profile?.firstName
+    ? `${creator.profile.firstName}${creator.profile.lastName ? " " + creator.profile.lastName : ""}`
+    : (creator?.username ?? null);
+
+  return (
+    <Link
+      href={`/${lang}/content/${post.id}`}
+      className="group block overflow-hidden rounded-2xl border outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      style={{
+        borderColor: "rgb(var(--color-border))",
+        backgroundColor: "rgb(var(--color-bg-elevated))",
+      }}
+      aria-label={post.title}
+    >
+      {/* Cover */}
+      <div
+        className="relative w-full bg-surface"
+        style={{ aspectRatio: String(COVER_RATIO) }}
+      >
+        {thumb ? (
+          <Image
+            src={thumb}
+            alt={post.title}
+            fill
+            className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            priority={priority}
+            loading={priority ? "eager" : "lazy"}
+            placeholder="blur"
+            blurDataURL={SHIMMER_PORTRAIT}
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-muted-foreground/30">
+            <MapPin size={24} aria-hidden />
+          </div>
+        )}
+
+        {isVideo && thumb && (
+          <span className="absolute inset-0 flex items-center justify-center">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white">
+              <Play size={18} fill="currentColor" strokeWidth={0} className="ml-0.5" />
+            </span>
+          </span>
+        )}
+
+        {/* Price badge — the primary marketplace signal */}
+        <span
+          className="absolute bottom-2 left-2 rounded-lg bg-black/70 px-2 py-1 font-bold leading-none text-white backdrop-blur-sm"
+          style={{ fontSize: "var(--text-sm)" }}
+        >
+          {priceText}
+        </span>
+      </div>
+
+      {/* Meta */}
+      <div className="p-2.5">
+        {post.title && (
+          <p
+            className="line-clamp-1 leading-snug"
+            style={{
+              fontSize: "var(--text-sm)",
+              color: "rgb(var(--color-text))",
+              fontWeight: 600,
+            }}
+          >
+            {post.title}
+          </p>
+        )}
+
+        {place && (
+          <p
+            className="mt-1 flex items-center gap-1 line-clamp-1"
+            style={{
+              fontSize: "var(--text-xs)",
+              color: "rgb(var(--color-text-muted))",
+            }}
+          >
+            <MapPin size={12} aria-hidden className="shrink-0" />
+            <span className="truncate">{place}</span>
+          </p>
+        )}
+
+        <div
+          className="mt-1.5 flex items-center gap-3"
+          style={{
+            fontSize: "var(--text-xs)",
+            color: "rgb(var(--color-text-muted))",
+          }}
+        >
+          {creatorName ? (
+            <span className="truncate">{creatorName}</span>
+          ) : null}
+          <span className="ml-auto flex shrink-0 items-center gap-3">
+            <StatChip icon={Eye} value={post.stats?.views ?? 0} />
+            <StatChip icon={Bookmark} value={post.stats?.saves ?? 0} />
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
+}

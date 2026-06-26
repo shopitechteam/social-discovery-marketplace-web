@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { gql, NetworkStatus, type TypedDocumentNode } from "@apollo/client";
 import { useQuery } from "@apollo/client/react";
 import {
@@ -11,11 +11,25 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import {
+  Sheet,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
-import { PostCard } from "@/features/feed/components/PostCard";
+import { DiscoverGridCard } from "./DiscoverGridCard";
 import { useInfiniteScroll } from "@/features/feed/hooks/useInfiniteScroll";
 
 type DiscoverySort =
@@ -62,15 +76,6 @@ type DiscoveryFeedVars = {
   after?: string;
 };
 
-type DiscoveryFacetsData = {
-  discoveryFacets: {
-    categories: CategoryFacet[];
-    counties: LocationFacet[];
-    subCounties: LocationFacet[];
-    wards: LocationFacet[];
-  };
-};
-
 type DiscoveryFacetsVars = {
   query?: string;
   categoryId?: string;
@@ -82,104 +87,141 @@ type DiscoveryFacetsVars = {
 const PAGE_SIZE = 10;
 const SEARCH_DEBOUNCE_MS = 280;
 
-const DISCOVERY_FEED: TypedDocumentNode<DiscoveryFeedData, DiscoveryFeedVars> = gql`
-  query DiscoveryFeed(
-    $query: String
-    $categoryId: String
-    $countyId: String
-    $subCountyId: String
-    $wardId: String
-    $sort: DiscoverySort
-    $limit: Int
-    $after: String
-  ) {
-    discoveryFeed(
-      query: $query
-      categoryId: $categoryId
-      countyId: $countyId
-      subCountyId: $subCountyId
-      wardId: $wardId
-      sort: $sort
-      limit: $limit
-      after: $after
+const DISCOVERY_FEED: TypedDocumentNode<DiscoveryFeedData, DiscoveryFeedVars> =
+  gql`
+    query DiscoveryFeed(
+      $query: String
+      $categoryId: String
+      $countyId: String
+      $subCountyId: String
+      $wardId: String
+      $sort: DiscoverySort
+      $limit: Int
+      $after: String
     ) {
-      items {
-        id
-        type
-        title
-        caption
-        hashtags
-        creatorId
-        allowDownload
-        hdEnabled
-        createdAt
-        creator {
+      discoveryFeed(
+        query: $query
+        categoryId: $categoryId
+        countyId: $countyId
+        subCountyId: $subCountyId
+        wardId: $wardId
+        sort: $sort
+        limit: $limit
+        after: $after
+      ) {
+        items {
           id
-          username
-          isFollowedByMe
-          followerCount
-          profile {
-            firstName
-            lastName
-            avatar
+          type
+          title
+          caption
+          hashtags
+          creatorId
+          allowDownload
+          hdEnabled
+          createdAt
+          creator {
+            id
+            username
+            isFollowedByMe
+            followerCount
+            profile {
+              firstName
+              lastName
+              avatar
+            }
           }
-        }
-        media {
-          mediaType
-          url
-          imageUrl
-          thumbnailUrl
-          sortOrder
-          displayWidth
-          displayHeight
-          muxMeta {
-            playbackId
-            duration
-            aspectRatio
-            thumbnailUrl
-            animatedThumbnailUrl
-          }
-          r2Variants {
+          media {
+            mediaType
             url
-            variant
-            width
-            height
+            imageUrl
+            thumbnailUrl
+            sortOrder
+            displayWidth
+            displayHeight
+            muxMeta {
+              playbackId
+              duration
+              aspectRatio
+              thumbnailUrl
+              animatedThumbnailUrl
+            }
+            r2Variants {
+              url
+              variant
+              width
+              height
+            }
           }
+          price {
+            amount
+            currency
+            negotiable
+          }
+          stats {
+            views
+            likes
+            shares
+            saves
+          }
+          location {
+            county
+            subregion
+            placeName
+          }
+          ranking {
+            rankScore
+            trendingScore
+          }
+          isLikedByMe
+          isSavedByMe
+          isMyContent
         }
-        price {
-          amount
-          currency
-          negotiable
+        pageInfo {
+          hasNextPage
+          endCursor
         }
-        stats {
-          views
-          likes
-          shares
-          saves
-        }
-        location {
-          county
-          subregion
-          placeName
-        }
-        ranking {
-          rankScore
-          trendingScore
-        }
-        isLikedByMe
-        isSavedByMe
-        isMyContent
       }
-      pageInfo {
-        hasNextPage
-        endCursor
+    }
+  `;
+
+// Category list — fetched once with NO filter variables so the category bar
+// stays stable. Changing category/sort/location/search must never reload it.
+type DiscoveryCategoriesData = {
+  discoveryFacets: { categories: CategoryFacet[] };
+};
+
+const DISCOVERY_CATEGORIES: TypedDocumentNode<
+  DiscoveryCategoriesData,
+  Record<string, never>
+> = gql`
+  query DiscoveryCategories {
+    discoveryFacets {
+      categories {
+        id
+        name
+        slug
+        icon
+        count
       }
     }
   }
 `;
 
-const DISCOVERY_FACETS: TypedDocumentNode<DiscoveryFacetsData, DiscoveryFacetsVars> = gql`
-  query DiscoveryFacets(
+// Location facets — these DO depend on the active filters because the post
+// counts shown in the location drawer reflect the current query/category.
+type DiscoveryLocationFacetsData = {
+  discoveryFacets: {
+    counties: LocationFacet[];
+    subCounties: LocationFacet[];
+    wards: LocationFacet[];
+  };
+};
+
+const DISCOVERY_LOCATION_FACETS: TypedDocumentNode<
+  DiscoveryLocationFacetsData,
+  DiscoveryFacetsVars
+> = gql`
+  query DiscoveryLocationFacets(
     $query: String
     $categoryId: String
     $countyId: String
@@ -193,13 +235,6 @@ const DISCOVERY_FACETS: TypedDocumentNode<DiscoveryFacetsData, DiscoveryFacetsVa
       subCountyId: $subCountyId
       wardId: $wardId
     ) {
-      categories {
-        id
-        name
-        slug
-        icon
-        count
-      }
       counties {
         id
         name
@@ -225,11 +260,23 @@ const DISCOVERY_FACETS: TypedDocumentNode<DiscoveryFacetsData, DiscoveryFacetsVa
   }
 `;
 
-const SORT_OPTIONS: Array<{ value: DiscoverySort; label: string; hint: string }> = [
-  { value: "RELEVANCE", label: "Best match", hint: "Top posts for what you want" },
+const SORT_OPTIONS: Array<{
+  value: DiscoverySort;
+  label: string;
+  hint: string;
+}> = [
+  {
+    value: "RELEVANCE",
+    label: "Best match",
+    hint: "Top posts for what you want",
+  },
   { value: "NEWEST", label: "Newest first", hint: "Fresh listings first" },
   { value: "PRICE_LOW_TO_HIGH", label: "Lowest price", hint: "Cheapest first" },
-  { value: "PRICE_HIGH_TO_LOW", label: "Highest price", hint: "Premium picks first" },
+  {
+    value: "PRICE_HIGH_TO_LOW",
+    label: "Highest price",
+    hint: "Premium picks first",
+  },
 ];
 
 function pillButton(active: boolean) {
@@ -241,30 +288,58 @@ function pillButton(active: boolean) {
   );
 }
 
-function FilterButton({
-  active,
-  icon,
+/**
+ * RedNote-style category tab — plain text, no chip. Active is bold and full
+ * contrast; inactive sits back in muted gray. Lives in a horizontally scrolling
+ * row so categories run off the right edge like the reference design.
+ */
+function CategoryTab({
   label,
+  active,
   onClick,
 }: {
-  active?: boolean;
-  icon: React.ReactNode;
   label: string;
+  active: boolean;
   onClick: () => void;
 }) {
+  const ref = useRef<HTMLButtonElement>(null);
+
+  // When this tab becomes the selected one, slide it toward the start of the
+  // scroller so a far-right pick doesn't stay stranded at the edge. `inline:
+  // "start"` anchors it left when there's room to scroll, and naturally stops
+  // short for tabs already near the start (no awkward over-scroll).
+  useEffect(() => {
+    if (active) {
+      ref.current?.scrollIntoView({
+        behavior: "smooth",
+        inline: "start",
+        block: "nearest",
+      });
+    }
+  }, [active]);
+
   return (
-    <button type="button" className={pillButton(Boolean(active))} onClick={onClick}>
-      {icon}
-      <span className="truncate">{label}</span>
+    <button
+      ref={ref}
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "shrink-0 scroll-ml-4 whitespace-nowrap text-sm py-1 transition-colors",
+        active
+          ? "font-bold text-default border-b border-gray-800"
+          : "font-medium text-muted-foreground",
+      )}
+    >
+      {label}
     </button>
   );
 }
 
 function CategorySkeletonRow() {
   return (
-    <div className="flex gap-2 overflow-hidden px-4 pb-3">
+    <div className="flex gap-6 overflow-hidden px-4 pb-3">
       {Array.from({ length: 5 }).map((_, i) => (
-        <Skeleton key={i} className="h-9 w-28 rounded-full" />
+        <Skeleton key={i} className="h-6 w-16 rounded-md" />
       ))}
     </div>
   );
@@ -272,22 +347,18 @@ function CategorySkeletonRow() {
 
 function DiscoverFeedSkeleton() {
   return (
-    <div className="px-4 pb-8 pt-3">
-      <div className="space-y-3">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="rounded-[18px] border border-default bg-app p-4">
-            <div className="flex items-center gap-3">
-              <Skeleton className="h-10 w-10 rounded-full" />
-              <div className="flex-1 space-y-2">
-                <Skeleton className="h-3 w-32" />
-                <Skeleton className="h-3 w-20" />
-              </div>
+    <div className="px-4 pb-8 pt-3 md:px-0">
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div
+            key={i}
+            className="overflow-hidden rounded-2xl border border-default bg-app"
+          >
+            <Skeleton className="aspect-3/4 w-full rounded-none" />
+            <div className="space-y-2 p-2.5">
+              <Skeleton className="h-3.5 w-4/5" />
+              <Skeleton className="h-3 w-1/2" />
             </div>
-            <div className="mt-4 space-y-2">
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-4 w-1/2" />
-            </div>
-            <Skeleton className="mt-4 aspect-[4/5] w-full rounded-2xl" />
           </div>
         ))}
       </div>
@@ -295,18 +366,15 @@ function DiscoverFeedSkeleton() {
   );
 }
 
-function EmptyState({
-  title,
-  body,
-}: {
-  title: string;
-  body: string;
-}) {
+function EmptyState({ title, body }: { title: string; body: string }) {
   return (
     <div className="px-6 py-16 text-center">
       <div
         className="mx-auto flex h-14 w-14 items-center justify-center rounded-full"
-        style={{ backgroundColor: "rgb(var(--brand-primary) / 0.12)", color: "rgb(var(--brand-primary))" }}
+        style={{
+          backgroundColor: "rgb(var(--brand-primary) / 0.12)",
+          color: "rgb(var(--brand-primary))",
+        }}
       >
         <Search size={22} />
       </div>
@@ -336,7 +404,9 @@ function LocationOption({
     >
       <div className="min-w-0">
         <p className="truncate text-sm font-medium text-default">{item.name}</p>
-        <p className="mt-0.5 text-xs text-muted-foreground">{item.count} posts</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          {item.count} posts
+        </p>
       </div>
       {active ? <Check size={18} className="text-primary" /> : null}
     </button>
@@ -375,17 +445,32 @@ function SortOption({
 export function DiscoverPage({ lang }: { lang: string }) {
   const [searchDraft, setSearchDraft] = useState("");
   const [query, setQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<CategoryFacet | null>(null);
-  const [selectedCounty, setSelectedCounty] = useState<LocationFacet | null>(null);
-  const [selectedSubCounty, setSelectedSubCounty] = useState<LocationFacet | null>(null);
+  const [selectedCategory, setSelectedCategory] =
+    useState<CategoryFacet | null>(null);
+  const [selectedCounty, setSelectedCounty] = useState<LocationFacet | null>(
+    null,
+  );
+  const [selectedSubCounty, setSelectedSubCounty] =
+    useState<LocationFacet | null>(null);
   const [selectedWard, setSelectedWard] = useState<LocationFacet | null>(null);
   const [sort, setSort] = useState<DiscoverySort>("RELEVANCE");
+  // Price + negotiable filters — UI/state only for now; not yet sent to the API
+  // (backend support pending). minPrice/maxPrice are raw input strings.
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [negotiable, setNegotiable] = useState<"ANY" | "YES" | "NO">("ANY");
   const [locationOpen, setLocationOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
 
   useEffect(() => {
     const handle = window.setTimeout(() => {
-      setQuery(searchDraft.trim());
+      const next = searchDraft.trim();
+      setQuery(next);
+      // Search spans every category, so drop any category constraint when one
+      // starts — otherwise results would be silently scoped to a category whose
+      // bar is now hidden.
+      if (next) setSelectedCategory(null);
     }, SEARCH_DEBOUNCE_MS);
     return () => window.clearTimeout(handle);
   }, [searchDraft]);
@@ -400,7 +485,14 @@ export function DiscoverPage({ lang }: { lang: string }) {
       sort,
       limit: PAGE_SIZE,
     }),
-    [query, selectedCategory?.id, selectedCounty?.id, selectedSubCounty?.id, selectedWard?.id, sort],
+    [
+      query,
+      selectedCategory?.id,
+      selectedCounty?.id,
+      selectedSubCounty?.id,
+      selectedWard?.id,
+      sort,
+    ],
   );
 
   const facetVariables = useMemo<DiscoveryFacetsVars>(
@@ -411,24 +503,38 @@ export function DiscoverPage({ lang }: { lang: string }) {
       subCountyId: selectedSubCounty?.id,
       wardId: selectedWard?.id,
     }),
-    [query, selectedCategory?.id, selectedCounty?.id, selectedSubCounty?.id, selectedWard?.id],
+    [
+      query,
+      selectedCategory?.id,
+      selectedCounty?.id,
+      selectedSubCounty?.id,
+      selectedWard?.id,
+    ],
   );
 
-  const {
-    data,
-    loading,
-    error,
-    fetchMore,
-    refetch,
-    networkStatus,
-  } = useQuery(DISCOVERY_FEED, {
-    variables: feedVariables,
-    fetchPolicy: "cache-and-network",
-    nextFetchPolicy: "cache-first",
-    notifyOnNetworkStatusChange: true,
-  });
+  const { data, loading, error, fetchMore, refetch, networkStatus } = useQuery(
+    DISCOVERY_FEED,
+    {
+      variables: feedVariables,
+      fetchPolicy: "cache-and-network",
+      nextFetchPolicy: "cache-first",
+      notifyOnNetworkStatusChange: true,
+    },
+  );
 
-  const { data: facetsData, loading: facetsLoading } = useQuery(DISCOVERY_FACETS, {
+  // Category list loads once on mount and never refetches — it is independent
+  // of the active query/category/location so the category bar stays stable.
+  const { data: categoriesData, loading: categoriesLoading } = useQuery(
+    DISCOVERY_CATEGORIES,
+    {
+      fetchPolicy: "cache-first",
+      nextFetchPolicy: "cache-first",
+    },
+  );
+
+  // Location facets follow the active filters (their post counts depend on the
+  // current query/category). Kept separate so they don't disturb categories.
+  const { data: locationFacetsData } = useQuery(DISCOVERY_LOCATION_FACETS, {
     variables: facetVariables,
     fetchPolicy: "cache-and-network",
     nextFetchPolicy: "cache-first",
@@ -436,7 +542,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
 
   const items = data?.discoveryFeed.items ?? [];
   const pageInfo = data?.discoveryFeed.pageInfo;
-  const facets = facetsData?.discoveryFacets;
+  const locationFacets = locationFacetsData?.discoveryFacets;
   const isFetchingMore = networkStatus === NetworkStatus.fetchMore;
 
   const loadMore = useCallback(() => {
@@ -468,9 +574,22 @@ export function DiscoverPage({ lang }: { lang: string }) {
     rootMargin: "1200px",
   });
 
-  const activeSort = SORT_OPTIONS.find((option) => option.value === sort) ?? SORT_OPTIONS[0];
-  const locationLabel = selectedWard?.name ?? selectedSubCounty?.name ?? selectedCounty?.name ?? "All Kenya";
-  const activeFilterCount = [selectedCategory, selectedCounty, selectedSubCounty, selectedWard].filter(Boolean).length + (sort !== "RELEVANCE" ? 1 : 0);
+  const activeSort =
+    SORT_OPTIONS.find((option) => option.value === sort) ?? SORT_OPTIONS[0];
+  const locationLabel =
+    selectedWard?.name ??
+    selectedSubCounty?.name ??
+    selectedCounty?.name ??
+    "All Kenya";
+  // Count only what lives inside the filter sheet (location + price + negotiable);
+  // category and sort have their own controls outside the sheet.
+  const hasLocation = Boolean(
+    selectedCounty || selectedSubCounty || selectedWard,
+  );
+  const activeFilterCount =
+    (hasLocation ? 1 : 0) +
+    (minPrice.trim() || maxPrice.trim() ? 1 : 0) +
+    (negotiable !== "ANY" ? 1 : 0);
 
   function clearLocation() {
     setSelectedCounty(null);
@@ -479,9 +598,10 @@ export function DiscoverPage({ lang }: { lang: string }) {
   }
 
   function clearFilters() {
-    setSelectedCategory(null);
     clearLocation();
-    setSort("RELEVANCE");
+    setMinPrice("");
+    setMaxPrice("");
+    setNegotiable("ANY");
   }
 
   function clearSearch() {
@@ -500,10 +620,15 @@ export function DiscoverPage({ lang }: { lang: string }) {
     setSelectedWard(null);
   }
 
-  const categories = facets?.categories ?? [];
-  const counties = facets?.counties ?? [];
-  const subCounties = facets?.subCounties ?? [];
-  const wards = facets?.wards ?? [];
+  const categories = categoriesData?.discoveryFacets.categories ?? [];
+  const counties = locationFacets?.counties ?? [];
+  const subCounties = locationFacets?.subCounties ?? [];
+  const wards = locationFacets?.wards ?? [];
+
+  // When searching, results span every category, so the category bar would be
+  // misleading (most categories hide / counts no longer reflect the row). Hide
+  // it during an active search and show the full set again once search clears.
+  const showCategories = query.length === 0;
 
   return (
     <div className="min-h-svh bg-app pb-24 md:pb-8">
@@ -525,7 +650,9 @@ export function DiscoverPage({ lang }: { lang: string }) {
               >
                 <div>
                   <p className="text-sm font-medium text-default">Location</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{locationLabel}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {locationLabel}
+                  </p>
                 </div>
                 <MapPin size={18} className="text-muted-foreground" />
               </button>
@@ -537,119 +664,147 @@ export function DiscoverPage({ lang }: { lang: string }) {
               >
                 <div>
                   <p className="text-sm font-medium text-default">Sort</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{activeSort.label}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {activeSort.label}
+                  </p>
                 </div>
                 <ArrowUpDown size={18} className="text-muted-foreground" />
               </button>
             </div>
 
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <p className="text-sm font-semibold text-default">Categories</p>
-                {selectedCategory ? (
-                  <button type="button" onClick={() => setSelectedCategory(null)} className="text-xs text-primary">
-                    Clear
-                  </button>
-                ) : null}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => setSelectedCategory(null)}
-                  className={pillButton(selectedCategory === null)}
-                >
-                  All
-                </button>
-                {categories.map((category) => (
+            {showCategories ? (
+              <div>
+                <div className="mb-2 flex items-center justify-between">
+                  <p className="text-sm font-semibold text-default">
+                    Categories
+                  </p>
+                  {selectedCategory ? (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCategory(null)}
+                      className="text-xs text-primary"
+                    >
+                      Clear
+                    </button>
+                  ) : null}
+                </div>
+                <div className="flex flex-wrap gap-2">
                   <button
-                    key={category.id}
                     type="button"
-                    onClick={() => setSelectedCategory(category)}
-                    className={pillButton(selectedCategory?.id === category.id)}
+                    onClick={() => setSelectedCategory(null)}
+                    className={pillButton(selectedCategory === null)}
                   >
-                    <span>{category.icon ?? "#"}</span>
-                    <span>{category.name}</span>
+                    All
                   </button>
-                ))}
+                  {categories.map((category) => (
+                    <button
+                      key={category.id}
+                      type="button"
+                      onClick={() => setSelectedCategory(category)}
+                      className={pillButton(
+                        selectedCategory?.id === category.id,
+                      )}
+                    >
+                      <span>{category.icon ?? "#"}</span>
+                      <span>{category.name}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : null}
           </div>
         </aside>
 
         <main className="min-w-0">
           <div className="sticky top-0 z-30 border-b border-default bg-app/92 backdrop-blur-md md:static md:border-b-0 md:bg-transparent md:backdrop-blur-none">
-            <div className="px-4 pb-3 pt-3 md:px-0 md:pt-0">
-              <div className="flex items-center gap-3 rounded-[22px] border border-default bg-app px-4 py-3 shadow-sm">
-                <Search size={18} className="shrink-0 text-muted-foreground" />
+            <div className="flex items-center gap-2 px-4 pb-3 pt-3 md:px-0 md:pt-0">
+              <div className="flex border border-gray-300 min-w-0 flex-1 items-center gap-2.5 rounded-full bg-surface px-4 py-2.5">
+                <Search
+                  size={16}
+                  className="shrink-0 text-muted-foreground"
+                  aria-hidden
+                />
                 <input
                   value={searchDraft}
                   onChange={(event) => setSearchDraft(event.target.value)}
                   placeholder="Search cars, dresses, fresh produce..."
-                  className="h-6 flex-1 bg-transparent text-sm text-default outline-none placeholder:text-muted-foreground"
+                  className="h-5 min-w-0 flex-1 bg-transparent text-sm text-default outline-none placeholder:text-muted-foreground"
                 />
                 {searchDraft ? (
-                  <button type="button" onClick={clearSearch} className="text-muted-foreground">
+                  <button
+                    type="button"
+                    onClick={clearSearch}
+                    className="shrink-0 text-muted-foreground"
+                    aria-label="Clear search"
+                  >
                     <X size={16} />
                   </button>
                 ) : null}
               </div>
-            </div>
 
-            {facetsLoading && categories.length === 0 ? (
-              <CategorySkeletonRow />
-            ) : (
-              <div className="scrollbar-none flex gap-2 overflow-x-auto px-4 pb-3 md:hidden">
-                <button
-                  type="button"
-                  onClick={() => setSelectedCategory(null)}
-                  className={pillButton(selectedCategory === null)}
-                >
-                  All
-                </button>
-                {categories.map((category) => (
-                  <button
-                    key={category.id}
-                    type="button"
-                    onClick={() => setSelectedCategory(category)}
-                    className={pillButton(selectedCategory?.id === category.id)}
-                  >
-                    <span>{category.icon ?? "#"}</span>
-                    <span>{category.name}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <div className="scrollbar-none flex gap-2 overflow-x-auto px-4 pb-3 md:px-0">
-              <FilterButton
-                active={Boolean(selectedCounty || selectedSubCounty || selectedWard)}
-                icon={<MapPin size={16} />}
-                label={locationLabel}
-                onClick={() => setLocationOpen(true)}
-              />
-              <FilterButton
-                active={sort !== "RELEVANCE"}
-                icon={<ArrowUpDown size={16} />}
-                label={activeSort.label}
+              {/* Sort + Filter icon buttons — opposite the search bar */}
+              <button
+                type="button"
                 onClick={() => setSortOpen(true)}
-              />
-              {activeFilterCount > 0 ? (
-                <button type="button" className={pillButton(false)} onClick={clearFilters}>
-                  <X size={16} />
-                  <span>Clear</span>
-                </button>
-              ) : null}
-              <div className="flex min-w-4 items-center rounded-full border border-default px-3 text-xs text-muted-foreground">
-                <SlidersHorizontal size={14} className="mr-2" />
-                {activeFilterCount} filters
-              </div>
+                className={cn(
+                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors md:hidden",
+                  sort !== "RELEVANCE"
+                    ? "bg-primary/10 text-primary"
+                    : "bg-surface text-default",
+                )}
+                aria-label="Sort"
+              >
+                <ArrowUpDown size={18} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterOpen(true)}
+                className={cn(
+                  "relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors md:hidden",
+                  activeFilterCount > 0
+                    ? "bg-primary/10 text-primary"
+                    : "bg-surface text-default",
+                )}
+                aria-label="Filters"
+              >
+                <SlidersHorizontal size={18} />
+                {activeFilterCount > 0 ? (
+                  <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-white">
+                    {activeFilterCount}
+                  </span>
+                ) : null}
+              </button>
             </div>
+
+            {showCategories ? (
+              categoriesLoading && categories.length === 0 ? (
+                <CategorySkeletonRow />
+              ) : (
+                <div className="scrollbar-none flex items-center gap-6 overflow-x-auto px-4 pb-3 md:hidden">
+                  <CategoryTab
+                    label="All"
+                    active={selectedCategory === null}
+                    onClick={() => setSelectedCategory(null)}
+                  />
+                  {categories.map((category) => (
+                    <CategoryTab
+                      key={category.id}
+                      label={category.name}
+                      active={selectedCategory?.id === category.id}
+                      onClick={() => setSelectedCategory(category)}
+                    />
+                  ))}
+                </div>
+              )
+            ) : null}
           </div>
 
           {error && items.length === 0 ? (
             <div className="px-4 py-12 md:px-0">
               <div className="rounded-[22px] border border-default bg-app p-6 text-center">
-                <p className="text-base font-semibold text-default">Couldn&apos;t load Discover</p>
+                <p className="text-base font-semibold text-default">
+                  Couldn&apos;t load Discover
+                </p>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
                   Check the connection to the API, then try again.
                 </p>
@@ -678,26 +833,37 @@ export function DiscoverPage({ lang }: { lang: string }) {
               <div className="mb-3 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-semibold text-default">
-                    {query ? `Results for “${query}”` : "Listings picked for discovery"}
+                    {query
+                      ? `Results for “${query}”`
+                      : "Listings picked for discovery"}
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {selectedWard?.name ?? selectedSubCounty?.name ?? selectedCounty?.name ?? "Across Kenya"}
+                    {selectedWard?.name ??
+                      selectedSubCounty?.name ??
+                      selectedCounty?.name ??
+                      "Across Kenya"}
                   </p>
                 </div>
               </div>
 
-              <div className="flex flex-col gap-2">
+              <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3">
                 {items.map((post, index) => (
-                  <PostCard key={post.id} post={post} lang={lang} priority={index < 2} />
+                  <DiscoverGridCard
+                    key={post.id}
+                    post={post}
+                    lang={lang}
+                    priority={index < 4}
+                  />
                 ))}
               </div>
 
               <div ref={sentinelRef} className="h-2" />
 
               {isFetchingMore ? (
-                <div className="space-y-2 pt-3">
-                  <Skeleton className="h-24 rounded-2xl" />
-                  <Skeleton className="h-24 rounded-2xl" />
+                <div className="grid grid-cols-2 gap-2 pt-3 md:grid-cols-3 md:gap-3">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <Skeleton key={i} className="aspect-3/4 rounded-2xl" />
+                  ))}
                 </div>
               ) : null}
 
@@ -711,6 +877,148 @@ export function DiscoverPage({ lang }: { lang: string }) {
         </main>
       </div>
 
+      {/* Filter sheet — full-width, slides in from the right. Holds location,
+          price range, and negotiable. (Category and sort have their own
+          controls outside the sheet.) */}
+      <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
+        <SheetContent
+          side="right"
+          className="flex w-full max-w-none flex-col gap-0 bg-app p-0 sm:max-w-none"
+        >
+          <SheetHeader className="border-b border-default px-5 py-4 text-left">
+            <SheetTitle className="text-base">Filters</SheetTitle>
+          </SheetHeader>
+
+          <div className="flex-1 space-y-7 overflow-y-auto px-5 py-5">
+            {/* Location */}
+            <section>
+              <p className="mb-3 text-sm font-semibold text-default">
+                Location
+              </p>
+              <button
+                type="button"
+                onClick={() => setLocationOpen(true)}
+                className="flex w-full items-center justify-between rounded-2xl border border-default px-4 py-3.5 text-left"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-default">
+                    {locationLabel}
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Tap to change county, subcounty or ward
+                  </p>
+                </div>
+                <MapPin size={18} className="shrink-0 text-muted-foreground" />
+              </button>
+            </section>
+
+            {/* Price range */}
+            <section>
+              <p className="mb-3 text-sm font-semibold text-default">
+                Price range
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <span className="mb-1 block text-xs text-muted-foreground">
+                    Min (KSh)
+                  </span>
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    placeholder="0"
+                    value={minPrice}
+                    onChange={(e) => setMinPrice(e.target.value)}
+                    className="h-11 rounded-xl"
+                  />
+                </div>
+                <span className="mt-5 text-muted-foreground">–</span>
+                <div className="flex-1">
+                  <span className="mb-1 block text-xs text-muted-foreground">
+                    Max (KSh)
+                  </span>
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    placeholder="Any"
+                    value={maxPrice}
+                    onChange={(e) => setMaxPrice(e.target.value)}
+                    className="h-11 rounded-xl"
+                  />
+                </div>
+              </div>
+            </section>
+
+            {/* Negotiable */}
+            <section>
+              <p className="mb-3 text-sm font-semibold text-default">
+                Negotiable
+              </p>
+              <RadioGroup
+                value={negotiable}
+                onValueChange={(v) => setNegotiable(v as "ANY" | "YES" | "NO")}
+                className="gap-0 overflow-hidden rounded-2xl border border-default"
+              >
+                {[
+                  { value: "ANY", label: "Any", hint: "Show all listings" },
+                  {
+                    value: "YES",
+                    label: "Negotiable",
+                    hint: "Price can be discussed",
+                  },
+                  {
+                    value: "NO",
+                    label: "Fixed price",
+                    hint: "Non-negotiable only",
+                  },
+                ].map((opt, i) => (
+                  <label
+                    key={opt.value}
+                    htmlFor={`negotiable-${opt.value}`}
+                    className={cn(
+                      "flex cursor-pointer items-center justify-between px-4 py-3.5",
+                      i > 0 && "border-t border-default",
+                    )}
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-default">
+                        {opt.label}
+                      </p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {opt.hint}
+                      </p>
+                    </div>
+                    <RadioGroupItem
+                      id={`negotiable-${opt.value}`}
+                      value={opt.value}
+                    />
+                  </label>
+                ))}
+              </RadioGroup>
+            </section>
+          </div>
+
+          <SheetFooter className="flex-row gap-3 border-t border-default px-5 py-4">
+            <button
+              type="button"
+              onClick={clearFilters}
+              disabled={activeFilterCount === 0}
+              className="h-11 flex-1 rounded-full border border-default text-sm font-semibold text-default disabled:opacity-40"
+            >
+              Clear all
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterOpen(false)}
+              className="h-11 flex-1 rounded-full bg-primary text-sm font-semibold text-white"
+            >
+              Show results
+            </button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
       <Drawer open={locationOpen} onOpenChange={setLocationOpen}>
         <DrawerContent className="mx-auto max-w-107.5 max-h-[82svh]">
           <DrawerHeader className="pb-2 text-left">
@@ -721,8 +1029,12 @@ export function DiscoverPage({ lang }: { lang: string }) {
               <section>
                 <div className="mb-3 flex items-center justify-between">
                   <p className="text-sm font-semibold text-default">County</p>
-                  {(selectedCounty || selectedSubCounty || selectedWard) ? (
-                    <button type="button" onClick={clearLocation} className="text-xs text-primary">
+                  {selectedCounty || selectedSubCounty || selectedWard ? (
+                    <button
+                      type="button"
+                      onClick={clearLocation}
+                      className="text-xs text-primary"
+                    >
                       Clear
                     </button>
                   ) : null}
@@ -733,16 +1045,24 @@ export function DiscoverPage({ lang }: { lang: string }) {
                     onClick={() => pickCounty(null)}
                     className={cn(
                       "flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left",
-                      selectedCounty === null && selectedSubCounty === null && selectedWard === null
+                      selectedCounty === null &&
+                        selectedSubCounty === null &&
+                        selectedWard === null
                         ? "border-primary bg-primary/5"
                         : "border-default bg-app",
                     )}
                   >
                     <div>
-                      <p className="text-sm font-medium text-default">All Kenya</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">Browse nationwide</p>
+                      <p className="text-sm font-medium text-default">
+                        All Kenya
+                      </p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        Browse nationwide
+                      </p>
                     </div>
-                    {selectedCounty === null && selectedSubCounty === null && selectedWard === null ? (
+                    {selectedCounty === null &&
+                    selectedSubCounty === null &&
+                    selectedWard === null ? (
                       <Check size={18} className="text-primary" />
                     ) : null}
                   </button>
@@ -759,7 +1079,9 @@ export function DiscoverPage({ lang }: { lang: string }) {
 
               {selectedCounty ? (
                 <section>
-                  <p className="mb-3 text-sm font-semibold text-default">Subcounty</p>
+                  <p className="mb-3 text-sm font-semibold text-default">
+                    Subcounty
+                  </p>
                   <div className="space-y-2">
                     {subCounties.length === 0 ? (
                       <p className="rounded-2xl border border-dashed border-default px-4 py-3 text-sm text-muted-foreground">
@@ -781,7 +1103,9 @@ export function DiscoverPage({ lang }: { lang: string }) {
 
               {selectedCounty ? (
                 <section>
-                  <p className="mb-3 text-sm font-semibold text-default">Ward</p>
+                  <p className="mb-3 text-sm font-semibold text-default">
+                    Ward
+                  </p>
                   <div className="space-y-2">
                     {wards.length === 0 ? (
                       <p className="rounded-2xl border border-dashed border-default px-4 py-3 text-sm text-muted-foreground">
