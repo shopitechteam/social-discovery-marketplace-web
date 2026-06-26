@@ -122,11 +122,7 @@ export function BottomNav({ lang = "en" }: { lang: string }) {
             <Link
               key={tab.key}
               href={href}
-              // Feed restores its own scroll position (useScrollRestoration), so
-              // suppress Next's default scroll-to-top when returning Home — that
-              // jump-to-0 was clobbering the restored position. Other tabs keep
-              // the default top-on-navigate behaviour.
-              scroll={tab.key !== "feed"}
+              scroll={false}
               className="flex flex-col items-center justify-center gap-0.5 flex-1 py-1 select-none"
               style={{
                 color: isActive

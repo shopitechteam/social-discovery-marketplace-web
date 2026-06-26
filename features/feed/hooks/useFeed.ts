@@ -45,7 +45,7 @@ export function useForYouFeed() {
   return {
     items,
     // Only an initial, dataless load should drive the full-screen skeleton.
-    loading: loading && items.length === 0,
+    loading: loading,
     // True only while a fetchMore page is in flight — drives the pagination
     // spinner WITHOUT firing during the silent cache-and-network refresh.
     loadingMore: networkStatus === NetworkStatus.fetchMore,
@@ -79,7 +79,7 @@ export function useFollowingFeed() {
 
   return {
     items,
-    loading: loading && items.length === 0,
+    loading: loading,
     loadingMore: networkStatus === NetworkStatus.fetchMore,
     error,
     hasMore: pageInfo?.hasNextPage ?? false,

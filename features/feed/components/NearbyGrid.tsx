@@ -5,7 +5,6 @@ import { PostCard } from "./PostCard";
 import { FeedPaginationSkeleton, FeedSkeleton } from "./FeedSkeleton";
 import { useNearbyFeed } from "../hooks/useFeed";
 import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
-import { useScrollRestoration } from "../hooks/useScrollRestoration";
 import { useFeedPreferencesStore } from "@/stores/feedPreferences";
 
 type PermissionState =
@@ -49,9 +48,6 @@ export function NearbyGrid({ lang }: Props) {
     effectiveLocation?.countyName ?? null,
     effectiveLocation?.subCountyName,
   );
-
-  // Restore scroll on return from another tab once the cached list has painted.
-  useScrollRestoration("nearby", items.length > 0);
 
   const { sentinelRef } = useInfiniteScroll({
     hasMore,

@@ -634,7 +634,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
     <div className="min-h-svh bg-app pb-24 md:pb-8">
       <div className="mx-auto w-full max-w-5xl md:grid md:grid-cols-[320px_minmax(0,1fr)] md:gap-6 md:px-6 md:pt-6">
         <aside className="hidden md:block">
-          <div className="sticky top-6 space-y-4 rounded-[24px] border border-default bg-app p-4">
+          <div className="sticky top-6 space-y-4 rounded-3xl border border-default bg-app p-4">
             <div>
               <p className="text-lg font-semibold text-default">Discover</p>
               <p className="mt-1 text-sm leading-6 text-muted-foreground">
@@ -819,7 +819,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
             </div>
           ) : null}
 
-          {loading && items.length === 0 ? <DiscoverFeedSkeleton /> : null}
+          {loading && <DiscoverFeedSkeleton />}
 
           {!loading && items.length === 0 && !error ? (
             <EmptyState

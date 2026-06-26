@@ -189,7 +189,11 @@ export function SideNav({ lang = "en" }: { lang: string }) {
     >
       {/* Logo */}
       <div className="flex items-center px-6 py-5 shrink-0">
-        <Link href={`/${lang}/feed`} className="flex items-center gap-2.5">
+        <Link
+          href={`/${lang}/feed`}
+          scroll={false}
+          className="flex items-center gap-2.5"
+        >
           <Image
             src="/assets/shopi-logo.png"
             height={32}
@@ -219,6 +223,7 @@ export function SideNav({ lang = "en" }: { lang: string }) {
             <Link
               key={tab.key}
               href={href}
+              scroll={false}
               className="flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-150 group"
               style={{
                 color: isActive

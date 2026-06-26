@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { BottomNav, shouldHideBottomNav } from "@/components/layout/BottomNav";
+import { RouteScrollRestoration } from "@/components/layout/RouteScrollRestoration";
 
 export function MainShell({
   children,
@@ -16,6 +17,8 @@ export function MainShell({
 
   return (
     <>
+      <RouteScrollRestoration />
+
       <div
         className={[
           "flex min-h-svh flex-col bg-app",

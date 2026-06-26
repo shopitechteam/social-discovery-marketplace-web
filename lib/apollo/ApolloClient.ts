@@ -7,13 +7,17 @@ import {
 
 const GRAPHQL_URL = `${process.env.NEXT_PUBLIC_API_URL}/graphql`;
 
+type FeedItem = { __ref?: string; id?: string };
+type FeedPage = { items?: FeedItem[] } & Record<string, unknown>;
+
+const itemKey = (item: FeedItem) => item.__ref ?? item.id;
+
 /**
  * Field policy shared by every cursor-paginated feed (forYouFeed,
- * followingFeed, localFeed). Without this, Apollo keys each page by its
- * `after`/`limit` args and stores them as separate entries, so `fetchMore`
- * never merges and pagination appears stuck/duplicated. We drop the cursor
- * args from the cache key and concatenate incoming items onto the existing
- * window.
+ * followingFeed, localFeed). Cursor args paginate a single list; they should
+ * not identify separate cache entries. Page-1 refreshes preserve the already
+ * accumulated tail so revisiting a cached feed cannot collapse the scrollable
+ * window back to the first page.
  */
 const feedFieldPolicy = {
   // `limit` and `after` only paginate — they don't identify a distinct list.
@@ -21,16 +25,32 @@ const feedFieldPolicy = {
   // own cached list. Apollo ignores key names that the field doesn't accept.
   keyArgs: ["county", "subregion"] as const,
   merge(
-    existing: { items?: unknown[] } | undefined,
-    incoming: { items?: unknown[] },
+    existing: FeedPage | undefined,
+    incoming: FeedPage,
     { args }: { args: Record<string, unknown> | null },
   ) {
     const incomingItems = incoming.items ?? [];
-    // No cursor → first page (or a refetch): replace the window entirely.
-    if (!args?.after) return incoming;
+    const existingItems = existing?.items ?? [];
+
+    if (!args?.after) {
+      if (existingItems.length === 0) return { ...incoming, items: incomingItems };
+
+      const incomingKeys = new Set(incomingItems.map(itemKey));
+      const tail = existingItems.filter(
+        (item) => !incomingKeys.has(itemKey(item)),
+      );
+
+      return { ...incoming, items: [...incomingItems, ...tail] };
+    }
+
+    const existingKeys = new Set(existingItems.map(itemKey));
+    const nextItems = incomingItems.filter(
+      (item) => !existingKeys.has(itemKey(item)),
+    );
+
     return {
       ...incoming,
-      items: [...(existing?.items ?? []), ...incomingItems],
+      items: [...existingItems, ...nextItems],
     };
   },
 };

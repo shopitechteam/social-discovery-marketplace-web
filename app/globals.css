@@ -1,15 +1,6 @@
 @import "tailwindcss";
 /* @import "tw-animate-css"; */
 
-/* ─── Brand palette ───────────────────────────────────────────────
-   Primary:   rgb(234, 25, 121)  — Shopi Pink (energy, discovery)
-   Secondary: rgb(255, 159, 64)  — Warm Amber (warmth, commerce)
-   Accent:    rgb(99, 91, 255)   — Electric Violet (social/creative)
-   Success:   rgb(34, 197, 94)   — Emerald
-   Warning:   rgb(251, 191, 36)  — Amber
-   Error:     rgb(239, 68, 68)   — Rose Red
-──────────────────────────────────────────────────────────────────── */
-
 :root {
   /* Brand */
   --brand-primary: 234, 25, 121;

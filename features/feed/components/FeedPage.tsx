@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { FeedHeader } from "./FeedHeader";
-import { FeedGrid } from "./FeedGrid";
+import FeedGrid from "./FeedGrid";
 import { FollowingGrid } from "./FollowingGrid";
 import { NearbyGrid } from "./NearbyGrid";
 import DesktopFeed from "./DesktopFeed";
@@ -29,14 +29,11 @@ export function FeedPage({ lang }: Props) {
   }, [searchParams]);
 
   function handleTabChange(next: Tab) {
-    // Don't force scroll-to-top: each sub-tab grid restores its own saved
-    // position via useScrollRestoration, so switching back to a tab returns the
-    // user to where they left off instead of jumping to the top.
     setTab(next);
   }
 
   return (
-    <>
+    <div>
       {/* ── Desktop: fullscreen TikTok-style feed — no header/tabs needed ── */}
       <div className="hidden md:block">
         <DesktopFeed lang={lang} />
@@ -54,6 +51,6 @@ export function FeedPage({ lang }: Props) {
           {tab === "nearby" && <NearbyGrid lang={lang} />}
         </div>
       </div>
-    </>
+    </div>
   );
 }
