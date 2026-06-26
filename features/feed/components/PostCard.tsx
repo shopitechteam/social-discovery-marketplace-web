@@ -1325,8 +1325,8 @@ export function PostCard({ post, lang, priority }: Props) {
       </div>
 
       {/* ── Media ──────────────────────────────────────────────────────── */}
-      {/* No PDP navigation: videos toggle play/pause; multi-image opens the
-          in-place carousel dialog; single images do nothing on tap. */}
+      {/* No PDP navigation: videos toggle play/pause; images (single or
+          multiple) open the in-place full-screen carousel dialog on tap. */}
       <div className="relative">
         {/* TikTok posts render native once the background re-host has populated
             `media` (the post is then live). Until then we fall back to the live
@@ -1341,7 +1341,7 @@ export function PostCard({ post, lang, priority }: Props) {
             post={post}
             priority={priority}
             onNavigate={
-              mediaCount > 1 ? () => setShowCarousel(true) : undefined
+              mediaCount >= 1 ? () => setShowCarousel(true) : undefined
             }
           />
         )}
@@ -1500,8 +1500,9 @@ export function PostCard({ post, lang, priority }: Props) {
         />
       )}
 
-      {/* ── Multi-image carousel dialog (replaces PDP navigation) ── */}
-      {mediaCount > 1 && post.type !== "VIDEO" && (
+      {/* ── Image dialog (replaces PDP navigation) — single image opens as a
+          full-screen lightbox; multiple images as a swipeable carousel. ── */}
+      {mediaCount >= 1 && post.type !== "VIDEO" && (
         <MediaCarouselDialog
           open={showCarousel}
           onOpenChange={setShowCarousel}

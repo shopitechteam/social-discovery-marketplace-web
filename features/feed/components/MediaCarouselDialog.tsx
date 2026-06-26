@@ -107,13 +107,15 @@ export function MediaCarouselDialog({
           <X className="h-6 w-6" />
         </button>
 
-        {/* Counter */}
-        <div
-          className="absolute left-1/2 z-30 -translate-x-1/2 rounded-full bg-black/55 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm"
-          style={{ top: "max(env(safe-area-inset-top, 0px), 18px)" }}
-        >
-          {idx + 1} / {media.length}
-        </div>
+        {/* Counter — only when there's more than one image */}
+        {media.length > 1 && (
+          <div
+            className="absolute left-1/2 z-30 -translate-x-1/2 rounded-full bg-black/55 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm"
+            style={{ top: "max(env(safe-area-inset-top, 0px), 18px)" }}
+          >
+            {idx + 1} / {media.length}
+          </div>
+        )}
 
         {/* Swipeable track */}
         <div
@@ -170,7 +172,8 @@ export function MediaCarouselDialog({
           </>
         )}
 
-        {/* Dots */}
+        {/* Dots — only when there's more than one image */}
+        {media.length > 1 && (
         <div className="absolute bottom-6 left-1/2 z-30 flex -translate-x-1/2 gap-1.5">
           {media.map((_, i) => (
             <button
@@ -185,6 +188,7 @@ export function MediaCarouselDialog({
             />
           ))}
         </div>
+        )}
       </DialogContent>
     </Dialog>
   );
