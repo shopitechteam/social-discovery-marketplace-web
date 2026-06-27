@@ -5,7 +5,6 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import {
   Download,
   Bookmark,
-  MessageCircle,
   Send,
   Share2,
   Heart,
@@ -21,7 +20,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useKeyboardInset } from "@/hooks/useKeyboardInset";
 
 import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
 import { useFollow } from "../hooks/useFollow";
@@ -686,8 +684,6 @@ export function ContentDetail({
   const muted = useFeedPreferencesStore((s) => s.videoMuted);
   const setVideoMuted = useFeedPreferencesStore((s) => s.setVideoMuted);
   const isDesktop = useIsDesktop();
-  const [showCommentDrawer, setShowCommentDrawer] = useState(false);
-  const keyboardInset = useKeyboardInset();
   const resolvedLiked = post?.isLikedByMe ?? false;
   const resolvedLikeCount = post?.stats?.likes ?? 0;
   const resolvedSaved =
@@ -2035,182 +2031,93 @@ export function ContentDetail({
             }}
           >
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => handleSave()}
-                aria-label={resolvedSaved ? "Unsave post" : "Save post"}
-                className={[
-                  "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border transition-colors",
-                  resolvedSaved
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-default text-default",
-                ].join(" ")}
-              >
-                <Bookmark
-                  className="h-5 w-5"
-                  fill={resolvedSaved ? "currentColor" : "none"}
-                  strokeWidth={2}
-                />
-              </button>
-              <button
-                type="button"
-                onClick={handleLike}
-                aria-label={resolvedLiked ? "Unlike post" : "Like post"}
-                className={[
-                  "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border transition-colors",
-                  resolvedLiked
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-default text-default",
-                ].join(" ")}
-              >
-                <Heart
-                  className="h-5 w-5"
-                  fill={resolvedLiked ? "currentColor" : "none"}
-                  strokeWidth={2}
-                />
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowCommentDrawer(true)}
-                aria-label="Open comments"
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-default text-default transition-colors active:bg-surface"
-              >
-                <MessageCircle className="h-5 w-5" strokeWidth={2} />
-              </button>
-              {!isOwnPost ? (
+              {/* Comment input — write a comment inline (no drawer) */}
+              <input
+                ref={inputRef}
+                type="text"
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+                onFocus={() => {
+                  if (!requireAuth({ contentId: id, action: "comment" }))
+                    inputRef.current?.blur();
+                }}
+                placeholder="Say something…"
+                maxLength={500}
+                className="min-w-0 flex-1 rounded-full border border-default bg-surface px-4 py-2.5 text-sm text-default outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
+              />
+
+              {commentText.trim() ? (
                 <button
                   type="button"
-                  onClick={() => {
-                    if (!requireAuth({ contentId: id })) return;
-                    router.push(`/${lang}/notifications/${id}?source=content`);
+                  onClick={handleSend}
+                  aria-label="Send comment"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary, var(--brand-primary))))",
                   }}
-                  className="flex min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-bold text-white transition-transform active:scale-[0.98]"
                 >
-                  <Send className="h-4 w-4" strokeWidth={2.2} />
-                  Message seller
+                  <Send className="h-5 w-5 text-white" strokeWidth={2.2} />
                 </button>
               ) : (
-                <button
-                  type="button"
-                  onClick={handleShare}
-                  className="flex min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-bold text-white transition-transform active:scale-[0.98]"
-                >
-                  <Share2 className="h-4 w-4" strokeWidth={2.2} />
-                  Share
-                </button>
+                <>
+                  {/* Save */}
+                  <button
+                    type="button"
+                    onClick={() => handleSave()}
+                    aria-label={resolvedSaved ? "Unsave post" : "Save post"}
+                    className={[
+                      "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border transition-colors",
+                      resolvedSaved
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-default text-default",
+                    ].join(" ")}
+                  >
+                    <Bookmark
+                      className="h-5 w-5"
+                      fill={resolvedSaved ? "currentColor" : "none"}
+                      strokeWidth={2}
+                    />
+                  </button>
+
+                  {/* Message seller (or Share on own post) */}
+                  {!isOwnPost ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!requireAuth({ contentId: id })) return;
+                        router.push(
+                          `/${lang}/notifications/${id}?source=content`,
+                        );
+                      }}
+                      aria-label="Message seller"
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-white transition-transform active:scale-[0.98]"
+                    >
+                      <Send className="h-5 w-5" strokeWidth={2.2} />
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleShare}
+                      aria-label="Share"
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-white transition-transform active:scale-[0.98]"
+                    >
+                      <Share2 className="h-5 w-5" strokeWidth={2.2} />
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </div>
-
-          {/* ── Comments sheet (custom, keyboard-aware) ────────────────────── */}
-          <CommentsSheet
-            open={showCommentDrawer}
-            onClose={() => setShowCommentDrawer(false)}
-            keyboardInset={keyboardInset}
-            title={
-              resolvedCommentCount > 0
-                ? `${fmt(resolvedCommentCount)} Comments`
-                : "Comments"
-            }
-            input={CommentInput}
-          >
-            {renderCommentsSection(false)}
-          </CommentsSheet>
         </div>
       )}
     </div>
   );
 }
 
-// ─── CommentsSheet — fixed bottom sheet whose input rises with the keyboard ──────
-
-function CommentsSheet({
-  open,
-  onClose,
-  keyboardInset,
-  title,
-  input,
-  children,
-}: {
-  open: boolean;
-  onClose: () => void;
-  keyboardInset: number;
-  title: string;
-  input: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  // Lock background scroll while the sheet is open.
-  useEffect(() => {
-    if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [open]);
-
-  return (
-    <div
-      className={`fixed inset-0 z-[80] ${open ? "" : "pointer-events-none"}`}
-      aria-hidden={!open}
-    >
-      {/* Scrim */}
-      <button
-        type="button"
-        aria-label="Close comments"
-        onClick={onClose}
-        className={`absolute inset-0 bg-black/60 transition-opacity duration-300 ${
-          open ? "opacity-100" : "opacity-0"
-        }`}
-      />
-
-      {/* Sheet — its bottom rides above the keyboard so the input is always
-          visible and the comment list shrinks instead of being covered. */}
-      <div
-        className={`absolute inset-x-0 flex max-h-[82svh] flex-col rounded-t-3xl bg-app shadow-2xl transition-transform duration-300 ease-out ${
-          open ? "translate-y-0" : "translate-y-full"
-        }`}
-        style={{
-          bottom: keyboardInset,
-          transition: "transform 0.3s ease-out, bottom 0.15s ease-out",
-        }}
-      >
-        {/* Grabber + header */}
-        <div className="shrink-0 border-b border-default">
-          <div className="flex justify-center pt-3 pb-1.5">
-            <div className="h-1.5 w-11 rounded-full bg-muted-foreground/35" />
-          </div>
-          <div className="flex items-center justify-between px-4 pb-3 pt-1">
-            <h2 className="text-sm font-bold text-default">{title}</h2>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close"
-              className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-surface"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-        </div>
-
-        {/* Scrollable comments — leaves room so the last rows clear the input */}
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4">
-          {children}
-        </div>
-
-        {/* Pinned input — always sits just above the sheet bottom (which itself
-            rides above the keyboard), so nothing shifts and there's no gap. */}
-        <div
-          className="shrink-0 border-t border-default"
-          style={{
-            backgroundColor: "rgb(var(--color-bg-elevated))",
-            paddingBottom:
-              keyboardInset > 0 ? 0 : "env(safe-area-inset-bottom, 0px)",
-          }}
-        >
-          {input}
-        </div>
-      </div>
-    </div>
-  );
-}
