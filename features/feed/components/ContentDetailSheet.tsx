@@ -10,26 +10,8 @@ import {
   SheetContent,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { ContentDetail } from "./ContentDetail";
-
-/**
- * Tracks the desktop breakpoint. Returns `null` until the first measurement so
- * we never flash the wrong layout (sheet vs. full page) during hydration.
- */
-function useIsDesktopRouteSheet() {
-  const [isDesktop, setIsDesktop] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    const query = window.matchMedia("(min-width: 768px)");
-    const update = () => setIsDesktop(query.matches);
-
-    update();
-    query.addEventListener("change", update);
-    return () => query.removeEventListener("change", update);
-  }, []);
-
-  return isDesktop;
-}
 
 export function ContentDetailSheet({
   id,
@@ -39,7 +21,9 @@ export function ContentDetailSheet({
   lang: string;
 }) {
   const router = useRouter();
-  const isDesktop = useIsDesktopRouteSheet();
+  // `null` until measured so we never flash the wrong layout (sheet vs. full
+  // page) during hydration.
+  const isDesktop = useIsDesktop();
   const [open, setOpen] = useState(false);
   // Widened to fit the in-place chat column when the user taps Message.
   const [chatOpen, setChatOpen] = useState(false);

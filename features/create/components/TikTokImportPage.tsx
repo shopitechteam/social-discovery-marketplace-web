@@ -15,10 +15,11 @@
  *     → "Use This Video" → createDraftFromTiktokEmbed → enter edit flow
  */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "@apollo/client/react";
 import { useCreateStore } from "@/stores/create";
+import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
 import {
@@ -293,21 +294,6 @@ export function TikTokImportPage({ lang }: Props) {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function useIsDesktop() {
-  const [isDesktop, setIsDesktop] = useState(false);
-
-  useEffect(() => {
-    const query = window.matchMedia("(min-width: 768px)");
-    const update = () => setIsDesktop(query.matches);
-
-    update();
-    query.addEventListener("change", update);
-    return () => query.removeEventListener("change", update);
-  }, []);
-
-  return isDesktop;
-}
-
 function PageShell({
   lang,
   children,
@@ -316,7 +302,7 @@ function PageShell({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const isDesktop = useIsDesktop();
+  const isDesktop = useIsDesktop({ ssrDefault: false });
 
   function goBackToPicker() {
     router.replace(`/${lang}/upload`);

@@ -12,13 +12,8 @@ import Image from "next/image";
 import MuxPlayer from "@mux/mux-player-react";
 import type { MuxCSSProperties } from "@mux/mux-player-react";
 import { useTrending } from "../hooks/useFeed";
+import { fmtCompact as fmt } from "@/lib/format";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
-
-function fmt(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return String(n);
-}
 
 function TrendingRow({
   post,

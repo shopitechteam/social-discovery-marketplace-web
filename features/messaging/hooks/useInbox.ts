@@ -124,8 +124,8 @@ export function useInbox(lang: string) {
   } = useQuery(MY_DIRECT_CONVERSATIONS, {
     variables: { limit: 40 },
     skip: !isAuthenticated,
-    // fetchPolicy: "cache-and-network",
-    //nextFetchPolicy: "cache-first",
+    fetchPolicy: "cache-and-network",
+    nextFetchPolicy: "cache-first",
     notifyOnNetworkStatusChange: true,
   });
 

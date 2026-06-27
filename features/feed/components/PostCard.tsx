@@ -34,6 +34,9 @@ import { VideoProgressBar } from "./VideoProgressBar";
 import { gql } from "@apollo/client";
 import { useMutation } from "@apollo/client/react";
 import { shouldFire, hasFired } from "@/lib/interactionDedup";
+import { useFeedChat } from "./FeedChatContext";
+import { fmtCompact as fmt } from "@/lib/format";
+import { avatarGradient, idInitials as initials } from "@/lib/avatar";
 import { useInteractions } from "../hooks/useInteractions";
 import { useAuthGuard } from "../hooks/useAuthGuard";
 import { useFollow } from "../hooks/useFollow";
@@ -57,15 +60,18 @@ interface Props {
   post: ContentCardFieldsFragment;
   lang: string;
   priority?: boolean;
+  /**
+   * Desktop feed: open the chat inline in the right rail instead of navigating
+   * to the full-screen chat screen. When omitted (mobile / elsewhere) the
+   * Message button keeps its default navigation behaviour. The card element is
+   * passed so the host can auto-close the chat when the post scrolls away.
+   */
+  onMessage?: (contentId: string, anchor: HTMLElement | null) => void;
 }
 
 // ── helpers ──────────────────────────────────────────────────────────────────
-
-function fmt(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return String(n);
-}
+// fmt, initials, and the avatar gradient palette are shared from @/lib
+// (imported above) so they don't drift across the feed components.
 
 /**
  * Strip Google plus-codes (Open Location Codes) like "PVR+ER" or
@@ -107,10 +113,6 @@ function locationTrail(loc: {
   return parts.length ? parts.join(" › ") : null;
 }
 
-function initials(id: string): string {
-  // Until we have a user name, derive a 2-char placeholder from the id tail
-  return id.slice(-2).toUpperCase();
-}
 
 // ── Avatar ────────────────────────────────────────────────────────────────────
 
@@ -152,14 +154,7 @@ function Avatar({
   lastName,
   isVerified,
 }: AvatarProps) {
-  const colors = [
-    "from-primary to-secondary",
-    "from-violet-500 to-purple-600",
-    "from-emerald-400 to-teal-500",
-    "from-orange-400 to-rose-500",
-    "from-sky-400 to-blue-600",
-  ];
-  const color = colors[parseInt(creatorId.slice(-1), 16) % colors.length];
+  const color = avatarGradient(creatorId);
   const label = firstName
     ? `${firstName[0]}${lastName?.[0] ?? ""}`.toUpperCase()
     : initials(creatorId);
@@ -973,8 +968,12 @@ function ImageMedia({
 
 // ── Main PostCard ─────────────────────────────────────────────────────────────
 
-export function PostCard({ post, lang, priority }: Props) {
+export function PostCard({ post, lang, priority, onMessage }: Props) {
   const router = useRouter();
+  // Desktop feed provides an inline-chat opener via context; an explicit
+  // `onMessage` prop still wins if passed directly.
+  const feedChatOpen = useFeedChat();
+  const openMessage = onMessage ?? feedChatOpen ?? undefined;
   const { requireAuth } = useAuthGuard(lang);
   const { saved, saveCount, handleSave, handleShare, fireView, handleReport } =
     useInteractions(post, {
@@ -1461,6 +1460,11 @@ export function PostCard({ post, lang, priority }: Props) {
             onClick={(e) => {
               e.stopPropagation();
               if (!requireAuth({ contentId: post.id })) return;
+              // Desktop feed: open the chat inline in the right rail.
+              if (openMessage) {
+                openMessage(post.id, cardRef.current);
+                return;
+              }
               // Paint the chat shell immediately, before the navigation, so the
               // transition shows the chat (not a blank frame). Auto-clear in case
               // the user returns to the feed while this card stays mounted.

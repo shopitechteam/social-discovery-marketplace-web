@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@apollo/client/react";
 import { Check, ChevronRight, Loader2 } from "lucide-react";
 import { CategoriesDocument } from "@/types/__generated__/graphql";
@@ -26,6 +26,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
+import { useIsDesktop } from "@/hooks/useIsDesktop";
 
 type CategoryPickerDrawerProps = {
   value: string | null;
@@ -33,28 +34,13 @@ type CategoryPickerDrawerProps = {
   onChange: (id: string, name: string) => void;
 };
 
-function useIsDesktop() {
-  const [isDesktop, setIsDesktop] = useState(false);
-
-  useEffect(() => {
-    const query = window.matchMedia("(min-width: 768px)");
-    const update = () => setIsDesktop(query.matches);
-
-    update();
-    query.addEventListener("change", update);
-    return () => query.removeEventListener("change", update);
-  }, []);
-
-  return isDesktop;
-}
-
 export function CategoryPickerDrawer({
   value,
   fallbackLabel,
   onChange,
 }: CategoryPickerDrawerProps) {
   const [open, setOpen] = useState(false);
-  const isDesktop = useIsDesktop();
+  const isDesktop = useIsDesktop({ ssrDefault: false });
   const { data, loading } = useQuery(CategoriesDocument, {
     fetchPolicy: "cache-and-network",
   });

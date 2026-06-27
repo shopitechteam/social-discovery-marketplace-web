@@ -18,6 +18,7 @@ import { useVisualViewport } from "@/hooks/useKeyboardInset";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
 import { timeAgo } from "@/lib/time";
+import { avatarGradient } from "@/lib/avatar";
 
 type CommentItem = NonNullable<GetCommentsQuery["comments"]["items"]>[number];
 type ReplyItem = NonNullable<GetRepliesQuery["replies"]>[number];
@@ -74,20 +75,9 @@ function CreatorBadge() {
   );
 }
 
-const AVATAR_COLORS = [
-  "from-primary to-secondary",
-  "from-violet-500 to-purple-600",
-  "from-emerald-400 to-teal-500",
-  "from-orange-400 to-rose-500",
-  "from-sky-400 to-blue-600",
-];
-
 function Avatar({ comment }: { comment: CommentItem | ReplyItem }) {
   const avatar = comment.author?.profile?.avatar;
-  const color =
-    AVATAR_COLORS[
-      parseInt(comment.creatorId.slice(-1), 16) % AVATAR_COLORS.length
-    ];
+  const color = avatarGradient(comment.creatorId);
   if (avatar) {
     return (
       <Image

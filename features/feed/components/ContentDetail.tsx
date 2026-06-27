@@ -8,6 +8,7 @@ import {
   MessageCircle,
   Send,
   Share2,
+  Heart,
   X,
   MoreHorizontal,
   Link2,
@@ -32,6 +33,8 @@ import {
   GetCommentsDocument,
   AddCommentDocument,
   ShareContentDocument,
+  ToggleLikeDocument,
+  ToggleCommentLikeDocument,
   ViewContentDocument,
 } from "@/types/__generated__/graphql";
 import type {
@@ -44,7 +47,13 @@ import { useHlsVideo } from "@/lib/useHlsVideo";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BufferSpinner } from "./BufferSpinner";
 import { useFeedPreferencesStore } from "@/stores/feedPreferences";
-import { EmbeddedChatPanel } from "@/features/messaging/components/EmbeddedChatPanel";
+import { InlineChatPanel } from "@/features/messaging/components/InlineChatPanel";
+import { fmtCompact as fmt } from "@/lib/format";
+import {
+  avatarGradient as avatarColors,
+  idInitials as initials,
+} from "@/lib/avatar";
+import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { VideoProgressBar } from "./VideoProgressBar";
 import { usePageFocused } from "../hooks/usePageFocused";
 import { shouldFire } from "@/lib/interactionDedup";
@@ -62,9 +71,11 @@ type DetailPost = ContentCardFieldsFragment & {
     level3?: string | null;
     rawLabel?: string | null;
   } | null;
-  location?: (ContentCardFieldsFragment["location"] & {
-    country?: string | null;
-  }) | null;
+  location?:
+    | (ContentCardFieldsFragment["location"] & {
+        country?: string | null;
+      })
+    | null;
 };
 
 const ContentDetailDocument = gql`
@@ -168,70 +179,56 @@ const ContentDetailDocument = gql`
 `;
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
-
-function fmt(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return String(n);
-}
-
-function avatarColors(id: string) {
-  const palette = [
-    "from-primary to-secondary",
-    "from-violet-500 to-purple-600",
-    "from-emerald-400 to-teal-500",
-    "from-orange-400 to-rose-500",
-    "from-sky-400 to-blue-600",
-  ];
-  return palette[parseInt(id.slice(-1), 16) % palette.length];
-}
-
-function initials(id: string) {
-  return id.slice(-2).toUpperCase();
-}
-
-function useIsDesktop() {
-  const [isDesktop, setIsDesktop] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    const query = window.matchMedia("(min-width: 768px)");
-    const update = () => setIsDesktop(query.matches);
-
-    update();
-    query.addEventListener("change", update);
-    return () => query.removeEventListener("change", update);
-  }, []);
-
-  return isDesktop;
-}
+// Shared utilities (fmt, avatarColors/initials, useIsDesktop) now live in
+// @/lib and @/hooks; imported above and aliased to keep call sites unchanged.
 
 // ─── CommentRow ────────────────────────────────────────────────────────────────
 
 function CommentRow({
   comment,
   currentUserId,
+  onToggleLike,
 }: {
   comment: CommentItem;
   currentUserId?: string;
+  onToggleLike?: (commentId: string) => void;
 }) {
   const isOwn = currentUserId && comment.creatorId === currentUserId;
-  // Until comment creator profiles are fetched, show a stable short alias
-  const displayName = isOwn ? "You" : `User ···${comment.creatorId.slice(-4)}`;
+  const authorName = [
+    comment.author?.profile?.firstName,
+    comment.author?.profile?.lastName,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+  const displayName =
+    authorName || (isOwn ? "You" : `User ···${comment.creatorId.slice(-4)}`);
+  const avatarUrl = comment.author?.profile?.avatar;
   return (
     <div className="flex gap-3 py-3">
       <div
-        className={`w-8 h-8 rounded-full bg-gradient-to-br ${avatarColors(comment.creatorId)} flex items-center justify-center flex-shrink-0 mt-0.5`}
+        className={`relative mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-linear-to-br ${avatarColors(comment.creatorId)}`}
       >
-        <span className="text-white text-xs font-bold">
-          {initials(comment.creatorId)}
-        </span>
+        {avatarUrl ? (
+          <Image
+            src={avatarUrl}
+            alt={displayName || "Comment author"}
+            fill
+            sizes="32px"
+            className="rounded-full object-cover"
+          />
+        ) : (
+          <span className="text-white text-xs font-bold">
+            {initials(comment.creatorId)}
+          </span>
+        )}
       </div>
       <div className="flex-1 min-w-0">
         <div className="bg-surface rounded-2xl rounded-tl-sm px-3 py-2">
           <span className="text-xs font-semibold text-default">
-            {displayName}
+            <span className="break-words">{displayName}</span>
           </span>
-          <p className="text-sm text-default leading-snug mt-0.5">
+          <p className="mt-0.5 break-words text-sm leading-snug text-default">
             {comment.text}
           </p>
         </div>
@@ -239,11 +236,21 @@ function CommentRow({
           <span className="text-xs text-muted-foreground">
             {timeAgo(comment.createdAt)}
           </span>
-          {(comment.likeCount ?? 0) > 0 && (
-            <span className="text-xs text-muted-foreground flex items-center gap-0.5">
-              ❤️ {comment.likeCount}
-            </span>
-          )}
+          <button
+            type="button"
+            onClick={() => onToggleLike?.(comment.id)}
+            className={[
+              "flex items-center gap-1 text-xs font-semibold transition-colors",
+              comment.isLikedByMe ? "text-rose-500" : "text-muted-foreground",
+            ].join(" ")}
+          >
+            <Heart
+              className="h-3.5 w-3.5"
+              fill={comment.isLikedByMe ? "currentColor" : "none"}
+              strokeWidth={2}
+            />
+            {comment.likeCount > 0 ? comment.likeCount : "Like"}
+          </button>
           <button className="text-xs font-semibold text-muted-foreground hover:text-primary transition-colors">
             Reply
           </button>
@@ -289,8 +296,8 @@ function MobileImageCarousel({
     <div
       ref={trackRef}
       onScroll={handleScroll}
-      className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
-      style={{ height: "100svh", scrollSnapType: "x mandatory" }}
+      className="flex h-full overflow-x-auto snap-x snap-mandatory scrollbar-hide"
+      style={{ scrollSnapType: "x mandatory" }}
     >
       {media.map((item, i) => {
         const src =
@@ -302,8 +309,7 @@ function MobileImageCarousel({
         return (
           <div
             key={i}
-            className="relative shrink-0 w-full snap-center bg-black"
-            style={{ height: "100svh" }}
+            className="relative h-full shrink-0 w-full snap-center bg-black"
           >
             {src && (
               <Image
@@ -637,6 +643,8 @@ export function ContentDetail({
   // ── Mutations ──────────────────────────────────────────────────────────────
   const client = useApolloClient();
   const [addCommentMutation] = useMutation(AddCommentDocument);
+  const [toggleLikeMutation] = useMutation(ToggleLikeDocument);
+  const [toggleCommentLikeMutation] = useMutation(ToggleCommentLikeDocument);
   const [trackInteractionMutation] = useMutation(gql`
     mutation TrackInteractionDetail(
       $contentId: String!
@@ -680,17 +688,23 @@ export function ContentDetail({
   const isDesktop = useIsDesktop();
   const [showCommentDrawer, setShowCommentDrawer] = useState(false);
   const keyboardInset = useKeyboardInset();
+  const resolvedLiked = post?.isLikedByMe ?? false;
+  const resolvedLikeCount = post?.stats?.likes ?? 0;
   const resolvedSaved =
     (post as typeof post & { isSavedByMe?: boolean })?.isSavedByMe ?? false;
   const resolvedSaveCount = post?.stats?.saves ?? 0;
   const [commentCountOverride, setCommentCountOverride] = useState<
     number | null
   >(null);
-  const resolvedCommentCount = commentCountOverride ?? post?.stats?.comments ?? 0;
+  const resolvedCommentCount =
+    commentCountOverride ?? post?.stats?.comments ?? 0;
   const [commentText, setCommentText] = useState("");
   const [optimisticComments, setOptimisticComments] = useState<CommentItem[]>(
     [],
   );
+  const [commentLikeOverrides, setCommentLikeOverrides] = useState<
+    Record<string, { liked: boolean; likeCount: number }>
+  >({});
   const [captionExpanded, setCaptionExpanded] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -750,7 +764,37 @@ export function ContentDetail({
     });
   }
 
+  function writeLikeToCache(liked: boolean, likeCount: number) {
+    client.cache.modify({
+      id: client.cache.identify({ __typename: "Content", id }),
+      fields: {
+        isLikedByMe: () => liked,
+        stats: (existing: any) => ({ ...existing, likes: likeCount }),
+      },
+    });
+  }
+
   // ── Save handler ───────────────────────────────────────────────────────────
+  async function handleLike() {
+    if (!requireAuth({ contentId: id, action: "like" })) return;
+
+    const wasLiked = resolvedLiked;
+    const nextLiked = !wasLiked;
+    const nextCount = resolvedLikeCount + (wasLiked ? -1 : 1);
+    writeLikeToCache(nextLiked, nextCount);
+
+    try {
+      const { data: res } = await toggleLikeMutation({
+        variables: { contentId: id },
+      });
+      if (res?.toggleLike) {
+        writeLikeToCache(res.toggleLike.liked, res.toggleLike.likeCount);
+      }
+    } catch {
+      writeLikeToCache(wasLiked, resolvedLikeCount);
+    }
+  }
+
   async function handleSave(collectionId?: string) {
     if (!requireAuth({ contentId: id, action: "save" })) return;
     const wasSaved = resolvedSaved;
@@ -765,6 +809,53 @@ export function ContentDetail({
         writeSaveToCache(res.toggleSave.saved, res.toggleSave.saveCount);
     } catch {
       writeSaveToCache(wasSaved, resolvedSaveCount);
+    }
+  }
+
+  async function handleCommentLike(commentId: string) {
+    if (!requireAuth({ contentId: id, action: "like" })) return;
+
+    const existingComment =
+      optimisticComments.find((comment) => comment.id === commentId) ??
+      serverComments.find((comment) => comment.id === commentId);
+    if (!existingComment) return;
+
+    const currentLiked =
+      commentLikeOverrides[commentId]?.liked ??
+      existingComment.isLikedByMe ??
+      false;
+    const currentLikeCount =
+      commentLikeOverrides[commentId]?.likeCount ?? existingComment.likeCount ?? 0;
+    const nextLiked = !currentLiked;
+    const nextLikeCount = Math.max(0, currentLikeCount + (currentLiked ? -1 : 1));
+
+    setCommentLikeOverrides((prev) => ({
+      ...prev,
+      [commentId]: { liked: nextLiked, likeCount: nextLikeCount },
+    }));
+
+    try {
+      const { data: res } = await toggleCommentLikeMutation({
+        variables: { commentId },
+      });
+      const result = res?.toggleCommentLike;
+      if (result) {
+        setCommentLikeOverrides((prev) => ({
+          ...prev,
+          [commentId]: {
+            liked: result.liked,
+            likeCount: result.likeCount,
+          },
+        }));
+      }
+    } catch {
+      setCommentLikeOverrides((prev) => ({
+        ...prev,
+        [commentId]: {
+          liked: currentLiked,
+          likeCount: currentLikeCount,
+        },
+      }));
     }
   }
 
@@ -841,7 +932,16 @@ export function ContentDetail({
       likeCount: 0,
       replyCount: 0,
       isLikedByMe: false,
-      author: null,
+      author: currentUser
+        ? {
+            id: currentUser.id,
+            profile: {
+              firstName: currentUser.profile?.firstName ?? null,
+              lastName: currentUser.profile?.lastName ?? null,
+              avatar: currentUser.profile?.avatar ?? null,
+            },
+          }
+        : null,
     };
     setOptimisticComments((p) => [optimistic, ...p]);
     setCommentCountOverride(resolvedCommentCount + 1);
@@ -909,7 +1009,6 @@ export function ContentDetail({
   const {
     following,
     toggle: handleFollow,
-    loading: followLoading,
   } = useFollow({
     userId: postCreatorForFollow?.id ?? data?.content?.creatorId ?? "",
     initialFollowing: postCreatorForFollow?.isFollowedByMe ?? false,
@@ -927,8 +1026,8 @@ export function ContentDetail({
             isSheet ? "h-full" : "h-screen",
           ].join(" ")}
         >
-          <div className="flex-1 bg-black p-8">
-            <Skeleton className="h-full w-full rounded-none bg-neutral-900" />
+          <div className="flex-1 bg-surface p-8">
+            <Skeleton className="h-full w-full rounded-2xl bg-default/8" />
           </div>
           <div
             className="flex shrink-0 flex-col border-l border-default bg-app"
@@ -953,33 +1052,68 @@ export function ContentDetail({
             </div>
           </div>
         </div>
-        <div className="md:hidden fixed inset-0 bg-black">
-          {/* Media area */}
-          <Skeleton className="absolute inset-0 rounded-none bg-neutral-900" />
-          {/* Back button */}
-          <Skeleton
-            className="absolute left-4 w-12 h-12 rounded-full bg-neutral-700"
-            style={{ top: "max(env(safe-area-inset-top,0px),16px)" }}
-          />
-          {/* Right action column */}
+        <div className="fixed inset-0 z-[70] overflow-y-auto bg-app md:hidden">
           <div
-            className="absolute right-4 flex flex-col items-center gap-6"
-            style={{ bottom: 180 }}
+            className="sticky top-0 z-10 flex items-center gap-2 border-b border-default bg-app px-3 pb-2.5"
+            style={{ paddingTop: "max(env(safe-area-inset-top, 0px), 10px)" }}
           >
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="flex flex-col items-center gap-1.5">
-                <Skeleton className="w-[52px] h-[52px] rounded-full bg-neutral-700" />
-                <Skeleton className="h-2.5 w-8 rounded-full bg-neutral-700" />
-              </div>
-            ))}
+            <Skeleton className="h-10 w-10 rounded-full bg-default/8" />
+            <div className="min-w-0 flex-1 space-y-2">
+              <Skeleton className="h-3.5 w-36 rounded-full bg-default/8" />
+              <Skeleton className="h-3 w-24 rounded-full bg-default/8" />
+            </div>
+            <Skeleton className="h-10 w-10 rounded-full bg-default/8" />
           </div>
-          {/* Bottom text overlay */}
-          <div className="absolute bottom-0 left-0 right-20 px-4 pb-10 flex flex-col gap-2.5">
-            <Skeleton className="h-3 w-20 rounded-full bg-neutral-700" />
-            <Skeleton className="h-5 w-3/4 rounded-full bg-neutral-700" />
-            <Skeleton className="h-7 w-1/2 rounded-full bg-neutral-700" />
-            <Skeleton className="h-3 w-full rounded-full bg-neutral-700" />
-            <Skeleton className="h-3 w-2/3 rounded-full bg-neutral-700" />
+
+          <div className="h-[56svh] min-h-[340px] max-h-[620px] bg-surface p-4">
+            <Skeleton className="h-full w-full rounded-3xl bg-default/8" />
+          </div>
+
+          <div className="space-y-4 px-4 py-4 pb-28">
+            <div className="space-y-3">
+              <Skeleton className="h-8 w-32 rounded-full bg-default/8" />
+              <Skeleton className="h-6 w-4/5 rounded-full bg-default/8" />
+              <Skeleton className="h-4 w-full rounded-full bg-default/8" />
+              <Skeleton className="h-4 w-3/4 rounded-full bg-default/8" />
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              {[...Array(3)].map((_, i) => (
+                <Skeleton
+                  key={i}
+                  className="h-16 rounded-xl border border-default bg-default/8"
+                />
+              ))}
+            </div>
+
+            <div className="flex items-center gap-3 rounded-2xl border border-default px-3 py-3">
+              <Skeleton className="h-10 w-10 rounded-full bg-default/8" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-3.5 w-28 rounded-full bg-default/8" />
+                <Skeleton className="h-3 w-20 rounded-full bg-default/8" />
+              </div>
+              <Skeleton className="h-8 w-24 rounded-full bg-default/8" />
+            </div>
+
+            <div className="space-y-3 rounded-2xl border border-default px-4 py-4">
+              <Skeleton className="h-3 w-16 rounded-full bg-default/8" />
+              <Skeleton className="h-12 w-full rounded-xl bg-default/8" />
+              <Skeleton className="h-12 w-full rounded-xl bg-default/8" />
+            </div>
+          </div>
+
+          <div
+            className="fixed inset-x-0 bottom-0 border-t border-default bg-app px-3 pt-2.5"
+            style={{
+              paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)",
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-11 w-11 rounded-full bg-default/8" />
+              <Skeleton className="h-11 w-11 rounded-full bg-default/8" />
+              <Skeleton className="h-11 w-11 rounded-full bg-default/8" />
+              <Skeleton className="h-11 flex-1 rounded-full bg-default/8" />
+            </div>
           </div>
         </div>
       </>
@@ -991,10 +1125,7 @@ export function ContentDetail({
       <div className="min-h-svh flex flex-col items-center justify-center gap-3 px-6 text-center">
         <div className="text-4xl">😕</div>
         <p className="text-default font-semibold">Post not found</p>
-        <button
-          onClick={goBack}
-          className="text-primary text-sm font-semibold"
-        >
+        <button onClick={goBack} className="text-primary text-sm font-semibold">
           Go back
         </button>
       </div>
@@ -1052,15 +1183,14 @@ export function ContentDetail({
       {!isOwnPost && (
         <button
           onClick={handleFollow}
-          disabled={followLoading}
           className={[
-            "text-xs font-semibold px-3.5 py-1.5 rounded-full border transition-all disabled:opacity-60",
+            "text-xs font-semibold px-3.5 py-1.5 rounded-full border transition-all",
             following
               ? "border-border text-muted-foreground bg-surface"
               : "border-primary text-primary hover:bg-primary/5",
           ].join(" ")}
         >
-          {followLoading ? "…" : following ? "Following" : "+ Follow"}
+          {following ? "Following" : "+ Follow"}
         </button>
       )}
 
@@ -1256,9 +1386,7 @@ export function ContentDetail({
         )}
         {specs.length > 0 && (
           <div>
-            <p className="text-xs font-semibold text-muted-foreground">
-              Specs
-            </p>
+            <p className="text-xs font-semibold text-muted-foreground">Specs</p>
             <dl className="mt-2 grid grid-cols-2 gap-2">
               {specs.slice(0, 8).map((spec) => (
                 <div
@@ -1283,6 +1411,29 @@ export function ContentDetail({
   // Desktop inline action row
   const DesktopActions = (
     <div className="hidden md:flex items-center gap-2 px-4 py-3 border-b border-default">
+      <button
+        onClick={handleLike}
+        className="flex lg:cursor-pointer items-center gap-1.5 px-4 py-2.5 rounded-full border text-xs font-semibold transition-all active:scale-95"
+        style={{
+          borderColor: resolvedLiked
+            ? "rgb(var(--brand-primary))"
+            : "rgb(var(--color-border))",
+          color: resolvedLiked
+            ? "rgb(var(--brand-primary))"
+            : "rgb(var(--color-text-default))",
+          backgroundColor: resolvedLiked
+            ? "rgb(var(--brand-primary) / 0.08)"
+            : "transparent",
+        }}
+      >
+        <Heart
+          className="w-4 h-4"
+          fill={resolvedLiked ? "rgb(var(--brand-primary))" : "none"}
+          strokeWidth={1.8}
+        />
+        <span>{resolvedLikeCount > 0 ? fmt(resolvedLikeCount) : "Like"}</span>
+      </button>
+
       {/* Save pill — outlined, active = filled primary (matches PostCard) */}
       <button
         onClick={() => handleSave()}
@@ -1304,9 +1455,7 @@ export function ContentDetail({
           fill={resolvedSaved ? "rgb(var(--brand-primary))" : "none"}
           strokeWidth={1.8}
         />
-        <span>
-          {resolvedSaveCount > 0 ? fmt(resolvedSaveCount) : "Save"}
-        </span>
+        <span>{resolvedSaveCount > 0 ? fmt(resolvedSaveCount) : "Save"}</span>
       </button>
 
       {/* Comment pill — scrolls to the comments section below */}
@@ -1371,8 +1520,8 @@ export function ContentDetail({
     </div>
   );
 
-  const CommentsSection = (
-    <div ref={commentsRef} className="px-4 pt-4">
+  const renderCommentsSection = (attachRef = true) => (
+    <div ref={attachRef ? commentsRef : undefined} className="px-4 pt-4">
       <h2 className="font-bold text-default text-sm mb-1">
         {resolvedCommentCount > 0
           ? `${fmt(resolvedCommentCount)} Comments`
@@ -1392,16 +1541,27 @@ export function ContentDetail({
           </p>
         </div>
       )}
-      <div className="divide-y divide-default">
-        {allComments.map((comment) => (
-          <CommentRow
-            key={comment.id}
-            comment={comment}
-            currentUserId={currentUser?.id}
-          />
-        ))}
+      <div className="divide-y divide-border/70">
+        {allComments.map((comment) => {
+          const override = commentLikeOverrides[comment.id];
+          const resolvedComment = override
+            ? {
+                ...comment,
+                isLikedByMe: override.liked,
+                likeCount: override.likeCount,
+              }
+            : comment;
+          return (
+            <CommentRow
+              key={comment.id}
+              comment={resolvedComment}
+              currentUserId={currentUser?.id}
+              onToggleLike={handleCommentLike}
+            />
+          );
+        })}
       </div>
-      <div ref={commentSentinelRef} className="h-1" />
+      <div ref={attachRef ? commentSentinelRef : undefined} className="h-1" />
       <div className="h-6" />
     </div>
   );
@@ -1622,7 +1782,7 @@ export function ContentDetail({
               {PostInfo}
               {DetailMeta}
               {DesktopActions}
-              {CommentsSection}
+              {renderCommentsSection()}
             </div>
 
             {/* Sticky comment input at bottom of right panel */}
@@ -1634,29 +1794,70 @@ export function ContentDetail({
             </div>
           </div>
 
-          {/* ── Chat column (sheet only) — in-place messaging, no navigation ─── */}
-          {isSheet && chatOpen && (
-            <div
-              className="flex flex-col border-l border-default bg-app overflow-hidden"
-              style={{ width: 400, flexShrink: 0 }}
-            >
-              <EmbeddedChatPanel
-                lang={lang}
-                contentId={id}
-                onClose={closeChat}
-              />
-            </div>
+          {/* ── Chat column (sheet only) — in-place messaging, no navigation.
+              Rendered unconditionally so InlineChatPanel can animate its exit;
+              contentId=null keeps it collapsed. ─── */}
+          {isSheet && (
+            <InlineChatPanel
+              lang={lang}
+              contentId={chatOpen ? id : null}
+              onClose={closeChat}
+              className="flex flex-col border-l border-default bg-app overflow-hidden h-full w-[400px] shrink-0"
+            />
           )}
         </div>
       )}
 
       {/* ════════════════════════════════════════════════════════
-          MOBILE LAYOUT  (< md) — fixed full-screen, no scroll
+          MOBILE LAYOUT  (< md) — full PDP in the intercepted route
       ════════════════════════════════════════════════════════ */}
       {isDesktop === false && (
-        <div className="fixed inset-0 bg-black overflow-hidden">
-          {/* ── Full-screen media ───────────────────────────────────────────── */}
-          <div className="absolute inset-0">
+        <div className="fixed inset-0 z-70 overflow-y-auto overscroll-contain bg-app">
+          <header
+            className="sticky top-0 z-40 flex items-center gap-2 bg-app/95 px-3 pb-2.5 backdrop-blur-md"
+            style={{ paddingTop: "max(env(safe-area-inset-top, 0px), 10px)" }}
+          >
+            <button
+              type="button"
+              onClick={goBack}
+              aria-label="Go back"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-default transition-colors active:bg-surface"
+            >
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2.5}
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+            </button>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-default">
+                {post.title}
+              </p>
+              {/* {creatorName ? (
+                <p className="truncate text-xs text-muted-foreground">
+                  {creatorName}
+                </p>
+              ) : null} */}
+            </div>
+            <button
+              type="button"
+              onClick={handleShare}
+              aria-label="Share post"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-default transition-colors active:bg-surface"
+            >
+              <Share2 className="h-5 w-5" strokeWidth={2} />
+            </button>
+          </header>
+
+          <section className="relative h-[56svh] min-h-85 max-h-155 bg-black">
             {isVideo && hlsUrl ? (
               <ContentVideo
                 hlsUrl={hlsUrl}
@@ -1677,36 +1878,12 @@ export function ContentDetail({
               />
             )}
 
-            {/* Back — top-left */}
-            <button
-              onClick={goBack}
-              className="absolute  z-30 w-12 h-12 rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center text-white"
-              style={{ top: "max(env(safe-area-inset-top, 0px), 16px)" }}
-            >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2.5}
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-            </button>
-
-            {/* Video mute — top-right */}
             {isVideo && (
               <button
+                type="button"
                 onClick={() => setVideoMuted(!muted)}
-                className="absolute z-30 w-12 h-12 rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center text-white"
-                style={{
-                  top: "max(env(safe-area-inset-top, 0px), 16px)",
-                  right: 16,
-                }}
+                aria-label={muted ? "Unmute video" : "Mute video"}
+                className="absolute right-4 top-4 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm"
               >
                 {muted ? (
                   <svg
@@ -1736,50 +1913,68 @@ export function ContentDetail({
               </button>
             )}
 
-            {/* Overlay: title + description + creator bottom-left */}
-            <div className="absolute bottom-0 left-0 right-0 z-20 px-4 pb-28 pt-20 bg-linear-to-t from-black/85 via-black/40 to-transparent">
-              {/* Creator name */}
-              {creatorName ? (
-                <p className="text-white/80 text-sm font-semibold mb-1 drop-shadow">
-                  {creatorName}
-                </p>
-              ) : null}
+            {!isVideo && media.length > 1 && (
+              <div className="absolute bottom-4 left-1/2 z-30 flex -translate-x-1/2 gap-1.5 rounded-full bg-black/35 px-2.5 py-2 backdrop-blur-sm">
+                {media.map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setImgIdx(i)}
+                    aria-label={`Show media ${i + 1}`}
+                    className={[
+                      "rounded-full transition-all",
+                      i === imgIdx
+                        ? "h-1.5 w-4 bg-white"
+                        : "h-1.5 w-1.5 bg-white/50",
+                    ].join(" ")}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
 
-              {/* Title */}
-              <h1 className="text-white font-bold text-xl leading-snug drop-shadow-md">
+          <main className="pb-32">
+            <section className="border-b border-default px-4 py-4">
+              {post.price && (
+                <div className="mb-2">
+                  <span
+                    className="text-2xl font-extrabold tracking-normal"
+                    style={{ color: "rgb(var(--brand-primary))" }}
+                  >
+                    {post.price.amount === 0
+                      ? "Free"
+                      : `${post.price.currency} ${post.price.amount.toLocaleString()}`}
+                  </span>
+                  {post.price.negotiable && (
+                    <span className="ml-2 text-sm font-semibold text-muted-foreground">
+                      Negotiable
+                    </span>
+                  )}
+                </div>
+              )}
+
+              <h1 className="text-xl font-bold leading-snug text-default">
                 {post.title}
               </h1>
 
-              {/* Price — larger, prominent */}
-              {post.price && (
-                <p className="text-white font-extrabold text-xl mt-1 drop-shadow-md">
-                  {post.price.amount === 0
-                    ? "Free"
-                    : `${post.price.currency} ${post.price.amount.toLocaleString()}`}
-                  {post.price.negotiable && (
-                    <span className="font-normal text-white/70 text-base ml-2">
-                      · negotiable
+              {fullLocation && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {fullLocation && (
+                    <span className="rounded-full bg-surface px-3 py-1 text-xs font-semibold text-muted-foreground">
+                      {fullLocation}
                     </span>
                   )}
-                </p>
+                </div>
               )}
 
-              {/* Description — 2 lines, tap "more" to expand like LinkedIn */}
               {caption && (
-                <p
-                  className="text-white/90 text-base leading-relaxed mt-2 drop-shadow"
-                  style={{ textShadow: "0 1px 3px rgba(0,0,0,0.7)" }}
-                >
-                  <span className={captionExpanded ? "" : "line-clamp-2"}>
-                    {caption}
-                  </span>
+                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                  {displayCaption}
                   {isLongCaption && (
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCaptionExpanded((v) => !v);
-                      }}
-                      className="text-white/60 font-semibold ml-1 underline underline-offset-2"
+                      type="button"
+                      onClick={() => setCaptionExpanded((v) => !v)}
+                      className="ml-1 font-semibold text-primary"
                     >
                       {captionExpanded ? "less" : "more"}
                     </button>
@@ -1787,111 +1982,123 @@ export function ContentDetail({
                 </p>
               )}
 
-              {/* Dot indicators for image carousel */}
-              {!isVideo && media.length > 1 && (
-                <div className="flex gap-1 mt-3">
-                  {media.map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setImgIdx(i)}
-                      className={[
-                        "rounded-full transition-all",
-                        i === imgIdx
-                          ? "w-4 h-1.5 bg-white"
-                          : "w-1.5 h-1.5 bg-white/50",
-                      ].join(" ")}
-                    />
+              {post.hashtags && post.hashtags.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {post.hashtags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="text-xs font-semibold text-muted-foreground"
+                    >
+                      #{tag}
+                    </span>
                   ))}
                 </div>
               )}
-            </div>
 
-            {/* ── Bottom action bar ──────────────────────────────────────────── */}
-            <div
-              className="absolute inset-x-0 bottom-0 z-30"
-              style={{
-                paddingBottom: "max(env(safe-area-inset-bottom, 0px), 10px)",
-              }}
-            >
-              <div className="mx-3 mb-2 flex items-center justify-around gap-1 rounded-full bg-black/55 px-2 py-2 backdrop-blur-md">
-                {/* Save */}
-                <ActionPill
-                  label={resolvedSaveCount > 0 ? fmt(resolvedSaveCount) : "Save"}
-                  active={resolvedSaved}
-                  onClick={() => handleSave()}
-                >
-                  <Bookmark
-                    className="h-6 w-6"
-                    fill={resolvedSaved ? "rgb(var(--brand-primary))" : "none"}
-                    stroke={resolvedSaved ? "rgb(var(--brand-primary))" : "white"}
-                    strokeWidth={1.9}
-                  />
-                </ActionPill>
-
-                {/* Comment */}
-                <ActionPill
-                  label={
-                    resolvedCommentCount > 0
-                      ? fmt(resolvedCommentCount)
-                      : "Comment"
-                  }
-                  onClick={() => setShowCommentDrawer(true)}
-                >
-                  <MessageCircle className="h-6 w-6 text-white" strokeWidth={1.9} />
-                </ActionPill>
-
-                {/* Message seller */}
-                {!isOwnPost && (
-                  <ActionPill
-                    label="Message"
-                    onClick={() => {
-                      if (!requireAuth({ contentId: id, action: "comment" }))
-                        return;
-                      router.push(`/${lang}/notifications?contentId=${id}`);
-                    }}
-                  >
-                    <Send className="h-6 w-6 text-white" strokeWidth={1.9} />
-                  </ActionPill>
-                )}
-
-                {/* Share */}
-                <ActionPill label="Share" onClick={handleShare}>
-                  <Share2 className="h-6 w-6 text-white" strokeWidth={1.9} />
-                </ActionPill>
-
-                {/* Download */}
-                {post.allowDownload && (
-                  <ActionPill
-                    label={isDownloading ? "…" : "Save"}
-                    onClick={handleDownload}
-                    disabled={isDownloading}
-                  >
-                    {isDownloading ? (
-                      <svg
-                        className="h-6 w-6 animate-spin text-white"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="3"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                        />
-                      </svg>
-                    ) : (
-                      <Download className="h-6 w-6 text-white" strokeWidth={1.9} />
-                    )}
-                  </ActionPill>
-                )}
+              <div className="mt-4 grid grid-cols-3 divide-x divide-default rounded-lg border border-default bg-surface">
+                <div className="px-2 py-3 text-center">
+                  <p className="text-sm font-bold text-default">
+                    {fmt(post.stats.views)}
+                  </p>
+                  <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">
+                    Views
+                  </p>
+                </div>
+                <div className="px-2 py-3 text-center">
+                  <p className="text-sm font-bold text-default">
+                    {fmt(resolvedLikeCount)}
+                  </p>
+                  <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">
+                    Likes
+                  </p>
+                </div>
+                <div className="px-2 py-3 text-center">
+                  <p className="text-sm font-bold text-default">
+                    {fmt(resolvedCommentCount)}
+                  </p>
+                  <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">
+                    Comments
+                  </p>
+                </div>
               </div>
+            </section>
+
+            <section className="border-b border-default">{CreatorRow}</section>
+            {DetailMeta}
+            {renderCommentsSection()}
+          </main>
+
+          <div
+            className="fixed inset-x-0 bottom-0 z-40 border-t border-default bg-app/95 px-3 pt-2.5 backdrop-blur-md"
+            style={{
+              paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)",
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleSave()}
+                aria-label={resolvedSaved ? "Unsave post" : "Save post"}
+                className={[
+                  "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border transition-colors",
+                  resolvedSaved
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-default text-default",
+                ].join(" ")}
+              >
+                <Bookmark
+                  className="h-5 w-5"
+                  fill={resolvedSaved ? "currentColor" : "none"}
+                  strokeWidth={2}
+                />
+              </button>
+              <button
+                type="button"
+                onClick={handleLike}
+                aria-label={resolvedLiked ? "Unlike post" : "Like post"}
+                className={[
+                  "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border transition-colors",
+                  resolvedLiked
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-default text-default",
+                ].join(" ")}
+              >
+                <Heart
+                  className="h-5 w-5"
+                  fill={resolvedLiked ? "currentColor" : "none"}
+                  strokeWidth={2}
+                />
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowCommentDrawer(true)}
+                aria-label="Open comments"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-default text-default transition-colors active:bg-surface"
+              >
+                <MessageCircle className="h-5 w-5" strokeWidth={2} />
+              </button>
+              {!isOwnPost ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!requireAuth({ contentId: id })) return;
+                    router.push(`/${lang}/notifications/${id}?source=content`);
+                  }}
+                  className="flex min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-bold text-white transition-transform active:scale-[0.98]"
+                >
+                  <Send className="h-4 w-4" strokeWidth={2.2} />
+                  Message seller
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleShare}
+                  className="flex min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-bold text-white transition-transform active:scale-[0.98]"
+                >
+                  <Share2 className="h-4 w-4" strokeWidth={2.2} />
+                  Share
+                </button>
+              )}
             </div>
           </div>
 
@@ -1907,44 +2114,11 @@ export function ContentDetail({
             }
             input={CommentInput}
           >
-            {CommentsSection}
+            {renderCommentsSection(false)}
           </CommentsSheet>
         </div>
       )}
     </div>
-  );
-}
-
-// ─── ActionPill — bottom bar button ─────────────────────────────────────────────
-
-function ActionPill({
-  label,
-  active,
-  disabled,
-  onClick,
-  children,
-}: {
-  label: string;
-  active?: boolean;
-  disabled?: boolean;
-  onClick?: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className="flex flex-1 flex-col items-center gap-0.5 rounded-full py-1 transition-transform active:scale-95 disabled:opacity-60"
-    >
-      {children}
-      <span
-        className="text-[11px] font-semibold leading-none drop-shadow"
-        style={{ color: active ? "rgb(var(--brand-primary))" : "white" }}
-      >
-        {label}
-      </span>
-    </button>
   );
 }
 
@@ -1998,8 +2172,7 @@ function CommentsSheet({
         }`}
         style={{
           bottom: keyboardInset,
-          transition:
-            "transform 0.3s ease-out, bottom 0.15s ease-out",
+          transition: "transform 0.3s ease-out, bottom 0.15s ease-out",
         }}
       >
         {/* Grabber + header */}
