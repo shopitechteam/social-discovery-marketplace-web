@@ -596,7 +596,16 @@ export function useInbox(lang: string) {
    * opening a chat directly from a post's "Message" button.
    */
   const ensureConversationByContent = useCallback(
-    async (contentId: string) => {
+    async (
+      contentId: string,
+      options?: {
+        /**
+         * When embedded (e.g. the content sheet's chat column) the browser URL
+         * must stay on the post route, so skip the history rewrite below.
+         */
+        skipUrlSync?: boolean;
+      },
+    ) => {
       // Dedupe only the in-flight request (the resolving effect can fire twice
       // for the same mount). The ref is released in `finally` so re-opening the
       // SAME post later — e.g. tapping "Message" again after returning to the
@@ -614,8 +623,9 @@ export function useInbox(lang: string) {
 
         setSelectedConversationId(conversation.id);
         setActiveConversation(conversation);
-        // Replace the URL without a navigation so we stay on the same chat screen.
-        if (typeof window !== "undefined") {
+        // Replace the URL without a navigation so we stay on the same chat
+        // screen. Skipped when embedded so the post route stays in the URL.
+        if (!options?.skipUrlSync && typeof window !== "undefined") {
           window.history.replaceState(
             window.history.state,
             "",

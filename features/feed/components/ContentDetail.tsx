@@ -9,8 +9,17 @@ import {
   Send,
   Share2,
   X,
+  MoreHorizontal,
+  Link2,
+  Flag,
 } from "lucide-react";
 import { gql } from "@apollo/client";
+import { toast } from "sonner";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useKeyboardInset } from "@/hooks/useKeyboardInset";
 
 import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
@@ -35,6 +44,7 @@ import { useHlsVideo } from "@/lib/useHlsVideo";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BufferSpinner } from "./BufferSpinner";
 import { useFeedPreferencesStore } from "@/stores/feedPreferences";
+import { EmbeddedChatPanel } from "@/features/messaging/components/EmbeddedChatPanel";
 import { VideoProgressBar } from "./VideoProgressBar";
 import { usePageFocused } from "../hooks/usePageFocused";
 import { shouldFire } from "@/lib/interactionDedup";
@@ -571,6 +581,8 @@ interface Props {
   lang: string;
   desktopMode?: "page" | "sheet";
   onRequestClose?: () => void;
+  /** Sheet mode: notifies the host so it can widen the panel for the chat column. */
+  onChatOpenChange?: (open: boolean) => void;
 }
 
 export function ContentDetail({
@@ -578,12 +590,28 @@ export function ContentDetail({
   lang,
   desktopMode = "page",
   onRequestClose,
+  onChatOpenChange,
 }: Props) {
   const router = useRouter();
   const goBack = onRequestClose ?? (() => router.back());
   const { requireAuth } = useAuthGuard(lang);
   const currentUser = useAuthStore((s) => s.user);
   const isSheet = desktopMode === "sheet";
+  // Stored in state (not a ref) so the Popover portal target is stable across
+  // renders and available the first time the menu opens.
+  const [rootEl, setRootEl] = useState<HTMLDivElement | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
+
+  const openChat = useCallback(() => {
+    if (!requireAuth({ contentId: id })) return;
+    setChatOpen(true);
+    onChatOpenChange?.(true);
+  }, [requireAuth, id, onChatOpenChange]);
+
+  const closeChat = useCallback(() => {
+    setChatOpen(false);
+    onChatOpenChange?.(false);
+  }, [onChatOpenChange]);
 
   // ── Content query ──────────────────────────────────────────────────────────
   const { data, loading } = useQuery(ContentDetailDocument as any, {
@@ -637,9 +665,15 @@ export function ContentDetail({
       }
     }
   `) as any;
+  const [reportMutation] = useMutation(gql`
+    mutation ReportContentDetail($contentId: String!) {
+      reportContent(contentId: $contentId)
+    }
+  `);
 
   // ── Local state ────────────────────────────────────────────────────────────
   const post = data?.content;
+  const [menuOpen, setMenuOpen] = useState(false);
   const [imgIdx, setImgIdx] = useState(0);
   const muted = useFeedPreferencesStore((s) => s.videoMuted);
   const setVideoMuted = useFeedPreferencesStore((s) => s.setVideoMuted);
@@ -742,6 +776,23 @@ export function ContentDetail({
         .share({ title: post.title, url: window.location.href })
         .catch(() => {});
     }
+  }
+
+  async function handleCopyLink() {
+    try {
+      const url =
+        typeof window !== "undefined"
+          ? `${window.location.origin}/${lang}/content/${id}`
+          : "";
+      await navigator.clipboard?.writeText(url);
+      toast.success("Link copied");
+    } catch {
+      toast.error("Couldn't copy link");
+    }
+  }
+
+  async function handleReport() {
+    await reportMutation({ variables: { contentId: id } });
   }
 
   async function handleDownload() {
@@ -1012,6 +1063,83 @@ export function ContentDetail({
           {followLoading ? "…" : following ? "Following" : "+ Follow"}
         </button>
       )}
+
+      {/* More options — matches PostCard's 3-dot menu beside Follow */}
+      <Popover open={menuOpen} onOpenChange={setMenuOpen}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className="w-8 h-8 lg:cursor-pointer flex items-center justify-center rounded-full hover:bg-surface text-muted-foreground transition-colors"
+            aria-label="Post options"
+          >
+            <MoreHorizontal className="w-5 h-5" strokeWidth={2.6} />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent
+          align="end"
+          sideOffset={8}
+          container={isSheet ? rootEl : undefined}
+          className="w-52 p-1.5 rounded-2xl border border-border bg-elevated shadow-lg z-[80]"
+        >
+          <button
+            type="button"
+            onClick={() => {
+              setMenuOpen(false);
+              void handleCopyLink();
+            }}
+            className="flex lg:cursor-pointer w-full text-sm items-center gap-3 px-4 py-3 rounded-xl font-semibold text-default hover:bg-surface transition-colors"
+          >
+            <Link2
+              className="w-4 h-4 shrink-0 text-muted-foreground"
+              strokeWidth={2.2}
+            />
+            Copy link
+          </button>
+
+          {post.allowDownload && (
+            <button
+              type="button"
+              onClick={handleDownload}
+              disabled={isDownloading}
+              className="flex lg:cursor-pointer w-full text-sm items-center gap-3 px-4 py-3 rounded-xl font-semibold text-default hover:bg-surface transition-colors disabled:opacity-60"
+            >
+              <Download className="w-4 h-4 shrink-0" strokeWidth={1.8} />
+              {isDownloading ? "Downloading…" : "Download"}
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => {
+              setMenuOpen(false);
+              handleShare();
+            }}
+            className="flex lg:cursor-pointer w-full text-sm items-center gap-3 px-4 py-3 rounded-xl font-semibold text-default hover:bg-surface transition-colors"
+          >
+            <Share2
+              className="w-4 h-4 shrink-0 text-muted-foreground"
+              strokeWidth={2.2}
+            />
+            Share content
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (!requireAuth({ contentId: id })) return;
+              setMenuOpen(false);
+              void handleReport().then(() => toast.success("Report submitted"));
+            }}
+            className="flex lg:cursor-pointer w-full text-sm items-center gap-3 px-4 py-3 rounded-xl font-semibold text-default hover:bg-surface transition-colors"
+          >
+            <Flag
+              className="w-4 h-4 shrink-0 text-muted-foreground"
+              strokeWidth={2.2}
+            />
+            Report listing
+          </button>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 
@@ -1154,123 +1282,75 @@ export function ContentDetail({
 
   // Desktop inline action row
   const DesktopActions = (
-    <div className="hidden md:flex items-center gap-3 px-4 py-3 border-b border-default">
-      {/* Save */}
+    <div className="hidden md:flex items-center gap-2 px-4 py-3 border-b border-default">
+      {/* Save pill — outlined, active = filled primary (matches PostCard) */}
       <button
         onClick={() => handleSave()}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all"
+        className="flex lg:cursor-pointer items-center gap-1.5 px-4 py-2.5 rounded-full border text-xs font-semibold transition-all active:scale-95"
         style={{
           borderColor: resolvedSaved
             ? "rgb(var(--brand-primary))"
             : "rgb(var(--color-border))",
           color: resolvedSaved
             ? "rgb(var(--brand-primary))"
-            : "rgb(var(--color-text-muted))",
+            : "rgb(var(--color-text-default))",
           backgroundColor: resolvedSaved
-            ? "rgb(var(--brand-primary) / 0.06)"
+            ? "rgb(var(--brand-primary) / 0.08)"
             : "transparent",
         }}
       >
         <Bookmark
           className="w-4 h-4"
-          fill={resolvedSaved ? "currentColor" : "none"}
+          fill={resolvedSaved ? "rgb(var(--brand-primary))" : "none"}
           strokeWidth={1.8}
         />
-        <span className="text-xs font-semibold">
-          {resolvedSaveCount > 0 ? `${fmt(resolvedSaveCount)} Saved` : "Save"}
+        <span>
+          {resolvedSaveCount > 0 ? fmt(resolvedSaveCount) : "Save"}
         </span>
       </button>
-      {/* Comment count */}
-      <div className="flex items-center gap-1.5 text-muted-foreground">
-        <svg
-          className="w-4 h-4"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={1.8}
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-          />
-        </svg>
-        <span className="text-xs">
-          {resolvedCommentCount > 0
-            ? `${fmt(resolvedCommentCount)} Comments`
-            : "Comments"}
-        </span>
-      </div>
-      {/* Spacer */}
-      <div className="flex-1" />
-      {/* Share */}
+
+      {/* Comment pill — scrolls to the comments section below */}
       <button
-        onClick={handleShare}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-default text-muted-foreground hover:border-primary hover:text-primary transition-all text-xs font-semibold"
+        onClick={() =>
+          commentsRef.current?.scrollIntoView({ behavior: "smooth" })
+        }
+        className="flex lg:cursor-pointer items-center gap-1.5 px-4 py-2.5 rounded-full border border-border text-xs font-semibold text-default transition-all active:scale-95"
       >
         <svg
-          className="w-4 h-4"
+          xmlns="http://www.w3.org/2000/svg"
           fill="none"
-          stroke="currentColor"
-          strokeWidth={1.8}
           viewBox="0 0 24 24"
+          strokeWidth={1.5}
+          stroke="currentColor"
+          className="size-4"
         >
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
-            d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+            d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z"
           />
         </svg>
-        Share
+        {resolvedCommentCount > 0 ? (
+          <span>{fmt(resolvedCommentCount)}</span>
+        ) : (
+          <span>Comment</span>
+        )}
       </button>
-      {post.allowDownload && (
-        <button
-          onClick={handleDownload}
-          disabled={isDownloading}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-default text-muted-foreground hover:border-primary hover:text-primary transition-all text-xs font-semibold disabled:opacity-60"
-        >
-          {isDownloading ? (
-            <>
-              <svg
-                className="w-4 h-4 animate-spin"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="3"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                />
-              </svg>
-              Downloading…
-            </>
-          ) : (
-            <>
-              <Download className="w-4 h-4" strokeWidth={1.8} />
-              Download
-            </>
-          )}
-        </button>
-      )}
+
+      {/* Message — primary, takes remaining width (matches PostCard).
+          In the desktop sheet this opens an in-place chat column instead of
+          navigating away; on mobile/page it routes to the full chat screen. */}
       {!isOwnPost && (
         <button
           onClick={() => {
-            if (!requireAuth({ contentId: id, action: "comment" })) return;
-            router.push(`/${lang}/notifications?contentId=${id}`);
+            if (isSheet) {
+              openChat();
+              return;
+            }
+            if (!requireAuth({ contentId: id })) return;
+            router.push(`/${lang}/notifications/${id}?source=content`);
           }}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-white transition-all"
-          style={{
-            background:
-              "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary, var(--brand-primary))))",
-          }}
+          className="flex-1 lg:cursor-pointer flex items-center justify-center gap-1.5 px-8 py-2.5 rounded-full bg-primary/90 text-xs font-semibold text-[#f1f1f1] transition-all active:scale-95"
         >
           <svg
             className="w-4 h-4"
@@ -1282,10 +1362,10 @@ export function ContentDetail({
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
-              d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
             />
           </svg>
-          Message Seller
+          Message
         </button>
       )}
     </div>
@@ -1383,6 +1463,7 @@ export function ContentDetail({
 
   return (
     <div
+      ref={setRootEl}
       className={[
         "flex flex-col bg-app",
         isSheet ? "h-full min-h-0" : "min-h-svh",
@@ -1552,6 +1633,20 @@ export function ContentDetail({
               {CommentInput}
             </div>
           </div>
+
+          {/* ── Chat column (sheet only) — in-place messaging, no navigation ─── */}
+          {isSheet && chatOpen && (
+            <div
+              className="flex flex-col border-l border-default bg-app overflow-hidden"
+              style={{ width: 400, flexShrink: 0 }}
+            >
+              <EmbeddedChatPanel
+                lang={lang}
+                contentId={id}
+                onClose={closeChat}
+              />
+            </div>
+          )}
         </div>
       )}
 

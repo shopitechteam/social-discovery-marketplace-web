@@ -39,6 +39,12 @@ interface Props {
   isConversationActionPending: boolean;
   requireAuth: () => boolean;
   onBack: () => void;
+  /**
+   * Embedded inside the desktop content sheet: the desktop "Back to tabs"
+   * button collapses the chat column (`onBack`) instead of navigating to the
+   * inbox, and the mobile back arrow is shown so the affordance is always there.
+   */
+  embedded?: boolean;
   onComposerChange: (value: string) => void;
   onSend: () => void;
   onQuickReply: (text: string) => void;
@@ -81,6 +87,7 @@ export function ChatDetail({
   isConversationActionPending,
   requireAuth,
   onBack,
+  embedded = false,
   onComposerChange,
   onSend,
   onQuickReply,
@@ -178,25 +185,27 @@ export function ChatDetail({
               <button
                 type="button"
                 onClick={onBack}
-                className="md:hidden"
-                aria-label="Back to inbox"
+                className={embedded ? "" : "md:hidden"}
+                aria-label={embedded ? "Close chat" : "Back to inbox"}
               >
                 <ArrowLeft size={20} />
               </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  router.push(`/${lang}/notifications`);
-                }}
-                className="hidden items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors md:inline-flex"
-                style={{ borderColor: "rgb(var(--color-border))" }}
-                aria-label="Back to inbox tabs"
-                title="Back to inbox tabs"
-              >
-                <ChevronLeft size={16} />
-                Back to tabs
-              </button>
+              {!embedded && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    router.push(`/${lang}/notifications`);
+                  }}
+                  className="hidden items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors md:inline-flex"
+                  style={{ borderColor: "rgb(var(--color-border))" }}
+                  aria-label="Back to inbox tabs"
+                  title="Back to inbox tabs"
+                >
+                  <ChevronLeft size={16} />
+                  Back to tabs
+                </button>
+              )}
 
               {/* While resolving from a content id the participant isn't known
                   yet — show a subtle skeleton instead of a fake "Shopi user". */}

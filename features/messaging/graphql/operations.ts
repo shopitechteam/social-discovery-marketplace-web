@@ -4,6 +4,53 @@ import { gql } from "@apollo/client";
 // Extracted verbatim from the original InboxScreen — operation names unchanged
 // so any Apollo cache behavior stays identical.
 
+// `Content` is normalised by id in the Apollo cache and shared with the feed /
+// content-detail queries. Every conversation `content` selection MUST request
+// the same nested fields those queries read (price.negotiable, location.country,
+// media.mediaType, …) — otherwise writing a conversation result clobbers the
+// shared Content entry and Apollo throws "Missing field X while writing result".
+// Keep this fragment as the single source of truth for conversation content.
+const CONVERSATION_CONTENT_FIELDS = gql`
+  fragment ConversationContentFields on Content {
+    id
+    title
+    price {
+      amount
+      currency
+      negotiable
+    }
+    location {
+      country
+      county
+      subregion
+      placeName
+      formattedAddress
+    }
+    media {
+      mediaType
+      url
+      imageUrl
+      thumbnailUrl
+      sortOrder
+      displayWidth
+      displayHeight
+      muxMeta {
+        playbackId
+        duration
+        aspectRatio
+        thumbnailUrl
+        animatedThumbnailUrl
+      }
+      r2Variants {
+        url
+        variant
+        width
+        height
+      }
+    }
+  }
+`;
+
 export const MY_DIRECT_CONVERSATIONS = gql`
   query MyDirectConversationsInbox($limit: Int!) {
     myDirectConversations(limit: $limit) {
@@ -33,32 +80,11 @@ export const MY_DIRECT_CONVERSATIONS = gql`
         }
       }
       content {
-        id
-        title
-        price {
-          amount
-          currency
-        }
-        location {
-          placeName
-          county
-          subregion
-        }
-        media {
-          thumbnailUrl
-          imageUrl
-          muxMeta {
-            thumbnailUrl
-            playbackId
-          }
-          r2Variants {
-            url
-            variant
-          }
-        }
+        ...ConversationContentFields
       }
     }
   }
+  ${CONVERSATION_CONTENT_FIELDS}
 `;
 
 export const DIRECT_CONVERSATION = gql`
@@ -90,32 +116,11 @@ export const DIRECT_CONVERSATION = gql`
         }
       }
       content {
-        id
-        title
-        price {
-          amount
-          currency
-        }
-        location {
-          placeName
-          county
-          subregion
-        }
-        media {
-          thumbnailUrl
-          imageUrl
-          muxMeta {
-            thumbnailUrl
-            playbackId
-          }
-          r2Variants {
-            url
-            variant
-          }
-        }
+        ...ConversationContentFields
       }
     }
   }
+  ${CONVERSATION_CONTENT_FIELDS}
 `;
 
 export const DIRECT_MESSAGES = gql`
@@ -192,32 +197,11 @@ export const ENSURE_DIRECT_CONVERSATION = gql`
       otherParticipantOnline
       otherParticipantLastSeenAt
       content {
-        id
-        title
-        price {
-          amount
-          currency
-        }
-        location {
-          placeName
-          county
-          subregion
-        }
-        media {
-          thumbnailUrl
-          imageUrl
-          muxMeta {
-            thumbnailUrl
-            playbackId
-          }
-          r2Variants {
-            url
-            variant
-          }
-        }
+        ...ConversationContentFields
       }
     }
   }
+  ${CONVERSATION_CONTENT_FIELDS}
 `;
 
 export const SEND_DIRECT_MESSAGE = gql`
@@ -307,32 +291,11 @@ export const BLOCK_DIRECT_CONVERSATION = gql`
         }
       }
       content {
-        id
-        title
-        price {
-          amount
-          currency
-        }
-        location {
-          placeName
-          county
-          subregion
-        }
-        media {
-          thumbnailUrl
-          imageUrl
-          muxMeta {
-            thumbnailUrl
-            playbackId
-          }
-          r2Variants {
-            url
-            variant
-          }
-        }
+        ...ConversationContentFields
       }
     }
   }
+  ${CONVERSATION_CONTENT_FIELDS}
 `;
 
 export const UNBLOCK_DIRECT_CONVERSATION = gql`
@@ -364,32 +327,11 @@ export const UNBLOCK_DIRECT_CONVERSATION = gql`
         }
       }
       content {
-        id
-        title
-        price {
-          amount
-          currency
-        }
-        location {
-          placeName
-          county
-          subregion
-        }
-        media {
-          thumbnailUrl
-          imageUrl
-          muxMeta {
-            thumbnailUrl
-            playbackId
-          }
-          r2Variants {
-            url
-            variant
-          }
-        }
+        ...ConversationContentFields
       }
     }
   }
+  ${CONVERSATION_CONTENT_FIELDS}
 `;
 
 export const MARK_DIRECT_CONVERSATION_DEAL = gql`
@@ -421,32 +363,11 @@ export const MARK_DIRECT_CONVERSATION_DEAL = gql`
         }
       }
       content {
-        id
-        title
-        price {
-          amount
-          currency
-        }
-        location {
-          placeName
-          county
-          subregion
-        }
-        media {
-          thumbnailUrl
-          imageUrl
-          muxMeta {
-            thumbnailUrl
-            playbackId
-          }
-          r2Variants {
-            url
-            variant
-          }
-        }
+        ...ConversationContentFields
       }
     }
   }
+  ${CONVERSATION_CONTENT_FIELDS}
 `;
 
 export const REPORT_DIRECT_CONVERSATION = gql`
