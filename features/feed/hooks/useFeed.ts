@@ -27,7 +27,7 @@ export function useForYouFeed() {
       // pagination doesn't re-trigger a page-1 network read.
       fetchPolicy: "cache-and-network",
       nextFetchPolicy: "cache-first",
-      notifyOnNetworkStatusChange: true,
+      //notifyOnNetworkStatusChange: true,
     },
   );
 
@@ -87,19 +87,25 @@ export function useFollowingFeed() {
   };
 }
 
+type NearbyCoordinates = {
+  latitude: number;
+  longitude: number;
+};
+
 export function useNearbyFeed(
-  county: string | null,
-  subregion?: string | null,
+  coordinates: NearbyCoordinates | null,
+  radiusKm: number,
 ) {
   const { data, loading, error, fetchMore, networkStatus } = useQuery(
     LocalFeedDocument,
     {
       variables: {
-        county: county ?? "",
-        subregion: subregion ?? undefined,
+        latitude: coordinates?.latitude,
+        longitude: coordinates?.longitude,
+        radiusKm,
         limit: PAGE_SIZE,
       },
-      skip: !county,
+      skip: !coordinates,
       // See useForYouFeed: cache-and-network restores instantly + refreshes in
       // the background; mergeFeedPage keeps the accumulated window stable.
       fetchPolicy: "cache-and-network",
@@ -112,17 +118,19 @@ export function useNearbyFeed(
   const pageInfo = data?.localFeed?.pageInfo;
 
   const loadMore = useCallback(() => {
+    if (!coordinates) return;
     if (!pageInfo?.hasNextPage || !pageInfo.endCursor) return;
     if (networkStatus === NetworkStatus.fetchMore) return;
     fetchMore({
       variables: {
-        county: county ?? "",
-        subregion: subregion ?? undefined,
+        latitude: coordinates.latitude,
+        longitude: coordinates.longitude,
+        radiusKm,
         limit: PAGE_SIZE,
         after: pageInfo.endCursor,
       },
     });
-  }, [fetchMore, pageInfo, county, subregion, networkStatus]);
+  }, [fetchMore, pageInfo, coordinates, radiusKm, networkStatus]);
 
   return {
     items,

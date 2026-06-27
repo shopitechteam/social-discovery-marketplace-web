@@ -20,14 +20,13 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { SHIMMER, SHIMMER_AVATAR, SHIMMER_PORTRAIT } from "@/lib/shimmer";
 import {
-  GetContentDocument,
   GetCommentsDocument,
   AddCommentDocument,
   ShareContentDocument,
   ViewContentDocument,
 } from "@/types/__generated__/graphql";
 import type {
-  GetContentQuery,
+  ContentCardFieldsFragment,
   GetCommentsQuery,
 } from "@/types/__generated__/graphql";
 import { useAuthStore } from "@/stores/auth";
@@ -42,7 +41,121 @@ import { shouldFire } from "@/lib/interactionDedup";
 import { timeAgoLong as timeAgo } from "@/lib/time";
 
 type CommentItem = NonNullable<GetCommentsQuery["comments"]["items"]>[number];
-type DetailPost = NonNullable<GetContentQuery["content"]>;
+type DetailPost = ContentCardFieldsFragment & {
+  categoryId?: string | null;
+  specs?: Array<{ key: string; value: string }>;
+  aiClassification?: {
+    categoryId?: string | null;
+    confidence?: number | null;
+    level1?: string | null;
+    level2?: string | null;
+    level3?: string | null;
+    rawLabel?: string | null;
+  } | null;
+  location?: (ContentCardFieldsFragment["location"] & {
+    country?: string | null;
+  }) | null;
+};
+
+const ContentDetailDocument = gql`
+  query ContentDetailPdp($id: String!) {
+    content(id: $id) {
+      id
+      type
+      source
+      isLive
+      tiktokEmbed {
+        videoId
+        shareUrl
+        coverImageUrl
+        authorUsername
+        authorName
+        title
+        duration
+      }
+      title
+      caption
+      hashtags
+      creatorId
+      categoryId
+      allowDownload
+      hdEnabled
+      createdAt
+      creator {
+        id
+        username
+        isVerified
+        isFollowedByMe
+        followerCount
+        profile {
+          firstName
+          lastName
+          avatar
+        }
+      }
+      media {
+        mediaType
+        url
+        imageUrl
+        thumbnailUrl
+        sortOrder
+        displayWidth
+        displayHeight
+        muxMeta {
+          playbackId
+          duration
+          aspectRatio
+          thumbnailUrl
+          animatedThumbnailUrl
+        }
+        r2Variants {
+          url
+          variant
+          width
+          height
+        }
+      }
+      price {
+        amount
+        currency
+        negotiable
+      }
+      specs {
+        key
+        value
+      }
+      aiClassification {
+        categoryId
+        confidence
+        level1
+        level2
+        level3
+        rawLabel
+      }
+      stats {
+        views
+        likes
+        shares
+        saves
+        comments
+      }
+      location {
+        country
+        county
+        subregion
+        placeName
+        formattedAddress
+      }
+      ranking {
+        rankScore
+        trendingScore
+      }
+      isLikedByMe
+      isSavedByMe
+      isMyContent
+    }
+  }
+`;
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -456,20 +569,32 @@ function ContentVideo({
 interface Props {
   id: string;
   lang: string;
+  desktopMode?: "page" | "sheet";
+  onRequestClose?: () => void;
 }
 
-export function ContentDetail({ id, lang }: Props) {
+export function ContentDetail({
+  id,
+  lang,
+  desktopMode = "page",
+  onRequestClose,
+}: Props) {
   const router = useRouter();
+  const goBack = onRequestClose ?? (() => router.back());
   const { requireAuth } = useAuthGuard(lang);
   const currentUser = useAuthStore((s) => s.user);
+  const isSheet = desktopMode === "sheet";
 
   // ── Content query ──────────────────────────────────────────────────────────
-  const { data, loading } = useQuery(GetContentDocument, {
+  const { data, loading } = useQuery(ContentDetailDocument as any, {
     variables: { id },
     // Always fetch fresh data for detail view so isLikedByMe / isFollowedByMe
     // reflect the current server state rather than a potentially stale cache.
     fetchPolicy: "cache-and-network",
-  });
+  }) as {
+    data?: { content?: DetailPost | null };
+    loading: boolean;
+  };
 
   // ── Comments query ─────────────────────────────────────────────────────────
   const {
@@ -527,7 +652,7 @@ export function ContentDetail({ id, lang }: Props) {
   const [commentCountOverride, setCommentCountOverride] = useState<
     number | null
   >(null);
-  const resolvedCommentCount = commentCountOverride ?? 0;
+  const resolvedCommentCount = commentCountOverride ?? post?.stats?.comments ?? 0;
   const [commentText, setCommentText] = useState("");
   const [optimisticComments, setOptimisticComments] = useState<CommentItem[]>(
     [],
@@ -728,9 +853,8 @@ export function ContentDetail({ id, lang }: Props) {
   });
 
   // ── Follow — must be called unconditionally before any early returns ───────
-  // data?.content is typed correctly via GetContentQuery — creator includes isFollowedByMe/followerCount
-  const postCreatorForFollow = (data as GetContentQuery | undefined)?.content
-    ?.creator;
+  // Creator includes follow state when the detail query resolves.
+  const postCreatorForFollow = data?.content?.creator;
   const {
     following,
     toggle: handleFollow,
@@ -745,35 +869,69 @@ export function ContentDetail({ id, lang }: Props) {
   // ── Loading state — full-screen TikTok skeleton ───────────────────────────
   if (loading) {
     return (
-      <div className="md:hidden fixed inset-0 bg-black">
-        {/* Media area */}
-        <Skeleton className="absolute inset-0 rounded-none bg-neutral-900" />
-        {/* Back button */}
-        <Skeleton
-          className="absolute left-4 w-12 h-12 rounded-full bg-neutral-700"
-          style={{ top: "max(env(safe-area-inset-top,0px),16px)" }}
-        />
-        {/* Right action column */}
+      <>
         <div
-          className="absolute right-4 flex flex-col items-center gap-6"
-          style={{ bottom: 180 }}
+          className={[
+            "hidden md:flex overflow-hidden bg-app",
+            isSheet ? "h-full" : "h-screen",
+          ].join(" ")}
         >
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="flex flex-col items-center gap-1.5">
-              <Skeleton className="w-[52px] h-[52px] rounded-full bg-neutral-700" />
-              <Skeleton className="h-2.5 w-8 rounded-full bg-neutral-700" />
+          <div className="flex-1 bg-black p-8">
+            <Skeleton className="h-full w-full rounded-none bg-neutral-900" />
+          </div>
+          <div
+            className="flex shrink-0 flex-col border-l border-default bg-app"
+            style={{ width: isSheet ? 420 : 380 }}
+          >
+            <div className="flex h-12 items-center gap-2 border-b border-default px-3">
+              <Skeleton className="h-8 w-8 rounded-full" />
+              <Skeleton className="h-3.5 w-40 rounded-full" />
             </div>
-          ))}
+            <div className="space-y-4 p-4">
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-3.5 w-32 rounded-full" />
+                  <Skeleton className="h-3 w-20 rounded-full" />
+                </div>
+              </div>
+              <Skeleton className="h-7 w-36 rounded-full" />
+              <Skeleton className="h-4 w-full rounded-full" />
+              <Skeleton className="h-4 w-4/5 rounded-full" />
+              <Skeleton className="h-24 w-full rounded-lg" />
+            </div>
+          </div>
         </div>
-        {/* Bottom text overlay */}
-        <div className="absolute bottom-0 left-0 right-20 px-4 pb-10 flex flex-col gap-2.5">
-          <Skeleton className="h-3 w-20 rounded-full bg-neutral-700" />
-          <Skeleton className="h-5 w-3/4 rounded-full bg-neutral-700" />
-          <Skeleton className="h-7 w-1/2 rounded-full bg-neutral-700" />
-          <Skeleton className="h-3 w-full rounded-full bg-neutral-700" />
-          <Skeleton className="h-3 w-2/3 rounded-full bg-neutral-700" />
+        <div className="md:hidden fixed inset-0 bg-black">
+          {/* Media area */}
+          <Skeleton className="absolute inset-0 rounded-none bg-neutral-900" />
+          {/* Back button */}
+          <Skeleton
+            className="absolute left-4 w-12 h-12 rounded-full bg-neutral-700"
+            style={{ top: "max(env(safe-area-inset-top,0px),16px)" }}
+          />
+          {/* Right action column */}
+          <div
+            className="absolute right-4 flex flex-col items-center gap-6"
+            style={{ bottom: 180 }}
+          >
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="flex flex-col items-center gap-1.5">
+                <Skeleton className="w-[52px] h-[52px] rounded-full bg-neutral-700" />
+                <Skeleton className="h-2.5 w-8 rounded-full bg-neutral-700" />
+              </div>
+            ))}
+          </div>
+          {/* Bottom text overlay */}
+          <div className="absolute bottom-0 left-0 right-20 px-4 pb-10 flex flex-col gap-2.5">
+            <Skeleton className="h-3 w-20 rounded-full bg-neutral-700" />
+            <Skeleton className="h-5 w-3/4 rounded-full bg-neutral-700" />
+            <Skeleton className="h-7 w-1/2 rounded-full bg-neutral-700" />
+            <Skeleton className="h-3 w-full rounded-full bg-neutral-700" />
+            <Skeleton className="h-3 w-2/3 rounded-full bg-neutral-700" />
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
@@ -783,7 +941,7 @@ export function ContentDetail({ id, lang }: Props) {
         <div className="text-4xl">😕</div>
         <p className="text-default font-semibold">Post not found</p>
         <button
-          onClick={() => router.back()}
+          onClick={goBack}
           className="text-primary text-sm font-semibold"
         >
           Go back
@@ -796,8 +954,8 @@ export function ContentDetail({ id, lang }: Props) {
   const isLongCaption = caption.length > 180;
   const displayCaption =
     isLongCaption && !captionExpanded ? caption.slice(0, 180) + "…" : caption;
-  // Use the properly typed creator — GetContentQuery.content.creator has isFollowedByMe + followerCount
-  const postCreator = (data as GetContentQuery).content?.creator;
+  // Use the creator returned with the post; it includes follow state.
+  const postCreator = data?.content?.creator;
   const creatorName = postCreator?.profile?.firstName
     ? `${postCreator.profile.firstName} ${postCreator.profile.lastName ?? ""}`.trim()
     : postCreator === null
@@ -921,6 +1079,76 @@ export function ContentDetail({ id, lang }: Props) {
           {post.location.county && `, ${post.location.county}`}
         </div>
       )}
+    </div>
+  );
+
+  const categoryPath = [
+    post.aiClassification?.level1,
+    post.aiClassification?.level2,
+    post.aiClassification?.level3,
+  ]
+    .filter(Boolean)
+    .join(" / ");
+  const specs = (post.specs ?? []).filter((spec) => spec.key && spec.value);
+  const fullLocation = [
+    post.location?.placeName,
+    post.location?.subregion,
+    post.location?.county,
+    post.location?.country,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  const DetailMeta = (categoryPath ||
+    post.categoryId ||
+    fullLocation ||
+    specs.length > 0) && (
+    <div className="border-b border-default px-4 py-4">
+      <h2 className="mb-3 text-xs font-bold uppercase tracking-normal text-muted-foreground">
+        Details
+      </h2>
+      <div className="grid gap-3 text-sm">
+        {(categoryPath || post.categoryId) && (
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground">
+              Category
+            </p>
+            <p className="mt-0.5 text-default">
+              {categoryPath || post.categoryId}
+            </p>
+          </div>
+        )}
+        {fullLocation && (
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground">
+              Location
+            </p>
+            <p className="mt-0.5 text-default">{fullLocation}</p>
+          </div>
+        )}
+        {specs.length > 0 && (
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground">
+              Specs
+            </p>
+            <dl className="mt-2 grid grid-cols-2 gap-2">
+              {specs.slice(0, 8).map((spec) => (
+                <div
+                  key={`${spec.key}-${spec.value}`}
+                  className="rounded-lg border border-default bg-surface px-3 py-2"
+                >
+                  <dt className="truncate text-[11px] font-semibold text-muted-foreground">
+                    {spec.key}
+                  </dt>
+                  <dd className="mt-0.5 truncate text-xs font-semibold text-default">
+                    {spec.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        )}
+      </div>
     </div>
   );
 
@@ -1154,14 +1382,24 @@ export function ContentDetail({ id, lang }: Props) {
   );
 
   return (
-    <div className="min-h-svh flex flex-col bg-app">
+    <div
+      className={[
+        "flex flex-col bg-app",
+        isSheet ? "h-full min-h-0" : "min-h-svh",
+      ].join(" ")}
+    >
       {/* ════════════════════════════════════════════════════════
           DESKTOP LAYOUT  (md+)
           Left col: media (sticky)   Right col: info + comments
           Inspired by Facebook/Instagram post detail
       ════════════════════════════════════════════════════════ */}
       {isDesktop === true && (
-        <div className="flex h-screen overflow-hidden">
+        <div
+          className={[
+            "flex overflow-hidden",
+            isSheet ? "h-full min-h-0" : "h-screen",
+          ].join(" ")}
+        >
           {/* ── Left: media ────────────────────────────────────────────────────── */}
           <div
             className="flex-1 bg-black flex items-center justify-center overflow-hidden"
@@ -1192,7 +1430,7 @@ export function ContentDetail({ id, lang }: Props) {
                     }
                     alt={post.title}
                     fill
-                    sizes="65vw"
+                    sizes={isSheet ? "58vw" : "65vw"}
                     className="object-contain"
                     priority
                     placeholder="blur"
@@ -1265,27 +1503,32 @@ export function ContentDetail({ id, lang }: Props) {
           {/* ── Right: info + comments + input ─────────────────────────────────── */}
           <div
             className="flex flex-col border-l border-default bg-app overflow-hidden"
-            style={{ width: 380, flexShrink: 0 }}
+            style={{ width: isSheet ? 420 : 380, flexShrink: 0 }}
           >
             {/* Header row */}
-            <div className="flex items-center gap-2  h-12 border-b border-default shrink-0">
+            <div className="flex items-center gap-2 h-12 border-b border-default shrink-0 px-2">
               <button
-                onClick={() => router.back()}
+                onClick={goBack}
+                aria-label={isSheet ? "Close post" : "Go back"}
                 className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface transition-colors"
               >
-                <svg
-                  className="w-5 h-5 text-default"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2.5}
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M15 19l-7-7 7-7"
-                  />
-                </svg>
+                {isSheet ? (
+                  <X className="h-5 w-5 text-default" strokeWidth={2.2} />
+                ) : (
+                  <svg
+                    className="w-5 h-5 text-default"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2.5}
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M15 19l-7-7 7-7"
+                    />
+                  </svg>
+                )}
               </button>
               <span className="font-semibold text-default text-sm truncate flex-1">
                 {post.title}
@@ -1296,6 +1539,7 @@ export function ContentDetail({ id, lang }: Props) {
             <div className="flex-1 overflow-y-auto">
               {CreatorRow}
               {PostInfo}
+              {DetailMeta}
               {DesktopActions}
               {CommentsSection}
             </div>
@@ -1340,7 +1584,7 @@ export function ContentDetail({ id, lang }: Props) {
 
             {/* Back — top-left */}
             <button
-              onClick={() => router.back()}
+              onClick={goBack}
               className="absolute  z-30 w-12 h-12 rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center text-white"
               style={{ top: "max(env(safe-area-inset-top, 0px), 16px)" }}
             >

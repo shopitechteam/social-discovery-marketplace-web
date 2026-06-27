@@ -209,8 +209,8 @@ function createClient() {
               merge: mergeFeedPage,
             },
             localFeed: {
-              // Each county/subregion is its own list; cursor args don't key it.
-              keyArgs: ["county", "subregion"],
+              // Each location/radius is its own list; cursor args don't key it.
+              keyArgs: ["latitude", "longitude", "radiusKm", "county", "subregion"],
               merge: mergeFeedPage,
             },
             comments: {

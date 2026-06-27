@@ -35,9 +35,11 @@ export const metadata = {
 
 export default async function MainLayout({
   children,
+  modal,
   params,
 }: {
   children: React.ReactNode;
+  modal?: React.ReactNode;
   params: Promise<{ lang: string }>;
 }) {
   const { lang } = await params;
@@ -49,6 +51,7 @@ export default async function MainLayout({
       <SideNav lang={lang} />
 
       <MainShell lang={lang}>{children}</MainShell>
+      {modal}
     </SocketProvider>
   );
 }

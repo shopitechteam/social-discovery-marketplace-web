@@ -21,9 +21,10 @@ const itemKey = (item: FeedItem) => item.__ref ?? item.id;
  */
 const feedFieldPolicy = {
   // `limit` and `after` only paginate — they don't identify a distinct list.
-  // localFeed additionally keys on county/subregion so each location is its
-  // own cached list. Apollo ignores key names that the field doesn't accept.
-  keyArgs: ["county", "subregion"] as const,
+  // localFeed additionally keys on the selected location/radius so each nearby
+  // search is its own cached list. Apollo ignores key names that a field does
+  // not accept.
+  keyArgs: ["latitude", "longitude", "radiusKm", "county", "subregion"] as const,
   merge(
     existing: FeedPage | undefined,
     incoming: FeedPage,

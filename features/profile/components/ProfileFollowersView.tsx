@@ -61,7 +61,7 @@ function FollowerRow({
 
   return (
     <li
-      className="flex items-center gap-3 px-4 py-2.5"
+      className="flex items-center gap-3 px-4 py-2.5 md:rounded-2xl md:border md:border-default md:bg-elevated md:px-3 md:py-3 md:transition-colors md:hover:bg-surface"
       style={{ borderColor: "rgb(var(--color-border))" }}
     >
       <Link
@@ -162,7 +162,7 @@ function FollowerRow({
 
 function RowSkeleton() {
   return (
-    <li className="flex items-center gap-3 px-4 py-2.5">
+    <li className="flex items-center gap-3 px-4 py-2.5 md:rounded-2xl md:border md:border-default md:px-3 md:py-3">
       <Skeleton className="h-11 w-11 shrink-0 rounded-full" />
       <div className="min-w-0 flex-1">
         <Skeleton className="mb-1.5 h-3.5 w-32 rounded" />
@@ -253,49 +253,56 @@ export function ProfileFollowersView({ lang }: Props) {
     >
       {/* Header */}
       <div
-        className="sticky top-0 z-20 flex items-center gap-3 border-b px-4 py-3"
+        className="sticky top-0 z-20 border-b"
         style={{
           backgroundColor: "rgb(var(--color-bg) / 0.94)",
           borderColor: "rgb(var(--color-border))",
           backdropFilter: "blur(8px)",
         }}
       >
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="flex h-9 w-9 items-center justify-center rounded-full transition-opacity active:opacity-60"
-          style={{ color: "rgb(var(--color-text))" }}
-          aria-label="Back"
-        >
-          <ArrowLeft size={20} strokeWidth={2.2} />
-        </button>
-        <div className="min-w-0">
-          <h1
-            className="font-bold leading-tight"
-            style={{
-              fontSize: "var(--text-base)",
-              color: "rgb(var(--color-text))",
-            }}
+        {/* Inner content matches the list's responsive width so the title lines
+            up with the grid on tablet/desktop instead of hugging the far left. */}
+        <div className="mx-auto flex w-full max-w-2xl items-center gap-3 px-4 py-3 md:max-w-3xl lg:max-w-full xl:max-w-full">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="flex h-9 w-9 items-center justify-center rounded-full transition-opacity active:opacity-60"
+            style={{ color: "rgb(var(--color-text))" }}
+            aria-label="Back"
           >
-            Followers
-          </h1>
-          {!initialLoading && (
-            <p
-              className="leading-tight"
+            <ArrowLeft size={20} strokeWidth={2.2} />
+          </button>
+          <div className="min-w-0">
+            <h1
+              className="font-bold leading-tight"
               style={{
-                fontSize: "var(--text-xs)",
-                color: "rgb(var(--color-text-muted))",
+                fontSize: "var(--text-base)",
+                color: "rgb(var(--color-text))",
               }}
             >
-              {total} {total === 1 ? "follower" : "followers"}
-            </p>
-          )}
+              Followers
+            </h1>
+            {!initialLoading && (
+              <p
+                className="leading-tight"
+                style={{
+                  fontSize: "var(--text-xs)",
+                  color: "rgb(var(--color-text-muted))",
+                }}
+              >
+                {total} {total === 1 ? "follower" : "followers"}
+              </p>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* List */}
+      {/* List — single divided column on mobile; a responsive card grid from
+          md up so the wider tablet/desktop canvas isn't a lone narrow column.
+          The `md:divide-y-0` removes the mobile dividers once we switch to the
+          gapped grid; `md:max-w-*` widens the container per breakpoint. */}
       <ul
-        className="mx-auto w-full max-w-2xl divide-y"
+        className="mx-auto w-full max-w-2xl divide-y md:max-w-3xl md:grid md:grid-cols-2 md:gap-3 md:divide-y-0 md:px-4 md:py-4 lg:max-w-full lg:grid-cols-3 xl:max-w-full"
         style={{ borderColor: "rgb(var(--color-border))" }}
       >
         {initialLoading
@@ -338,7 +345,7 @@ export function ProfileFollowersView({ lang }: Props) {
       {/* Infinite scroll sentinel + loader */}
       <div ref={sentinelRef} className="h-px" />
       {hasMore && !initialLoading && (
-        <ul className="mx-auto w-full max-w-2xl">
+        <ul className="mx-auto w-full max-w-2xl md:grid md:max-w-3xl md:grid-cols-2 md:gap-3 md:px-4 md:pb-4 lg:max-w-5xl lg:grid-cols-3 xl:max-w-6xl">
           {Array.from({ length: 3 }).map((_, i) => (
             <RowSkeleton key={`more-${i}`} />
           ))}

@@ -16,19 +16,27 @@ type PermissionState =
   | "unavailable";
 
 interface Location {
-  countyName: string;
-  subCountyName?: string | null;
+  latitude: number;
+  longitude: number;
+  accuracyMeters?: number | null;
+  label?: string | null;
 }
 
 interface Props {
   lang: string;
 }
 
+const RADIUS_OPTIONS = [5, 10, 25, 50, 100, 200] as const;
+
 export function NearbyGrid({ lang }: Props) {
   const [permState, setPermState] = useState<PermissionState>("checking");
   const [location, setLocation] = useState<Location | null>(null);
   const [geoError, setGeoError] = useState<string | null>(null);
   const cachedLocation = useFeedPreferencesStore((s) => s.nearbyLocation);
+  const nearbyRadiusKm = useFeedPreferencesStore((s) => s.nearbyRadiusKm);
+  const setNearbyRadiusKm = useFeedPreferencesStore(
+    (s) => s.setNearbyRadiusKm,
+  );
   const setCachedNearbyLocation = useFeedPreferencesStore(
     (s) => s.setNearbyLocation,
   );
@@ -45,8 +53,8 @@ export function NearbyGrid({ lang }: Props) {
     : permState;
 
   const { items, loading, loadingMore, hasMore, loadMore } = useNearbyFeed(
-    effectiveLocation?.countyName ?? null,
-    effectiveLocation?.subCountyName,
+    effectiveLocation,
+    nearbyRadiusKm,
   );
 
   const { sentinelRef } = useInfiniteScroll({
@@ -65,35 +73,17 @@ export function NearbyGrid({ lang }: Props) {
     setGeoError(null);
 
     navigator.geolocation.getCurrentPosition(
-      async (pos) => {
+      (pos) => {
         const { latitude: lat, longitude: lng } = pos.coords;
-        try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=6`,
-            { headers: { "Accept-Language": "en" } },
-          );
-          const json = await res.json();
-          // Nominatim returns state/county in address object
-          const addr = json?.address ?? {};
-          const raw = addr.state ?? addr.county ?? addr.region ?? null;
-          const countyName = raw?.replace(/ county$/i, "").trim() ?? null;
-          const subCountyName =
-            addr.county !== raw
-              ? (addr.county?.replace(/ county$/i, "").trim() ?? null)
-              : null;
-          if (!countyName) {
-            setGeoError("Couldn't determine your county. Try again.");
-            setPermState("granted");
-            return;
-          }
-          const nextLocation = { countyName, subCountyName };
-          setLocation(nextLocation);
-          setCachedNearbyLocation(nextLocation);
-          setPermState("granted");
-        } catch {
-          setGeoError("Location lookup failed. Please try again.");
-          setPermState("granted");
-        }
+        const nextLocation = {
+          latitude: lat,
+          longitude: lng,
+          accuracyMeters: pos.coords.accuracy,
+          label: "your current location",
+        };
+        setLocation(nextLocation);
+        setCachedNearbyLocation(nextLocation);
+        setPermState("granted");
       },
       (err) => {
         if (err.code === err.PERMISSION_DENIED) {
@@ -233,7 +223,7 @@ export function NearbyGrid({ lang }: Props) {
   // ── Granted — loading feed ────────────────────────────────────────────────
   if (loading && items.length === 0) return <FeedSkeleton />;
 
-  // ── Geo error (location resolved but reverse geocode failed) ──────────────
+  // ── Geo error ─────────────────────────────────────────────────────────────
   if (geoError && !location) {
     return (
       <div className="flex min-h-[93svh] fixed top-0 left-0 w-full right-0 bottom-0 flex-col items-center justify-center px-6 text-center gap-4">
@@ -258,8 +248,8 @@ export function NearbyGrid({ lang }: Props) {
           No listings nearby yet
         </h3>
         <p className="text-muted-foreground text-sm leading-relaxed">
-          No sellers found in <strong>{effectiveLocation?.countyName}</strong>{" "}
-          yet. Be the first to list something!
+          No sellers found within <strong>{nearbyRadiusKm} km</strong> of your
+          current location yet. Try expanding the radius.
         </p>
       </div>
     );
@@ -270,31 +260,46 @@ export function NearbyGrid({ lang }: Props) {
       {/* Location banner */}
       {effectiveLocation && (
         <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/30">
-          <svg
-            width="13"
-            height="13"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="var(--color-primary)"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7z" />
-            <circle cx="12" cy="9" r="2.5" />
-          </svg>
-          <span className="text-xs text-muted-foreground">
-            Showing listings in{" "}
-            <span className="font-semibold text-default">
-              {effectiveLocation.subCountyName
-                ? `${effectiveLocation.subCountyName}, `
-                : ""}
-              {effectiveLocation.countyName}
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="var(--color-primary)"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="shrink-0"
+            >
+              <path d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7z" />
+              <circle cx="12" cy="9" r="2.5" />
+            </svg>
+            <span className="truncate text-xs text-muted-foreground">
+              Within{" "}
+              <span className="font-semibold text-default">
+                {nearbyRadiusKm} km
+              </span>{" "}
+              of {effectiveLocation.label ?? "your location"}
             </span>
-          </span>
+          </div>
+
+          <select
+            value={nearbyRadiusKm}
+            onChange={(event) => setNearbyRadiusKm(Number(event.target.value))}
+            className="h-8 rounded-full border border-border bg-surface px-2 text-xs font-medium text-default"
+            aria-label="Nearby distance"
+          >
+            {RADIUS_OPTIONS.map((km) => (
+              <option key={km} value={km}>
+                {km} km
+              </option>
+            ))}
+          </select>
+
           <button
             onClick={requestLocation}
-            className="ml-auto text-xs text-primary font-medium"
+            className="text-xs text-primary font-medium"
           >
             Refresh
           </button>

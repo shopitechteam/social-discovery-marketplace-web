@@ -348,7 +348,7 @@ function CategorySkeletonRow() {
 function DiscoverFeedSkeleton() {
   return (
     <div className="px-4 pb-8 pt-3 md:px-0">
-      <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3">
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3 lg:grid-cols-4">
         {Array.from({ length: 6 }).map((_, i) => (
           <div
             key={i}
@@ -544,6 +544,10 @@ export function DiscoverPage({ lang }: { lang: string }) {
   const pageInfo = data?.discoveryFeed.pageInfo;
   const locationFacets = locationFacetsData?.discoveryFacets;
   const isFetchingMore = networkStatus === NetworkStatus.fetchMore;
+  // A full reload (initial load OR a filter/search/sort change refetch), as
+  // opposed to pagination. While this is in flight we show the skeleton instead
+  // of the stale results grid, so old items never sit under the loader.
+  const isReloading = loading && !isFetchingMore;
 
   const loadMore = useCallback(() => {
     if (!pageInfo?.hasNextPage || !pageInfo.endCursor) return;
@@ -632,7 +636,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
 
   return (
     <div className="min-h-svh bg-app pb-24 md:pb-8">
-      <div className="mx-auto w-full max-w-5xl md:grid md:grid-cols-[320px_minmax(0,1fr)] md:gap-6 md:px-6 md:pt-6">
+      <div className="mx-auto w-full  md:grid md:grid-cols-[320px_minmax(0,1fr)] md:gap-6 md:px-6 md:pt-6">
         <aside className="hidden md:block">
           <div className="sticky top-6 space-y-4 rounded-3xl border border-default bg-app p-4">
             <div>
@@ -819,7 +823,10 @@ export function DiscoverPage({ lang }: { lang: string }) {
             </div>
           ) : null}
 
-          {loading && <DiscoverFeedSkeleton />}
+          {/* A full reload (filter/search/sort change) — NOT pagination — is in
+              flight. Show only the skeleton; the stale results grid below is
+              hidden so we never stack old items under a loader. */}
+          {isReloading && <DiscoverFeedSkeleton />}
 
           {!loading && items.length === 0 && !error ? (
             <EmptyState
@@ -828,7 +835,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
             />
           ) : null}
 
-          {items.length > 0 ? (
+          {!isReloading && items.length > 0 ? (
             <div className="px-4 pb-6 pt-3 md:px-0">
               <div className="mb-3 flex items-center justify-between">
                 <div>
@@ -846,7 +853,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3">
+              <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3 lg:grid-cols-4">
                 {items.map((post, index) => (
                   <DiscoverGridCard
                     key={post.id}
@@ -860,7 +867,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
               <div ref={sentinelRef} className="h-2" />
 
               {isFetchingMore ? (
-                <div className="grid grid-cols-2 gap-2 pt-3 md:grid-cols-3 md:gap-3">
+                <div className="grid grid-cols-2 gap-2 pt-3 md:grid-cols-3 md:gap-3 lg:grid-cols-4">
                   {Array.from({ length: 4 }).map((_, i) => (
                     <Skeleton key={i} className="aspect-3/4 rounded-2xl" />
                   ))}

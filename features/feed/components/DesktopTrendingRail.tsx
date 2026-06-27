@@ -136,6 +136,11 @@ export function DesktopTrendingRail({
   county?: string;
 }) {
   const { items, loading } = useTrending(county);
+  // Show the skeleton until we actually have items, not only while `loading` is
+  // true: with cache-and-network the loading flag can flip to false a beat
+  // before the list populates, leaving the rail blank. Gating on emptiness keeps
+  // the placeholder visible across that gap so the rail never renders empty.
+  const showSkeleton = loading && items.length === 0;
 
   return (
     <div className="h-full rounded-3xl border border-default bg-elevated p-4 overflow-y-auto">
@@ -148,10 +153,10 @@ export function DesktopTrendingRail({
         </span>
       </div>
 
-      {loading ? (
+      {showSkeleton ? (
         <div className="flex flex-col gap-2">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="flex items-center gap-3 p-2">
+            <div key={i} className="flex animate-pulse items-center gap-3 p-2">
               <div className="h-4 w-4 shrink-0 rounded bg-black/10 dark:bg-white/10" />
               <div
                 className="shrink-0 rounded-xl bg-black/10 dark:bg-white/10"

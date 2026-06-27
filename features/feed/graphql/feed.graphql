@@ -128,8 +128,24 @@ query FollowingFeed($limit: Int, $after: String) {
   }
 }
 
-query LocalFeed($county: String!, $subregion: String, $limit: Int, $after: String) {
-  localFeed(county: $county, subregion: $subregion, limit: $limit, after: $after) {
+query LocalFeed(
+  $latitude: Float
+  $longitude: Float
+  $radiusKm: Float
+  $county: String
+  $subregion: String
+  $limit: Int
+  $after: String
+) {
+  localFeed(
+    latitude: $latitude
+    longitude: $longitude
+    radiusKm: $radiusKm
+    county: $county
+    subregion: $subregion
+    limit: $limit
+    after: $after
+  ) {
     items {
       ...ContentCardFields
     }

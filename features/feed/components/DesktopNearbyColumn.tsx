@@ -22,9 +22,13 @@ type PermissionState =
   | "unavailable";
 
 interface Location {
-  countyName: string;
-  subCountyName?: string | null;
+  latitude: number;
+  longitude: number;
+  accuracyMeters?: number | null;
+  label?: string | null;
 }
+
+const RADIUS_OPTIONS = [5, 10, 25, 50, 100, 200] as const;
 
 function Panel({ children }: { children: React.ReactNode }) {
   return (
@@ -55,6 +59,10 @@ export function DesktopNearbyColumn({ lang }: { lang: string }) {
   const [location, setLocation] = useState<Location | null>(null);
   const [geoError, setGeoError] = useState<string | null>(null);
   const cachedLocation = useFeedPreferencesStore((s) => s.nearbyLocation);
+  const nearbyRadiusKm = useFeedPreferencesStore((s) => s.nearbyRadiusKm);
+  const setNearbyRadiusKm = useFeedPreferencesStore(
+    (s) => s.setNearbyRadiusKm,
+  );
   const setCachedNearbyLocation = useFeedPreferencesStore(
     (s) => s.setNearbyLocation,
   );
@@ -71,8 +79,8 @@ export function DesktopNearbyColumn({ lang }: { lang: string }) {
     : permState;
 
   const { items, loading, hasMore, loadMore } = useNearbyFeed(
-    effectiveLocation?.countyName ?? null,
-    effectiveLocation?.subCountyName,
+    effectiveLocation,
+    nearbyRadiusKm,
   );
 
   const { sentinelRef } = useInfiniteScroll({
@@ -91,34 +99,17 @@ export function DesktopNearbyColumn({ lang }: { lang: string }) {
     setGeoError(null);
 
     navigator.geolocation.getCurrentPosition(
-      async (pos) => {
+      (pos) => {
         const { latitude: lat, longitude: lng } = pos.coords;
-        try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=6`,
-            { headers: { "Accept-Language": "en" } },
-          );
-          const json = await res.json();
-          const addr = json?.address ?? {};
-          const raw = addr.state ?? addr.county ?? addr.region ?? null;
-          const countyName = raw?.replace(/ county$/i, "").trim() ?? null;
-          const subCountyName =
-            addr.county !== raw
-              ? (addr.county?.replace(/ county$/i, "").trim() ?? null)
-              : null;
-          if (!countyName) {
-            setGeoError("Couldn't determine your county. Try again.");
-            setPermState("granted");
-            return;
-          }
-          const nextLocation = { countyName, subCountyName };
-          setLocation(nextLocation);
-          setCachedNearbyLocation(nextLocation);
-          setPermState("granted");
-        } catch {
-          setGeoError("Location lookup failed. Please try again.");
-          setPermState("granted");
-        }
+        const nextLocation = {
+          latitude: lat,
+          longitude: lng,
+          accuracyMeters: pos.coords.accuracy,
+          label: "your current location",
+        };
+        setLocation(nextLocation);
+        setCachedNearbyLocation(nextLocation);
+        setPermState("granted");
       },
       (err) => {
         if (err.code === err.PERMISSION_DENIED) {
@@ -291,8 +282,8 @@ export function DesktopNearbyColumn({ lang }: { lang: string }) {
           No listings nearby yet
         </h3>
         <p className="mx-auto max-w-sm text-sm leading-relaxed text-muted-foreground">
-          No sellers found in <strong>{effectiveLocation?.countyName}</strong>{" "}
-          yet. Be the first to list something!
+          No sellers found within <strong>{nearbyRadiusKm} km</strong> of your
+          current location yet. Try expanding the radius.
         </p>
       </Panel>
     );
@@ -302,31 +293,46 @@ export function DesktopNearbyColumn({ lang }: { lang: string }) {
     <div className="flex flex-col gap-4">
       {effectiveLocation && (
         <div className="flex items-center gap-2 rounded-2xl border border-default bg-elevated px-4 py-3">
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="rgb(var(--brand-primary))"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7z" />
-            <circle cx="12" cy="9" r="2.5" />
-          </svg>
-          <span className="text-sm text-muted-foreground">
-            Showing listings in{" "}
-            <span className="font-semibold text-default">
-              {effectiveLocation.subCountyName
-                ? `${effectiveLocation.subCountyName}, `
-                : ""}
-              {effectiveLocation.countyName}
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="rgb(var(--brand-primary))"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="shrink-0"
+            >
+              <path d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7z" />
+              <circle cx="12" cy="9" r="2.5" />
+            </svg>
+            <span className="truncate text-sm text-muted-foreground">
+              Within{" "}
+              <span className="font-semibold text-default">
+                {nearbyRadiusKm} km
+              </span>{" "}
+              of {effectiveLocation.label ?? "your location"}
             </span>
-          </span>
+          </div>
+
+          <select
+            value={nearbyRadiusKm}
+            onChange={(event) => setNearbyRadiusKm(Number(event.target.value))}
+            className="h-9 rounded-full border border-default bg-surface px-3 text-sm font-medium text-default"
+            aria-label="Nearby distance"
+          >
+            {RADIUS_OPTIONS.map((km) => (
+              <option key={km} value={km}>
+                {km} km
+              </option>
+            ))}
+          </select>
+
           <button
             onClick={requestLocation}
-            className="ml-auto text-sm font-medium text-primary"
+            className="text-sm font-medium text-primary"
             style={{ color: "rgb(var(--brand-primary))" }}
           >
             Refresh
