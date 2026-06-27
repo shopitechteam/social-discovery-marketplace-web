@@ -821,9 +821,14 @@ export function ContentDetail({
       existingComment.isLikedByMe ??
       false;
     const currentLikeCount =
-      commentLikeOverrides[commentId]?.likeCount ?? existingComment.likeCount ?? 0;
+      commentLikeOverrides[commentId]?.likeCount ??
+      existingComment.likeCount ??
+      0;
     const nextLiked = !currentLiked;
-    const nextLikeCount = Math.max(0, currentLikeCount + (currentLiked ? -1 : 1));
+    const nextLikeCount = Math.max(
+      0,
+      currentLikeCount + (currentLiked ? -1 : 1),
+    );
 
     setCommentLikeOverrides((prev) => ({
       ...prev,
@@ -1002,10 +1007,7 @@ export function ContentDetail({
   // ── Follow — must be called unconditionally before any early returns ───────
   // Creator includes follow state when the detail query resolves.
   const postCreatorForFollow = data?.content?.creator;
-  const {
-    following,
-    toggle: handleFollow,
-  } = useFollow({
+  const { following, toggle: handleFollow } = useFollow({
     userId: postCreatorForFollow?.id ?? data?.content?.creatorId ?? "",
     initialFollowing: postCreatorForFollow?.isFollowedByMe ?? false,
     initialFollowerCount: postCreatorForFollow?.followerCount ?? 0,
@@ -1048,7 +1050,7 @@ export function ContentDetail({
             </div>
           </div>
         </div>
-        <div className="fixed inset-0 z-[70] overflow-y-auto bg-app md:hidden">
+        <div className="fixed inset-0 z-70 overflow-y-auto bg-app md:hidden">
           <div
             className="sticky top-0 z-10 flex items-center gap-2 border-b border-default bg-app px-3 pb-2.5"
             style={{ paddingTop: "max(env(safe-area-inset-top, 0px), 10px)" }}
@@ -1061,7 +1063,7 @@ export function ContentDetail({
             <Skeleton className="h-10 w-10 rounded-full bg-default/8" />
           </div>
 
-          <div className="h-[56svh] min-h-[340px] max-h-[620px] bg-surface p-4">
+          <div className="h-[56svh] min-h-85 max-h-155 bg-surface p-4">
             <Skeleton className="h-full w-full rounded-3xl bg-default/8" />
           </div>
 
@@ -1146,7 +1148,7 @@ export function ContentDetail({
   const CreatorRow = (
     <div className="flex items-center gap-3 px-4 pt-4 pb-3">
       <div
-        className={`w-10 h-10 rounded-full shrink-0  relative overflow-hidden ${avatarUrl ? "bg-surface" : `bg-gradient-to-br ${avatarColors(post.creatorId)}`} flex items-center justify-center`}
+        className={`w-10 h-10 rounded-full shrink-0  relative overflow-hidden ${avatarUrl ? "bg-surface" : `bg-linear-to-br ${avatarColors(post.creatorId)}`} flex items-center justify-center`}
       >
         {avatarUrl ? (
           <Image
@@ -1205,7 +1207,7 @@ export function ContentDetail({
           align="end"
           sideOffset={8}
           container={isSheet ? rootEl : undefined}
-          className="w-52 p-1.5 rounded-2xl border border-border bg-elevated shadow-lg z-[80]"
+          className="w-52 p-1.5 rounded-2xl border border-border bg-elevated shadow-lg z-80"
         >
           <button
             type="button"
@@ -1319,7 +1321,7 @@ export function ContentDetail({
       {post.location?.placeName && (
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
           <svg
-            className="w-3.5 h-3.5 flex-shrink-0"
+            className="w-3.5 h-3.5 shrink-0"
             fill="currentColor"
             viewBox="0 0 20 20"
           >
@@ -1568,7 +1570,7 @@ export function ContentDetail({
       style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)" }}
     >
       <div
-        className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold bg-gradient-to-br ${avatarColors(currentUser?.id ?? "00")}`}
+        className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-white text-xs font-bold bg-linear-to-br ${avatarColors(currentUser?.id ?? "00")}`}
       >
         {currentUser?.id ? initials(currentUser.id) : "?"}
       </div>
@@ -1594,7 +1596,7 @@ export function ContentDetail({
       <button
         onClick={handleSend}
         disabled={!commentText.trim()}
-        className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center transition-opacity disabled:opacity-35"
+        className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center transition-opacity disabled:opacity-35"
         style={{
           background:
             "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary, var(--brand-primary))))",
@@ -2056,14 +2058,14 @@ export function ContentDetail({
                 <button
                   type="button"
                   onClick={handleSend}
-                  aria-label="Send comment"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
+                  className="flex shrink-0 items-center justify-center gap-1.5 rounded-full px-5 py-3 text-sm font-bold text-white transition-transform active:scale-[0.98]"
                   style={{
                     background:
                       "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary, var(--brand-primary))))",
                   }}
                 >
-                  <Send className="h-5 w-5 text-white" strokeWidth={2.2} />
+                  <Send className="h-4 w-4" strokeWidth={2.2} />
+                  Send
                 </button>
               ) : (
                 <>
@@ -2096,19 +2098,19 @@ export function ContentDetail({
                           `/${lang}/notifications/${id}?source=content`,
                         );
                       }}
-                      aria-label="Message seller"
-                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-white transition-transform active:scale-[0.98]"
+                      className="flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-primary px-5 py-3 text-sm font-bold text-white transition-transform active:scale-[0.98]"
                     >
-                      <Send className="h-5 w-5" strokeWidth={2.2} />
+                      <Send className="h-4 w-4" strokeWidth={2.2} />
+                      Message
                     </button>
                   ) : (
                     <button
                       type="button"
                       onClick={handleShare}
-                      aria-label="Share"
-                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-white transition-transform active:scale-[0.98]"
+                      className="flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-primary px-5 py-3 text-sm font-bold text-white transition-transform active:scale-[0.98]"
                     >
-                      <Share2 className="h-5 w-5" strokeWidth={2.2} />
+                      <Share2 className="h-4 w-4" strokeWidth={2.2} />
+                      Share
                     </button>
                   )}
                 </>
@@ -2120,4 +2122,3 @@ export function ContentDetail({
     </div>
   );
 }
-
