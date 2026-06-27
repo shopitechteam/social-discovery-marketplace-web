@@ -46,20 +46,26 @@
 
 /* ─── Dark mode — toggled by .dark on <html> ───────────────────── */
 .dark {
-  --color-bg: 10 10 14;
-  --color-bg-subtle: 18 18 24;
-  --color-bg-elevated: 26 26 34;
+  /* Unified near-black (TikTok-style): the app background AND cards/elevated
+     surfaces are the SAME black, so PostCards etc. merge into the page and are
+     separated by borders, not by a lighter fill. Only `subtle` (inputs, hover,
+     muted fills) sits a hair above black so those stay visible. */
+  --color-bg: 8 8 10;
+  --color-bg-subtle: 20 20 24;
+  --color-bg-elevated: 8 8 10;
   --color-overlay: 255 255 255;
 
-  --color-border: 38 38 50;
-  --color-border-strong: 60 60 78;
+  /* Borders carry the visual separation now, so they're a touch brighter. */
+  --color-border: 40 40 46;
+  --color-border-strong: 62 62 72;
 
   --color-text: 240 240 245;
   --color-text-main: 240 240 245; /* dark mode: main text reads light */
   --color-text-muted: 148 148 165;
   --color-text-placeholder: 90 90 105;
 
-  --color-subtle: 26 26 34; /* dark mode: incoming bubble surface */
+  /* Incoming chat bubbles / muted fills — same subtle lift as inputs. */
+  --color-subtle: 20 20 24;
 
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3);

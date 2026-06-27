@@ -7,7 +7,6 @@ import {
   Bookmark,
   Send,
   Share2,
-  Heart,
   X,
   MoreHorizontal,
   Link2,
@@ -21,43 +20,35 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
 import { useFollow } from "../hooks/useFollow";
 import { useQuery, useMutation, useApolloClient } from "@apollo/client/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { SHIMMER, SHIMMER_AVATAR, SHIMMER_PORTRAIT } from "@/lib/shimmer";
 import {
-  GetCommentsDocument,
-  AddCommentDocument,
   ShareContentDocument,
-  ToggleLikeDocument,
-  ToggleCommentLikeDocument,
   ViewContentDocument,
 } from "@/types/__generated__/graphql";
-import type {
-  ContentCardFieldsFragment,
-  GetCommentsQuery,
-} from "@/types/__generated__/graphql";
-import { useAuthStore } from "@/stores/auth";
+import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { useAuthGuard } from "../hooks/useAuthGuard";
 import { useHlsVideo } from "@/lib/useHlsVideo";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BufferSpinner } from "./BufferSpinner";
 import { useFeedPreferencesStore } from "@/stores/feedPreferences";
 import { InlineChatPanel } from "@/features/messaging/components/InlineChatPanel";
-import { fmtCompact as fmt } from "@/lib/format";
 import {
-  avatarGradient as avatarColors,
-  idInitials as initials,
-} from "@/lib/avatar";
+  CommentThread,
+  CommentList,
+  useCommentThread,
+} from "./CommentThread";
+import { fmtCompact as fmt } from "@/lib/format";
+import { avatarGradient as avatarColors } from "@/lib/avatar";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { VideoProgressBar } from "./VideoProgressBar";
 import { usePageFocused } from "../hooks/usePageFocused";
 import { shouldFire } from "@/lib/interactionDedup";
 import { timeAgoLong as timeAgo } from "@/lib/time";
 
-type CommentItem = NonNullable<GetCommentsQuery["comments"]["items"]>[number];
 type DetailPost = ContentCardFieldsFragment & {
   categoryId?: string | null;
   specs?: Array<{ key: string; value: string }>;
@@ -180,83 +171,6 @@ const ContentDetailDocument = gql`
 // Shared utilities (fmt, avatarColors/initials, useIsDesktop) now live in
 // @/lib and @/hooks; imported above and aliased to keep call sites unchanged.
 
-// ─── CommentRow ────────────────────────────────────────────────────────────────
-
-function CommentRow({
-  comment,
-  currentUserId,
-  onToggleLike,
-}: {
-  comment: CommentItem;
-  currentUserId?: string;
-  onToggleLike?: (commentId: string) => void;
-}) {
-  const isOwn = currentUserId && comment.creatorId === currentUserId;
-  const authorName = [
-    comment.author?.profile?.firstName,
-    comment.author?.profile?.lastName,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .trim();
-  const displayName =
-    authorName || (isOwn ? "You" : `User ···${comment.creatorId.slice(-4)}`);
-  const avatarUrl = comment.author?.profile?.avatar;
-  return (
-    <div className="flex gap-3 py-3">
-      <div
-        className={`relative mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-linear-to-br ${avatarColors(comment.creatorId)}`}
-      >
-        {avatarUrl ? (
-          <Image
-            src={avatarUrl}
-            alt={displayName || "Comment author"}
-            fill
-            sizes="32px"
-            className="rounded-full object-cover"
-          />
-        ) : (
-          <span className="text-white text-xs font-bold">
-            {initials(comment.creatorId)}
-          </span>
-        )}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="bg-surface rounded-2xl rounded-tl-sm px-3 py-2">
-          <span className="text-xs font-semibold text-default">
-            <span className="break-words">{displayName}</span>
-          </span>
-          <p className="mt-0.5 break-words text-sm leading-snug text-default">
-            {comment.text}
-          </p>
-        </div>
-        <div className="flex items-center gap-3 mt-1 px-1">
-          <span className="text-xs text-muted-foreground">
-            {timeAgo(comment.createdAt)}
-          </span>
-          <button
-            type="button"
-            onClick={() => onToggleLike?.(comment.id)}
-            className={[
-              "flex items-center gap-1 text-xs font-semibold transition-colors",
-              comment.isLikedByMe ? "text-rose-500" : "text-muted-foreground",
-            ].join(" ")}
-          >
-            <Heart
-              className="h-3.5 w-3.5"
-              fill={comment.isLikedByMe ? "currentColor" : "none"}
-              strokeWidth={2}
-            />
-            {comment.likeCount > 0 ? comment.likeCount : "Like"}
-          </button>
-          <button className="text-xs font-semibold text-muted-foreground hover:text-primary transition-colors">
-            Reply
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ─── MobileImageCarousel ──────────────────────────────────────────────────────
 
@@ -599,7 +513,6 @@ export function ContentDetail({
   const router = useRouter();
   const goBack = onRequestClose ?? (() => router.back());
   const { requireAuth } = useAuthGuard(lang);
-  const currentUser = useAuthStore((s) => s.user);
   const isSheet = desktopMode === "sheet";
   // Stored in state (not a ref) so the Popover portal target is stable across
   // renders and available the first time the menu opens.
@@ -628,21 +541,9 @@ export function ContentDetail({
     loading: boolean;
   };
 
-  // ── Comments query ─────────────────────────────────────────────────────────
-  const {
-    data: commentsData,
-    loading: commentsLoading,
-    fetchMore,
-  } = useQuery(GetCommentsDocument, {
-    variables: { contentId: id, limit: 20 },
-    fetchPolicy: "cache-and-network",
-  });
-
   // ── Mutations ──────────────────────────────────────────────────────────────
+  // Comments are handled by the shared CommentThread / useCommentThread.
   const client = useApolloClient();
-  const [addCommentMutation] = useMutation(AddCommentDocument);
-  const [toggleLikeMutation] = useMutation(ToggleLikeDocument);
-  const [toggleCommentLikeMutation] = useMutation(ToggleCommentLikeDocument);
   const [trackInteractionMutation] = useMutation(gql`
     mutation TrackInteractionDetail(
       $contentId: String!
@@ -684,8 +585,6 @@ export function ContentDetail({
   const muted = useFeedPreferencesStore((s) => s.videoMuted);
   const setVideoMuted = useFeedPreferencesStore((s) => s.setVideoMuted);
   const isDesktop = useIsDesktop();
-  const resolvedLiked = post?.isLikedByMe ?? false;
-  const resolvedLikeCount = post?.stats?.likes ?? 0;
   const resolvedSaved =
     (post as typeof post & { isSavedByMe?: boolean })?.isSavedByMe ?? false;
   const resolvedSaveCount = post?.stats?.saves ?? 0;
@@ -694,16 +593,24 @@ export function ContentDetail({
   >(null);
   const resolvedCommentCount =
     commentCountOverride ?? post?.stats?.comments ?? 0;
-  const [commentText, setCommentText] = useState("");
-  const [optimisticComments, setOptimisticComments] = useState<CommentItem[]>(
-    [],
-  );
-  const [commentLikeOverrides, setCommentLikeOverrides] = useState<
-    Record<string, { liked: boolean; likeCount: number }>
-  >({});
+
+  // Shared comment thread (list + replies + optimistic posting). The mobile PDP
+  // renders its list inline and drives the composer from the fixed bottom bar.
+  const mobileThread = useCommentThread({
+    contentId: id,
+    onCommentAdded: () => setCommentCountOverride(null),
+  });
+  const {
+    text: mobileCommentText,
+    setText: setMobileCommentText,
+    replyingTo: mobileReplyingTo,
+    setReplyingTo: setMobileReplyingTo,
+    handleSend: handleMobileSend,
+    inputRef: mobileCommentInputRef,
+  } = mobileThread;
+
   const [captionExpanded, setCaptionExpanded] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
   const commentsRef = useRef<HTMLDivElement>(null);
 
   const isVideo = post?.type === "VIDEO";
@@ -760,37 +667,7 @@ export function ContentDetail({
     });
   }
 
-  function writeLikeToCache(liked: boolean, likeCount: number) {
-    client.cache.modify({
-      id: client.cache.identify({ __typename: "Content", id }),
-      fields: {
-        isLikedByMe: () => liked,
-        stats: (existing: any) => ({ ...existing, likes: likeCount }),
-      },
-    });
-  }
-
   // ── Save handler ───────────────────────────────────────────────────────────
-  async function handleLike() {
-    if (!requireAuth({ contentId: id, action: "like" })) return;
-
-    const wasLiked = resolvedLiked;
-    const nextLiked = !wasLiked;
-    const nextCount = resolvedLikeCount + (wasLiked ? -1 : 1);
-    writeLikeToCache(nextLiked, nextCount);
-
-    try {
-      const { data: res } = await toggleLikeMutation({
-        variables: { contentId: id },
-      });
-      if (res?.toggleLike) {
-        writeLikeToCache(res.toggleLike.liked, res.toggleLike.likeCount);
-      }
-    } catch {
-      writeLikeToCache(wasLiked, resolvedLikeCount);
-    }
-  }
-
   async function handleSave(collectionId?: string) {
     if (!requireAuth({ contentId: id, action: "save" })) return;
     const wasSaved = resolvedSaved;
@@ -808,59 +685,6 @@ export function ContentDetail({
     }
   }
 
-  async function handleCommentLike(commentId: string) {
-    if (!requireAuth({ contentId: id, action: "like" })) return;
-
-    const existingComment =
-      optimisticComments.find((comment) => comment.id === commentId) ??
-      serverComments.find((comment) => comment.id === commentId);
-    if (!existingComment) return;
-
-    const currentLiked =
-      commentLikeOverrides[commentId]?.liked ??
-      existingComment.isLikedByMe ??
-      false;
-    const currentLikeCount =
-      commentLikeOverrides[commentId]?.likeCount ??
-      existingComment.likeCount ??
-      0;
-    const nextLiked = !currentLiked;
-    const nextLikeCount = Math.max(
-      0,
-      currentLikeCount + (currentLiked ? -1 : 1),
-    );
-
-    setCommentLikeOverrides((prev) => ({
-      ...prev,
-      [commentId]: { liked: nextLiked, likeCount: nextLikeCount },
-    }));
-
-    try {
-      const { data: res } = await toggleCommentLikeMutation({
-        variables: { commentId },
-      });
-      const result = res?.toggleCommentLike;
-      if (result) {
-        setCommentLikeOverrides((prev) => ({
-          ...prev,
-          [commentId]: {
-            liked: result.liked,
-            likeCount: result.likeCount,
-          },
-        }));
-      }
-    } catch {
-      setCommentLikeOverrides((prev) => ({
-        ...prev,
-        [commentId]: {
-          liked: currentLiked,
-          likeCount: currentLikeCount,
-        },
-      }));
-    }
-  }
-
-  // ── Share handler ──────────────────────────────────────────────────────────
   function handleShare() {
     shareMutation({ variables: { contentId: id } }).catch(() => {});
     if (navigator.share && post) {
@@ -916,94 +740,6 @@ export function ContentDetail({
     }
   }
 
-  // ── Comment submit ─────────────────────────────────────────────────────────
-  async function handleSend() {
-    const trimmed = commentText.trim();
-    if (!trimmed) return;
-    if (!requireAuth({ contentId: id, action: "comment" })) return;
-
-    setCommentText("");
-    const tempId = `temp-${Date.now()}`;
-    const optimistic: CommentItem = {
-      id: tempId,
-      text: trimmed,
-      creatorId: currentUser?.id ?? "me",
-      createdAt: new Date().toISOString() as unknown,
-      parentId: null,
-      likeCount: 0,
-      replyCount: 0,
-      isLikedByMe: false,
-      author: currentUser
-        ? {
-            id: currentUser.id,
-            profile: {
-              firstName: currentUser.profile?.firstName ?? null,
-              lastName: currentUser.profile?.lastName ?? null,
-              avatar: currentUser.profile?.avatar ?? null,
-            },
-          }
-        : null,
-    };
-    setOptimisticComments((p) => [optimistic, ...p]);
-    setCommentCountOverride(resolvedCommentCount + 1);
-
-    // Scroll to the comments heading after optimistic insert
-    commentsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-
-    try {
-      const { data: res } = await addCommentMutation({
-        variables: { input: { contentId: id, text: trimmed } },
-      });
-      if (res?.addComment) {
-        setOptimisticComments((p) =>
-          p.map((c) =>
-            c.id === tempId
-              ? { ...res.addComment, parentId: res.addComment.parentId ?? null }
-              : c,
-          ),
-        );
-      }
-    } catch {
-      setOptimisticComments((p) => p.filter((c) => c.id !== tempId));
-      setCommentCountOverride(resolvedCommentCount - 1);
-    }
-  }
-
-  // ── Load more comments on scroll ───────────────────────────────────────────
-  const serverComments = commentsData?.comments?.items ?? [];
-  const hasMore = commentsData?.comments?.hasMore ?? false;
-  const endCursor = commentsData?.comments?.endCursor;
-  const serverIds = new Set(serverComments.map((c) => c.id));
-  const allComments: CommentItem[] = [
-    ...optimisticComments.filter((c) => !serverIds.has(c.id)),
-    ...serverComments,
-  ];
-
-  const handleLoadMore = useCallback(() => {
-    if (!hasMore || !endCursor) return;
-    fetchMore({
-      variables: { contentId: id, limit: 20, after: endCursor },
-      updateQuery: (prev, { fetchMoreResult }) => {
-        if (!fetchMoreResult) return prev;
-        return {
-          comments: {
-            ...fetchMoreResult.comments,
-            items: [
-              ...(prev.comments?.items ?? []),
-              ...(fetchMoreResult.comments?.items ?? []),
-            ],
-          },
-        };
-      },
-    });
-  }, [hasMore, endCursor, fetchMore, id]);
-
-  const { sentinelRef: commentSentinelRef } = useInfiniteScroll({
-    hasMore,
-    loading: commentsLoading,
-    onLoadMore: handleLoadMore,
-  });
-
   // ── Follow — must be called unconditionally before any early returns ───────
   // Creator includes follow state when the detail query resolves.
   const postCreatorForFollow = data?.content?.creator;
@@ -1024,82 +760,129 @@ export function ContentDetail({
             isSheet ? "h-full" : "h-screen",
           ].join(" ")}
         >
+          {/* Left: media */}
           <div className="flex-1 bg-surface p-8">
             <Skeleton className="h-full w-full rounded-2xl bg-default/8" />
           </div>
+          {/* Right: info + actions + comments + composer */}
           <div
             className="flex shrink-0 flex-col border-l border-default bg-app"
             style={{ width: isSheet ? 420 : 380 }}
           >
-            <div className="flex h-12 items-center gap-2 border-b border-default px-3">
-              <Skeleton className="h-8 w-8 rounded-full" />
-              <Skeleton className="h-3.5 w-40 rounded-full" />
+            {/* Header */}
+            <div className="flex h-12 shrink-0 items-center gap-2 border-b border-default px-3">
+              <Skeleton className="h-8 w-8 rounded-full bg-default/8" />
+              <Skeleton className="h-3.5 w-40 rounded-full bg-default/8" />
             </div>
-            <div className="space-y-4 p-4">
+
+            {/* Meta: creator + title + caption */}
+            <div className="space-y-4 border-b border-default p-4">
               <div className="flex items-center gap-3">
-                <Skeleton className="h-10 w-10 rounded-full" />
+                <Skeleton className="h-10 w-10 rounded-full bg-default/8" />
                 <div className="flex-1 space-y-2">
-                  <Skeleton className="h-3.5 w-32 rounded-full" />
-                  <Skeleton className="h-3 w-20 rounded-full" />
+                  <Skeleton className="h-3.5 w-32 rounded-full bg-default/8" />
+                  <Skeleton className="h-3 w-20 rounded-full bg-default/8" />
                 </div>
+                <Skeleton className="h-8 w-20 rounded-full bg-default/8" />
               </div>
-              <Skeleton className="h-7 w-36 rounded-full" />
-              <Skeleton className="h-4 w-full rounded-full" />
-              <Skeleton className="h-4 w-4/5 rounded-full" />
-              <Skeleton className="h-24 w-full rounded-lg" />
-            </div>
-          </div>
-        </div>
-        <div className="fixed inset-0 z-70 overflow-y-auto bg-app md:hidden">
-          <div
-            className="sticky top-0 z-10 flex items-center gap-2 border-b border-default bg-app px-3 pb-2.5"
-            style={{ paddingTop: "max(env(safe-area-inset-top, 0px), 10px)" }}
-          >
-            <Skeleton className="h-10 w-10 rounded-full bg-default/8" />
-            <div className="min-w-0 flex-1 space-y-2">
-              <Skeleton className="h-3.5 w-36 rounded-full bg-default/8" />
-              <Skeleton className="h-3 w-24 rounded-full bg-default/8" />
-            </div>
-            <Skeleton className="h-10 w-10 rounded-full bg-default/8" />
-          </div>
-
-          <div className="h-[56svh] min-h-85 max-h-155 bg-surface p-4">
-            <Skeleton className="h-full w-full rounded-3xl bg-default/8" />
-          </div>
-
-          <div className="space-y-4 px-4 py-4 pb-28">
-            <div className="space-y-3">
-              <Skeleton className="h-8 w-32 rounded-full bg-default/8" />
-              <Skeleton className="h-6 w-4/5 rounded-full bg-default/8" />
+              <Skeleton className="h-7 w-36 rounded-full bg-default/8" />
               <Skeleton className="h-4 w-full rounded-full bg-default/8" />
-              <Skeleton className="h-4 w-3/4 rounded-full bg-default/8" />
+              <Skeleton className="h-4 w-4/5 rounded-full bg-default/8" />
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
-              {[...Array(3)].map((_, i) => (
-                <Skeleton
-                  key={i}
-                  className="h-16 rounded-xl border border-default bg-default/8"
-                />
+            {/* Action pills — Save / Comment / Message */}
+            <div className="flex items-center gap-2 border-b border-default px-4 py-3">
+              <Skeleton className="h-10 w-20 rounded-full bg-default/8" />
+              <Skeleton className="h-10 w-24 rounded-full bg-default/8" />
+              <Skeleton className="h-10 flex-1 rounded-full bg-default/8" />
+            </div>
+
+            {/* Comments list */}
+            <div className="flex-1 space-y-4 overflow-hidden p-4">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="flex gap-3">
+                  <Skeleton className="h-8 w-8 shrink-0 rounded-full bg-default/8" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-3 w-24 rounded-full bg-default/8" />
+                    <Skeleton className="h-3.5 w-full rounded-full bg-default/8" />
+                    <Skeleton className="h-3.5 w-2/3 rounded-full bg-default/8" />
+                  </div>
+                </div>
               ))}
             </div>
 
-            <div className="flex items-center gap-3 rounded-2xl border border-default px-3 py-3">
-              <Skeleton className="h-10 w-10 rounded-full bg-default/8" />
-              <div className="flex-1 space-y-2">
-                <Skeleton className="h-3.5 w-28 rounded-full bg-default/8" />
-                <Skeleton className="h-3 w-20 rounded-full bg-default/8" />
-              </div>
-              <Skeleton className="h-8 w-24 rounded-full bg-default/8" />
+            {/* Composer */}
+            <div className="flex items-center gap-2 border-t border-default p-3">
+              <Skeleton className="h-10 flex-1 rounded-2xl bg-default/8" />
+              <Skeleton className="h-9 w-9 rounded-full bg-default/8" />
             </div>
+          </div>
+        </div>
+        <div className="fixed inset-0 z-70 overflow-x-hidden overflow-y-auto bg-app md:hidden">
+          {/* Header — back + title + share */}
+          <div
+            className="sticky top-0 z-10 flex items-center gap-2 bg-app px-3 pb-2.5"
+            style={{ paddingTop: "max(env(safe-area-inset-top, 0px), 10px)" }}
+          >
+            <Skeleton className="h-10 w-10 rounded-full bg-default/8" />
+            <Skeleton className="h-4 min-w-0 flex-1 rounded-full bg-default/8" />
+            <Skeleton className="h-10 w-10 rounded-full bg-default/8" />
+          </div>
 
-            <div className="space-y-3 rounded-2xl border border-default px-4 py-4">
-              <Skeleton className="h-3 w-16 rounded-full bg-default/8" />
-              <Skeleton className="h-12 w-full rounded-xl bg-default/8" />
-              <Skeleton className="h-12 w-full rounded-xl bg-default/8" />
+          {/* Media */}
+          <div className="h-[56svh] min-h-85 max-h-155 bg-surface">
+            <Skeleton className="h-full w-full rounded-none bg-default/8" />
+          </div>
+
+          {/* Title + price + caption (PostInfo) */}
+          <div className="space-y-2.5 border-b border-default px-4 py-4">
+            <Skeleton className="h-7 w-28 rounded-full bg-default/8" />
+            <Skeleton className="h-5 w-4/5 rounded-full bg-default/8" />
+            <Skeleton className="h-4 w-full rounded-full bg-default/8" />
+            <Skeleton className="h-4 w-3/4 rounded-full bg-default/8" />
+          </div>
+
+          {/* Stats grid — Views / Saves / Comments */}
+          <div className="px-4 py-4">
+            <div className="grid grid-cols-3 divide-x divide-default rounded-lg border border-default bg-surface">
+              {[...Array(3)].map((_, i) => (
+                <div
+                  key={i}
+                  className="flex flex-col items-center gap-1.5 px-2 py-3"
+                >
+                  <Skeleton className="h-4 w-10 rounded-full bg-default/8" />
+                  <Skeleton className="h-2.5 w-12 rounded-full bg-default/8" />
+                </div>
+              ))}
             </div>
           </div>
 
+          {/* Creator row */}
+          <div className="flex items-center gap-3 border-b border-default px-4 py-3">
+            <Skeleton className="h-10 w-10 rounded-full bg-default/8" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-3.5 w-28 rounded-full bg-default/8" />
+              <Skeleton className="h-3 w-20 rounded-full bg-default/8" />
+            </div>
+            <Skeleton className="h-8 w-20 rounded-full bg-default/8" />
+          </div>
+
+          {/* Comments */}
+          <div className="space-y-4 px-4 pb-28 pt-4">
+            <Skeleton className="h-4 w-24 rounded-full bg-default/8" />
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="flex gap-3">
+                <Skeleton className="h-8 w-8 shrink-0 rounded-full bg-default/8" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-3 w-24 rounded-full bg-default/8" />
+                  <Skeleton className="h-3.5 w-full rounded-full bg-default/8" />
+                  <Skeleton className="h-3.5 w-2/3 rounded-full bg-default/8" />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Bottom bar — input pill + Save + Message */}
           <div
             className="fixed inset-x-0 bottom-0 border-t border-default bg-app px-3 pt-2.5"
             style={{
@@ -1107,10 +890,9 @@ export function ContentDetail({
             }}
           >
             <div className="flex items-center gap-2">
-              <Skeleton className="h-11 w-11 rounded-full bg-default/8" />
-              <Skeleton className="h-11 w-11 rounded-full bg-default/8" />
-              <Skeleton className="h-11 w-11 rounded-full bg-default/8" />
               <Skeleton className="h-11 flex-1 rounded-full bg-default/8" />
+              <Skeleton className="h-11 w-11 rounded-full bg-default/8" />
+              <Skeleton className="h-11 w-24 rounded-full bg-default/8" />
             </div>
           </div>
         </div>
@@ -1386,7 +1168,7 @@ export function ContentDetail({
           <div>
             <p className="text-xs font-semibold text-muted-foreground">Specs</p>
             <dl className="mt-2 grid grid-cols-2 gap-2">
-              {specs.slice(0, 8).map((spec) => (
+              {specs.map((spec) => (
                 <div
                   key={`${spec.key}-${spec.value}`}
                   className="rounded-lg border border-default bg-surface px-3 py-2"
@@ -1409,29 +1191,6 @@ export function ContentDetail({
   // Desktop inline action row
   const DesktopActions = (
     <div className="hidden md:flex items-center gap-2 px-4 py-3 border-b border-default">
-      <button
-        onClick={handleLike}
-        className="flex lg:cursor-pointer items-center gap-1.5 px-4 py-2.5 rounded-full border text-xs font-semibold transition-all active:scale-95"
-        style={{
-          borderColor: resolvedLiked
-            ? "rgb(var(--brand-primary))"
-            : "rgb(var(--color-border))",
-          color: resolvedLiked
-            ? "rgb(var(--brand-primary))"
-            : "rgb(var(--color-text-default))",
-          backgroundColor: resolvedLiked
-            ? "rgb(var(--brand-primary) / 0.08)"
-            : "transparent",
-        }}
-      >
-        <Heart
-          className="w-4 h-4"
-          fill={resolvedLiked ? "rgb(var(--brand-primary))" : "none"}
-          strokeWidth={1.8}
-        />
-        <span>{resolvedLikeCount > 0 ? fmt(resolvedLikeCount) : "Like"}</span>
-      </button>
-
       {/* Save pill — outlined, active = filled primary (matches PostCard) */}
       <button
         onClick={() => handleSave()}
@@ -1515,107 +1274,6 @@ export function ContentDetail({
           Message
         </button>
       )}
-    </div>
-  );
-
-  const renderCommentsSection = (attachRef = true) => (
-    <div ref={attachRef ? commentsRef : undefined} className="px-4 pt-4">
-      <h2 className="font-bold text-default text-sm mb-1">
-        {resolvedCommentCount > 0
-          ? `${fmt(resolvedCommentCount)} Comments`
-          : "Comments"}
-      </h2>
-      {commentsLoading && allComments.length === 0 && (
-        <div className="flex justify-center py-8">
-          <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-        </div>
-      )}
-      {!commentsLoading && allComments.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-10 text-center">
-          <span className="text-3xl mb-2">💬</span>
-          <p className="text-sm text-muted-foreground">No comments yet.</p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Be the first to comment!
-          </p>
-        </div>
-      )}
-      <div className="divide-y divide-border/70">
-        {allComments.map((comment) => {
-          const override = commentLikeOverrides[comment.id];
-          const resolvedComment = override
-            ? {
-                ...comment,
-                isLikedByMe: override.liked,
-                likeCount: override.likeCount,
-              }
-            : comment;
-          return (
-            <CommentRow
-              key={comment.id}
-              comment={resolvedComment}
-              currentUserId={currentUser?.id}
-              onToggleLike={handleCommentLike}
-            />
-          );
-        })}
-      </div>
-      <div ref={attachRef ? commentSentinelRef : undefined} className="h-1" />
-      <div className="h-6" />
-    </div>
-  );
-
-  const CommentInput = (
-    <div
-      className="flex items-center gap-2.5 px-3 pt-2.5 pb-3"
-      style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)" }}
-    >
-      <div
-        className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-white text-xs font-bold bg-linear-to-br ${avatarColors(currentUser?.id ?? "00")}`}
-      >
-        {currentUser?.id ? initials(currentUser.id) : "?"}
-      </div>
-      <input
-        ref={inputRef}
-        type="text"
-        value={commentText}
-        onChange={(e) => setCommentText(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            handleSend();
-          }
-        }}
-        onFocus={() => {
-          if (!requireAuth({ contentId: id, action: "comment" }))
-            inputRef.current?.blur();
-        }}
-        placeholder="Add a comment…"
-        maxLength={500}
-        className="flex-1 bg-surface text-default text-sm rounded-full px-4 py-2.5 outline-none placeholder:text-muted-foreground border border-default focus:border-primary transition-colors"
-      />
-      <button
-        onClick={handleSend}
-        disabled={!commentText.trim()}
-        className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center transition-opacity disabled:opacity-35"
-        style={{
-          background:
-            "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary, var(--brand-primary))))",
-        }}
-      >
-        <svg
-          className="w-4 h-4 text-white"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2.5}
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"
-          />
-        </svg>
-      </button>
     </div>
   );
 
@@ -1774,21 +1432,18 @@ export function ContentDetail({
               </span>
             </div>
 
-            {/* Scrollable middle: creator + info + actions + comments */}
-            <div className="flex-1 overflow-y-auto">
+            {/* Post meta — scrolls internally if tall, but caps so the comment
+                thread below always has room. */}
+            <div className="max-h-[55%] shrink-0 overflow-y-auto">
               {CreatorRow}
               {PostInfo}
               {DetailMeta}
               {DesktopActions}
-              {renderCommentsSection()}
             </div>
 
-            {/* Sticky comment input at bottom of right panel */}
-            <div
-              className="shrink-0 border-t border-default"
-              style={{ backgroundColor: "rgb(var(--color-bg-elevated))" }}
-            >
-              {CommentInput}
+            {/* Comments + replies + reply-aware composer (shared thread) */}
+            <div className="flex min-h-0 flex-1 flex-col border-t border-default">
+              <CommentThread contentId={id} contentCreatorId={post.creatorId} />
             </div>
           </div>
 
@@ -1810,7 +1465,7 @@ export function ContentDetail({
           MOBILE LAYOUT  (< md) — full PDP in the intercepted route
       ════════════════════════════════════════════════════════ */}
       {isDesktop === false && (
-        <div className="fixed inset-0 z-70 overflow-y-auto overscroll-contain bg-app">
+        <div className="fixed inset-0 z-70 overflow-x-hidden overflow-y-auto overscroll-contain bg-app">
           <header
             className="sticky top-0 z-40 flex items-center gap-2 bg-app/95 px-3 pb-2.5 backdrop-blur-md"
             style={{ paddingTop: "max(env(safe-area-inset-top, 0px), 10px)" }}
@@ -2004,10 +1659,10 @@ export function ContentDetail({
                 </div>
                 <div className="px-2 py-3 text-center">
                   <p className="text-sm font-bold text-default">
-                    {fmt(resolvedLikeCount)}
+                    {fmt(resolvedSaveCount)}
                   </p>
                   <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">
-                    Likes
+                    Saves
                   </p>
                 </div>
                 <div className="px-2 py-3 text-center">
@@ -2023,7 +1678,18 @@ export function ContentDetail({
 
             <section className="border-b border-default">{CreatorRow}</section>
             {DetailMeta}
-            {renderCommentsSection()}
+            <div ref={commentsRef} className="px-2 pt-2">
+              <h2 className="px-2 pb-1 text-sm font-bold text-default">
+                {resolvedCommentCount > 0
+                  ? `${fmt(resolvedCommentCount)} Comments`
+                  : "Comments"}
+              </h2>
+              <CommentList
+                thread={mobileThread}
+                contentCreatorId={post.creatorId}
+                className=""
+              />
+            </div>
           </main>
 
           <div
@@ -2032,32 +1698,54 @@ export function ContentDetail({
               paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)",
             }}
           >
+            {/* Replying-to chip — appears when the user taps Reply on a comment */}
+            {mobileReplyingTo && (
+              <div className="mb-2 flex items-center justify-between rounded-full bg-surface px-3 py-1.5 text-xs text-muted-foreground">
+                <span>
+                  Replying to{" "}
+                  <span className="font-medium text-default">
+                    {mobileReplyingTo.author?.profile?.firstName ??
+                      `User ${mobileReplyingTo.creatorId.slice(-6)}`}
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setMobileReplyingTo(null)}
+                  className="ml-2 text-muted-foreground hover:text-default"
+                  aria-label="Cancel reply"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
             <div className="flex items-center gap-2">
-              {/* Comment input — write a comment inline (no drawer) */}
+              {/* Comment / reply input — inline (no drawer) */}
               <input
-                ref={inputRef}
+                ref={mobileCommentInputRef as React.RefObject<HTMLInputElement>}
                 type="text"
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
+                value={mobileCommentText}
+                onChange={(e) => setMobileCommentText(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
-                    handleSend();
+                    handleMobileSend();
                   }
                 }}
                 onFocus={() => {
                   if (!requireAuth({ contentId: id, action: "comment" }))
-                    inputRef.current?.blur();
+                    mobileCommentInputRef.current?.blur();
                 }}
-                placeholder="Say something…"
+                placeholder={
+                  mobileReplyingTo ? "Write a reply…" : "Say something…"
+                }
                 maxLength={500}
                 className="min-w-0 flex-1 rounded-full border border-default bg-surface px-4 py-2.5 text-sm text-default outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
               />
 
-              {commentText.trim() ? (
+              {mobileCommentText.trim() ? (
                 <button
                   type="button"
-                  onClick={handleSend}
+                  onClick={handleMobileSend}
                   className="flex shrink-0 items-center justify-center gap-1.5 rounded-full px-5 py-3 text-sm font-bold text-white transition-transform active:scale-[0.98]"
                   style={{
                     background:
