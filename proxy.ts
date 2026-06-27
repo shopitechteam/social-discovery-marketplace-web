@@ -6,13 +6,34 @@ import { locales, defaultLocale } from "@/i18n/config";
 // Matched after locale prefix is stripped, so "/profile" covers "/{locale}/profile".
 const PROTECTED_PATHS = ["/profile", "/upload", "/notifications", "/settings"];
 
-function isProtected(pathname: string): boolean {
-  // Strip locale prefix to get the bare path
+// Routes a logged-in user shouldn't see — the marketing landing root and the
+// auth flows. They're redirected straight to the feed instead.
+const GUEST_ONLY_PATHS = ["/", "/auth"];
+
+// …except the OAuth callback, which must run even when a session already exists
+// (it finalizes tokens and posts them back to the login popup's opener).
+const GUEST_ONLY_EXCEPTIONS = ["/auth/tiktok-callback"];
+
+function getBarePath(pathname: string): string {
   const locale = locales.find(
     (l) => pathname === `/${l}` || pathname.startsWith(`/${l}/`),
   );
-  const bare = locale ? pathname.slice(`/${locale}`.length) || "/" : pathname;
+  return locale ? pathname.slice(`/${locale}`.length) || "/" : pathname;
+}
+
+function isProtected(pathname: string): boolean {
+  const bare = getBarePath(pathname);
   return PROTECTED_PATHS.some((p) => bare === p || bare.startsWith(`${p}/`));
+}
+
+function isGuestOnly(pathname: string): boolean {
+  const bare = getBarePath(pathname);
+  if (GUEST_ONLY_EXCEPTIONS.some((p) => bare === p || bare.startsWith(`${p}/`))) {
+    return false;
+  }
+  return GUEST_ONLY_PATHS.some((p) =>
+    p === "/" ? bare === "/" : bare === p || bare.startsWith(`${p}/`),
+  );
 }
 
 function getPathLocale(pathname: string) {
@@ -25,20 +46,31 @@ export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const pathnameLocale = getPathLocale(pathname);
 
-  // ── Auth guard ────────────────────────────────────────────────────────────
   // accessToken is stored in localStorage by Zustand, so the proxy can't read
   // it directly. We rely on a lightweight "shopi-auth-hint" cookie that the
   // client sets on login and clears on logout (see stores/auth.ts).
-  if (isProtected(pathname)) {
-    const hasSession = !!request.cookies.get("shopi-auth-hint")?.value;
-    if (!hasSession) {
-      const locale = pathnameLocale ?? defaultLocale;
+  const hasSession = !!request.cookies.get("shopi-auth-hint")?.value;
 
-      const loginUrl = request.nextUrl.clone();
-      loginUrl.pathname = `/${locale}/auth/auth-welcome`;
-      loginUrl.search = `?from=${encodeURIComponent(pathname)}`;
-      return NextResponse.redirect(loginUrl);
-    }
+  // ── Auth guard ────────────────────────────────────────────────────────────
+  if (isProtected(pathname) && !hasSession) {
+    const locale = pathnameLocale ?? defaultLocale;
+
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = `/${locale}/auth/auth-welcome`;
+    loginUrl.search = `?from=${encodeURIComponent(pathname)}`;
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // ── Logged-in guard ───────────────────────────────────────────────────────
+  // A signed-in user shouldn't land on the marketing page or the auth flows —
+  // send them straight to the feed.
+  if (hasSession && isGuestOnly(pathname)) {
+    const locale = pathnameLocale ?? defaultLocale;
+
+    const feedUrl = request.nextUrl.clone();
+    feedUrl.pathname = `/${locale}/feed`;
+    feedUrl.search = "";
+    return NextResponse.redirect(feedUrl);
   }
 
   // ── Locale prefix ─────────────────────────────────────────────────────────

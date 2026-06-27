@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
+import { Loader2 } from "lucide-react";
 import { useInbox } from "../hooks/useInbox";
 import { ChatDetail } from "./ChatDetail";
 
@@ -18,8 +19,27 @@ interface Props {
  * Mirrors {@link ChatDetailScreen} but renders in a relative, full-height
  * container (not `fixed inset-0`) so it can live as a third column, and routes
  * the back affordance to `onClose` instead of the inbox's history-based back.
+ *
+ * `useInbox` reads `useSearchParams()`, which—without a Suspense boundary—forces
+ * the entire enclosing route (the feed behind the sheet) to fall back to a
+ * client render, blanking the page for a frame. The inner body is wrapped in
+ * Suspense so that de-opt is contained to this column.
  */
-export function EmbeddedChatPanel({ lang, contentId, onClose }: Props) {
+export function EmbeddedChatPanel(props: Props) {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-full flex-col items-center justify-center gap-3 bg-app">
+          <Loader2 size={26} className="animate-spin text-primary opacity-70" />
+        </div>
+      }
+    >
+      <EmbeddedChatPanelBody {...props} />
+    </Suspense>
+  );
+}
+
+function EmbeddedChatPanelBody({ lang, contentId, onClose }: Props) {
   const inbox = useInbox(lang);
 
   // Ensure the conversation for this post in place. `skipUrlSync` keeps the
