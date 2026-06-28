@@ -10,11 +10,12 @@ import DesktopFeed from "./DesktopFeed";
 
 interface Props {
   lang: string;
+  visible?: boolean;
 }
 
 type Tab = "for-you" | "following" | "nearby";
 
-export function FeedPage({ lang }: Props) {
+export function FeedPage({ lang, visible = true }: Props) {
   const searchParams = useSearchParams();
   const initialTab = (searchParams.get("tab") as Tab | null) ?? "for-you";
   const [tab, setTab] = useState<Tab>(initialTab);
@@ -87,14 +88,17 @@ export function FeedPage({ lang }: Props) {
             active-video election. */}
         <div className="relative bg-surface">
           <div className={tab === "for-you" ? undefined : "hidden"}>
-            <FeedGrid lang={lang} />
+            <FeedGrid lang={lang} active={visible && tab === "for-you"} />
           </div>
 
           {/* Following mounts lazily too, to avoid firing its feed query on
               page load when the user may never leave For-You. */}
           {openedTabs.has("following") ? (
             <div className={tab === "following" ? undefined : "hidden"}>
-              <FollowingGrid lang={lang} />
+              <FollowingGrid
+                lang={lang}
+                active={visible && tab === "following"}
+              />
             </div>
           ) : null}
 
@@ -102,7 +106,7 @@ export function FeedPage({ lang }: Props) {
               mount), then stays mounted like the others. */}
           {openedTabs.has("nearby") ? (
             <div className={tab === "nearby" ? undefined : "hidden"}>
-              <NearbyGrid lang={lang} />
+              <NearbyGrid lang={lang} active={visible && tab === "nearby"} />
             </div>
           ) : null}
         </div>

@@ -69,10 +69,15 @@ export function MainShell({
               : "calc(var(--nav-height, 0px) + var(--safe-bottom, 0px))",
           }}
         >
-          {/* Persistent Home feed — hidden (not unmounted) when off /feed. */}
+          {/* Persistent Home feed — hidden (not unmounted) when off /feed.
+              Wrapped in Suspense because FeedPage reads useSearchParams(): on a
+              client-render bail that boundary keeps FeedPage (and its mounted
+              feed window) alive instead of blanking/remounting it. */}
           {feedMounted ? (
             <div className={onFeed ? undefined : "hidden"}>
-              <FeedPage lang={lang} />
+              <Suspense fallback={null}>
+                <FeedPage lang={lang} visible={onFeed} />
+              </Suspense>
             </div>
           ) : null}
 

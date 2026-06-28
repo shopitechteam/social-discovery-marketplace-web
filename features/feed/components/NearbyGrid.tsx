@@ -24,11 +24,12 @@ interface Location {
 
 interface Props {
   lang: string;
+  active?: boolean;
 }
 
 const RADIUS_OPTIONS = [5, 10, 25, 50, 100, 200] as const;
 
-export function NearbyGrid({ lang }: Props) {
+export function NearbyGrid({ lang, active = true }: Props) {
   const [permState, setPermState] = useState<PermissionState>("checking");
   const [location, setLocation] = useState<Location | null>(null);
   const [geoError, setGeoError] = useState<string | null>(null);
@@ -58,6 +59,7 @@ export function NearbyGrid({ lang }: Props) {
   );
 
   const { sentinelRef } = useInfiniteScroll({
+    enabled: active,
     hasMore,
     loading: loading || loadingMore,
     onLoadMore: loadMore,

@@ -1,6 +1,7 @@
 "use client";
 
 import { ApolloLink, HttpLink, Observable } from "@apollo/client";
+import type { Reference } from "@apollo/client/cache";
 import { CombinedGraphQLErrors } from "@apollo/client/errors";
 import { ErrorLink } from "@apollo/client/link/error";
 import { setContext } from "@apollo/client/link/context";
@@ -91,23 +92,44 @@ async function doRefresh(
  *   through. Only when there is no existing window do we take the incoming page
  *   verbatim.
  */
-type FeedItem = { __ref?: string; id?: string };
+type FeedItem = Reference | { __ref?: string; id?: string };
 type FeedPage = { items?: FeedItem[] } & Record<string, unknown>;
+type ReadField = <T = unknown>(fieldName: string, from?: FeedItem) => T | undefined;
 
-const itemKey = (it: FeedItem) => it.__ref ?? it.id;
+function itemKey(it: FeedItem, readField: ReadField) {
+  if ("__ref" in it && it.__ref) return it.__ref;
+  const id = readField<string>("id", it);
+  if (id) return id;
+  return "id" in it ? it.id : undefined;
+}
+
+function keyedSet(items: FeedItem[], readField: ReadField) {
+  const keys = new Set<string>();
+  for (const item of items) {
+    const key = itemKey(item, readField);
+    if (key) keys.add(key);
+  }
+  return keys;
+}
 
 function mergeFeedPage(
   existing: FeedPage | undefined,
   incoming: FeedPage,
-  { args }: { args: Record<string, unknown> | null },
+  {
+    args,
+    readField,
+  }: { args: Record<string, unknown> | null; readField: ReadField },
 ): FeedPage {
   const incomingItems = incoming?.items ?? [];
   const prevItems = existing?.items ?? [];
 
   // Pagination (fetchMore): append, deduped against everything we already have.
   if (args?.after) {
-    const seen = new Set(prevItems.map(itemKey));
-    const deduped = incomingItems.filter((it) => !seen.has(itemKey(it)));
+    const seen = keyedSet(prevItems, readField);
+    const deduped = incomingItems.filter((it) => {
+      const key = itemKey(it, readField);
+      return !key || !seen.has(key);
+    });
     return { ...incoming, items: [...prevItems, ...deduped] };
   }
 
@@ -117,9 +139,23 @@ function mergeFeedPage(
   // First page on a populated cache (background refresh). Keep the accumulated
   // window intact: put the refreshed page-1 items first, then everything from
   // the old window that isn't in page-1 (i.e. the scrolled-past tail).
-  const incomingKeys = new Set(incomingItems.map(itemKey));
-  const tail = prevItems.filter((it) => !incomingKeys.has(itemKey(it)));
-  return { ...incoming, items: [...incomingItems, ...tail] };
+  const incomingKeys = keyedSet(incomingItems, readField);
+  const tail = prevItems.filter((it) => {
+    const key = itemKey(it, readField);
+    return !key || !incomingKeys.has(key);
+  });
+  // pageInfo: if the user had scrolled past page 1 (there's a tail), keep the
+  // EXISTING cursor — it points at the end of the accumulated window, so the
+  // next `loadMore` continues forward instead of re-requesting page 2 (which
+  // would refetch posts already shown and stall pagination). If there's NO tail
+  // (the window was just page 1), take the fresh incoming pageInfo so a shifted
+  // page-1 cursor stays valid.
+  return {
+    ...incoming,
+    pageInfo:
+      tail.length > 0 ? (existing?.pageInfo ?? incoming.pageInfo) : incoming.pageInfo,
+    items: [...incomingItems, ...tail],
+  };
 }
 
 function createClient() {

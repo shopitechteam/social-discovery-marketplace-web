@@ -7,6 +7,7 @@ interface UseInfiniteScrollOptions {
   loading: boolean;
   onLoadMore: () => void;
   rootMargin?: string;
+  enabled?: boolean;
 }
 
 interface UseInfiniteScrollResult {
@@ -26,25 +27,45 @@ export function useInfiniteScroll({
   loading,
   onLoadMore,
   rootMargin = "400px",
+  enabled = true,
 }: UseInfiniteScrollOptions): UseInfiniteScrollResult {
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const el = sentinelRef.current;
     if (!el) return;
+    if (!enabled) return;
+
+    const maybeLoadMore = () => {
+      if (hasMore && !loading) onLoadMore();
+    };
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loading) {
-          onLoadMore();
-        }
+        if (entries[0].isIntersecting) maybeLoadMore();
       },
       { rootMargin },
     );
 
     observer.observe(el);
-    return () => observer.disconnect();
-  }, [hasMore, loading, onLoadMore, rootMargin]);
+
+    // When a feed is hidden with display:none, the observer can be attached
+    // while the sentinel has no layout box. Re-check on the next frame after
+    // the feed becomes enabled so returning to Home can page immediately if
+    // the sentinel is already inside the load margin.
+    const frame = requestAnimationFrame(() => {
+      const rect = el.getBoundingClientRect();
+      const margin = Number.parseFloat(rootMargin) || 0;
+      if (rect.top <= window.innerHeight + margin && rect.bottom >= -margin) {
+        maybeLoadMore();
+      }
+    });
+
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [enabled, hasMore, loading, onLoadMore, rootMargin]);
 
   return { sentinelRef };
 }
