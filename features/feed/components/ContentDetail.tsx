@@ -751,7 +751,11 @@ export function ContentDetail({
   });
 
   // ── Loading state — full-screen TikTok skeleton ───────────────────────────
-  if (loading) {
+  // Only show the skeleton on the FIRST load (no data yet). With
+  // cache-and-network, `loading` flips true on every background refresh too —
+  // gating on `!post` keeps cached content on screen instead of flashing the
+  // skeleton each time the query refetches.
+  if (loading && !post) {
     return (
       <>
         <div

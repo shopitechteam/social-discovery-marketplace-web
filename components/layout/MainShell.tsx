@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { Suspense, useState, type ReactNode } from "react";
 import { BottomNav, shouldHideBottomNav } from "@/components/layout/BottomNav";
 import { RouteScrollRestoration } from "@/components/layout/RouteScrollRestoration";
 import { FeedPage } from "@/features/feed/components/FeedPage";
@@ -46,7 +46,13 @@ export function MainShell({
 
   return (
     <>
-      <RouteScrollRestoration />
+      {/* Wrapped in Suspense: RouteScrollRestoration reads useSearchParams(),
+          which otherwise opts the whole route into a client-render bail and can
+          thrash dynamic routes (e.g. /content/[id]) — remounting the page and
+          reflashing its skeleton. The boundary contains that de-opt here. */}
+      <Suspense fallback={null}>
+        <RouteScrollRestoration />
+      </Suspense>
 
       <div
         className={[
