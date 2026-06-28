@@ -57,10 +57,11 @@ export function StepMediaReview({ onBack }: { onBack?: () => void }) {
   function handleAddMore(files: FileList) {
     if (!draftId || !files.length) return;
     const remaining = 10 - mediaItems.length;
+    const base = mediaItems.length;
     Array.from(files)
       .slice(0, remaining)
-      .forEach((file) => {
-        startImageUpload(file, draftId);
+      .forEach((file, i) => {
+        startImageUpload(file, draftId, base + i);
       });
   }
 
@@ -131,8 +132,10 @@ export function StepMediaReview({ onBack }: { onBack?: () => void }) {
         </button>
       </div>
 
-      {/* Processing banner — shown while background upload is running */}
-      {anyProcessing && (
+      {/* Processing banner — images only. Video uploads run silently in the
+          background (the post is published instantly and goes live once Mux
+          finishes), so we never show a "processing" indicator for video. */}
+      {anyProcessing && contentType !== "video" && (
         <div
           className="mx-4 mb-2 rounded-xl px-3 py-2 flex items-center gap-2"
           style={{
@@ -147,9 +150,7 @@ export function StepMediaReview({ onBack }: { onBack?: () => void }) {
               color: "rgb(var(--brand-primary))",
             }}
           >
-            {contentType === "video"
-              ? "Video uploading in background — you can keep editing"
-              : "Processing images in background…"}
+            Processing images in background…
           </span>
         </div>
       )}
@@ -189,8 +190,12 @@ export function StepMediaReview({ onBack }: { onBack?: () => void }) {
               <div className="w-full h-full" style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }} />
             )}
 
-            {/* Status badge — only while not ready */}
-            {preview.status !== "ready" && (
+            {/* Status badge. For video we never show the uploading/processing
+                spinner — the upload runs silently in the background and the user
+                sees their local preview. We still surface a "Failed" badge for
+                video so genuine errors aren't hidden. Images keep the full badge. */}
+            {preview.status !== "ready" &&
+              (preview.status === "error" || contentType !== "video") && (
               <div
                 className="absolute top-3 left-3 rounded-full px-3 py-1 flex items-center gap-1.5"
                 style={{
@@ -219,8 +224,8 @@ export function StepMediaReview({ onBack }: { onBack?: () => void }) {
               </div>
             )}
 
-            {/* Ready check */}
-            {preview.status === "ready" && (
+            {/* Ready check — image only; video has no visible processing state. */}
+            {preview.status === "ready" && contentType !== "video" && (
               <div
                 className="absolute top-3 left-3 rounded-full px-3 py-1 flex items-center gap-1.5"
                 style={{

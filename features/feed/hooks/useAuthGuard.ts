@@ -6,27 +6,24 @@ import { useAuthStore } from "@/stores/auth";
 const INTENT_KEY = "shopi-auth-intent";
 
 export interface AuthIntent {
-  scrollY: number;
   contentId?: string;
-  action?: "like" | "comment";
+  action?: "like" | "comment" | "save";
 }
 
 /**
- * Save the current scroll position + what the user was trying to do,
- * then redirect to the auth-welcome screen with ?from= pointing back here.
- *
- * On return from auth, FeedGrid reads and restores the intent.
+ * Save what the user was trying to do, then redirect to the auth-welcome
+ * screen with ?from= pointing back here. On return from auth, the caller
+ * reads the intent to resume the pending action.
  */
 export function useAuthGuard(lang: string) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated());
   const router = useRouter();
   const pathname = usePathname();
 
-  function requireAuth(intent?: Omit<AuthIntent, "scrollY">): boolean {
+  function requireAuth(intent?: AuthIntent): boolean {
     if (isAuthenticated) return true;
 
-    const scrollY = typeof window !== "undefined" ? window.scrollY : 0;
-    const data: AuthIntent = { scrollY, ...intent };
+    const data: AuthIntent = { ...intent };
     sessionStorage.setItem(INTENT_KEY, JSON.stringify(data));
 
     const from = encodeURIComponent(pathname);

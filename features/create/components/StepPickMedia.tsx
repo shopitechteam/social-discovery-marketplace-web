@@ -53,13 +53,13 @@ export function StepPickMedia() {
 
       // Fire-and-forget all uploads — they run in background
       const fileList = Array.from(files).slice(0, kind === "video" ? 1 : 10);
-      for (const file of fileList) {
+      fileList.forEach((file, i) => {
         if (kind === "image") {
-          startImageUpload(file, did);
+          startImageUpload(file, did, i);
         } else {
           startVideoUpload(file, did);
         }
-      }
+      });
 
       // Skip media review — go straight to edit details (TikTok style)
       setStep("edit");

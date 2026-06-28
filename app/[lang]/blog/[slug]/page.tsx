@@ -260,8 +260,6 @@ export default async function BlogPostPage({ params }: Props) {
                             borderRadius: "50%",
                             background: `${catColor}22`,
                             color: catColor,
-                            fontSize: "0.65rem",
-                            fontWeight: 700,
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
@@ -269,7 +267,18 @@ export default async function BlogPostPage({ params }: Props) {
                             marginTop: 3,
                           }}
                         >
-                          ✓
+                          <svg
+                            width="11"
+                            height="11"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M20 6L9 17l-5-5" />
+                          </svg>
                         </span>
                         {item}
                       </li>
@@ -326,9 +335,16 @@ export default async function BlogPostPage({ params }: Props) {
                         transition: "border-color 0.15s ease",
                       }}
                     >
-                      <span style={{ fontSize: "1.1rem", flexShrink: 0, marginTop: 1 }}>
-                        {url.includes("tiktok") ? "🎬" : "🛒"}
-                      </span>
+                      <span
+                        style={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: "50%",
+                          background: catColor,
+                          flexShrink: 0,
+                          marginTop: 7,
+                        }}
+                      />
                       <div>
                         <div style={{ fontSize: "0.875rem", fontWeight: 600, color: "rgb(var(--color-text))", marginBottom: "0.25rem" }}>
                           {label} ↗
@@ -407,13 +423,12 @@ export default async function BlogPostPage({ params }: Props) {
             <div
               style={{
                 borderRadius: 16,
-                background: `linear-gradient(135deg, rgb(var(--brand-primary) / 0.1), rgb(var(--brand-accent) / 0.08))`,
-                border: "1px solid rgb(var(--brand-primary) / 0.2)",
+                background: "rgb(var(--color-bg-subtle))",
+                border: "1px solid rgb(var(--color-border))",
                 padding: "2rem",
                 textAlign: "center",
               }}
             >
-              <div style={{ fontSize: "2rem", marginBottom: "0.75rem" }}>🚀</div>
               <h3
                 style={{
                   fontFamily: "var(--font-display)",
@@ -423,13 +438,13 @@ export default async function BlogPostPage({ params }: Props) {
                   marginBottom: "0.5rem",
                 }}
               >
-                Ready to start selling on Shopi?
+                Ready to buy and sell locally?
               </h3>
               <p style={{ fontSize: "0.875rem", color: "rgb(var(--color-text-muted))", marginBottom: "1.25rem" }}>
-                Join thousands of Kenyan sellers building their business through social discovery.
+                Open the feed, discover what is selling near you, and message the seller directly. Free to use.
               </p>
               <Link
-                href="/#download"
+                href="/feed"
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
@@ -443,7 +458,7 @@ export default async function BlogPostPage({ params }: Props) {
                   textDecoration: "none",
                 }}
               >
-                Download Shopi →
+                Open the feed →
               </Link>
             </div>
           </article>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSyncExternalStore } from "react";
+import { useInboxUnreadCount } from "@/features/messaging/hooks/useUnreadCount";
 
 type Tab = {
   key: string;
@@ -16,7 +17,7 @@ const tabs: Tab[] = [
   {
     key: "feed",
     path: "feed",
-    label: "For you",
+    label: "Feed",
     icon: (active) => (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
         <path
@@ -31,37 +32,6 @@ const tabs: Tab[] = [
           d="M9 21V12h6v9"
           stroke="currentColor"
           strokeWidth={active ? 2.2 : 1.7}
-          strokeLinejoin="round"
-        />
-      </svg>
-    ),
-  },
-  {
-    key: "following",
-    path: "following",
-    label: "Following",
-    icon: (active) => (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <circle
-          cx="10"
-          cy="8"
-          r="3.5"
-          stroke="currentColor"
-          strokeWidth={active ? 2.2 : 1.7}
-          fill={active ? "currentColor" : "none"}
-          fillOpacity={active ? 0.15 : 0}
-        />
-        <path
-          d="M2 20c0-3.314 3.582-6 8-6s8 2.686 8 6"
-          stroke="currentColor"
-          strokeWidth={active ? 2.2 : 1.7}
-          strokeLinecap="round"
-        />
-        <path
-          d="M17 11l2 2 4-4"
-          stroke="currentColor"
-          strokeWidth={active ? 2.2 : 1.7}
-          strokeLinecap="round"
           strokeLinejoin="round"
         />
       </svg>
@@ -115,70 +85,45 @@ const tabs: Tab[] = [
       </svg>
     ),
   },
-  {
-    key: "community",
-    path: "community",
-    label: "Community",
-    icon: (active) => (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <circle
-          cx="9"
-          cy="8"
-          r="3"
-          stroke="currentColor"
-          strokeWidth={active ? 2.2 : 1.7}
-          fill={active ? "currentColor" : "none"}
-          fillOpacity={active ? 0.15 : 0}
-        />
-        <circle
-          cx="17"
-          cy="9"
-          r="2.5"
-          stroke="currentColor"
-          strokeWidth={active ? 2 : 1.5}
-          fill={active ? "currentColor" : "none"}
-          fillOpacity={active ? 0.12 : 0}
-        />
-        <path
-          d="M2 20c0-3.314 3.134-6 7-6s7 2.686 7 6"
-          stroke="currentColor"
-          strokeWidth={active ? 2.2 : 1.7}
-          strokeLinecap="round"
-        />
-        <path
-          d="M16 17c1.5-.8 3.5-.3 4.5 1.5"
-          stroke="currentColor"
-          strokeWidth={active ? 2 : 1.5}
-          strokeLinecap="round"
-        />
-      </svg>
-    ),
-  },
-  {
-    key: "nearby",
-    path: "nearby",
-    label: "Near Me",
-    icon: (active) => (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <path
-          d="M12 2C8.686 2 6 4.686 6 8c0 4.418 6 12 6 12s6-7.582 6-12c0-3.314-2.686-6-6-6Z"
-          stroke="currentColor"
-          strokeWidth={active ? 2.2 : 1.7}
-          fill={active ? "currentColor" : "none"}
-          fillOpacity={active ? 0.12 : 0}
-        />
-        <circle
-          cx="12"
-          cy="8"
-          r="2"
-          stroke="currentColor"
-          strokeWidth={active ? 2 : 1.5}
-          fill={active ? "currentColor" : "none"}
-          fillOpacity={active ? 0.4 : 0}
-        />
-      </svg>
-    ),
-  },
+  // {
+  //   key: "community",
+  //   path: "community",
+  //   label: "Community",
+  //   icon: (active) => (
+  //     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+  //       <circle
+  //         cx="9"
+  //         cy="8"
+  //         r="3"
+  //         stroke="currentColor"
+  //         strokeWidth={active ? 2.2 : 1.7}
+  //         fill={active ? "currentColor" : "none"}
+  //         fillOpacity={active ? 0.15 : 0}
+  //       />
+  //       <circle
+  //         cx="17"
+  //         cy="9"
+  //         r="2.5"
+  //         stroke="currentColor"
+  //         strokeWidth={active ? 2 : 1.5}
+  //         fill={active ? "currentColor" : "none"}
+  //         fillOpacity={active ? 0.12 : 0}
+  //       />
+  //       <path
+  //         d="M2 20c0-3.314 3.134-6 7-6s7 2.686 7 6"
+  //         stroke="currentColor"
+  //         strokeWidth={active ? 2.2 : 1.7}
+  //         strokeLinecap="round"
+  //       />
+  //       <path
+  //         d="M16 17c1.5-.8 3.5-.3 4.5 1.5"
+  //         stroke="currentColor"
+  //         strokeWidth={active ? 2 : 1.5}
+  //         strokeLinecap="round"
+  //       />
+  //     </svg>
+  //   ),
+  // },
   {
     key: "notifications",
     path: "notifications",
@@ -224,6 +169,7 @@ const tabs: Tab[] = [
 
 export function SideNav({ lang = "en" }: { lang: string }) {
   const pathname = usePathname();
+  const unreadCount = useInboxUnreadCount();
 
   // Hide on full create flow
   if (
@@ -243,7 +189,11 @@ export function SideNav({ lang = "en" }: { lang: string }) {
     >
       {/* Logo */}
       <div className="flex items-center px-6 py-5 shrink-0">
-        <Link href={`/${lang}/feed`} className="flex items-center gap-2.5">
+        <Link
+          href={`/${lang}/feed`}
+          scroll={false}
+          className="flex items-center gap-2.5"
+        >
           <Image
             src="/assets/shopi-logo.png"
             height={32}
@@ -273,6 +223,7 @@ export function SideNav({ lang = "en" }: { lang: string }) {
             <Link
               key={tab.key}
               href={href}
+              scroll={false}
               className="flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-150 group"
               style={{
                 color: isActive
@@ -287,6 +238,11 @@ export function SideNav({ lang = "en" }: { lang: string }) {
             >
               {tab.icon(isActive)}
               <span className="text-sm">{tab.label}</span>
+              {tab.key === "notifications" && unreadCount > 0 ? (
+                <span className="ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-[11px] font-semibold text-white">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              ) : null}
             </Link>
           );
         })}
@@ -315,7 +271,10 @@ function ThemeToggle() {
   const isDark = useSyncExternalStore(
     (cb) => {
       const observer = new MutationObserver(cb);
-      observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+      observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ["class"],
+      });
       return () => observer.disconnect();
     },
     () => document.documentElement.classList.contains("dark"),
@@ -327,7 +286,9 @@ function ThemeToggle() {
     const next = !html.classList.contains("dark");
     html.classList.toggle("dark", next);
     // No setState needed — MutationObserver triggers useSyncExternalStore re-render
-    try { localStorage.setItem("theme", next ? "dark" : "light"); } catch {}
+    try {
+      localStorage.setItem("theme", next ? "dark" : "light");
+    } catch {}
   }
 
   // Render a neutral placeholder until we know the real theme (avoids flash)
@@ -354,16 +315,33 @@ function ThemeToggle() {
       {isDark ? (
         /* Sun icon */
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="12" r="4.5" stroke="currentColor" strokeWidth="1.7" fill="currentColor" fillOpacity="0.15" />
-          <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
-            stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+          <circle
+            cx="12"
+            cy="12"
+            r="4.5"
+            stroke="currentColor"
+            strokeWidth="1.7"
+            fill="currentColor"
+            fillOpacity="0.15"
+          />
+          <path
+            d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
+            stroke="currentColor"
+            strokeWidth="1.7"
+            strokeLinecap="round"
+          />
         </svg>
       ) : (
         /* Moon icon */
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"
-            stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"
-            fill="currentColor" fillOpacity="0.12" />
+          <path
+            d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"
+            stroke="currentColor"
+            strokeWidth="1.7"
+            strokeLinejoin="round"
+            fill="currentColor"
+            fillOpacity="0.12"
+          />
         </svg>
       )}
       <span className="text-sm">{isDark ? "Light mode" : "Dark mode"}</span>

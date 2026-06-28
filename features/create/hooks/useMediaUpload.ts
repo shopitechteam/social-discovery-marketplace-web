@@ -34,6 +34,10 @@ import {
   type MediaReadyPayload,
   type MediaFailedPayload,
 } from "@/lib/socket";
+import {
+  captureVideoFrames,
+  setCachedVideoFrames,
+} from "@/features/create/utils/captureVideoFrames";
 
 const WS_TIMEOUT_MS = 120_000;
 const POLL_INTERVAL_MS = 3_000;
@@ -142,7 +146,7 @@ export function useMediaUpload() {
 
   // ── Image: direct PUT to R2, then queued Sharp processing ──────────────────
   const startImageUpload = useCallback(
-    (file: File, did: string): string => {
+    (file: File, did: string, sortOrder = 0): string => {
       const localUri = URL.createObjectURL(file);
       const tempId = `temp-img-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
@@ -168,7 +172,7 @@ export function useMediaUpload() {
           addMediaItem({ id: mediaAssetId, localUri, type: "image", status: "uploading" });
 
           await attachMediaAsset({
-            variables: { draftId: did, mediaAssetId, sortOrder: 0 },
+            variables: { draftId: did, mediaAssetId, sortOrder },
           });
 
           const uploadRes = await fetch(uploadUrl, {
@@ -215,6 +219,15 @@ export function useMediaUpload() {
       const tempId = `temp-vid-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
       addMediaItem({ id: tempId, localUri, type: "video", status: "uploading" });
+
+      // Snapshot a few frames from the local file NOW (instant, no Mux wait) so
+      // the edit step can run AI auto-fill immediately. Cached by draftId and
+      // consumed once in StepEdit. Best-effort — never blocks the upload.
+      captureVideoFrames(file)
+        .then((frames) => {
+          if (frames.length > 0) setCachedVideoFrames(did, frames);
+        })
+        .catch(() => undefined);
 
       (async () => {
         let mediaAssetId: string | null = null;

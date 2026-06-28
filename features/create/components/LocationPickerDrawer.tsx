@@ -70,6 +70,16 @@ interface LocationResult {
   coordinates?: { lat: number; lng: number } | null;
 }
 
+interface ReverseGeocodeResult {
+  googlePlaceId?: string | null;
+  placeName?: string | null;
+  formattedAddress?: string | null;
+  countyName?: string | null;
+  subCountyName?: string | null;
+  wardName?: string | null;
+  coordinates?: { lat: number; lng: number } | null;
+}
+
 // ─── GQL ─────────────────────────────────────────────────────────────────────
 
 const NEARBY_PAGE: TypedDocumentNode<
@@ -124,6 +134,26 @@ const RESOLVE_PLACE: TypedDocumentNode<
   }
 `;
 
+const REVERSE_GEOCODE: TypedDocumentNode<
+  { reverseGeocode: { matched: boolean; location: ReverseGeocodeResult } },
+  { lat: number; lng: number }
+> = gql`
+  query CreateLocationReverseGeocode($lat: Float!, $lng: Float!) {
+    reverseGeocode(lat: $lat, lng: $lng) {
+      matched
+      location {
+        googlePlaceId
+        placeName
+        formattedAddress
+        countyName
+        subCountyName
+        wardName
+        coordinates { lat lng }
+      }
+    }
+  }
+`;
+
 // ─── Haversine distance (metres) ─────────────────────────────────────────────
 
 function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -146,6 +176,14 @@ function radiusLabel(r: number): string {
   return r >= 1000 ? `${r / 1000} km` : `${r} m`;
 }
 
+function firstText(...values: Array<string | null | undefined>): string | undefined {
+  return values.find((value) => value?.trim())?.trim();
+}
+
+function gpsFallbackLabel(lat: number, lng: number): string {
+  return `Current location (${lat.toFixed(5)}, ${lng.toFixed(5)})`;
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 type Tab = "nearby" | "all";
@@ -156,11 +194,47 @@ interface Props {
   onSelect: (loc: DraftLocation) => void;
 }
 
+function RadioCircle({ checked }: { checked: boolean }) {
+  return (
+    <span
+      className="flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors"
+      style={{
+        borderColor: checked ? "rgb(var(--brand-primary))" : "rgb(var(--color-border-strong))",
+        backgroundColor: checked ? "rgb(var(--brand-primary))" : "transparent",
+      }}
+    >
+      {checked && <span className="w-2 h-2 rounded-full bg-white" />}
+    </span>
+  );
+}
+
+function Spinner({ small }: { small?: boolean }) {
+  const s = small ? 14 : 24;
+  return (
+    <svg className="animate-spin" width={s} height={s} viewBox="0 0 24 24" fill="none" style={{ color: "rgb(var(--brand-primary))" }}>
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
+      <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function LoadMoreRow({ label }: { label: string }) {
+  return (
+    <div className="flex items-center justify-center gap-2 py-5" style={{ color: "rgb(var(--color-text-muted))", fontSize: "var(--text-xs)" }}>
+      <Spinner small />
+      <span>{label}</span>
+    </div>
+  );
+}
+
 export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
   const [tab, setTab] = useState<Tab>("nearby");
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [resolving, setResolving] = useState(false);
+  type CurrentLocationStatus = "idle" | "loading" | "denied" | "unavailable" | "lookupError" | "error";
+  const [currentLocationStatus, setCurrentLocationStatus] =
+    useState<CurrentLocationStatus>("idle");
 
   // Nearby
   type NearbyStatus = "idle" | "loading" | "loadingMore" | "done" | "denied" | "error";
@@ -173,6 +247,7 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
   const nearbyHasMoreRef = useRef(true);
   const nearbyItemsRef = useRef<NearbyPlace[]>([]); // mirrors nearbyItems for use in async callbacks
   const gpsRef = useRef<{ lat: number; lng: number } | null>(null);
+  const [gpsPosition, setGpsPosition] = useState<{ lat: number; lng: number } | null>(null);
   const nearbyLoadedRef = useRef(false);
   const nearbyLoadingRef = useRef(false);
 
@@ -191,33 +266,15 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
   const [fetchWardsPaged] = useLazyQuery(WARDS_PAGED, { fetchPolicy: "network-only" });
   const [fetchWardSearch] = useLazyQuery(WARD_SEARCH, { fetchPolicy: "network-only" });
   const [fetchResolve] = useLazyQuery(RESOLVE_PLACE, { fetchPolicy: "cache-first" });
-
-  // ── Lifecycle ────────────────────────────────────────────────────────────
-
-  useEffect(() => {
-    if (!open) { setTimeout(resetAll, 300); return; }
-    if (tab === "nearby") startNearby();
-    if (tab === "all") {
-      // Silently grab GPS for geo-sort, then load wards regardless
-      requestGps(() => {}); // fire and forget — gpsRef will be set by the time loadWards runs; denial is fine here
-      loadWards(null);
-    }
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (!open) return;
-    if (tab === "nearby" && !nearbyLoadedRef.current) startNearby();
-    if (tab === "all" && !wardsLoadedRef.current) {
-      requestGps(() => {}); // fire and forget — denial is fine, geo-sort is optional
-      loadWards(null);
-    }
-  }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [fetchReverseGeocode] = useLazyQuery(REVERSE_GEOCODE, { fetchPolicy: "network-only" });
 
   function resetAll() {
     setQuery(""); setSelectedId(null); setTab("nearby");
+    setCurrentLocationStatus("idle");
     setNearbyItems([]); setNearbyStatus("idle"); setNearbyRadiusMeters(2000); setNearbyHasMore(true);
     setWards([]); setWardCursor(null); setWardHasMore(true); setWardStatus("idle");
     gpsRef.current = null; nearbyItemsRef.current = [];
+    setGpsPosition(null);
     nearbyLoadedRef.current = false; nearbyLoadingRef.current = false;
     nearbyHasMoreRef.current = true; radiusIndexRef.current = 0;
     wardsLoadedRef.current = false; wardLoadingRef.current = false;
@@ -232,11 +289,13 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
     if (gpsRef.current) { cb(true); return; }
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        gpsRef.current = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        const nextGps = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        gpsRef.current = nextGps;
+        setGpsPosition(nextGps);
         cb(true);
       },
       (err) => { cb(false, err.code); },
-      { timeout: 10000, maximumAge: 60000 },
+      { timeout: 15000, maximumAge: 120000, enableHighAccuracy: false },
     );
   }
 
@@ -251,18 +310,31 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
         return;
       }
       if (code === 1) { setNearbyStatus("denied"); return; }
-      // code 2 = kCLErrorLocationUnknown (transient) — retry once after a short delay
-      setTimeout(() => {
-        requestGps((granted2, code2) => {
-          if (granted2 && gpsRef.current) {
-            radiusIndexRef.current = 0;
-            nearbyItemsRef.current = [];
-            fetchNearbyBatch(0);
-          } else {
-            setNearbyStatus(code2 === 1 ? "denied" : "error");
-          }
-        });
-      }, 2000);
+      // code 2/3 = transient unavailable/timeout — retry up to 2 more times with longer delay
+      let retries = 0;
+      function retry() {
+        retries++;
+        setTimeout(() => {
+          gpsRef.current = null; // clear so requestGps re-attempts
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              const nextGps = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+              gpsRef.current = nextGps;
+              setGpsPosition(nextGps);
+              radiusIndexRef.current = 0;
+              nearbyItemsRef.current = [];
+              fetchNearbyBatch(0);
+            },
+            (err2) => {
+              if (err2.code === 1) { setNearbyStatus("denied"); return; }
+              if (retries < 2) { retry(); return; }
+              setNearbyStatus("error");
+            },
+            { timeout: 15000, maximumAge: 0, enableHighAccuracy: false },
+          );
+        }, retries * 2000);
+      }
+      retry();
     });
   }
 
@@ -364,7 +436,7 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
     } finally {
       setWardStatus("done");
     }
-  }, [fetchWardSearch]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fetchWardSearch]);
 
   function handleQueryChange(e: React.ChangeEvent<HTMLInputElement>) {
     const v = e.target.value;
@@ -391,8 +463,8 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
         placeName: loc?.placeName ?? fallback.placeName ?? "",
         formattedAddress: loc?.formattedAddress ?? fallback.formattedAddress ?? "",
         placeId: loc?.googlePlaceId ?? placeId,
-        latitude: loc?.coordinates?.lat ?? fallback.latitude ?? 0,
-        longitude: loc?.coordinates?.lng ?? fallback.longitude ?? 0,
+        latitude: loc?.coordinates?.lat ?? fallback.latitude,
+        longitude: loc?.coordinates?.lng ?? fallback.longitude,
         county: loc?.countyName ?? fallback.county,
         subregion: loc?.subCountyName ?? fallback.subregion,
       });
@@ -406,8 +478,8 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
     resolveAndSelect(p.placeId, {
       placeName: p.name,
       formattedAddress: p.address ?? p.name,
-      latitude: p.lat ?? 0,
-      longitude: p.lng ?? 0,
+      latitude: p.lat ?? undefined,
+      longitude: p.lng ?? undefined,
     });
   }
 
@@ -426,8 +498,8 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
       placeName: w.name,
       formattedAddress: [w.name, w.subCountyName, w.countyName].filter(Boolean).join(", "),
       placeId: w.id,
-      latitude: 0,
-      longitude: 0,
+      latitude: undefined,
+      longitude: undefined,
       county: w.countyName ?? undefined,
       subregion: w.subCountyName ?? undefined,
     });
@@ -436,6 +508,69 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
   function confirmLocation(loc: DraftLocation) {
     onSelect(loc);
     onOpenChange(false);
+  }
+
+  function handleUseCurrentLocation() {
+    if (typeof window !== "undefined" && !window.isSecureContext) {
+      setCurrentLocationStatus("unavailable");
+      return;
+    }
+
+    setCurrentLocationStatus("loading");
+    requestGps(async (granted, code) => {
+      if (!granted || !gpsRef.current) {
+        setCurrentLocationStatus(code === 1 ? "denied" : "error");
+        return;
+      }
+
+      const gps = gpsRef.current;
+      try {
+        const { data } = await fetchReverseGeocode({
+          variables: { lat: gps.lat, lng: gps.lng },
+        });
+        const loc = data?.reverseGeocode?.location;
+        const fallbackLabel = gpsFallbackLabel(gps.lat, gps.lng);
+        const regionAddress = [loc?.wardName, loc?.subCountyName, loc?.countyName]
+          .filter(Boolean)
+          .join(", ");
+        const hasResolvedLocation = Boolean(firstText(
+          loc?.placeName,
+          loc?.wardName,
+          loc?.subCountyName,
+          loc?.countyName,
+          loc?.formattedAddress,
+        ));
+        if (!loc || !hasResolvedLocation) {
+          setCurrentLocationStatus("lookupError");
+          return;
+        }
+
+        const placeName = firstText(
+          loc?.placeName,
+          loc?.wardName,
+          loc?.subCountyName,
+          loc?.countyName,
+          loc?.formattedAddress,
+        ) ?? fallbackLabel;
+        const formattedAddress = firstText(
+          loc?.formattedAddress,
+          regionAddress,
+          placeName,
+        ) ?? fallbackLabel;
+
+        confirmLocation({
+          placeName,
+          formattedAddress,
+          placeId: loc?.googlePlaceId ?? `current:${gps.lat.toFixed(5)},${gps.lng.toFixed(5)}`,
+          latitude: loc?.coordinates?.lat ?? gps.lat,
+          longitude: loc?.coordinates?.lng ?? gps.lng,
+          county: loc?.countyName ?? undefined,
+          subregion: loc?.subCountyName ?? undefined,
+        });
+      } catch {
+        setCurrentLocationStatus("lookupError");
+      }
+    });
   }
 
   // ── Scroll handlers ──────────────────────────────────────────────────────
@@ -451,20 +586,6 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
   }
 
   // ── Render helpers ───────────────────────────────────────────────────────
-
-  function RadioCircle({ checked }: { checked: boolean }) {
-    return (
-      <span
-        className="flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors"
-        style={{
-          borderColor: checked ? "rgb(var(--brand-primary))" : "rgb(var(--color-border-strong))",
-          backgroundColor: checked ? "rgb(var(--brand-primary))" : "transparent",
-        }}
-      >
-        {checked && <span className="w-2 h-2 rounded-full bg-white" />}
-      </span>
-    );
-  }
 
   function Row({
     id, primary, secondary, region, onPick,
@@ -497,24 +618,38 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
     );
   }
 
-  function Spinner({ small }: { small?: boolean }) {
-    const s = small ? 14 : 24;
-    return (
-      <svg className="animate-spin" width={s} height={s} viewBox="0 0 24 24" fill="none" style={{ color: "rgb(var(--brand-primary))" }}>
-        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
-        <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-      </svg>
-    );
-  }
+  // ── Lifecycle ────────────────────────────────────────────────────────────
 
-  function LoadMoreRow({ label }: { label: string }) {
-    return (
-      <div className="flex items-center justify-center gap-2 py-5" style={{ color: "rgb(var(--color-text-muted))", fontSize: "var(--text-xs)" }}>
-        <Spinner small />
-        <span>{label}</span>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (!open) {
+      const resetTimer = setTimeout(resetAll, 300);
+      return () => clearTimeout(resetTimer);
+    }
+
+    const loadTimer = setTimeout(() => {
+      if (tab === "nearby") startNearby();
+      if (tab === "all") {
+        // Silently grab GPS for geo-sort, then load wards regardless
+        requestGps(() => {}); // fire and forget; gpsRef will be set by the time loadWards runs if granted
+        loadWards(null);
+      }
+    }, 0);
+
+    return () => clearTimeout(loadTimer);
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!open) return;
+    const loadTimer = setTimeout(() => {
+      if (tab === "nearby" && !nearbyLoadedRef.current) startNearby();
+      if (tab === "all" && !wardsLoadedRef.current) {
+        requestGps(() => {}); // fire and forget; denial is fine, geo-sort is optional
+        loadWards(null);
+      }
+    }, 0);
+
+    return () => clearTimeout(loadTimer);
+  }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── JSX ──────────────────────────────────────────────────────────────────
 
@@ -557,6 +692,59 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
               )}
             </button>
           ))}
+        </div>
+
+        <div className="px-4 pt-3 flex-shrink-0">
+          <button
+            type="button"
+            onClick={handleUseCurrentLocation}
+            disabled={currentLocationStatus === "loading" || resolving}
+            className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left active:opacity-70 disabled:opacity-70"
+            style={{
+              backgroundColor: "rgb(var(--brand-primary) / 0.08)",
+              border: "1px solid rgb(var(--brand-primary) / 0.18)",
+              color: "rgb(var(--color-text))",
+            }}
+          >
+            <span
+              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{
+                backgroundColor: "rgb(var(--brand-primary) / 0.12)",
+                color: "rgb(var(--brand-primary))",
+              }}
+            >
+              {currentLocationStatus === "loading" ? (
+                <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
+                  <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                </svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+                  <path d="m4.93 4.93 2.12 2.12M16.95 16.95l2.12 2.12M19.07 4.93l-2.12 2.12M7.05 16.95l-2.12 2.12" />
+                </svg>
+              )}
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold" style={{ fontSize: "var(--text-sm)" }}>
+                {currentLocationStatus === "loading"
+                  ? "Finding your location..."
+                  : "Use my current location"}
+              </p>
+              <p className="mt-0.5" style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}>
+                {currentLocationStatus === "denied"
+                  ? "Location permission is blocked. You can still search below."
+                  : currentLocationStatus === "unavailable"
+                    ? "Location needs HTTPS or localhost. You can still search below."
+                  : currentLocationStatus === "lookupError"
+                    ? "Could not name this location. Search below instead."
+                  : currentLocationStatus === "error"
+                    ? "Could not get GPS. Try again or search below."
+                    : "Share your GPS location for this post"}
+              </p>
+            </div>
+          </button>
         </div>
 
         {/* Search — All tab */}
@@ -645,16 +833,26 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
                   <circle cx="12" cy="10" r="3" />
                 </svg>
                 <p style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text-muted))" }}>
-                  Could not determine your location.<br />Switch to <strong>All</strong> to search instead.
+                  GPS signal weak — move to an open area or use <strong>All</strong> to search instead.
                 </p>
-                <button
-                  type="button"
-                  onClick={() => { nearbyLoadedRef.current = false; setNearbyItems([]); radiusIndexRef.current = 0; startNearby(); }}
-                  className="px-4 py-2 rounded-lg text-sm font-semibold"
-                  style={{ backgroundColor: "rgb(var(--brand-primary) / 0.1)", color: "rgb(var(--brand-primary))" }}
-                >
-                  Retry
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { nearbyLoadedRef.current = false; setNearbyItems([]); radiusIndexRef.current = 0; startNearby(); }}
+                    className="px-4 py-2 rounded-lg text-sm font-semibold"
+                    style={{ backgroundColor: "rgb(var(--brand-primary) / 0.1)", color: "rgb(var(--brand-primary))" }}
+                  >
+                    Retry
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTab("all")}
+                    className="px-4 py-2 rounded-lg text-sm font-semibold"
+                    style={{ backgroundColor: "rgb(var(--color-bg-subtle))", color: "rgb(var(--color-text))" }}
+                  >
+                    Search All
+                  </button>
+                </div>
               </div>
             )}
 
@@ -665,7 +863,7 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
             )}
 
             {nearbyItems.map((p) => {
-              const gps = gpsRef.current;
+              const gps = gpsPosition;
               const dist = gps && p.lat != null && p.lng != null
                 ? formatDist(haversine(gps.lat, gps.lng, p.lat, p.lng))
                 : undefined;

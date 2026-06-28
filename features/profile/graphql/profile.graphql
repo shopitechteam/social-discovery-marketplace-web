@@ -1,0 +1,263 @@
+fragment ProfileUserFields on User {
+  id
+  username
+  email
+  isVerified
+  tiktokOpenId
+  profile {
+    firstName
+    lastName
+    avatar
+    bio
+    website
+  }
+  followerCount
+  followingCount
+  postCount
+  totalViews
+  totalLikes
+  isFollowedByMe
+}
+
+fragment ProfilePostFields on Content {
+  id
+  type
+  title
+  caption
+  createdAt
+  price {
+    amount
+    currency
+    negotiable
+  }
+  location {
+    county
+    subregion
+    placeName
+  }
+  stats {
+    views
+    likes
+    saves
+    shares
+    comments
+  }
+  media {
+    mediaType
+    thumbnailUrl
+    url
+    sortOrder
+    muxMeta {
+      playbackId
+      thumbnailUrl
+      aspectRatio
+    }
+    r2Variants {
+      variant
+      url
+      width
+      height
+    }
+  }
+}
+
+query GetMyProfile {
+  me {
+    ...ProfileUserFields
+  }
+}
+
+query GetUserProfile($username: String!) {
+  userProfile(username: $username) {
+    ...ProfileUserFields
+  }
+}
+
+query GetUserPosts($userId: String!, $limit: Int, $afterId: String) {
+  userPosts(userId: $userId, limit: $limit, afterId: $afterId) {
+    hasMore
+    nextCursor
+    posts {
+      ...ProfilePostFields
+    }
+  }
+}
+
+query GetMyPosts($limit: Int, $afterId: String) {
+  myPosts(limit: $limit, afterId: $afterId) {
+    hasMore
+    nextCursor
+    posts {
+      ...ProfilePostFields
+    }
+  }
+}
+
+query GetMySavedContent($limit: Int, $afterId: String) {
+  mySavedContent(limit: $limit, afterId: $afterId) {
+    hasMore
+    nextCursor
+    items {
+      ...ProfilePostFields
+    }
+  }
+}
+
+query GetMyAnalytics {
+  myAnalytics {
+    last30DaysViews
+    last30DaysSaves
+    last30DaysFollowers
+    topPost {
+      contentId
+      views
+      saves
+    }
+    viewsByDay {
+      date
+      views
+    }
+  }
+}
+
+query CheckUsernameAvailability($username: String!) {
+  checkUsername(username: $username) {
+    username
+    available
+  }
+}
+
+mutation UpdateMyProfile($input: UpdateProfileInput!) {
+  updateProfile(input: $input) {
+    ...ProfileUserFields
+  }
+}
+
+mutation RecordProfileVisit($userId: String!) {
+  recordProfileVisit(userId: $userId)
+}
+
+# ── Profile visitors ("who viewed your profile") ──────────────────────────────
+
+fragment VisitorFields on User {
+  id
+  username
+  profile {
+    firstName
+    lastName
+    avatar
+  }
+  isFollowedByMe
+  isFollowingMe
+}
+
+query MyProfileVisitorsPreview($limit: Int) {
+  myProfileVisitorsPreview(limit: $limit) {
+    totalCount
+    recent {
+      ...VisitorFields
+    }
+  }
+}
+
+query MyProfileVisitors($limit: Int, $after: String) {
+  myProfileVisitors(limit: $limit, after: $after) {
+    totalCount
+    hasMore
+    nextCursor
+    visitors {
+      ...VisitorFields
+    }
+  }
+}
+
+query MyFollowers($limit: Int, $after: String) {
+  myFollowers(limit: $limit, after: $after) {
+    totalCount
+    hasMore
+    nextCursor
+    users {
+      ...VisitorFields
+    }
+  }
+}
+
+# ── TikTok import ─────────────────────────────────────────────────────────────
+
+query GetMyTiktokVideos($cursor: String) {
+  myTiktokVideos(cursor: $cursor) {
+    videos {
+      id
+      title
+      coverImageUrl
+      shareUrl
+      duration
+      createTime
+      viewCount
+      likeCount
+    }
+    nextCursor
+    hasMore
+  }
+}
+
+query GetMyTiktokImports {
+  myTiktokImports {
+    id
+    url
+    status
+    title
+    thumbnailUrl
+    muxPlaybackId
+    hlsUrl
+    errorMessage
+    createdAt
+  }
+}
+
+query GetMyTiktokImportsPaged($limit: Int, $after: String) {
+  myTiktokImportsPaged(limit: $limit, after: $after) {
+    hasMore
+    nextCursor
+    items {
+      id
+      url
+      status
+      title
+      thumbnailUrl
+      muxPlaybackId
+      hlsUrl
+      errorMessage
+      createdAt
+    }
+  }
+}
+
+mutation BatchImportTiktokVideos($shareUrls: [String!]!) {
+  batchImportTiktokVideos(shareUrls: $shareUrls) {
+    batchId
+    queued
+    skipped
+    downloads {
+      id
+      url
+      status
+      title
+      thumbnailUrl
+      errorMessage
+    }
+  }
+}
+
+query GetTiktokConnectStatus {
+  me {
+    id
+    authProviders {
+      tiktok
+    }
+  }
+}
+
+mutation GetTiktokConnectUrl($returnUrl: String) {
+  tiktokConnectUrl(returnUrl: $returnUrl)
+}

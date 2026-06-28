@@ -81,15 +81,15 @@ export default async function RegisterPage({
         {/* Top bar */}
 
         <div className="flex w-full justify-center items-center  px-5  pb-1 shrink-0">
-          <ShopiLogo height={90} width={80} />
+          <ShopiLogo height={44} />
         </div>
 
         {/* Heading */}
-        <div className="px-6 pt-4 pb-3 shrink-0">
-          <h1 className="text-[26px] font-bold leading-[1.2] text-default font-display tracking-tight">
+        <div className="px-6 pt-4 pb-3 shrink-0 text-center">
+          <h1 className="text-2xl font-bold leading-[1.2] text-default font-display tracking-tight">
             Create your account
           </h1>
-          <p className="mt-1 text-[14px] text-muted">
+          <p className="mt-1 text-sm text-muted">
             Takes less than a minute.
           </p>
         </div>
@@ -103,11 +103,11 @@ export default async function RegisterPage({
 
       {/* ── Desktop right-panel content ───────────────────────── */}
       <div className="hidden lg:flex flex-col gap-6">
-        <div>
-          <h1 className="text-[26px] font-bold text-default font-display tracking-tight">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-default font-display tracking-tight">
             Create your Shopi account
           </h1>
-          <p className="mt-1.5 text-[15px] text-muted leading-relaxed">
+          <p className="mt-1.5 text-base text-muted leading-relaxed">
             Takes less than a minute.
           </p>
         </div>

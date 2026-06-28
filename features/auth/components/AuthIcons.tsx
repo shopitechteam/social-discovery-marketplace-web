@@ -1,69 +1,129 @@
 // Static, server-safe — no "use client"
 
-import Image from "next/image";
-
-/** Full Shopi SVG logo — wordmark + icon */
-export function ShopiLogo({
-  height = 120,
-  width = 120,
-  className,
-}: {
-  height?: number;
-  width?: number;
-  className?: string;
-}) {
+/**
+ * Shared logo artwork (square + S + paper airplane + orbit ring).
+ *
+ * Concept:
+ *  - Rounded square in the brand primary = the marketplace.
+ *  - Bold "S" = Shopi.
+ *  - Paper airplane (top-right) = "send / message the seller".
+ *  - Orbit ring sweeping around it = social discovery + reach.
+ *
+ * Drawn inside a 64x64 box; the orbit deliberately overshoots the square,
+ * so the artwork is given a little padding. Colours use the CSS brand vars so
+ * the mark stays in sync with the rest of the UI (and theming).
+ *
+ * `idSuffix` keeps gradient/clip ids unique when several logos render at once.
+ */
+function LogoArt() {
   return (
-    <div className={className}>
-      <Image
-        src="/assets/shopi-logo.png"
-        height={height}
-        width={width}
-        alt="shopi"
+    <g>
+      {/* Orbit ring — behind the square (back half) */}
+      <path
+        d="M50 46c-7.5 7.4-19.6 11.7-30.1 9.9C8.6 53.9 3.4 46.6 6.9 40.2"
+        fill="none"
+        stroke="rgb(var(--brand-accent))"
+        strokeWidth="4.4"
+        strokeLinecap="round"
       />
-    </div>
+
+      {/* Marketplace square */}
+      <rect
+        x="10"
+        y="10"
+        width="44"
+        height="44"
+        rx="12"
+        fill="rgb(var(--brand-primary))"
+      />
+
+      {/* Bold S */}
+      <path
+        d="M40.5 24.2c-1.3-2.2-3.8-3.6-6.9-3.6-4.2 0-7.2 2.3-7.2 5.7 0 3 2.1 4.6 6.3 5.6l1.9.45c2.3.55 3.2 1.2 3.2 2.4 0 1.5-1.5 2.5-3.8 2.5-2.6 0-4.4-1.2-5.4-3.3"
+        fill="none"
+        stroke="#fff"
+        strokeWidth="4.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+
+      {/* Paper airplane — rises out of the top-right corner */}
+      <path d="M57 7 L39 16 L48 19 Z" fill="rgb(var(--brand-primary))" />
+      <path d="M57 7 L48 19 L50 28 Z" fill="rgb(var(--brand-accent))" />
+      <path d="M57 7 L48 19 L43.5 20.5 Z" fill="#fff" />
+
+      {/* Orbit ring — front half, over the square */}
+      <path
+        d="M6.9 40.2c-2.6 4.8 1 10.3 9 12.1 11.7 2.6 26.2-2.4 34.6-12.1"
+        fill="none"
+        stroke="rgb(var(--brand-accent))"
+        strokeWidth="4.4"
+        strokeLinecap="round"
+      />
+    </g>
   );
 }
 
-/** Small square icon-only mark for tight spaces */
+/**
+ * Icon-only mark.
+ */
 export function ShopiLogoMark({ size = 48 }: { size?: number }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       width={size}
       height={size}
-      viewBox="0 0 48 48"
+      viewBox="0 0 64 64"
       fill="none"
+      role="img"
       aria-label="Shopi"
+      style={{ overflow: "visible" }}
     >
-      <defs>
-        <linearGradient id="lm" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#FF3B5C" />
-          <stop offset="100%" stopColor="#FF9F40" />
-        </linearGradient>
-      </defs>
-      {/* Rounded square background */}
-      <rect width="48" height="48" rx="14" fill="url(#lm)" />
-      {/* Bag body */}
-      <rect
-        x="10"
-        y="22"
-        width="28"
-        height="18"
-        rx="4"
-        fill="white"
-        fillOpacity="0.92"
-      />
-      {/* Bag handle */}
-      <path
-        d="M17 22V18a7 7 0 0 1 14 0v4"
-        stroke="white"
-        strokeWidth="2.8"
-        strokeLinecap="round"
-        fill="none"
-      />
-      {/* Spark dot */}
-      <circle cx="35" cy="15" r="6" fill="white" fillOpacity="0.3" />
-      <circle cx="35" cy="15" r="3" fill="white" />
+      <LogoArt />
+    </svg>
+  );
+}
+
+/**
+ * Full logo — mark + "shopi" wordmark.
+ * `height` controls overall scale; width auto-derives unless given.
+ */
+export function ShopiLogo({
+  height = 36,
+  width,
+  className,
+}: {
+  height?: number;
+  width?: number;
+  className?: string;
+}) {
+  // Intrinsic art is 188 x 64; keep aspect ratio off height.
+  const w = width ?? Math.round((height / 64) * 188);
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={w}
+      height={height}
+      viewBox="0 0 188 64"
+      fill="none"
+      role="img"
+      aria-label="Shopi"
+      className={className}
+    >
+      {/* Mark */}
+      <LogoArt />
+      {/* Wordmark */}
+      <text
+        x="68"
+        y="42"
+        fontFamily="var(--font-display), system-ui, sans-serif"
+        fontSize="34"
+        fontWeight="700"
+        letterSpacing="-1"
+        fill="rgb(var(--color-text))"
+      >
+        shopi
+      </text>
     </svg>
   );
 }

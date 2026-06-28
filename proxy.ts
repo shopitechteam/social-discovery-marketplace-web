@@ -1,64 +1,79 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { locales, defaultLocale, isValidLocale } from "@/i18n/config";
+import { locales, defaultLocale } from "@/i18n/config";
 
 // Routes that require a valid accessToken cookie.
 // Matched after locale prefix is stripped, so "/profile" covers "/{locale}/profile".
 const PROTECTED_PATHS = ["/profile", "/upload", "/notifications", "/settings"];
 
-function isProtected(pathname: string): boolean {
-  // Strip locale prefix to get the bare path
+// Routes a logged-in user shouldn't see — the marketing landing root and the
+// auth flows. They're redirected straight to the feed instead.
+const GUEST_ONLY_PATHS = ["/", "/auth"];
+
+// …except the OAuth callback, which must run even when a session already exists
+// (it finalizes tokens and posts them back to the login popup's opener).
+const GUEST_ONLY_EXCEPTIONS = ["/auth/tiktok-callback"];
+
+function getBarePath(pathname: string): string {
   const locale = locales.find(
     (l) => pathname === `/${l}` || pathname.startsWith(`/${l}/`),
   );
-  const bare = locale ? pathname.slice(`/${locale}`.length) || "/" : pathname;
+  return locale ? pathname.slice(`/${locale}`.length) || "/" : pathname;
+}
+
+function isProtected(pathname: string): boolean {
+  const bare = getBarePath(pathname);
   return PROTECTED_PATHS.some((p) => bare === p || bare.startsWith(`${p}/`));
 }
 
-function getPreferredLocale(request: NextRequest): string {
-  // 1. Cookie takes priority — user explicitly chose a language
-  const cookie = request.cookies.get("shopi_locale")?.value;
-  if (cookie && isValidLocale(cookie)) return cookie;
-
-  // 2. Browser Accept-Language header
-  const acceptLang = request.headers.get("accept-language") ?? "";
-  for (const part of acceptLang.split(",")) {
-    const tag = part.split(";")[0].trim().toLowerCase();
-    for (const locale of locales) {
-      if (tag === locale || tag.startsWith(`${locale}-`)) return locale;
-    }
+function isGuestOnly(pathname: string): boolean {
+  const bare = getBarePath(pathname);
+  if (GUEST_ONLY_EXCEPTIONS.some((p) => bare === p || bare.startsWith(`${p}/`))) {
+    return false;
   }
+  return GUEST_ONLY_PATHS.some((p) =>
+    p === "/" ? bare === "/" : bare === p || bare.startsWith(`${p}/`),
+  );
+}
 
-  return defaultLocale;
+function getPathLocale(pathname: string) {
+  return locales.find(
+    (locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`),
+  );
 }
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const pathnameLocale = getPathLocale(pathname);
 
-  // ── Auth guard ────────────────────────────────────────────────────────────
   // accessToken is stored in localStorage by Zustand, so the proxy can't read
   // it directly. We rely on a lightweight "shopi-auth-hint" cookie that the
   // client sets on login and clears on logout (see stores/auth.ts).
-  if (isProtected(pathname)) {
-    const hasSession = !!request.cookies.get("shopi-auth-hint")?.value;
-    if (!hasSession) {
-      const locale =
-        locales.find(
-          (l) => pathname === `/${l}` || pathname.startsWith(`/${l}/`),
-        ) ?? getPreferredLocale(request);
+  const hasSession = !!request.cookies.get("shopi-auth-hint")?.value;
 
-      const loginUrl = request.nextUrl.clone();
-      loginUrl.pathname = `/${locale}/auth/auth-welcome`;
-      loginUrl.search = `?from=${encodeURIComponent(pathname)}`;
-      return NextResponse.redirect(loginUrl);
-    }
+  // ── Auth guard ────────────────────────────────────────────────────────────
+  if (isProtected(pathname) && !hasSession) {
+    const locale = pathnameLocale ?? defaultLocale;
+
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = `/${locale}/auth/auth-welcome`;
+    loginUrl.search = `?from=${encodeURIComponent(pathname)}`;
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // ── Logged-in guard ───────────────────────────────────────────────────────
+  // A signed-in user shouldn't land on the marketing page or the auth flows —
+  // send them straight to the feed.
+  if (hasSession && isGuestOnly(pathname)) {
+    const locale = pathnameLocale ?? defaultLocale;
+
+    const feedUrl = request.nextUrl.clone();
+    feedUrl.pathname = `/${locale}/feed`;
+    feedUrl.search = "";
+    return NextResponse.redirect(feedUrl);
   }
 
   // ── Locale prefix ─────────────────────────────────────────────────────────
-  const pathnameLocale = locales.find(
-    (locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`),
-  );
-
   if (pathnameLocale) {
     const response = NextResponse.next();
     response.cookies.set("shopi_locale", pathnameLocale, {
@@ -69,8 +84,8 @@ export function proxy(request: NextRequest) {
     return response;
   }
 
-  // No locale in path — detect and redirect
-  const locale = getPreferredLocale(request);
+  // No locale in path — redirect to the default English prefix.
+  const locale = defaultLocale;
   const newUrl = request.nextUrl.clone();
   const bare = pathname === "/" ? "" : pathname;
   newUrl.pathname = `/${locale}${bare}`;

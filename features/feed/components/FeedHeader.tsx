@@ -1,7 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-
 type Tab = "for-you" | "following" | "nearby";
 
 interface Props {
@@ -10,13 +8,12 @@ interface Props {
   onTabChange: (tab: Tab) => void;
 }
 
-export function FeedHeader({ lang, activeTab, onTabChange }: Props) {
-  const router = useRouter();
-
+export function FeedHeader({ activeTab, onTabChange }: Props) {
   const tabs: { id: Tab; label: string }[] = [
     { id: "for-you", label: "For You" },
     { id: "following", label: "Following" },
     { id: "nearby", label: "Nearby" },
+    // { id: "ask-shopi", label: "Ask Shopi" },
   ];
 
   return (
@@ -50,18 +47,16 @@ export function FeedHeader({ lang, activeTab, onTabChange }: Props) {
       </div>
 
       {/* Tabs */}
-      <div className="flex px-4 gap-0 -mb-px">
+      <div className="flex gap-0 px-4 -mb-px">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
-            className={[
-              "flex-1 font-semibold pb-2.5 pt-1 border-b-2 transition-colors",
+            className={`flex-1 border-b-2 pt-1 pb-2.5 text-[14.5px] font-semibold transition-colors ${
               activeTab === tab.id
                 ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-default",
-            ].join(" ")}
-            style={{ fontSize: 15 }}
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
           >
             {tab.label}
           </button>

@@ -1,0 +1,51 @@
+fragment CollectionFields on Collection {
+  id
+  name
+  color
+  itemCount
+  createdAt
+}
+
+query GetMyCollections {
+  myCollections {
+    ...CollectionFields
+  }
+}
+
+mutation CreateCollection($name: String!, $color: String) {
+  createCollection(name: $name, color: $color) {
+    ...CollectionFields
+  }
+}
+
+mutation DeleteCollection($collectionId: String!) {
+  deleteCollection(collectionId: $collectionId)
+}
+
+mutation ToggleSave($contentId: String!, $collectionId: String) {
+  toggleSave(contentId: $contentId, collectionId: $collectionId) {
+    saved
+    saveCount
+    collectionId
+  }
+}
+
+mutation AddSaveToCollection($contentId: String!, $collectionId: String!) {
+  addSaveToCollection(contentId: $contentId, collectionId: $collectionId)
+}
+
+query GetContentSaveStatus($contentId: String!) {
+  contentSaveStatus(contentId: $contentId) {
+    isSaved
+    savedInCollections {
+      collectionId
+      collectionName
+    }
+  }
+}
+
+query GetCollectionContent($collectionId: String!) {
+  collectionContent(collectionId: $collectionId) {
+    ...ContentCardFields
+  }
+}

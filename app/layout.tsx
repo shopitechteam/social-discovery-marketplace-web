@@ -7,6 +7,7 @@ import { cookies } from "next/headers";
 import Script from "next/script";
 import "./globals.css";
 import { ApolloWrapper } from "@/lib/apollo/ApolloWrapper";
+import { Toaster } from "@/components/ui/sonner";
 
 // ── Fonts ────────────────────────────────────────────────────────
 const manrope = Manrope({
@@ -42,15 +43,7 @@ export const metadata: Metadata = {
 
   description: siteConfig.description,
 
-  keywords: [
-    "social commerce",
-    "shop videos",
-    "discover products",
-    "live shopping",
-    "creator marketplace",
-    "Kenya shopping app",
-    "shopi",
-  ],
+  keywords: [...siteConfig.keywords],
 
   authors: [{ name: siteConfig.name, url: siteConfig.url }],
   creator: siteConfig.name,
@@ -111,8 +104,13 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1, // prevent iOS double-tap zoom
   userScalable: false,
+  viewportFit: "cover",
+  // Status bar (theme-color) matches the page background so it blends into the
+  // top of pages — white in light mode, near-black in dark mode. Browsers don't
+  // support gradient status bars, and the profile hero gradient is ~bg at its
+  // top edge anyway, so this keeps the status bar consistent across pages.
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: siteConfig.themeColor },
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
     { media: "(prefers-color-scheme: dark)", color: "#0a0a0e" },
   ],
 };
@@ -122,7 +120,8 @@ const themeScript = `
 (function(){
   try {
     var s = JSON.parse(localStorage.getItem('shopi-theme') || '{}');
-    var t = s.state?.theme || 'system';
+    // Default to light when the user hasn't chosen a theme yet.
+    var t = s.state?.theme || 'light';
     var dark = t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
     if (dark) document.documentElement.classList.add('dark');
   } catch(e){}
@@ -152,6 +151,7 @@ export default async function RootLayout({
           <ApolloWrapper>
             <main>{children}</main>
           </ApolloWrapper>
+          <Toaster position="bottom-center" richColors />
         </ThemeProvider>
       </body>
     </html>

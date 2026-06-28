@@ -8,7 +8,6 @@ import type { CreateStep } from "@/stores/create";
 import { StepEdit } from "./StepEdit";
 import { StepMediaReview } from "./StepMediaReview";
 import { StepOptions } from "./StepOptions";
-import { StepReady } from "./StepReady";
 import { useRouter } from "next/navigation";
 import { GetDraftDocument, GetMediaAssetDocument } from "@/types/__generated__/graphql";
 import type { DraftStep, ContentType } from "@/types/__generated__/graphql";
@@ -27,7 +26,9 @@ function mapDraftStep(apiStep: DraftStep): CreateStep {
     case "PUBLISHING_OPTIONS":
       return "options";
     case "READY":
-      return "ready";
+      // Preview step removed — a draft left at READY resumes on the settings
+      // step, where the user posts directly.
+      return "options";
     default:
       return "edit";
   }
@@ -41,24 +42,42 @@ function mapContentType(
   return null;
 }
 
+function getAssetPreviewUrl(asset: {
+  r2Variants?: Array<{ variant: string; url: string }> | null;
+  thumbnailUrl?: string | null;
+}): string | undefined {
+  return (
+    asset.r2Variants?.find((v) => v.variant === "original")?.url ??
+    asset.r2Variants?.find((v) => v.variant === "large")?.url ??
+    asset.r2Variants?.find((v) => v.variant === "medium")?.url ??
+    asset.r2Variants?.[0]?.url ??
+    asset.thumbnailUrl ??
+    undefined
+  );
+}
+
 export function CreateFlow({ lang }: CreateFlowProps) {
   const store = useCreateStore();
   const {
     step,
     draftId,
+    draftPending,
     mediaItems,
     setStep,
     setTitle,
     setCaption,
     setHashtags,
+    setCategory,
     setContentType,
     setPrice,
+    setSpecs,
     setVisibilityMode,
     setAllowDownload,
     setHdEnabled,
     setError,
     addMediaItem,
     updateMediaItem,
+    setTiktokEmbed,
   } = store;
 
   const router = useRouter();
@@ -88,6 +107,9 @@ export function CreateFlow({ lang }: CreateFlowProps) {
     if (!hydrated) return;
 
     if (!draftId) {
+      // A draft is being created in the background (instant-open flow) — wait
+      // for its id instead of bouncing back to the picker.
+      if (draftPending) return;
       // Nothing in session — send back to picker
       router.replace(`/${lang}/upload`);
       return;
@@ -108,14 +130,13 @@ export function CreateFlow({ lang }: CreateFlowProps) {
             .then(({ data }) => {
               const a = data?.mediaAsset;
               if (!a) return;
-              const url =
-                a.r2Variants?.find((v) => v.variant === "medium")?.url ??
-                a.thumbnailUrl ??
-                undefined;
+              const url = getAssetPreviewUrl(a);
               updateMediaItem(item.id, {
                 status: a.status === "READY" ? "ready" : a.status === "FAILED" ? "error" : "processing",
                 localUri: url ?? item.localUri,
                 thumbnailUrl: a.thumbnailUrl ?? undefined,
+                r2Variants: a.r2Variants ?? undefined,
+                muxPlaybackId: a.muxMeta?.playbackId ?? item.muxPlaybackId,
                 errorMessage: a.errorMessage ?? undefined,
               });
             })
@@ -150,6 +171,8 @@ export function CreateFlow({ lang }: CreateFlowProps) {
         setTitle(d.title ?? "");
         setCaption(d.caption ?? "");
         setHashtags(d.hashtags ?? []);
+        setCategory(d.categoryId ?? null);
+        setSpecs((d.specs ?? []).map((s) => ({ key: s.key, value: s.value })));
         setVisibilityMode(
           (d.visibilityMode?.toLowerCase() as
             | "public"
@@ -159,6 +182,35 @@ export function CreateFlow({ lang }: CreateFlowProps) {
         setAllowDownload(d.allowDownload ?? false);
         setHdEnabled(d.hdEnabled ?? false);
         if (d.price) setPrice(d.price.amount, d.price.amount === 0);
+
+        // ── Embed-backed draft (TikTok) ──────────────────────────────────────
+        // No MediaAssets — the video streams from TikTok. Restore the embed ref
+        // and synthesize a read-only cover media item so the create-flow steps
+        // (which key off mediaItems[0]) render a preview and pass their gates.
+        if (d.source === "TIKTOK_EMBED" && d.tiktokEmbed) {
+          const e = d.tiktokEmbed;
+          setTiktokEmbed({
+            videoId: e.videoId,
+            shareUrl: e.shareUrl,
+            coverImageUrl: e.coverImageUrl ?? undefined,
+            authorUsername: e.authorUsername ?? undefined,
+            authorName: e.authorName ?? undefined,
+            title: e.title ?? undefined,
+            duration: e.duration ?? undefined,
+          });
+          const embedItemId = `tiktok-embed:${e.videoId}`;
+          const known = new Set(useCreateStore.getState().mediaItems.map((m) => m.id));
+          if (!known.has(embedItemId)) {
+            addMediaItem({
+              id: embedItemId,
+              localUri: e.coverImageUrl ?? "",
+              type: "video",
+              status: "ready",
+              thumbnailUrl: e.coverImageUrl ?? undefined,
+            });
+          }
+          return;
+        }
 
         // Re-hydrate media items from the API — blob localUris are not persisted
         const knownIds = new Set(useCreateStore.getState().mediaItems.map((m) => m.id));
@@ -174,16 +226,15 @@ export function CreateFlow({ lang }: CreateFlowProps) {
             .then(({ data: ad }) => {
               const a = ad?.mediaAsset;
               if (!a || cancelled) return;
-              const url =
-                a.r2Variants?.find((v) => v.variant === "medium")?.url ??
-                a.thumbnailUrl ??
-                undefined;
+              const url = getAssetPreviewUrl(a);
               addMediaItem({
                 id,
                 localUri: url ?? "",
                 type,
                 status: a.status === "READY" ? "ready" : a.status === "FAILED" ? "error" : "processing",
                 thumbnailUrl: a.thumbnailUrl ?? undefined,
+                r2Variants: a.r2Variants ?? undefined,
+                muxPlaybackId: a.muxMeta?.playbackId ?? undefined,
                 errorMessage: a.errorMessage ?? undefined,
               });
             })
@@ -203,6 +254,14 @@ export function CreateFlow({ lang }: CreateFlowProps) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated]);
+
+  // Background draft creation failed (pending cleared, still no id) — don't
+  // strand the user on a blank editor; send them back to the picker.
+  useEffect(() => {
+    if (hydrated && !draftId && !draftPending && step !== "pick") {
+      router.replace(`/${lang}/upload`);
+    }
+  }, [hydrated, draftId, draftPending, step, router, lang]);
 
   function handleBack() {
     // Reset draft so the picker doesn't immediately redirect back here
@@ -225,18 +284,13 @@ export function CreateFlow({ lang }: CreateFlowProps) {
   // ── Redirecting (no draftId or step === "pick") ───────────────────────────
   if (step === "pick") return null;
 
-  // ── Ready step — full-screen layout ──────────────────────────────────────
-  if (step === "ready") {
-    return <StepReady lang={lang} />;
-  }
-
   return (
     <div className="md:fixed md:inset-0 md:z-50 md:flex md:items-center md:justify-center md:bg-black/50 md:backdrop-blur-sm">
       <div className="create-flow-card flex flex-col bg-app w-full md:rounded-2xl md:shadow-2xl md:overflow-hidden">
         <div className="flex-1 flex flex-col">
           {step === "media" && <StepMediaReview onBack={handleBack} />}
           {step === "edit" && <StepEdit onBack={handleBack} />}
-          {step === "options" && <StepOptions />}
+          {step === "options" && <StepOptions lang={lang} />}
         </div>
       </div>
     </div>

@@ -1,104 +1,183 @@
 "use client";
 
 import { useQuery } from "@apollo/client/react";
-import { useCallback, useEffect, useRef } from "react";
+import { NetworkStatus } from "@apollo/client";
+import { useCallback, useRef } from "react";
 import {
   ForYouFeedDocument,
   FollowingFeedDocument,
   TrendingContentDocument,
+  LocalFeedDocument,
 } from "@/types/__generated__/graphql";
 
-const PAGE_SIZE = 6;
+const PAGE_SIZE = 10;
 
-// How long (ms) before a cached feed is considered stale and worth re-fetching.
-const STALE_MS = 60_000; // 1 minute
+/**
+ * Guards cursor-based pagination against the two ways infinite scroll can spin
+ * without loading anything:
+ *   1. A `fetchMore` already in flight (the IntersectionObserver can re-fire
+ *      before `networkStatus` flips, especially with a large rootMargin).
+ *   2. A page that returns only duplicates (server overlap) — the merge appends
+ *      nothing yet `hasNextPage` stays true, so the same `endCursor` would be
+ *      requested forever. We remember the last cursor we asked for and refuse to
+ *      ask again until it actually advances.
+ *
+ * Returns `run(cursor, fetch)` — call it from `loadMore`; it invokes `fetch`
+ * only when the cursor is new and nothing is in flight.
+ */
+function usePaginationGuard() {
+  const inFlight = useRef(false);
+  const lastCursor = useRef<string | null>(null);
+
+  const run = useCallback((cursor: string, fetch: () => Promise<unknown>) => {
+    if (inFlight.current) return;
+    if (lastCursor.current === cursor) return;
+    inFlight.current = true;
+    lastCursor.current = cursor;
+    void fetch().finally(() => {
+      inFlight.current = false;
+    });
+  }, []);
+
+  return run;
+}
 
 export function useForYouFeed() {
-  const { data, loading, error, fetchMore, refetch } = useQuery(
+  const { data, loading, error, fetchMore, networkStatus } = useQuery(
     ForYouFeedDocument,
     {
       variables: { limit: PAGE_SIZE },
-      // Serve from cache immediately; refetch in background only when stale.
-      // Avoid notifyOnNetworkStatusChange so background fetches don't trigger
-      // extra renders that cause images to flicker.
+      // cache-and-network: on revisit (tab away → back) the full accumulated
+      // window renders INSTANTLY from cache, then a single background page-1
+      // refetch runs to pull in newly-published posts / fresh fields. This is
+      // only safe because mergeFeedPage() now splices page-1 over the head of
+      // the existing window instead of replacing it — so the background refresh
+      // can't collapse the accumulated pages or snap scroll to the top.
+      // nextFetchPolicy keeps later re-renders on cache-first so fetchMore
+      // pagination doesn't re-trigger a page-1 network read.
       fetchPolicy: "cache-and-network",
       nextFetchPolicy: "cache-first",
+      notifyOnNetworkStatusChange: true,
     },
   );
-
-  // Stale-while-revalidate: refetch in the background only if data is old.
-  // This avoids the re-render that causes all images to flicker when the user
-  // navigates back to the feed from a content detail page.
-  const lastFetchedAt = useRef<number>(Date.now());
-  const hasMounted = useRef(false);
-  useEffect(() => {
-    if (hasMounted.current) {
-      const age = Date.now() - lastFetchedAt.current;
-      if (age > STALE_MS) {
-        lastFetchedAt.current = Date.now();
-        refetch({ limit: PAGE_SIZE });
-      }
-    } else {
-      lastFetchedAt.current = Date.now();
-    }
-    hasMounted.current = true;
-  }, [refetch]);
 
   const items = data?.forYouFeed?.items ?? [];
   const pageInfo = data?.forYouFeed?.pageInfo;
 
+  const guard = usePaginationGuard();
   const loadMore = useCallback(() => {
     if (!pageInfo?.hasNextPage || !pageInfo.endCursor) return;
-    fetchMore({
-      variables: { limit: PAGE_SIZE, after: pageInfo.endCursor },
-      updateQuery(prev, { fetchMoreResult }) {
-        if (!fetchMoreResult) return prev;
-        return {
-          forYouFeed: {
-            ...fetchMoreResult.forYouFeed,
-            items: [
-              ...(prev.forYouFeed?.items ?? []),
-              ...fetchMoreResult.forYouFeed.items,
-            ],
-          },
-        };
-      },
-    });
-  }, [fetchMore, pageInfo]);
+    const cursor = pageInfo.endCursor;
+    // The cache `merge` policy appends the page — no updateQuery needed.
+    guard(cursor, () =>
+      fetchMore({ variables: { limit: PAGE_SIZE, after: cursor } }),
+    );
+  }, [fetchMore, pageInfo, guard]);
 
-  return { items, loading, error, hasMore: pageInfo?.hasNextPage ?? false, loadMore };
+  return {
+    items,
+    // Only an initial, dataless load should drive the full-screen skeleton.
+    loading: loading,
+    // True only while a fetchMore page is in flight — drives the pagination
+    // spinner WITHOUT firing during the silent cache-and-network refresh.
+    loadingMore: networkStatus === NetworkStatus.fetchMore,
+    error,
+    hasMore: pageInfo?.hasNextPage ?? false,
+    loadMore,
+  };
 }
 
 export function useFollowingFeed() {
-  const { data, loading, error, fetchMore } = useQuery(FollowingFeedDocument, {
-    variables: { limit: PAGE_SIZE },
-    fetchPolicy: "cache-and-network",
-    nextFetchPolicy: "cache-first",
-  });
+  const { data, loading, error, fetchMore, networkStatus } = useQuery(
+    FollowingFeedDocument,
+    {
+      variables: { limit: PAGE_SIZE },
+      // See useForYouFeed: cache-and-network restores instantly + refreshes in
+      // the background; mergeFeedPage keeps the accumulated window stable.
+      fetchPolicy: "cache-and-network",
+      nextFetchPolicy: "cache-first",
+      notifyOnNetworkStatusChange: true,
+    },
+  );
 
   const items = data?.followingFeed?.items ?? [];
   const pageInfo = data?.followingFeed?.pageInfo;
 
+  const guard = usePaginationGuard();
   const loadMore = useCallback(() => {
     if (!pageInfo?.hasNextPage || !pageInfo.endCursor) return;
-    fetchMore({
-      variables: { limit: PAGE_SIZE, after: pageInfo.endCursor },
-      updateQuery(prev, { fetchMoreResult }) {
-        if (!fetchMoreResult) return prev;
-        return {
-          followingFeed: {
-            ...fetchMoreResult.followingFeed,
-            items: [
-              ...(prev.followingFeed?.items ?? []),
-              ...fetchMoreResult.followingFeed.items,
-            ],
-          },
-        };
-      },
-    });
-  }, [fetchMore, pageInfo]);
+    const cursor = pageInfo.endCursor;
+    guard(cursor, () =>
+      fetchMore({ variables: { limit: PAGE_SIZE, after: cursor } }),
+    );
+  }, [fetchMore, pageInfo, guard]);
 
-  return { items, loading, error, hasMore: pageInfo?.hasNextPage ?? false, loadMore };
+  return {
+    items,
+    loading: loading,
+    loadingMore: networkStatus === NetworkStatus.fetchMore,
+    error,
+    hasMore: pageInfo?.hasNextPage ?? false,
+    loadMore,
+  };
+}
+
+type NearbyCoordinates = {
+  latitude: number;
+  longitude: number;
+};
+
+export function useNearbyFeed(
+  coordinates: NearbyCoordinates | null,
+  radiusKm: number,
+) {
+  const { data, loading, error, fetchMore, networkStatus } = useQuery(
+    LocalFeedDocument,
+    {
+      variables: {
+        latitude: coordinates?.latitude,
+        longitude: coordinates?.longitude,
+        radiusKm,
+        limit: PAGE_SIZE,
+      },
+      skip: !coordinates,
+      // See useForYouFeed: cache-and-network restores instantly + refreshes in
+      // the background; mergeFeedPage keeps the accumulated window stable.
+      fetchPolicy: "cache-and-network",
+      nextFetchPolicy: "cache-first",
+      notifyOnNetworkStatusChange: true,
+    },
+  );
+
+  const items = data?.localFeed?.items ?? [];
+  const pageInfo = data?.localFeed?.pageInfo;
+
+  const guard = usePaginationGuard();
+  const loadMore = useCallback(() => {
+    if (!coordinates) return;
+    if (!pageInfo?.hasNextPage || !pageInfo.endCursor) return;
+    const cursor = pageInfo.endCursor;
+    guard(cursor, () =>
+      fetchMore({
+        variables: {
+          latitude: coordinates.latitude,
+          longitude: coordinates.longitude,
+          radiusKm,
+          limit: PAGE_SIZE,
+          after: cursor,
+        },
+      }),
+    );
+  }, [fetchMore, pageInfo, coordinates, radiusKm, guard]);
+
+  return {
+    items,
+    loading: loading && items.length === 0,
+    loadingMore: networkStatus === NetworkStatus.fetchMore,
+    error,
+    hasMore: pageInfo?.hasNextPage ?? false,
+    loadMore,
+  };
 }
 
 export function useTrending(county?: string) {

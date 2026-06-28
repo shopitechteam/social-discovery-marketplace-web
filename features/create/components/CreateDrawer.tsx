@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { useMutation } from "@apollo/client/react";
 import { useCreateStore } from "@/stores/create";
@@ -14,10 +14,34 @@ export function CreateDrawer({ lang }: { lang: string }) {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
-  const { draftId, step, setDraftId, setContentType, setStep, setError, reset } =
-    useCreateStore();
+  const {
+    draftId,
+    step,
+    setDraftId,
+    setContentType,
+    setStep,
+    setDraftPending,
+    setError,
+    reset,
+  } = useCreateStore();
   const [createDraft] = useMutation(CreateDraftDocument);
   const { startImageUpload, startVideoUpload } = useMediaUpload();
+
+  // Full-screen "Preparing…" overlay shown while navigating to the TikTok
+  // import page — that route loads + fetches the user's TikTok videos, which
+  // takes a moment, so we give immediate feedback instead of a frozen tab bar.
+  const [preparingTiktok, setPreparingTiktok] = useState(false);
+
+  // Prefetch the TikTok import route as soon as the drawer opens so the
+  // navigation itself is near-instant once the user taps.
+  useEffect(() => {
+    router.prefetch(`/${lang}/upload/tiktok`);
+  }, [router, lang]);
+
+  function handleTiktokImport() {
+    setPreparingTiktok(true);
+    router.replace(`/${lang}/upload/tiktok`);
+  }
 
   function handleClose() {
     // If there's a draft in progress, resume it instead of going to feed
@@ -28,34 +52,47 @@ export function CreateDrawer({ lang }: { lang: string }) {
     }
   }
 
-  async function handleFiles(files: FileList, kind: "image" | "video") {
+  function handleFiles(files: FileList, kind: "image" | "video") {
     if (!files.length) return;
     setError(null);
 
     // Start fresh for a new upload — wipes any previous draft
     reset();
 
-    try {
-      const { data, error } = await createDraft({
-        variables: { input: { type: kind === "video" ? "VIDEO" : "IMAGE" } },
-      });
-      if (error || !data?.createDraft)
-        throw new Error(error?.message ?? "Failed to create draft");
+    // ── Open the editor INSTANTLY ──────────────────────────────────────────
+    // Creating the draft is a network round-trip; don't block the UI on it.
+    // We set the type + step and navigate immediately, then create the draft
+    // and start the uploads in the background. CreateFlow tolerates a pending
+    // draft (draftId still null) without bouncing back to the picker.
+    setContentType(kind);
+    setStep("edit");
+    setDraftPending(true);
+    router.push(`/${lang}/upload/create`);
 
-      const did = data.createDraft.id;
-      setDraftId(did);
-      setContentType(kind);
+    const list = Array.from(files).slice(0, kind === "video" ? 1 : 10);
 
-      const list = Array.from(files).slice(0, kind === "video" ? 1 : 10);
-      for (const file of list) {
-        if (kind === "image") startImageUpload(file, did);
-        else startVideoUpload(file, did);
+    (async () => {
+      try {
+        const { data, error } = await createDraft({
+          variables: { input: { type: kind === "video" ? "VIDEO" : "IMAGE" } },
+        });
+        if (error || !data?.createDraft)
+          throw new Error(error?.message ?? "Failed to create draft");
+
+        const did = data.createDraft.id;
+        setDraftId(did);
+        setDraftPending(false);
+
+        // Uploads need the draft id, so they start once it's resolved.
+        list.forEach((file, i) => {
+          if (kind === "image") startImageUpload(file, did, i);
+          else startVideoUpload(file, did);
+        });
+      } catch (err) {
+        setDraftPending(false);
+        setError(String(err));
       }
-      setStep("edit");
-      router.push(`/${lang}/upload/create`);
-    } catch (err) {
-      setError(String(err));
-    }
+    })();
   }
 
   // function handleText() {
@@ -76,6 +113,27 @@ export function CreateDrawer({ lang }: { lang: string }) {
 
   return (
     <>
+      {/* Preparing overlay — covers the screen the moment TikTok import is
+          tapped, until the import page mounts and takes over. */}
+      {preparingTiktok && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="flex flex-col items-center gap-4 rounded-3xl bg-app px-8 py-7 shadow-2xl">
+            <span
+              className="inline-block h-9 w-9 animate-spin rounded-full border-[3px] border-transparent"
+              style={{
+                borderColor: "rgb(var(--color-border))",
+                borderTopColor: "rgb(var(--brand-primary))",
+              }}
+            />
+            <p className="text-md font-medium text-default">Preparing TikTok import…</p>
+          </div>
+        </div>
+      )}
+
       <Drawer
         open
         onOpenChange={(open) => {
@@ -123,9 +181,8 @@ export function CreateDrawer({ lang }: { lang: string }) {
             {/* TikTok import */}
             <Button
               variant="ghost"
-              onClick={() => {
-                window.location.href = `/${lang}/upload/tiktok`;
-              }}
+              onClick={handleTiktokImport}
+              disabled={preparingTiktok}
               className="w-full h-14 rounded-none active:bg-surface transition-colors"
             >
               <span className="text-md font-medium">TikTok Imports</span>

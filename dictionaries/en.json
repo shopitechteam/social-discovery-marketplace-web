@@ -1,13 +1,12 @@
 {
   "common": {
     "appName": "Shopi",
-    "tagline": "Discover. Shop. Share.",
+    "tagline": "Find it nearby. Message the seller.",
     "loading": "Loading…",
     "error": "Something went wrong",
-    "continueWeb": "Continue in web →",
-    "downloadApp": "Download App",
-    "downloadAppStore": "Download on the App Store",
-    "downloadGooglePlay": "Get it on Google Play"
+    "continueWeb": "Open the feed →",
+    "openFeed": "Open the feed",
+    "startFree": "Start free"
   },
 
   "nav": {
@@ -21,101 +20,99 @@
   },
 
   "hero": {
-    "badge": "Kenya's Social Discovery Marketplace",
-    "headline": "Discover local products through short videos.",
-    "subheadline": "Shopi is the social commerce feed where sellers post videos and photos of what they're selling — and you scroll, discover, and message them directly.",
-    "ctaExplore": "Explore the feed",
-    "ctaHowItWorks": "See how it works",
-    "socialProof": "Join {count}+ sellers already on Shopi"
+    "badge": "",
+    "headline": "Kenya’s social local marketplace—tuned to what you like, and where you are.",
+    "subheadline": "Scroll real things being sold around you: cars in Rongai, phones in town, furniture down the road, fresh produce from a farmer nearby. Shopi also learns what you keep opening and saves your taste, so the feed stays local and relevant. When something feels right, message the seller and agree directly. Shopi does not take payments or commission.",
+    "reassurance": "Free to browse · Free to post · Buyer and seller agree directly",
+    "ctaExplore": "Open the feed",
+    "ctaHowItWorks": "See how it works"
   },
 
   "features": {
     "sectionLabel": "Why Shopi",
-    "headline": "Built so local sellers waste zero time getting started.",
+    "headline": "Find it nearby. Message the seller. Agree between yourselves.",
     "items": {
       "scroll": {
-        "title": "Scroll to discover, not search",
-        "body": "Forget boring classified listings. Sellers post short videos, product demos, and photos. You discover them the same way you'd discover content — by scrolling."
+        "title": "Discovery beats typing and hoping",
+        "body": "Search works when you already know the exact words. Shopi is for the other moments too: you scroll a local feed and come across a sofa, a clean phone, a car, a pair of shoes, or produce you were not planning to search for."
       },
       "message": {
-        "title": "Interested? Just message.",
-        "body": "No carts. No checkout. No payment forms. When you find something you want, tap to chat with the seller directly and agree on your own terms."
+        "title": "The deal stays between buyer and seller",
+        "body": "There is no cart, checkout, escrow or Shopi agent holding money. Tap to chat, ask for more photos, negotiate, choose where to meet or how to deliver, and close the deal your way."
       },
       "local": {
-        "title": "Local products, finally discoverable",
-        "body": "That farmer selling tomatoes in Kiambu. The sneaker dealer in Eastleigh. The tailor in Kisumu. They're all on Shopi — and now you can actually find them."
+        "title": "Nearby sellers show up first",
+        "body": "A buyer in Meru should not start with random listings from far away. Shopi uses location to bring nearby posts forward, while still letting good listings travel across Kenya when they match what people like."
       },
-      "communities": {
-        "title": "Join communities that match you",
-        "body": "\"iPhones in Embakasi.\" \"Sneakers Kenya.\" \"Farm Produce Nairobi.\" Join niche local communities where buyers and sellers already know each other."
+      "ai": {
+        "title": "Your feed gets more relevant over time",
+        "body": "Shopi looks at what you open, save and message, then surfaces more of that kind of thing. Keep clicking land listings and you will see more plots. Spend time on TVs, phones or fashion, and the feed adjusts with you."
       },
-      "postOnce": {
-        "title": "Post once. Reach thousands.",
-        "body": "One video can reach thousands of potential buyers in your city. No ad budget needed — just good content and the right community."
+      "tiktok": {
+        "title": "Post once, share it everywhere",
+        "body": "Make a post on Shopi and send it straight to TikTok in the same go. Reach the people scrolling there, and bring them back to a real listing with price, location, seller and a direct way to message."
       },
-      "import": {
-        "title": "Already on TikTok? Just import it.",
-        "body": "If you already post on TikTok or Instagram, bring your content straight to Shopi where it actually converts into sales."
+      "free": {
+        "title": "Free to list. Free to browse.",
+        "body": "Shopi is here to connect people, not to sit inside the transaction. Sellers keep their price, buyers talk directly, and both sides decide what happens next."
       }
     }
   },
 
   "howItWorks": {
     "sectionLabel": "How it works",
-    "headline": "Discover locally. Connect directly. No checkout needed.",
+    "headline": "A local deal without the long route.",
     "steps": {
       "1": {
-        "title": "Sign up in 30 seconds",
-        "body": "No credit card. No long forms. Pick your interests — phones, fashion, food, whatever — and your local feed is ready."
+        "title": "Open the feed",
+        "body": "Start with the feed. Cars, phones, fashion, furniture, farm produce, livestock and home items appear as real posts from real sellers."
       },
       "2": {
-        "title": "Scroll your local feed",
-        "body": "Watch videos and photos posted by real sellers near you. Think TikTok, but every post is something actually for sale — with a seller you can message directly."
+        "title": "See what is nearby",
+        "body": "Location helps surface sellers around you first, then your interests help sort what rises to the top, so the feed stays practical and relevant."
       },
       "3": {
-        "title": "Like it? Message the seller.",
-        "body": "Tap to open a direct chat with any seller. Negotiate, ask questions, arrange pickup or delivery — completely on your terms."
+        "title": "Message the seller",
+        "body": "Ask if it is available, request details, negotiate, and agree on pickup or delivery. The conversation is direct."
       },
       "4": {
-        "title": "Sell. Post. Build your audience.",
-        "body": "Sellers post content, grow followers, and build trust over time. The more you post, the more people discover what you're selling."
+        "title": "Agree outside checkout",
+        "body": "Shopi does not process payments or take a cut. Buyer and seller decide price, payment, meeting point and delivery between themselves."
       }
     }
   },
 
   "audience": {
     "sectionLabel": "Who is Shopi for?",
-    "headline": "Everyone in Kenya buying and selling locally.",
+    "headline": "For the people already buying and selling in Kenya every day.",
     "buyers": {
-      "tag": "Buyers",
-      "title": "Stop searching. Start discovering.",
-      "body": "Forget typing into a search bar hoping to find the right seller. On Shopi, your feed surfaces local products you'd actually want — based on your interests, your area, and what's trending near you.",
-      "cta": "Explore the feed"
+      "tag": "For buyers",
+      "title": "Find useful things before you think to search.",
+      "body": "Maybe you came for a phone and ended up spotting a sofa, a good mitumba bale, a used car, or fresh produce nearby. Shopi keeps discovery open, uses your interests to tune the feed, then lets you message the seller when something makes sense.",
+      "cta": "Open the feed"
     },
     "sellers": {
-      "tag": "Sellers",
-      "title": "Your phone is your storefront.",
-      "body": "Post a 30-second video. Reach buyers in your city without spending on ads. Build a following that comes back every time you post something new. No website needed. No delivery company required.",
-      "cta": "Start selling"
+      "tag": "For sellers",
+      "title": "Your phone can put the item in front of nearby buyers.",
+      "body": "Record what you are selling, add the price and location, and post. Buyers discover it in the feed and message you directly. No website, no checkout setup, no commission removed from your sale.",
+      "cta": "Start selling free"
     }
   },
 
   "testimonials": {
-    "sectionLabel": "Real people. Real sales.",
-    "headline": "Sellers across Kenya are already making it work."
+    "sectionLabel": "Local use cases",
+    "headline": "Made for everyday Kenyan buying and selling."
   },
 
   "download": {
-    "sectionLabel": "Get the app",
-    "headline": "Your local market just got a social feed.",
-    "body": "Shopi is available on iOS and Android. Download the app and join thousands of sellers and buyers already on the platform.",
-    "appStore": "Download on the App Store",
-    "googlePlay": "Get it on Google Play",
-    "webCta": "Or continue in your browser →"
+    "sectionLabel": "Start looking",
+    "headline": "The next good find may be a few scrolls away.",
+    "body": "Open the feed and see what people near you are selling today. No checkout, no commission, no pressure to create an account before you start browsing.",
+    "webCta": "Open the feed →"
   },
 
   "footer": {
-    "tagline": "The social commerce feed for Kenya.",
+    "tagline": "Kenya's local marketplace feed. Discover it, message the seller, agree directly.",
     "links": {
       "product": "Product",
       "company": "Company",
@@ -127,7 +124,7 @@
   "support": {
     "agentName": "Amina · Shopi Support",
     "agentSubtitle": "Usually replies in a few minutes",
-    "greeting": "Hi there 👋 I'm Amina from the Shopi support team. How can I help you today?",
+    "greeting": "Hi there, I'm Amina from the Shopi support team. How can I help you today?",
     "autoReply": "Thanks for reaching out! Our team has received your message and will reply shortly.",
     "placeholder": "Type a message…",
     "close": "Close chat",

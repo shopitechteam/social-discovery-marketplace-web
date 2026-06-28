@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { siteConfig } from "@/config/site";
-import { FeedPage } from "@/features/feed/components/FeedPage";
 
 export const metadata: Metadata = {
   title: siteConfig.routes.feed.title,
@@ -8,9 +7,10 @@ export const metadata: Metadata = {
   alternates: { canonical: `${siteConfig.url}${siteConfig.routes.feed.path}` },
 };
 
-type Props = { params: Promise<{ lang: string }> };
-
-export default async function FeedPageRoute({ params }: Props) {
-  const { lang } = await params;
-  return <FeedPage lang={lang} />;
+// The Home feed itself is mounted once in MainShell so it persists across
+// bottom-nav navigation (Home ⇄ Explore …) without remounting/refetching. This
+// route only exists for its URL + metadata; MainShell renders the live feed and
+// suppresses this page's body on /feed to avoid a double mount.
+export default function FeedPageRoute() {
+  return null;
 }

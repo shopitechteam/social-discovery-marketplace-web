@@ -6,6 +6,7 @@ fragment DraftFields on DraftContent {
   title
   caption
   hashtags
+  categoryId
   mediaAssetIds
   visibilityMode
   allowDownload
@@ -15,10 +16,25 @@ fragment DraftFields on DraftContent {
   version
   sourceImportId
   importProvider
+  source
+  tiktokEmbed {
+    videoId
+    shareUrl
+    coverImageUrl
+    authorUsername
+    authorName
+    title
+    duration
+  }
+  coverThumbnailUrl
   price {
     amount
     currency
     negotiable
+  }
+  specs {
+    key
+    value
   }
   location {
     placeName
@@ -29,6 +45,24 @@ fragment DraftFields on DraftContent {
   }
   createdAt
   updatedAt
+}
+
+fragment CategoryFields on Category {
+  id
+  name
+  slug
+  description
+  icon
+  parentId
+  depth
+  sortOrder
+  contentCount
+}
+
+query Categories {
+  categories {
+    ...CategoryFields
+  }
 }
 
 fragment MediaAssetFields on MediaAsset {
@@ -146,6 +180,22 @@ mutation CreateDraftFromTiktokImport($downloadId: String!) {
   }
 }
 
+mutation CreateDraftFromTiktokEmbed($input: TiktokEmbedInput!) {
+  createDraftFromTiktokEmbed(input: $input) {
+    ...DraftFields
+  }
+}
+
+query SuggestedPostLocation {
+  suggestedPostLocation {
+    placeName
+    formattedAddress
+    placeId
+    county
+    subregion
+  }
+}
+
 query GetDraft($id: String!) {
   draft(id: $id) {
     ...DraftFields
@@ -155,5 +205,37 @@ query GetDraft($id: String!) {
 query MyDrafts($limit: Int, $afterId: String) {
   myDrafts(limit: $limit, afterId: $afterId) {
     ...DraftFields
+  }
+}
+
+mutation ExtractDraftDetails($id: String!) {
+  extractDraftDetails(id: $id) {
+    title
+    description
+    price
+    currency
+    specs {
+      key
+      value
+    }
+    level1
+    categoryId
+    usedTranscript
+  }
+}
+
+mutation ExtractDraftDetailsFromFrames($id: String!, $frames: [String!]!) {
+  extractDraftDetailsFromFrames(id: $id, frames: $frames) {
+    title
+    description
+    price
+    currency
+    specs {
+      key
+      value
+    }
+    level1
+    categoryId
+    usedTranscript
   }
 }

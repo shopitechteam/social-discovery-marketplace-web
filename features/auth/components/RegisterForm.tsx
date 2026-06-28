@@ -68,7 +68,10 @@ export function RegisterForm({ from, lang, footer }: RegisterFormProps) {
 
   // ── Step 1 form ──────────────────────────────────────────────────────────────
   const registerForm = useForm<RegisterFormValues>({ mode: "onBlur" });
-  const password = useWatch({ control: registerForm.control, name: "password" });
+  const password = useWatch({
+    control: registerForm.control,
+    name: "password",
+  });
   const isStep1Loading = registerForm.formState.isSubmitting || registerLoading;
 
   async function onRegisterSubmit(values: RegisterFormValues) {
@@ -116,14 +119,19 @@ export function RegisterForm({ from, lang, footer }: RegisterFormProps) {
         router.replace(from && from.startsWith("/") ? from : `/${lang}/feed`);
       }
     } catch (err: unknown) {
-      setServerError(err instanceof Error ? err.message : "Something went wrong.");
+      setServerError(
+        err instanceof Error ? err.message : "Something went wrong.",
+      );
     }
   }
 
   // ── Step 2 form ──────────────────────────────────────────────────────────────
   const linkForm = useForm<LinkFormValues>({ mode: "onBlur" });
   const [showNewPassword, setShowNewPassword] = useState(false);
-  const newPassword = useWatch({ control: linkForm.control, name: "newPassword" });
+  const newPassword = useWatch({
+    control: linkForm.control,
+    name: "newPassword",
+  });
   const isStep2Loading = linkForm.formState.isSubmitting || linkLoading;
 
   async function onLinkSubmit(values: LinkFormValues) {
@@ -149,8 +157,9 @@ export function RegisterForm({ from, lang, footer }: RegisterFormProps) {
         return;
       }
 
-      const payload = (data as VerifyEmailAndLinkPasswordMutation | null | undefined)
-        ?.verifyEmailAndLinkPassword;
+      const payload = (
+        data as VerifyEmailAndLinkPasswordMutation | null | undefined
+      )?.verifyEmailAndLinkPassword;
       if (!payload) {
         setServerError("Something went wrong. Please try again.");
         return;
@@ -159,7 +168,9 @@ export function RegisterForm({ from, lang, footer }: RegisterFormProps) {
       setAuth(payload);
       router.replace(from && from.startsWith("/") ? from : `/${lang}/feed`);
     } catch (err: unknown) {
-      setServerError(err instanceof Error ? err.message : "Something went wrong.");
+      setServerError(
+        err instanceof Error ? err.message : "Something went wrong.",
+      );
     }
   }
 
@@ -188,8 +199,11 @@ export function RegisterForm({ from, lang, footer }: RegisterFormProps) {
           </p>
           <p className="text-xs text-muted leading-relaxed">
             We sent a 6-digit code to{" "}
-            <span className="font-medium text-default">{pendingLink.email}</span>.
-            Enter it below to verify ownership and add a password to your account.
+            <span className="font-medium text-default">
+              {pendingLink.email}
+            </span>
+            . Enter it below to verify ownership and add a password to your
+            account.
           </p>
         </div>
 
@@ -229,7 +243,8 @@ export function RegisterForm({ from, lang, footer }: RegisterFormProps) {
               autoComplete="new-password"
               placeholder="At least 8 characters"
               className={
-                inputCls(!!linkForm.formState.errors.newPassword) + " pl-10 pr-12"
+                inputCls(!!linkForm.formState.errors.newPassword) +
+                " pl-10 pr-12"
               }
               {...linkForm.register("newPassword", {
                 required: "Password is required",
@@ -259,7 +274,7 @@ export function RegisterForm({ from, lang, footer }: RegisterFormProps) {
         <button
           type="submit"
           disabled={isStep2Loading}
-          className="h-14 rounded-2xl bg-primary text-white font-semibold text-[16px] transition-all disabled:opacity-60 active:scale-[0.98]"
+          className="h-14 rounded-2xl bg-primary text-white font-semibold text-base transition-all disabled:opacity-60 active:scale-[0.98]"
         >
           {isStep2Loading ? (
             <span className="flex items-center justify-center gap-2">
@@ -308,7 +323,7 @@ export function RegisterForm({ from, lang, footer }: RegisterFormProps) {
             id="firstName"
             type="text"
             autoComplete="name"
-            placeholder="Kalani Rivera"
+            //placeholder="Kalani Rivera"
             className={
               inputCls(
                 !!(
@@ -336,7 +351,7 @@ export function RegisterForm({ from, lang, footer }: RegisterFormProps) {
             autoComplete="email"
             autoCapitalize="none"
             inputMode="email"
-            placeholder="you@example.com"
+            //placeholder="you@example.com"
             className={
               inputCls(!!registerForm.formState.errors.email) + " pl-10"
             }
@@ -366,7 +381,8 @@ export function RegisterForm({ from, lang, footer }: RegisterFormProps) {
             autoComplete="new-password"
             placeholder="At least 8 characters"
             className={
-              inputCls(!!registerForm.formState.errors.password) + " pl-10 pr-12"
+              inputCls(!!registerForm.formState.errors.password) +
+              " pl-10 pr-12"
             }
             {...registerForm.register("password", {
               required: "Password is required",
@@ -415,7 +431,7 @@ export function RegisterForm({ from, lang, footer }: RegisterFormProps) {
       <button
         type="submit"
         disabled={isStep1Loading}
-        className="h-14 rounded-2xl bg-primary text-white font-semibold text-[16px] transition-all disabled:opacity-60 active:scale-[0.98]"
+        className="h-14 rounded-2xl bg-primary text-white font-semibold text-base transition-all disabled:opacity-60 active:scale-[0.98]"
       >
         {isStep1Loading ? (
           <span className="flex items-center justify-center gap-2">
@@ -590,7 +606,13 @@ function EyeOffIcon() {
 
 function Spinner() {
   return (
-    <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none">
+    <svg
+      className="animate-spin"
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+    >
       <circle
         className="opacity-25"
         cx="12"

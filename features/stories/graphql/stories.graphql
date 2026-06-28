@@ -1,0 +1,67 @@
+fragment StoryMediaFields on StoryMedia {
+  mediaType
+  imageUrl
+  thumbnailUrl
+  muxPlaybackId
+  muxThumbnailUrl
+  processingStatus
+}
+
+fragment StoryFields on Story {
+  id
+  caption
+  expiresAt
+  viewCount
+  createdAt
+  media {
+    ...StoryMediaFields
+  }
+}
+
+fragment StoryCreatorFields on User {
+  id
+  profile {
+    firstName
+    lastName
+    avatar
+  }
+}
+
+fragment StoryRingFields on StoryRing {
+  hasUnviewed
+  totalCount
+  user {
+    ...StoryCreatorFields
+  }
+  stories {
+    ...StoryFields
+  }
+}
+
+query StoriesFeed {
+  storiesFeed {
+    ...StoryRingFields
+  }
+}
+
+mutation CreateStory($input: CreateStoryInput!) {
+  createStory(input: $input) {
+    ...StoryFields
+  }
+}
+
+mutation RequestStoryVideoUpload($caption: String) {
+  requestStoryVideoUpload(caption: $caption) {
+    storyId
+    uploadUrl
+    uploadId
+  }
+}
+
+mutation DeleteStory($storyId: String!) {
+  deleteStory(storyId: $storyId)
+}
+
+mutation ViewStory($storyId: String!) {
+  viewStory(storyId: $storyId)
+}

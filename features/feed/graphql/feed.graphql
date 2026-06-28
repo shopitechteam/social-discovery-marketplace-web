@@ -32,13 +32,28 @@ fragment MediaItemFields on MediaItem {
 fragment ContentCardFields on Content {
   id
   type
+  source
+  isLive
+  tiktokEmbed {
+    videoId
+    shareUrl
+    coverImageUrl
+    authorUsername
+    authorName
+    title
+    duration
+  }
   title
   caption
   hashtags
   creatorId
+  allowDownload
+  hdEnabled
   createdAt
   creator {
     id
+    username
+    isVerified
     isFollowedByMe
     followerCount
     profile {
@@ -58,20 +73,22 @@ fragment ContentCardFields on Content {
   stats {
     views
     likes
-    comments
     shares
     saves
+    comments
   }
   location {
     county
     subregion
     placeName
+    formattedAddress
   }
   ranking {
     rankScore
     trendingScore
   }
   isLikedByMe
+  isSavedByMe
   isMyContent
 }
 
@@ -101,6 +118,34 @@ query GetContent($id: String!) {
 
 query FollowingFeed($limit: Int, $after: String) {
   followingFeed(limit: $limit, after: $after) {
+    items {
+      ...ContentCardFields
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+
+query LocalFeed(
+  $latitude: Float
+  $longitude: Float
+  $radiusKm: Float
+  $county: String
+  $subregion: String
+  $limit: Int
+  $after: String
+) {
+  localFeed(
+    latitude: $latitude
+    longitude: $longitude
+    radiusKm: $radiusKm
+    county: $county
+    subregion: $subregion
+    limit: $limit
+    after: $after
+  ) {
     items {
       ...ContentCardFields
     }

@@ -5,9 +5,17 @@ export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: "*",
-      allow: ["/feed", "/explore", "/profile/"],
-      disallow: ["/notifications", "/upload", "/api/"],
+      allow: "/",
+      disallow: [
+        "/notifications",
+        "/upload",
+        "/api/",
+        "/*/notifications",
+        "/*/upload",
+        "/*/auth/",
+      ],
     },
     sitemap: `${siteConfig.url}/sitemap.xml`,
+    host: siteConfig.url,
   };
 }

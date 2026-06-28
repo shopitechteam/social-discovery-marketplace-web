@@ -38,6 +38,18 @@ mutation ShareContent($contentId: String!) {
   shareContent(contentId: $contentId)
 }
 
+mutation ReportContent($contentId: String!) {
+  reportContent(contentId: $contentId)
+}
+
+mutation CopyLink($contentId: String!) {
+  copyLink(contentId: $contentId)
+}
+
+mutation TrackInteraction($contentId: String!, $type: InteractionType!, $watchDuration: Float, $completionRate: Float, $feedType: String, $sessionId: String) {
+  trackInteraction(input: { contentId: $contentId, type: $type, watchDuration: $watchDuration, completionRate: $completionRate, feedType: $feedType, sessionId: $sessionId })
+}
+
 mutation ToggleCommentLike($commentId: String!) {
   toggleCommentLike(commentId: $commentId) {
     liked

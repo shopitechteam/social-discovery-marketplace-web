@@ -1,0 +1,8 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - text: Hello, Good morning..!
+    - text: How is marketing going for brand?
+    - generic [ref=e5]: 3:00 PM
+  - generic [ref=e7]:
+    - text: All good! Campaign is live and converting.
+    - generic [ref=e9]: 3:02 PM

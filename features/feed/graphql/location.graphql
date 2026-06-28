@@ -1,0 +1,14 @@
+query ReverseGeocode($lat: Float!, $lng: Float!) {
+  reverseGeocode(lat: $lat, lng: $lng) {
+    matched
+    location {
+      countyName
+      subCountyName
+      wardName
+      coordinates {
+        lat
+        lng
+      }
+    }
+  }
+}

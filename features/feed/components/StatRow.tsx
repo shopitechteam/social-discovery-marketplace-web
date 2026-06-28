@@ -1,5 +1,7 @@
 "use client";
 
+import { fmtCompact as fmt } from "@/lib/format";
+
 interface StatRowProps {
   likes: number;
   comments: number;
@@ -7,16 +9,10 @@ interface StatRowProps {
   inverted?: boolean;
 }
 
-function fmt(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return String(n);
-}
-
 export function StatRow({ likes, comments, views, inverted }: StatRowProps) {
   const cls = inverted
-    ? "text-white/80 text-[11px]"
-    : "text-muted-foreground text-[11px]";
+    ? "text-white/80 text-xs"
+    : "text-muted-foreground text-xs";
 
   return (
     <div className={`flex items-center gap-3 ${cls}`}>

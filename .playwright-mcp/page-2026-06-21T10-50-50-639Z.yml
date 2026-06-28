@@ -1,0 +1,74 @@
+- generic [active] [ref=e1]:
+    - main [ref=e2]:
+        - generic [ref=e3]:
+            - generic [ref=e4]:
+                - link "Shopi" [ref=e6] [cursor=pointer]:
+                    - /url: /en
+                    - img "Shopi" [ref=e7]:
+                        - generic [ref=e16]: shopi
+                - generic [ref=e17]:
+                    - generic [ref=e18]:
+                        - generic [ref=e19]:
+                            - generic [ref=e21]: Trending
+                            - generic [ref=e22]:
+                                - generic [ref=e24]: K
+                                - generic [ref=e25]: "@kali"
+                        - generic [ref=e26]:
+                            - generic [ref=e28]: New
+                            - generic [ref=e29]:
+                                - generic [ref=e31]: M
+                                - generic [ref=e32]: "@marco.s"
+                        - generic [ref=e33]:
+                            - generic [ref=e35]: 🔥 Trending
+                            - generic [ref=e36]:
+                                - generic [ref=e37]: ♥
+                                - generic [ref=e38]: 42K
+                            - generic [ref=e39]:
+                                - generic [ref=e41]: "N"
+                                - generic [ref=e42]: "@nia"
+                    - generic [ref=e43]:
+                        - generic [ref=e44]: Kenya's discovery marketplace
+                        - heading "Everything for sale near you, in one feed." [level=2] [ref=e45]
+                        - paragraph [ref=e46]: Scroll your local feed, message the seller, agree on a price — done. No checkout, no fees, no middleman.
+                    - generic [ref=e47]:
+                        - generic [ref=e48]: Scroll
+                        - generic [ref=e49]: →
+                        - generic [ref=e50]: Message
+                        - generic [ref=e51]: →
+                        - generic [ref=e52]: Agree
+                - generic [ref=e53]:
+                    - link "Terms" [ref=e54] [cursor=pointer]:
+                        - /url: /en/terms
+                    - link "Privacy" [ref=e55] [cursor=pointer]:
+                        - /url: /en/privacy
+                    - link "About" [ref=e56] [cursor=pointer]:
+                        - /url: /en/about
+            - generic [ref=e59]:
+                - generic [ref=e60]:
+                    - heading "Create your free account" [level=1] [ref=e61]
+                    - paragraph [ref=e62]: Start discovering what people near you are selling — in seconds.
+                - generic [ref=e63]:
+                    - generic [ref=e64]:
+                        - button "Continue with Apple" [ref=e65]:
+                            - img [ref=e66]
+                            - generic [ref=e68]: Continue with Apple
+                        - button "Continue with Google" [ref=e69]:
+                            - img [ref=e70]
+                            - generic [ref=e75]: Continue with Google
+                    - generic [ref=e78]: or use email
+                    - link "Sign up with Email" [ref=e80] [cursor=pointer]:
+                        - /url: /en/auth/register
+                    - paragraph [ref=e81]:
+                        - text: By continuing you agree to our
+                        - link "Terms" [ref=e82] [cursor=pointer]:
+                            - /url: /en/terms
+                        - text: "&"
+                        - link "Privacy Policy" [ref=e83] [cursor=pointer]:
+                            - /url: /en/privacy
+                        - text: .
+                    - paragraph [ref=e84]:
+                        - text: Already a member?
+                        - link "Sign in" [ref=e85] [cursor=pointer]:
+                            - /url: /en/auth/login
+    - region "Notifications alt+T"
+    - alert [ref=e86]

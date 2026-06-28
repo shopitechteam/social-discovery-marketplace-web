@@ -1,25 +1,73 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { FeedHeader } from "./FeedHeader";
-import { FeedGrid } from "./FeedGrid";
+import FeedGrid from "./FeedGrid";
 import { FollowingGrid } from "./FollowingGrid";
-import { DesktopFeed } from "./DesktopFeed";
+import { NearbyGrid } from "./NearbyGrid";
+import DesktopFeed from "./DesktopFeed";
 
 interface Props {
   lang: string;
 }
 
-export function FeedPage({ lang }: Props) {
-  const [tab, setTab] = useState<"for-you" | "following" | "nearby">("for-you");
+type Tab = "for-you" | "following" | "nearby";
 
-  function handleTabChange(next: "for-you" | "following" | "nearby") {
+export function FeedPage({ lang }: Props) {
+  const searchParams = useSearchParams();
+  const initialTab = (searchParams.get("tab") as Tab | null) ?? "for-you";
+  const [tab, setTab] = useState<Tab>(initialTab);
+  // Track which tabs have ever been opened. Nearby mounts lazily (it requests
+  // geolocation on mount, which we must not do until the user opens it); once
+  // opened it stays mounted so switching away/back never refetches or loses
+  // scroll. For-You and Following are side-effect-free, so we mount them eagerly.
+  const [openedTabs, setOpenedTabs] = useState<Set<Tab>>(
+    () => new Set([initialTab]),
+  );
+  // The page scrolls on `window` (there's no inner scroll container), so hiding
+  // the inactive feed collapses the document height and the browser loses the
+  // position. We remember each tab's scrollY and restore it on return.
+  const scrollByTab = useRef<Record<Tab, number>>({
+    "for-you": 0,
+    following: 0,
+    nearby: 0,
+  });
+  const prevTab = useRef<Tab>(initialTab);
+
+  // Restore the incoming tab's scroll AFTER the show/hide classes apply but
+  // before paint, so there's no flash at the wrong offset. Layout effects run
+  // post-DOM-mutation, by which point the restored feed has its full height back.
+  useLayoutEffect(() => {
+    if (prevTab.current !== tab) {
+      window.scrollTo(0, scrollByTab.current[tab] ?? 0);
+      prevTab.current = tab;
+    }
+  }, [tab]);
+
+  // If the user returns from auth with ?tab=following, honour it
+  useEffect(() => {
+    const t = searchParams.get("tab") as Tab | null;
+    if (t && t !== tab) {
+      scrollByTab.current[tab] = window.scrollY;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setTab(t);
+      setOpenedTabs((prev) => (prev.has(t) ? prev : new Set(prev).add(t)));
+    }
+    // only re-run when the search params change, not when tab changes internally
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  function handleTabChange(next: Tab) {
+    if (next === tab) return;
+    // Remember where we are on the tab we're leaving, before it gets hidden.
+    scrollByTab.current[tab] = window.scrollY;
     setTab(next);
-    window.scrollTo({ top: 0, behavior: "instant" });
+    setOpenedTabs((prev) => (prev.has(next) ? prev : new Set(prev).add(next)));
   }
 
   return (
-    <>
+    <div>
       {/* ── Desktop: fullscreen TikTok-style feed — no header/tabs needed ── */}
       <div className="hidden md:block">
         <DesktopFeed lang={lang} />
@@ -29,24 +77,36 @@ export function FeedPage({ lang }: Props) {
       <div className="md:hidden min-h-svh">
         <FeedHeader lang={lang} activeTab={tab} onTabChange={handleTabChange} />
 
-        <div className="relative">
-          {tab === "for-you" && <FeedGrid lang={lang} />}
+        {/* Once a feed has been opened it stays mounted; we only toggle
+            visibility. Conditionally rendering on `tab ===` would unmount the
+            inactive feed and, on switch-back, remount a fresh Apollo observer —
+            re-running the page-1 fetch and discarding both the accumulated
+            window and scroll position. Keeping it mounted preserves scroll +
+            pagination and makes tab switches instant. A display:none feed
+            reports intersection ratio 0, so its PostCard videos never win the
+            active-video election. */}
+        <div className="relative bg-surface">
+          <div className={tab === "for-you" ? undefined : "hidden"}>
+            <FeedGrid lang={lang} />
+          </div>
 
-          {tab === "following" && <FollowingGrid lang={lang} />}
-
-          {tab === "nearby" && (
-            <div className="flex flex-col items-center justify-center py-24 px-6 text-center">
-              <div className="text-5xl mb-4">📍</div>
-              <h3 className="font-bold text-default text-base mb-2">
-                Discover local sellers
-              </h3>
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                Enable location to find the best deals near you.
-              </p>
+          {/* Following mounts lazily too, to avoid firing its feed query on
+              page load when the user may never leave For-You. */}
+          {openedTabs.has("following") ? (
+            <div className={tab === "following" ? undefined : "hidden"}>
+              <FollowingGrid lang={lang} />
             </div>
-          )}
+          ) : null}
+
+          {/* Nearby mounts only after first open (it requests geolocation on
+              mount), then stays mounted like the others. */}
+          {openedTabs.has("nearby") ? (
+            <div className={tab === "nearby" ? undefined : "hidden"}>
+              <NearbyGrid lang={lang} />
+            </div>
+          ) : null}
         </div>
       </div>
-    </>
+    </div>
   );
 }

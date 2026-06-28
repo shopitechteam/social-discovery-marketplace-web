@@ -44,7 +44,7 @@ export function ImageCard({ post, lang, priority, variant = "tall" }: Props) {
 
   return (
     <article
-      onClick={() => router.push(`/${lang}/content/${post.id}`)}
+      onClick={() => router.push(`/${lang}/content/${post.id}`, { scroll: false })}
       className="relative cursor-pointer group rounded-xl overflow-hidden bg-surface select-none"
       style={{ aspectRatio }}
       aria-label={post.title}
@@ -76,7 +76,7 @@ export function ImageCard({ post, lang, priority, variant = "tall" }: Props) {
 
       {/* ── Gallery badge ─────────────────────────────────────────────── */}
       {isGallery && (
-        <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-[10px] font-semibold px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
+        <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-xs font-semibold px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
           <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
             <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM14 11a1 1 0 011 1v1h1a1 1 0 110 2h-1v1a1 1 0 11-2 0v-1h-1a1 1 0 110-2h1v-1a1 1 0 011-1z" />
           </svg>
@@ -92,7 +92,7 @@ export function ImageCard({ post, lang, priority, variant = "tall" }: Props) {
         <div className="flex items-center justify-between gap-1">
           <StatRow
             likes={post.stats?.likes ?? 0}
-            comments={post.stats?.comments ?? 0}
+            comments={0}
             inverted
           />
           {post.price && (

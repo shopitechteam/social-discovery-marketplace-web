@@ -1,52 +1,49 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Moon, Sun } from "lucide-react";
 import { useThemeStore } from "@/stores/theme";
+import { Switch } from "@/components/ui/switch";
 
 export function ThemeToggle() {
-  const { resolvedTheme, toggleTheme } = useThemeStore();
+  const { resolvedTheme, setTheme } = useThemeStore();
   const [mounted, setMounted] = useState(false);
 
   // Only render after mount — prevents SSR/client mismatch
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
 
-  if (!mounted) return null;
+  if (!mounted) {
+    return (
+      <Switch
+        disabled
+        aria-label="Toggle dark mode"
+        className="opacity-0"
+      />
+    );
+  }
 
   const isDark = resolvedTheme === "dark";
 
   return (
-    <>
-      <p
-        style={{
-          fontSize: "var(--text-sm)",
-          color: "rgb(var(--color-text-muted))",
-        }}
-      >
-        Current theme: <strong>{resolvedTheme}</strong>
-      </p>
-
-      <button
-        onClick={toggleTheme}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          padding: "12px 24px",
-          borderRadius: "var(--radius-full)",
-          border: "1px solid rgb(var(--color-border))",
-          background: "rgb(var(--color-bg-elevated))",
-          color: "rgb(var(--color-text))",
-          fontSize: "var(--text-base)",
-          fontWeight: 600,
-          cursor: "pointer",
-          boxShadow: "var(--shadow-sm)",
-          WebkitTapHighlightColor: "transparent",
-        }}
-      >
-        <span style={{ fontSize: 20 }}>{isDark ? "☀️" : "🌙"}</span>
-        {isDark ? "Switch to Light" : "Switch to Dark"}
-      </button>
-    </>
+    <div className="inline-flex items-center gap-2">
+      <Sun
+        size={14}
+        strokeWidth={2.1}
+        style={{ color: isDark ? "rgb(var(--color-text-placeholder))" : "rgb(var(--brand-secondary))" }}
+        aria-hidden
+      />
+      <Switch
+        checked={isDark}
+        onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+        aria-label="Toggle dark mode"
+      />
+      <Moon
+        size={14}
+        strokeWidth={2.1}
+        style={{ color: isDark ? "rgb(var(--brand-accent))" : "rgb(var(--color-text-placeholder))" }}
+        aria-hidden
+      />
+    </div>
   );
 }

@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
 import React from "react";
 import { useRouter } from "next/navigation";
@@ -23,17 +24,17 @@ export function HeroSection({ dict }: { dict: Dictionary }) {
     <section
       id="hero"
       style={{
-        minHeight: "100vh",
+        minHeight: "100svh",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
         textAlign: "center",
-        padding: "5rem 1.25rem 3rem",
+        padding: "6rem 1.25rem 3rem",
         position: "relative",
       }}
     >
-      {/* Background glow blobs */}
+      {/* Soft single background wash — flatter, calmer */}
       <div
         aria-hidden
         style={{
@@ -46,142 +47,84 @@ export function HeroSection({ dict }: { dict: Dictionary }) {
         <div
           style={{
             position: "absolute",
-            top: "-10%",
+            top: "-15%",
             left: "50%",
             transform: "translateX(-50%)",
-            width: "900px",
-            height: "600px",
+            width: "800px",
+            maxWidth: "120vw",
+            height: "500px",
             background:
-              "radial-gradient(ellipse at center, rgb(var(--brand-primary) / 0.12) 0%, transparent 70%)",
-            filter: "blur(40px)",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            top: "20%",
-            left: "10%",
-            width: "400px",
-            height: "400px",
-            background:
-              "radial-gradient(ellipse at center, rgb(var(--brand-accent) / 0.08) 0%, transparent 70%)",
-            filter: "blur(60px)",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            top: "20%",
-            right: "10%",
-            width: "400px",
-            height: "400px",
-            background:
-              "radial-gradient(ellipse at center, rgb(var(--brand-secondary) / 0.08) 0%, transparent 70%)",
-            filter: "blur(60px)",
+              "radial-gradient(ellipse at center, rgb(var(--brand-primary) / 0.08) 0%, transparent 70%)",
           }}
         />
       </div>
 
-      {/* Badge */}
-      <div
+      <p
         style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: "0.375rem",
-          padding: "0.375rem 1rem",
-          borderRadius: "var(--radius-full)",
-          border: "1px solid rgb(var(--brand-primary) / 0.3)",
-          background: "rgb(var(--brand-primary) / 0.08)",
-          color: "rgb(var(--brand-primary))",
           fontSize: "var(--text-sm)",
-          fontWeight: 600,
-          marginBottom: "2rem",
-          letterSpacing: "0.02em",
+          fontWeight: 800,
+          color: "rgb(var(--brand-primary))",
+          marginBottom: "0.9rem",
         }}
       >
-        <span>✦</span>✦ {dict.hero.badge}
-      </div>
+        {dict.hero.badge}
+      </p>
 
       {/* Headline */}
       <h1
         style={{
           fontFamily: "var(--font-display)",
           fontWeight: 700,
-          fontSize: "clamp(2.5rem, 6vw, 5rem)",
+          fontSize: "clamp(2.25rem, 6.5vw, 4.5rem)",
           lineHeight: 1.08,
-          letterSpacing: "-0.03em",
+          letterSpacing: 0,
           color: "rgb(var(--color-text))",
-          maxWidth: "860px",
-          marginBottom: "1.5rem",
+          maxWidth: "820px",
+          marginBottom: "1.25rem",
         }}
       >
-        What you’re looking for
-        <br />
-        <span
-          style={{
-            background:
-              "linear-gradient(90deg, rgb(var(--brand-primary)), rgb(var(--brand-accent)))",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text",
-          }}
-        >
-          is already here.
-        </span>
+        {dict.hero.headline}
       </h1>
 
       {/* Subheadline */}
       <p
         style={{
-          fontSize: "clamp(1rem, 1.8vw, 1.25rem)",
+          fontSize: "clamp(1rem, 1.8vw, 1.2rem)",
           color: "rgb(var(--color-text-muted))",
-          maxWidth: "560px",
-          lineHeight: 1.65,
-          marginBottom: "2.5rem",
+          maxWidth: "540px",
+          lineHeight: 1.6,
+          marginBottom: "2rem",
         }}
       >
-        Local sellers. Real videos. Zero middlemen. Shopi lets you discover
-        products from people near you — then talk to them directly. No checkout
-        flow. No waiting. Just find it, message, done.
+        {dict.hero.subheadline}
       </p>
 
       {/* CTAs */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "1rem",
-          flexWrap: "wrap",
-          justifyContent: "center",
-          marginBottom: "4rem",
-        }}
-      >
+      <div className="hero-cta-row">
         <button
           onClick={handleExploreClick}
-          className="btn-primary"
+          className="btn-primary hero-cta-btn"
           style={{
-            padding: "0.875rem 2rem",
+            padding: "0.9rem 2rem",
             fontSize: "var(--text-md)",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "0.5rem",
+            fontWeight: 600,
             border: "none",
             cursor: "pointer",
           }}
         >
-          <span>▶</span> See what&apos;s near you — it&apos;s free
+          {dict.hero.ctaExplore}
         </button>
         <button
           onClick={handleHowItWorksClick}
+          className="hero-cta-btn"
           style={{
-            padding: "0.875rem 2rem",
+            padding: "0.9rem 1.75rem",
             fontSize: "var(--text-md)",
             fontWeight: 600,
             color: "rgb(var(--color-text-muted))",
             border: "1px solid rgb(var(--color-border))",
             borderRadius: "var(--radius-full)",
             background: "rgb(var(--color-bg-elevated))",
-            transition: "border-color 0.15s ease, color 0.15s ease",
             cursor: "pointer",
           }}
         >
@@ -189,67 +132,52 @@ export function HeroSection({ dict }: { dict: Dictionary }) {
         </button>
       </div>
 
-
-      {/* Social proof */}
-      <div
+      {/* Reassurance line — no numbers, just honest promises */}
+      <p
         style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "2rem",
           fontSize: "var(--text-sm)",
           color: "rgb(var(--color-text-muted))",
-          flexWrap: "wrap",
-          justifyContent: "center",
+          marginBottom: "1rem",
         }}
       >
-        {[
-          { stat: "50K+", label: "Local sellers posting daily" },
-          { stat: "200K+", label: "Products discovered through video" },
-          { stat: "4.9★", label: "App Store rating" },
-        ].map(({ stat, label }) => (
-          <div
-            key={stat}
-            style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
-          >
-            <span
-              style={{
-                fontFamily: "var(--font-display)",
-                fontWeight: 700,
-                fontSize: "var(--text-lg)",
-                color: "rgb(var(--color-text))",
-              }}
-            >
-              {stat}
-            </span>
-            <span>{label}</span>
-          </div>
-        ))}
-      </div>
+        {dict.hero.reassurance}
+      </p>
 
-      {/* iPhone 14 Pro Max mockups */}
+      {/* Phone mockups — single clean phone on mobile, three on desktop */}
       <div className="hero-phones-wrapper">
-        {/* LEFT PHONE — Feed / Shop Discovery — shown solo on mobile */}
         <div className="hero-phone-feed">
           <FeedScreen />
         </div>
-
-        {/* CENTER PHONE — Video post with chat — desktop only */}
         <div className="hero-phone-center" style={{ zIndex: 2 }}>
-          <VideoScreen />
+          <ChatScreen />
         </div>
-
-        {/* RIGHT PHONE — Seller profile — desktop only */}
         <div
           className="hero-phone-right"
-          style={{ transform: "rotate(10deg) translateY(40px)" }}
+          style={{ transform: "rotate(8deg) translateY(34px)" }}
         >
           <ProfileScreen />
         </div>
       </div>
 
       <style>{`
+        .hero-cta-row {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          justify-content: center;
+          margin-bottom: 0.9rem;
+        }
+        .hero-cta-btn { flex-shrink: 0; }
+        @media (max-width: 767px) {
+          .hero-cta-row {
+            flex-direction: column;
+            width: 100%;
+            max-width: 360px;
+          }
+          .hero-cta-btn { width: 100%; }
+        }
         .hero-phones-wrapper {
-          margin-top: 3rem;
+          margin-top: 2.5rem;
           position: relative;
           display: flex;
           justify-content: center;
@@ -259,56 +187,63 @@ export function HeroSection({ dict }: { dict: Dictionary }) {
           width: 100%;
           overflow: visible;
         }
-        .hero-phone-feed { flex-shrink: 0; transform: rotate(-10deg) translateY(40px); }
+        .hero-phone-feed { flex-shrink: 0; transform: rotate(-8deg) translateY(34px); }
         .hero-phone-center { flex-shrink: 0; }
         .hero-phone-right { flex-shrink: 0; }
 
-        /* Mobile: show only the feed phone, full size */
         @media (max-width: 767px) {
           .hero-phone-center { display: none; }
           .hero-phone-right { display: none; }
           .hero-phones-wrapper {
             margin-top: 2rem;
-            margin-bottom: 2rem;
+            margin-bottom: 1rem;
             justify-content: center;
             overflow: visible;
           }
-          .hero-phone-feed {
-            transform: none;
-          }
+          .hero-phone-feed { transform: none; }
         }
 
         @media (min-width: 768px) {
-          .hero-phones-wrapper { margin-top: 5rem; gap: 2rem; }
+          .hero-phones-wrapper { margin-top: 4rem; gap: 2rem; }
         }
       `}</style>
     </section>
   );
 }
 
-/* ─── Shared bottom nav (mirrors real BottomNav tabs) ─── */
+/* ─── Shared bottom nav (mirrors real BottomNav tabs, line icons only) ─── */
 function MockBottomNav({
   active,
 }: {
   active: "home" | "explore" | "inbox" | "me";
 }) {
+  const col = (k: typeof active) =>
+    active === k ? "rgb(var(--brand-primary))" : "rgb(var(--color-text-muted))";
+  const sw = (k: typeof active) => (active === k ? 2.2 : 1.7);
+  const label = (k: typeof active, text: string) => (
+    <span
+      style={{
+        fontSize: 7,
+        fontWeight: active === k ? 600 : 400,
+        fontFamily: "system-ui",
+      }}
+    >
+      {text}
+    </span>
+  );
   return (
     <div
       style={{
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        paddingLeft: 10,
-        paddingRight: 10,
-        paddingTop: 8,
-        paddingBottom: 8,
+        padding: "8px 10px",
         borderTop: "1px solid rgb(var(--color-border))",
         background: "rgb(var(--color-bg-elevated) / 0.95)",
         backdropFilter: "blur(12px)",
         flexShrink: 0,
       }}
     >
-      {/* Home */}
       <div
         style={{
           display: "flex",
@@ -316,17 +251,14 @@ function MockBottomNav({
           alignItems: "center",
           gap: 2,
           flex: 1,
-          color:
-            active === "home"
-              ? "rgb(var(--brand-primary))"
-              : "rgb(var(--color-text-muted))",
+          color: col("home"),
         }}
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
           <path
             d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5Z"
             stroke="currentColor"
-            strokeWidth={active === "home" ? 2.2 : 1.7}
+            strokeWidth={sw("home")}
             strokeLinejoin="round"
             fill={active === "home" ? "currentColor" : "none"}
             fillOpacity={active === "home" ? 0.15 : 0}
@@ -334,21 +266,12 @@ function MockBottomNav({
           <path
             d="M9 21V12h6v9"
             stroke="currentColor"
-            strokeWidth={active === "home" ? 2.2 : 1.7}
+            strokeWidth={sw("home")}
             strokeLinejoin="round"
           />
         </svg>
-        <span
-          style={{
-            fontSize: 7,
-            fontWeight: active === "home" ? 600 : 400,
-            fontFamily: "system-ui",
-          }}
-        >
-          Home
-        </span>
+        {label("home", "Home")}
       </div>
-      {/* Explore */}
       <div
         style={{
           display: "flex",
@@ -356,10 +279,7 @@ function MockBottomNav({
           alignItems: "center",
           gap: 2,
           flex: 1,
-          color:
-            active === "explore"
-              ? "rgb(var(--brand-primary))"
-              : "rgb(var(--color-text-muted))",
+          color: col("explore"),
         }}
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -368,40 +288,29 @@ function MockBottomNav({
             cy="11"
             r="7.5"
             stroke="currentColor"
-            strokeWidth={active === "explore" ? 2.2 : 1.7}
+            strokeWidth={sw("explore")}
             fill={active === "explore" ? "currentColor" : "none"}
             fillOpacity={active === "explore" ? 0.1 : 0}
           />
           <path
             d="M17.5 17.5L21 21"
             stroke="currentColor"
-            strokeWidth={active === "explore" ? 2.2 : 1.7}
+            strokeWidth={sw("explore")}
             strokeLinecap="round"
           />
         </svg>
-        <span
-          style={{
-            fontSize: 7,
-            fontWeight: active === "explore" ? 600 : 400,
-            fontFamily: "system-ui",
-          }}
-        >
-          Explore
-        </span>
+        {label("explore", "Explore")}
       </div>
-      {/* Post (center pill) */}
       <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
         <div
           style={{
             width: 36,
             height: 24,
             borderRadius: 12,
-            background:
-              "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)))",
+            background: "rgb(var(--brand-primary))",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            boxShadow: "0 4px 12px rgb(var(--brand-primary) / 0.4)",
           }}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
@@ -414,7 +323,6 @@ function MockBottomNav({
           </svg>
         </div>
       </div>
-      {/* Inbox */}
       <div
         style={{
           display: "flex",
@@ -422,33 +330,21 @@ function MockBottomNav({
           alignItems: "center",
           gap: 2,
           flex: 1,
-          color:
-            active === "inbox"
-              ? "rgb(var(--brand-primary))"
-              : "rgb(var(--color-text-muted))",
+          color: col("inbox"),
         }}
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
           <path
             d="M4 4h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H7.414L4 19.414V5a1 1 0 0 1 1-1Z"
             stroke="currentColor"
-            strokeWidth={active === "inbox" ? 2.2 : 1.7}
+            strokeWidth={sw("inbox")}
             strokeLinejoin="round"
             fill={active === "inbox" ? "currentColor" : "none"}
             fillOpacity={active === "inbox" ? 0.12 : 0}
           />
         </svg>
-        <span
-          style={{
-            fontSize: 7,
-            fontWeight: active === "inbox" ? 600 : 400,
-            fontFamily: "system-ui",
-          }}
-        >
-          Inbox
-        </span>
+        {label("inbox", "Inbox")}
       </div>
-      {/* Me */}
       <div
         style={{
           display: "flex",
@@ -456,10 +352,7 @@ function MockBottomNav({
           alignItems: "center",
           gap: 2,
           flex: 1,
-          color:
-            active === "me"
-              ? "rgb(var(--brand-primary))"
-              : "rgb(var(--color-text-muted))",
+          color: col("me"),
         }}
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -468,168 +361,25 @@ function MockBottomNav({
             cy="8"
             r="3.5"
             stroke="currentColor"
-            strokeWidth={active === "me" ? 2.2 : 1.7}
+            strokeWidth={sw("me")}
             fill={active === "me" ? "currentColor" : "none"}
             fillOpacity={active === "me" ? 0.15 : 0}
           />
           <path
             d="M4 20c0-3.314 3.582-6 8-6s8 2.686 8 6"
             stroke="currentColor"
-            strokeWidth={active === "me" ? 2.2 : 1.7}
+            strokeWidth={sw("me")}
             strokeLinecap="round"
           />
         </svg>
-        <span
-          style={{
-            fontSize: 7,
-            fontWeight: active === "me" ? 600 : 400,
-            fontFamily: "system-ui",
-          }}
-        >
-          Me
-        </span>
+        {label("me", "Me")}
       </div>
     </div>
   );
 }
 
-/* ─── Status bar (adapts to screen bg colour via `light` prop) ─── */
-function StatusBar({ light }: { light?: boolean }) {
-  const c = light ? "rgba(0,0,0,0.85)" : "#fff";
-  return (
-    <div
-      style={{
-        height: 44,
-        display: "flex",
-        alignItems: "flex-end",
-        justifyContent: "space-between",
-        paddingBottom: 6,
-        paddingLeft: 18,
-        paddingRight: 18,
-        position: "relative",
-        flexShrink: 0,
-        zIndex: 10,
-      }}
-    >
-      <span
-        className="mt-3"
-        style={{
-          color: c,
-          fontSize: 10,
-          fontWeight: 600,
-          fontFamily: "SF Pro Display, system-ui, sans-serif",
-          letterSpacing: 0.2,
-        }}
-      >
-        9:41
-      </span>
-      {/* Dynamic Island */}
-      <div
-        style={{
-          position: "absolute",
-          top: 8,
-          left: "50%",
-          transform: "translateX(-50%)",
-          width: 80,
-          height: 24,
-          borderRadius: 18,
-          background: "#000",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 7,
-        }}
-      >
-        <div
-          style={{
-            width: 9,
-            height: 9,
-            borderRadius: "50%",
-            background: "#1a1a1a",
-            border: "1.5px solid #2a2a2a",
-          }}
-        />
-        <div
-          style={{
-            width: 5,
-            height: 5,
-            borderRadius: "50%",
-            background: "#2a2a2a",
-          }}
-        />
-      </div>
-      {/* Status icons */}
-      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 1.5 }}>
-          {[3, 5, 7, 9].map((h, i) => (
-            <div
-              key={i}
-              style={{
-                width: 2.5,
-                height: h,
-                borderRadius: 1,
-                background:
-                  i < 3
-                    ? c
-                    : `${c.replace(")", ", 0.3)").replace("rgba", "rgba").replace("#fff", "rgba(255,255,255,0.35)").replace("rgba(0,0,0,0.85)", "rgba(0,0,0,0.3)")}`,
-              }}
-            />
-          ))}
-        </div>
-        <svg width="12" height="9" viewBox="0 0 13 10" fill="none">
-          <path d="M6.5 7.5a1 1 0 1 0 0 2 1 1 0 0 0 0-2z" fill={c} />
-          <path
-            d="M3.5 5.5C4.4 4.6 5.4 4 6.5 4s2.1.6 3 1.5"
-            stroke={c}
-            strokeWidth="1.2"
-            strokeLinecap="round"
-            fill="none"
-          />
-          <path
-            d="M1 3C2.7 1.3 4.5.3 6.5.3S10.3 1.3 12 3"
-            stroke={c}
-            strokeWidth="1.2"
-            strokeLinecap="round"
-            fill="none"
-          />
-        </svg>
-        <div style={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <div
-            style={{
-              width: 18,
-              height: 9,
-              borderRadius: 2.5,
-              border: `1.5px solid ${light ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.7)"}`,
-              padding: "1px",
-              display: "flex",
-              alignItems: "center",
-            }}
-          >
-            <div
-              style={{
-                width: "75%",
-                height: "100%",
-                borderRadius: 1,
-                background: "#4cd964",
-              }}
-            />
-          </div>
-          <div
-            style={{
-              width: 2,
-              height: 4.5,
-              borderRadius: "0 1px 1px 0",
-              background: light ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.5)",
-            }}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── iPhone 14 Pro Max shell ─── */
-function IPhone14ProMax({
+/* ─── iPhone shell ─── */
+function IPhoneShell({
   children,
   screenBg,
 }: {
@@ -646,12 +396,12 @@ function IPhone14ProMax({
         background:
           "linear-gradient(160deg, #2e2e2e 0%, #1c1c1c 40%, #111 100%)",
         boxShadow:
-          "0 0 0 1px #3c3c3c, 0 0 0 2.5px #0a0a0a, inset 0 1px 0 rgba(255,255,255,0.08), 0 36px 80px rgba(0,0,0,0.55), 0 8px 20px rgba(0,0,0,0.35)",
+          "0 0 0 1px #3c3c3c, 0 0 0 2.5px #0a0a0a, inset 0 1px 0 rgba(255,255,255,0.08), 0 30px 70px rgba(0,0,0,0.45), 0 8px 20px rgba(0,0,0,0.3)",
         padding: "8px",
         flexShrink: 0,
       }}
     >
-      {/* Power button */}
+      {/* Side buttons */}
       <div
         style={{
           position: "absolute",
@@ -661,10 +411,8 @@ function IPhone14ProMax({
           height: 54,
           borderRadius: "0 2px 2px 0",
           background: "linear-gradient(180deg, #3c3c3c, #1e1e1e)",
-          boxShadow: "2px 0 4px rgba(0,0,0,0.5)",
         }}
       />
-      {/* Volume up */}
       <div
         style={{
           position: "absolute",
@@ -674,10 +422,8 @@ function IPhone14ProMax({
           height: 40,
           borderRadius: "2px 0 0 2px",
           background: "linear-gradient(180deg, #3c3c3c, #1e1e1e)",
-          boxShadow: "-2px 0 4px rgba(0,0,0,0.5)",
         }}
       />
-      {/* Volume down */}
       <div
         style={{
           position: "absolute",
@@ -687,20 +433,6 @@ function IPhone14ProMax({
           height: 40,
           borderRadius: "2px 0 0 2px",
           background: "linear-gradient(180deg, #3c3c3c, #1e1e1e)",
-          boxShadow: "-2px 0 4px rgba(0,0,0,0.5)",
-        }}
-      />
-      {/* Silent switch */}
-      <div
-        style={{
-          position: "absolute",
-          left: -3,
-          top: 70,
-          width: 3,
-          height: 20,
-          borderRadius: "2px 0 0 2px",
-          background: "linear-gradient(180deg, #3c3c3c, #1e1e1e)",
-          boxShadow: "-2px 0 4px rgba(0,0,0,0.5)",
         }}
       />
       {/* Screen */}
@@ -716,16 +448,126 @@ function IPhone14ProMax({
           position: "relative",
         }}
       >
+        {/* Notch */}
+        <div
+          style={{
+            position: "absolute",
+            top: 8,
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: 76,
+            height: 20,
+            borderRadius: 16,
+            background: "#000",
+            zIndex: 20,
+          }}
+        />
         {children}
       </div>
     </div>
   );
 }
 
-/* ─── Feed Screen — mirrors the Shopi post card design ─── */
+function PhotoTile({
+  src,
+  alt,
+  label,
+  objectPosition = "center",
+}: {
+  src: string;
+  alt: string;
+  label?: string;
+  objectPosition?: string;
+}) {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        overflow: "hidden",
+        background: "rgb(var(--color-bg-subtle))",
+      }}
+    >
+      <img
+        src={src}
+        alt={alt}
+        loading="eager"
+        decoding="async"
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          objectPosition,
+          display: "block",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background:
+            "linear-gradient(180deg, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0.2) 100%)",
+        }}
+      />
+      {label && (
+        <div
+          style={{
+            position: "absolute",
+            left: 8,
+            right: 8,
+            bottom: 8,
+            color: "#fff",
+            fontSize: 9,
+            fontWeight: 800,
+            lineHeight: 1.3,
+            textShadow: "0 1px 2px rgba(0,0,0,0.45)",
+          }}
+        >
+          {label}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Round avatar with initials ─── */
+function Avatar({
+  initials,
+  from,
+  to,
+  size = 28,
+}: {
+  initials: string;
+  from: string;
+  to: string;
+  size?: number;
+}) {
+  return (
+    <div
+      style={{
+        width: size,
+        height: size,
+        borderRadius: "50%",
+        background: `linear-gradient(135deg, ${from}, ${to})`,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: "#fff",
+        fontSize: size * 0.36,
+        fontWeight: 700,
+        fontFamily: "system-ui",
+        flexShrink: 0,
+      }}
+    >
+      {initials}
+    </div>
+  );
+}
+
+/* ─── Feed Screen ─── */
 function FeedScreen() {
   return (
-    <IPhone14ProMax screenBg="rgb(var(--color-bg))">
+    <IPhoneShell>
       <div
         style={{
           flex: 1,
@@ -735,10 +577,11 @@ function FeedScreen() {
           background: "rgb(var(--color-bg))",
         }}
       >
+        <div style={{ height: 30, flexShrink: 0 }} />
         {/* App header */}
         <div
           style={{
-            padding: "6px 14px 6px",
+            padding: "4px 14px 6px",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
@@ -756,35 +599,20 @@ function FeedScreen() {
           >
             shopi
           </span>
-          <div style={{ display: "flex", gap: 10 }}>
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="rgb(var(--color-text-muted))"
-              strokeWidth="2"
-              strokeLinecap="round"
-            >
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.35-4.35" />
-            </svg>
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="rgb(var(--color-text-muted))"
-              strokeWidth="2"
-              strokeLinecap="round"
-            >
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-            </svg>
-          </div>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="rgb(var(--color-text-muted))"
+            strokeWidth="2"
+            strokeLinecap="round"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.35-4.35" />
+          </svg>
         </div>
 
-        {/* Scrollable feed */}
         <div
           style={{
             flex: 1,
@@ -792,17 +620,15 @@ function FeedScreen() {
             scrollbarWidth: "none",
             display: "flex",
             flexDirection: "column",
-            gap: 0,
           }}
         >
-          {/* Post card — Dhrohar bed sheet (mirrors screenshot) */}
+          {/* Post 1 — furniture */}
           <div
             style={{
               background: "rgb(var(--color-bg-elevated))",
               borderBottom: "1px solid rgb(var(--color-border))",
             }}
           >
-            {/* Seller header */}
             <div
               style={{
                 display: "flex",
@@ -811,21 +637,7 @@ function FeedScreen() {
                 padding: "8px 12px 6px",
               }}
             >
-              <div
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: "50%",
-                  background: "linear-gradient(135deg, #c9a87c, #8b6b3d)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 14,
-                  flexShrink: 0,
-                }}
-              >
-                🛏
-              </div>
+              <Avatar initials="MK" from="#8b6b3d" to="#c9a87c" />
               <div style={{ flex: 1 }}>
                 <div
                   style={{
@@ -835,12 +647,12 @@ function FeedScreen() {
                     fontFamily: "system-ui",
                   }}
                 >
-                  Dhrohar
+                  Mary&apos;s Furniture
                 </div>
                 <div
                   style={{ color: "rgb(var(--color-text-muted))", fontSize: 7 }}
                 >
-                  May 21 at 9:57 AM
+                  Kiambu · 2h ago
                 </div>
               </div>
               <div
@@ -856,183 +668,46 @@ function FeedScreen() {
                 Follow
               </div>
             </div>
-            {/* Post image area */}
             <div
-              style={{
-                width: "100%",
-                aspectRatio: "1",
-                background:
-                  "linear-gradient(160deg, #f5e6c8, #e8d5a3, #d4b896)",
-                position: "relative",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                overflow: "hidden",
-              }}
+              style={{ width: "100%", aspectRatio: "1", position: "relative" }}
             >
-              {/* Bed illustration */}
+              <PhotoTile
+                src="https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=80"
+                alt="Warm wooden dining table in a furnished room"
+                label="Solid mahogany table"
+                objectPosition="center 58%"
+              />
               <div
                 style={{
                   position: "absolute",
-                  inset: 0,
-                  background:
-                    "repeating-linear-gradient(45deg, rgba(180,130,70,0.08) 0px, rgba(180,130,70,0.08) 1px, transparent 1px, transparent 16px)",
+                  bottom: 8,
+                  right: 8,
+                  background: "rgba(0,0,0,0.65)",
+                  color: "#fff",
+                  fontSize: 9,
+                  fontWeight: 800,
+                  padding: "3px 8px",
+                  borderRadius: 8,
                 }}
-              />
-              <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 42, marginBottom: 4 }}>🛏️</div>
-                <div
-                  style={{
-                    background: "rgba(255,255,255,0.7)",
-                    borderRadius: 10,
-                    padding: "6px 14px",
-                    backdropFilter: "blur(4px)",
-                  }}
-                >
-                  <div
-                    style={{
-                      color: "#8b5e3c",
-                      fontSize: 9,
-                      fontWeight: 800,
-                      fontFamily: "Georgia, serif",
-                    }}
-                  >
-                    Designed For Your
-                  </div>
-                  <div
-                    style={{
-                      color: "#8b5e3c",
-                      fontSize: 9,
-                      fontWeight: 800,
-                      fontFamily: "Georgia, serif",
-                    }}
-                  >
-                    Better Sleep
-                  </div>
-                </div>
-                {/* Price tags */}
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 6,
-                    marginTop: 8,
-                    justifyContent: "center",
-                  }}
-                >
-                  <div
-                    style={{
-                      background: "rgba(255,255,255,0.85)",
-                      borderRadius: 8,
-                      padding: "3px 7px",
-                      border: "1px solid rgba(180,130,70,0.3)",
-                    }}
-                  >
-                    <div
-                      style={{ color: "#8b5e3c", fontSize: 8, fontWeight: 700 }}
-                    >
-                      Dhrohar
-                    </div>
-                    <div
-                      style={{
-                        color: "rgb(var(--brand-primary))",
-                        fontSize: 8,
-                        fontWeight: 800,
-                      }}
-                    >
-                      KSh 2,224
-                    </div>
-                    <div
-                      style={{
-                        color: "rgb(var(--color-text-muted))",
-                        fontSize: 7,
-                        textDecoration: "line-through",
-                      }}
-                    >
-                      KSh 6,670
-                    </div>
-                    <div
-                      style={{ color: "#10b981", fontSize: 7, fontWeight: 700 }}
-                    >
-                      67% OFF
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      background: "rgba(255,255,255,0.85)",
-                      borderRadius: 8,
-                      padding: "3px 7px",
-                      border: "1px solid rgba(180,130,70,0.3)",
-                    }}
-                  >
-                    <div
-                      style={{ color: "#8b5e3c", fontSize: 8, fontWeight: 700 }}
-                    >
-                      Pink Set
-                    </div>
-                    <div
-                      style={{
-                        color: "rgb(var(--brand-primary))",
-                        fontSize: 8,
-                        fontWeight: 800,
-                      }}
-                    >
-                      KSh 2,224
-                    </div>
-                    <div
-                      style={{
-                        color: "rgb(var(--color-text-muted))",
-                        fontSize: 7,
-                        textDecoration: "line-through",
-                      }}
-                    >
-                      KSh 6,670
-                    </div>
-                    <div
-                      style={{ color: "#10b981", fontSize: 7, fontWeight: 700 }}
-                    >
-                      67% OFF
-                    </div>
-                  </div>
-                </div>
+              >
+                KSh 18,500
               </div>
             </div>
-            {/* Post footer */}
             <div style={{ padding: "7px 12px 8px" }}>
               <div
                 style={{
                   color: "rgb(var(--color-text))",
                   fontSize: 8,
                   lineHeight: 1.5,
-                  marginBottom: 4,
                 }}
               >
-                your bedroom just turned into a soft little spring dream.{" "}
-                <span style={{ color: "rgb(var(--brand-primary))" }}>
-                  #bedsheet #homedecor #DHROHAR
-                </span>
-              </div>
-              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                <span
-                  style={{ color: "rgb(var(--color-text-muted))", fontSize: 8 }}
-                >
-                  ❤️ 248
-                </span>
-                <span
-                  style={{ color: "rgb(var(--color-text-muted))", fontSize: 8 }}
-                >
-                  💬 31
-                </span>
-                <span
-                  style={{ color: "rgb(var(--color-text-muted))", fontSize: 8 }}
-                >
-                  ↗ Share
-                </span>
-                <span style={{ marginLeft: "auto", fontSize: 10 }}>🔖</span>
+                Handmade 6-seater dining table. Pickup in Kiambu or delivery
+                arranged.
               </div>
             </div>
           </div>
 
-          {/* Second post card */}
+          {/* Post 2 — phone */}
           <div
             style={{
               background: "rgb(var(--color-bg-elevated))",
@@ -1047,21 +722,7 @@ function FeedScreen() {
                 padding: "8px 12px 6px",
               }}
             >
-              <div
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: "50%",
-                  background: "linear-gradient(135deg, #10b981, #3b82f6)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 13,
-                  flexShrink: 0,
-                }}
-              >
-                📱
-              </div>
+              <Avatar initials="TD" from="#10b981" to="#3b82f6" />
               <div style={{ flex: 1 }}>
                 <div
                   style={{
@@ -1070,46 +731,36 @@ function FeedScreen() {
                     fontWeight: 700,
                   }}
                 >
-                  TechDeals_Nrb
+                  TechDeals Nairobi
                 </div>
                 <div
                   style={{ color: "rgb(var(--color-text-muted))", fontSize: 7 }}
                 >
-                  Nairobi • 1h ago
+                  Nairobi CBD · 1h ago
                 </div>
-              </div>
-              <div
-                style={{
-                  color: "rgb(var(--brand-primary))",
-                  fontSize: 9,
-                  fontWeight: 700,
-                  border: "1px solid rgb(var(--brand-primary))",
-                  borderRadius: 20,
-                  padding: "2px 8px",
-                }}
-              >
-                Follow
               </div>
             </div>
-            <div
-              style={{
-                width: "100%",
-                height: 80,
-                background: "linear-gradient(135deg, #0f172a, #1e3a5f)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 10,
-              }}
-            >
-              <div style={{ fontSize: 30 }}>📱</div>
-              <div>
-                <div style={{ color: "#fff", fontSize: 9, fontWeight: 700 }}>
-                  iPhone 13 Pro
-                </div>
-                <div style={{ color: "#10b981", fontSize: 8, fontWeight: 800 }}>
-                  KSh 42,000
-                </div>
+            <div style={{ width: "100%", height: 110, position: "relative" }}>
+              <PhotoTile
+                src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=1200&q=80"
+                alt="Close up of a smartphone in hand"
+                label="iPhone 13 Pro · clean"
+                objectPosition="center 42%"
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: 8,
+                  right: 8,
+                  background: "rgba(0,0,0,0.65)",
+                  color: "#fff",
+                  fontSize: 9,
+                  fontWeight: 800,
+                  padding: "3px 8px",
+                  borderRadius: 8,
+                }}
+              >
+                KSh 42,000
               </div>
             </div>
           </div>
@@ -1117,14 +768,43 @@ function FeedScreen() {
 
         <MockBottomNav active="home" />
       </div>
-    </IPhone14ProMax>
+    </IPhoneShell>
   );
 }
 
-/* ─── DM Conversation Screen ─── */
-function VideoScreen() {
+/* ─── Chat bubble ─── */
+function Bubble({ me, children }: { me?: boolean; children: React.ReactNode }) {
   return (
-    <IPhone14ProMax screenBg="rgb(var(--color-bg))">
+    <div
+      style={{
+        display: "flex",
+        justifyContent: me ? "flex-end" : "flex-start",
+      }}
+    >
+      <div
+        style={{
+          maxWidth: "75%",
+          background: me
+            ? "rgb(var(--brand-primary))"
+            : "rgb(var(--color-bg-subtle))",
+          color: me ? "#fff" : "rgb(var(--color-text))",
+          border: me ? "none" : "1px solid rgb(var(--color-border))",
+          borderRadius: me ? "12px 12px 3px 12px" : "12px 12px 12px 3px",
+          padding: "7px 10px",
+          fontSize: 8.5,
+          lineHeight: 1.5,
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Chat Screen ─── */
+function ChatScreen() {
+  return (
+    <IPhoneShell>
       <div
         style={{
           flex: 1,
@@ -1134,56 +814,23 @@ function VideoScreen() {
           background: "rgb(var(--color-bg))",
         }}
       >
-        {/* Chat header */}
+        <div style={{ height: 30, flexShrink: 0 }} />
+        {/* Header */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
             gap: 9,
-            padding: "8px 12px 8px",
+            padding: "4px 12px 8px",
             borderBottom: "1px solid rgb(var(--color-border))",
             flexShrink: 0,
             background: "rgb(var(--color-bg-elevated))",
           }}
         >
-          <span
-            style={{
-              color: "rgb(var(--color-text-muted))",
-              fontSize: 16,
-              lineHeight: 1,
-            }}
-          >
-            ←
+          <span style={{ color: "rgb(var(--color-text-muted))", fontSize: 16 }}>
+            ‹
           </span>
-          <div
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: "50%",
-              background: "linear-gradient(135deg, #c9a87c, #8b6b3d)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 16,
-              flexShrink: 0,
-              position: "relative",
-            }}
-          >
-            🛍️
-            {/* Online dot */}
-            <div
-              style={{
-                position: "absolute",
-                bottom: 0,
-                right: 0,
-                width: 8,
-                height: 8,
-                borderRadius: "50%",
-                background: "#22c55e",
-                border: "1.5px solid rgb(var(--color-bg-elevated))",
-              }}
-            />
-          </div>
+          <Avatar initials="MK" from="#8b6b3d" to="#c9a87c" size={30} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div
               style={{
@@ -1193,32 +840,15 @@ function VideoScreen() {
                 fontFamily: "system-ui",
               }}
             >
-              FashionHub_KE
+              Mary&apos;s Furniture
             </div>
             <div style={{ color: "#22c55e", fontSize: 7.5, fontWeight: 500 }}>
               Online now
             </div>
           </div>
-          {/* Product thumbnail pinned */}
-          <div
-            style={{
-              width: 30,
-              height: 30,
-              borderRadius: 8,
-              background: "linear-gradient(135deg, #f5e6c8, #c9a87c)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 16,
-              border: "1px solid rgb(var(--color-border))",
-              flexShrink: 0,
-            }}
-          >
-            🛏️
-          </div>
         </div>
 
-        {/* Shared product context card */}
+        {/* Product context card */}
         <div
           style={{
             margin: "10px 12px 6px",
@@ -1232,21 +862,22 @@ function VideoScreen() {
             flexShrink: 0,
           }}
         >
-          <div
-            style={{
-              width: 38,
-              height: 38,
+            <div
+              style={{
+                width: 38,
+                height: 38,
               borderRadius: 8,
-              background: "linear-gradient(135deg, #f5e6c8, #e0c9a0)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 20,
+              position: "relative",
+              overflow: "hidden",
               flexShrink: 0,
-            }}
-          >
-            🛏️
-          </div>
+              }}
+            >
+              <PhotoTile
+                src="https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=800&q=80"
+                alt="Furniture preview for the product context card"
+                objectPosition="center 58%"
+              />
+            </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div
               style={{
@@ -1256,47 +887,17 @@ function VideoScreen() {
                 fontFamily: "system-ui",
               }}
             >
-              Floral Embroidery Bedsheet Set
+              Mahogany 6-seater dining table
             </div>
-            <div
+            <span
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 5,
-                marginTop: 2,
+                color: "rgb(var(--brand-primary))",
+                fontSize: 9,
+                fontWeight: 800,
               }}
             >
-              <span
-                style={{
-                  color: "rgb(var(--brand-primary))",
-                  fontSize: 9,
-                  fontWeight: 800,
-                }}
-              >
-                KSh 2,224
-              </span>
-              <span
-                style={{
-                  color: "rgb(var(--color-text-muted))",
-                  fontSize: 7.5,
-                  textDecoration: "line-through",
-                }}
-              >
-                KSh 6,670
-              </span>
-              <span
-                style={{
-                  color: "#22c55e",
-                  fontSize: 7,
-                  fontWeight: 700,
-                  background: "rgba(34,197,94,0.12)",
-                  padding: "1px 5px",
-                  borderRadius: 10,
-                }}
-              >
-                67% OFF
-              </span>
-            </div>
+              KSh 18,500
+            </span>
           </div>
         </div>
 
@@ -1309,296 +910,17 @@ function VideoScreen() {
             padding: "4px 12px 8px",
             display: "flex",
             flexDirection: "column",
-            gap: 8,
+            gap: 7,
           }}
         >
-          {/* Seller — opening */}
-          <div style={{ display: "flex", gap: 6, alignItems: "flex-end" }}>
-            <div
-              style={{
-                width: 20,
-                height: 20,
-                borderRadius: "50%",
-                background: "linear-gradient(135deg, #c9a87c, #8b6b3d)",
-                flexShrink: 0,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 10,
-              }}
-            >
-              🛍️
-            </div>
-            <div style={{ maxWidth: "72%" }}>
-              <div
-                style={{
-                  background: "rgb(var(--color-bg-subtle))",
-                  borderRadius: "12px 12px 12px 3px",
-                  padding: "7px 10px",
-                  border: "1px solid rgb(var(--color-border))",
-                }}
-              >
-                <p
-                  style={{
-                    color: "rgb(var(--color-text))",
-                    fontSize: 8.5,
-                    lineHeight: 1.5,
-                    margin: 0,
-                  }}
-                >
-                  Hi! 👋 Thanks for your interest in the bedsheet set. Are you
-                  asking about the cream or the pink version?
-                </p>
-              </div>
-              <div
-                style={{
-                  color: "rgb(var(--color-text-muted))",
-                  fontSize: 6.5,
-                  marginTop: 2,
-                  paddingLeft: 4,
-                }}
-              >
-                9:42 AM
-              </div>
-            </div>
-          </div>
-
-          {/* Buyer */}
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <div style={{ maxWidth: "72%" }}>
-              <div
-                style={{
-                  background: "rgb(var(--brand-primary))",
-                  borderRadius: "12px 12px 3px 12px",
-                  padding: "7px 10px",
-                }}
-              >
-                <p
-                  style={{
-                    color: "#fff",
-                    fontSize: 8.5,
-                    lineHeight: 1.5,
-                    margin: 0,
-                  }}
-                >
-                  Hi! The cream one please 🌸 Does it come in King size?
-                </p>
-              </div>
-              <div
-                style={{
-                  color: "rgb(var(--color-text-muted))",
-                  fontSize: 6.5,
-                  marginTop: 2,
-                  textAlign: "right",
-                  paddingRight: 4,
-                }}
-              >
-                9:43 AM ✓✓
-              </div>
-            </div>
-          </div>
-
-          {/* Seller */}
-          <div style={{ display: "flex", gap: 6, alignItems: "flex-end" }}>
-            <div
-              style={{
-                width: 20,
-                height: 20,
-                borderRadius: "50%",
-                background: "linear-gradient(135deg, #c9a87c, #8b6b3d)",
-                flexShrink: 0,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 10,
-              }}
-            >
-              🛍️
-            </div>
-            <div style={{ maxWidth: "72%" }}>
-              <div
-                style={{
-                  background: "rgb(var(--color-bg-subtle))",
-                  borderRadius: "12px 12px 12px 3px",
-                  padding: "7px 10px",
-                  border: "1px solid rgb(var(--color-border))",
-                }}
-              >
-                <p
-                  style={{
-                    color: "rgb(var(--color-text))",
-                    fontSize: 8.5,
-                    lineHeight: 1.5,
-                    margin: 0,
-                  }}
-                >
-                  Yes! King size available ✅ Includes 1 flat sheet + 2
-                  pillowcases. Soft & breathable cotton 🌿
-                </p>
-              </div>
-              <div
-                style={{
-                  color: "rgb(var(--color-text-muted))",
-                  fontSize: 6.5,
-                  marginTop: 2,
-                  paddingLeft: 4,
-                }}
-              >
-                9:44 AM
-              </div>
-            </div>
-          </div>
-
-          {/* Buyer */}
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <div style={{ maxWidth: "72%" }}>
-              <div
-                style={{
-                  background: "rgb(var(--brand-primary))",
-                  borderRadius: "12px 12px 3px 12px",
-                  padding: "7px 10px",
-                }}
-              >
-                <p
-                  style={{
-                    color: "#fff",
-                    fontSize: 8.5,
-                    lineHeight: 1.5,
-                    margin: 0,
-                  }}
-                >
-                  Perfect! Can you do same-day delivery to Kilimani? 📦
-                </p>
-              </div>
-              <div
-                style={{
-                  color: "rgb(var(--color-text-muted))",
-                  fontSize: 6.5,
-                  marginTop: 2,
-                  textAlign: "right",
-                  paddingRight: 4,
-                }}
-              >
-                9:45 AM ✓✓
-              </div>
-            </div>
-          </div>
-
-          {/* Seller — with delivery confirm */}
-          <div style={{ display: "flex", gap: 6, alignItems: "flex-end" }}>
-            <div
-              style={{
-                width: 20,
-                height: 20,
-                borderRadius: "50%",
-                background: "linear-gradient(135deg, #c9a87c, #8b6b3d)",
-                flexShrink: 0,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 10,
-              }}
-            >
-              🛍️
-            </div>
-            <div style={{ maxWidth: "80%" }}>
-              <div
-                style={{
-                  background: "rgb(var(--color-bg-subtle))",
-                  borderRadius: "12px 12px 12px 3px",
-                  padding: "7px 10px",
-                  border: "1px solid rgb(var(--color-border))",
-                }}
-              >
-                <p
-                  style={{
-                    color: "rgb(var(--color-text))",
-                    fontSize: 8.5,
-                    lineHeight: 1.5,
-                    margin: "0 0 6px",
-                  }}
-                >
-                  Absolutely! 🚚 Order before 2 PM and we deliver by 6 PM. Pay
-                  on delivery accepted too!
-                </p>
-                {/* Delivery info card */}
-                <div
-                  style={{
-                    background: "rgb(var(--color-bg-elevated))",
-                    borderRadius: 8,
-                    padding: "5px 8px",
-                    border: "1px solid rgb(var(--color-border))",
-                    display: "flex",
-                    gap: 6,
-                    alignItems: "center",
-                  }}
-                >
-                  <span style={{ fontSize: 14 }}>🚚</span>
-                  <div>
-                    <div
-                      style={{
-                        color: "rgb(var(--color-text))",
-                        fontSize: 7.5,
-                        fontWeight: 700,
-                      }}
-                    >
-                      Same-day • Kilimani
-                    </div>
-                    <div
-                      style={{ color: "#22c55e", fontSize: 7, fontWeight: 600 }}
-                    >
-                      Free delivery • Pay on delivery ✓
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div
-                style={{
-                  color: "rgb(var(--color-text-muted))",
-                  fontSize: 6.5,
-                  marginTop: 2,
-                  paddingLeft: 4,
-                }}
-              >
-                9:46 AM
-              </div>
-            </div>
-          </div>
-
-          {/* Buyer — confirm order */}
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <div style={{ maxWidth: "72%" }}>
-              <div
-                style={{
-                  background: "rgb(var(--brand-primary))",
-                  borderRadius: "12px 12px 3px 12px",
-                  padding: "7px 10px",
-                }}
-              >
-                <p
-                  style={{
-                    color: "#fff",
-                    fontSize: 8.5,
-                    lineHeight: 1.5,
-                    margin: 0,
-                  }}
-                >
-                  Amazing, I&apos;ll take it! 🎉 Sending my address now
-                </p>
-              </div>
-              <div
-                style={{
-                  color: "rgb(var(--color-text-muted))",
-                  fontSize: 6.5,
-                  marginTop: 2,
-                  textAlign: "right",
-                  paddingRight: 4,
-                }}
-              >
-                9:46 AM ✓✓
-              </div>
-            </div>
-          </div>
+          <Bubble>Hi! Is the dining table still available?</Bubble>
+          <Bubble me>Yes it is. Solid mahogany, seats six.</Bubble>
+          <Bubble>Can you deliver to Ruaka? And is the price fixed?</Bubble>
+          <Bubble me>
+            I can deliver to Ruaka for 800. We can talk on the price, come see
+            it first.
+          </Bubble>
+          <Bubble>Perfect, I&apos;ll pass by today. Sending my number.</Bubble>
         </div>
 
         {/* Input bar */}
@@ -1613,37 +935,18 @@ function VideoScreen() {
             flexShrink: 0,
           }}
         >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="rgb(var(--color-text-muted))"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <path d="M8 14s1.5 2 4 2 4-2 4-2" />
-            <line x1="9" y1="9" x2="9.01" y2="9" />
-            <line x1="15" y1="9" x2="15.01" y2="9" />
-          </svg>
           <div
             style={{
               flex: 1,
               background: "rgb(var(--color-bg-subtle))",
               borderRadius: 20,
-              padding: "1px 2px",
+              padding: "6px 10px",
               border: "1px solid rgb(var(--color-border))",
+              color: "rgb(var(--color-text-placeholder))",
+              fontSize: 8,
             }}
           >
-            <span
-              style={{
-                color: "rgb(var(--color-text-placeholder))",
-                fontSize: 8,
-              }}
-            >
-              Message FashionHub_KE...
-            </span>
+            Message Mary&apos;s Furniture…
           </div>
           <div
             style={{
@@ -1671,15 +974,52 @@ function VideoScreen() {
 
         <MockBottomNav active="inbox" />
       </div>
-    </IPhone14ProMax>
+    </IPhoneShell>
   );
 }
 
-/* ─── Seller Profile Screen ─── */
+/* ─── Profile Screen ─── */
 function ProfileScreen() {
+  const items: { src: string; alt: string; price: string; objectPosition?: string }[] = [
+    {
+      src: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=900&q=80",
+      alt: "Running shoes for sale",
+      price: "KSh 1,200",
+      objectPosition: "center 48%",
+    },
+    {
+      src: "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=900&q=80",
+      alt: "Black car for sale",
+      price: "KSh 2,800",
+      objectPosition: "center 62%",
+    },
+    {
+      src: "https://images.unsplash.com/photo-1464226184884-fa280b87c399?auto=format&fit=crop&w=900&q=80",
+      alt: "Fresh produce for sale",
+      price: "KSh 950",
+      objectPosition: "center 55%",
+    },
+    {
+      src: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=900&q=80",
+      alt: "Phone for sale",
+      price: "KSh 600",
+      objectPosition: "center 42%",
+    },
+    {
+      src: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=900&q=80",
+      alt: "Fashion items for sale",
+      price: "KSh 4,500",
+      objectPosition: "center 42%",
+    },
+    {
+      src: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=900&q=80",
+      alt: "Home furniture for sale",
+      price: "KSh 780",
+      objectPosition: "center 58%",
+    },
+  ];
   return (
-    <IPhone14ProMax screenBg="rgb(var(--color-bg))">
-      <StatusBar light />
+    <IPhoneShell>
       <div
         style={{
           flex: 1,
@@ -1692,55 +1032,12 @@ function ProfileScreen() {
         {/* Cover */}
         <div
           style={{
-            height: 76,
+            height: 72,
             background:
-              "linear-gradient(135deg, rgb(var(--brand-primary) / 0.7), rgb(var(--brand-accent) / 0.6))",
-            position: "relative",
+              "linear-gradient(135deg, rgb(var(--brand-primary) / 0.7), rgb(var(--brand-secondary) / 0.6))",
             flexShrink: 0,
           }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              background:
-                "repeating-linear-gradient(45deg, rgba(255,255,255,0.04) 0px, rgba(255,255,255,0.04) 1px, transparent 1px, transparent 14px)",
-            }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              top: 6,
-              left: 12,
-              right: 12,
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <span
-              style={{
-                color: "rgba(255,255,255,0.85)",
-                fontSize: 15,
-                lineHeight: 1,
-              }}
-            >
-              ←
-            </span>
-            <span style={{ color: "#fff", fontSize: 9, fontWeight: 700 }}>
-              Profile
-            </span>
-            <span
-              style={{
-                color: "rgba(255,255,255,0.85)",
-                fontSize: 17,
-                lineHeight: 1,
-              }}
-            >
-              ⋮
-            </span>
-          </div>
-        </div>
+        />
         {/* Avatar + info */}
         <div
           style={{
@@ -1759,18 +1056,11 @@ function ProfileScreen() {
           >
             <div
               style={{
-                width: 48,
-                height: 48,
-                borderRadius: "50%",
-                background: "linear-gradient(135deg, #f59e0b, #ef4444)",
                 border: "3px solid rgb(var(--color-bg))",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 20,
+                borderRadius: "50%",
               }}
             >
-              🛍️
+              <Avatar initials="FH" from="#f59e0b" to="#ef4444" size={48} />
             </div>
             <div style={{ display: "flex", gap: 5 }}>
               <div
@@ -1779,28 +1069,24 @@ function ProfileScreen() {
                   borderRadius: 20,
                   padding: "4px 10px",
                   border: "1px solid rgb(var(--color-border))",
+                  color: "rgb(var(--color-text))",
+                  fontSize: 7.5,
+                  fontWeight: 700,
                 }}
               >
-                <span
-                  style={{
-                    color: "rgb(var(--color-text))",
-                    fontSize: 7.5,
-                    fontWeight: 700,
-                  }}
-                >
-                  Message
-                </span>
+                Message
               </div>
               <div
                 style={{
                   background: "rgb(var(--brand-primary))",
                   borderRadius: 20,
                   padding: "4px 10px",
+                  color: "#fff",
+                  fontSize: 7.5,
+                  fontWeight: 700,
                 }}
               >
-                <span style={{ color: "#fff", fontSize: 7.5, fontWeight: 700 }}>
-                  Follow
-                </span>
+                Follow
               </div>
             </div>
           </div>
@@ -1813,12 +1099,7 @@ function ProfileScreen() {
                 fontFamily: "system-ui",
               }}
             >
-              FashionHub_KE{" "}
-              <span
-                style={{ color: "rgb(var(--brand-primary))", fontSize: 10 }}
-              >
-                ✓
-              </span>
+              FashionHub KE
             </div>
             <div
               style={{
@@ -1827,7 +1108,7 @@ function ProfileScreen() {
                 marginTop: 2,
               }}
             >
-              📍 Nairobi CBD · Westlands Mall
+              Nairobi CBD · Westlands
             </div>
             <div
               style={{
@@ -1837,44 +1118,8 @@ function ProfileScreen() {
                 lineHeight: 1.5,
               }}
             >
-              ✨ Fashion & Accessories · Daily drops 🔥
+              Fashion and accessories. New drops most days.
             </div>
-          </div>
-          {/* Stats row */}
-          <div
-            style={{
-              display: "flex",
-              marginTop: 8,
-              paddingTop: 8,
-              borderTop: "1px solid rgb(var(--color-border))",
-            }}
-          >
-            {[
-              { n: "248", l: "Posts" },
-              { n: "18.4K", l: "Followers" },
-              { n: "4.9★", l: "Rating" },
-            ].map(({ n, l }) => (
-              <div key={l} style={{ flex: 1, textAlign: "center" }}>
-                <div
-                  style={{
-                    color: "rgb(var(--color-text))",
-                    fontSize: 11,
-                    fontWeight: 700,
-                    fontFamily: "system-ui",
-                  }}
-                >
-                  {n}
-                </div>
-                <div
-                  style={{
-                    color: "rgb(var(--color-text-muted))",
-                    fontSize: 7.5,
-                  }}
-                >
-                  {l}
-                </div>
-              </div>
-            ))}
           </div>
         </div>
         {/* Product grid */}
@@ -1888,86 +1133,33 @@ function ProfileScreen() {
             overflow: "hidden",
           }}
         >
-          {[
-            {
-              bg: "linear-gradient(135deg, #fef3c7, #fde68a)",
-              emoji: "👗",
-              price: "KSh 1,200",
-            },
-            {
-              bg: "linear-gradient(135deg, #d1fae5, #a7f3d0)",
-              emoji: "👟",
-              price: "KSh 2,800",
-              video: true,
-            },
-            {
-              bg: "linear-gradient(135deg, #ede9fe, #ddd6fe)",
-              emoji: "👜",
-              price: "KSh 950",
-            },
-            {
-              bg: "linear-gradient(135deg, #fee2e2, #fecaca)",
-              emoji: "🧢",
-              price: "KSh 600",
-            },
-            {
-              bg: "linear-gradient(135deg, #dbeafe, #bfdbfe)",
-              emoji: "⌚",
-              price: "KSh 4,500",
-            },
-            {
-              bg: "linear-gradient(135deg, #fce7f3, #fbcfe8)",
-              emoji: "💍",
-              price: "KSh 780",
-            },
-          ].map(({ bg, emoji, price, video }, i) => (
-            <div
-              key={i}
-              style={{
-                aspectRatio: "1",
-                background: bg,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 3,
-                position: "relative",
-              }}
-            >
-              <span style={{ fontSize: 20 }}>{emoji}</span>
+          {items.map(({ src, alt, price, objectPosition }, i) => (
+            <div key={i} style={{ aspectRatio: "1", position: "relative" }}>
+              <PhotoTile
+                src={src}
+                alt={alt}
+                objectPosition={objectPosition}
+              />
               <div
                 style={{
-                  color: "#333",
+                  position: "absolute",
+                  bottom: 4,
+                  left: 4,
+                  color: "#fff",
                   fontSize: 6.5,
                   fontWeight: 700,
-                  background: "rgba(255,255,255,0.7)",
+                  background: "rgba(0,0,0,0.5)",
                   padding: "2px 5px",
                   borderRadius: 5,
                 }}
               >
                 {price}
               </div>
-              {video && (
-                <div
-                  style={{
-                    position: "absolute",
-                    top: 4,
-                    right: 4,
-                    background: "rgb(var(--brand-primary))",
-                    borderRadius: 4,
-                    padding: "1px 4px",
-                  }}
-                >
-                  <span style={{ color: "#fff", fontSize: 6, fontWeight: 700 }}>
-                    ▶
-                  </span>
-                </div>
-              )}
             </div>
           ))}
         </div>
         <MockBottomNav active="me" />
       </div>
-    </IPhone14ProMax>
+    </IPhoneShell>
   );
 }

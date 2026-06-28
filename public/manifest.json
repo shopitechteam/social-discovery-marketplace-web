@@ -1,20 +1,33 @@
 {
-  "name": "Shopi",
+  "name": "Shopi — Kenya's social marketplace",
   "short_name": "Shopi",
-  "start_url": "/",
+  "description": "Scroll a feed of real products from sellers near you, then message them directly. Free to use, no commission.",
+  "start_url": "/en",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait",
+  "lang": "en-KE",
+  "categories": ["shopping", "social", "business"],
   "background_color": "#ffffff",
-  "theme_color": "#111111",
+  "theme_color": "#7c3aed",
   "icons": [
+    {
+      "src": "/assets/shopi-logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
     {
       "src": "/assets/shopi-logo.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/assets/shopi-logo.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }

@@ -1,0 +1,68 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - link "Shopi" [ref=e6] [cursor=pointer]:
+          - /url: /en
+          - img "Shopi" [ref=e7]:
+            - generic [ref=e16]: shopi
+        - generic [ref=e17]:
+          - generic [ref=e18]:
+            - generic [ref=e19]:
+              - generic [ref=e21]: Trending
+              - generic [ref=e22]:
+                - generic [ref=e24]: K
+                - generic [ref=e25]: "@kali"
+            - generic [ref=e26]:
+              - generic [ref=e28]: New
+              - generic [ref=e29]:
+                - generic [ref=e31]: M
+                - generic [ref=e32]: "@marco.s"
+            - generic [ref=e33]:
+              - generic [ref=e35]: 🔥 Trending
+              - generic [ref=e36]:
+                - generic [ref=e37]: ♥
+                - generic [ref=e38]: 42K
+              - generic [ref=e39]:
+                - generic [ref=e41]: "N"
+                - generic [ref=e42]: "@nia"
+          - generic [ref=e43]:
+            - heading "Shop what your friends love." [level=2] [ref=e44]:
+              - text: Shop what your
+              - text: friends love.
+            - paragraph [ref=e45]: Discover, share and buy with creators you trust. Built for the social-first generation.
+        - generic [ref=e46]:
+          - link "Terms" [ref=e47] [cursor=pointer]:
+            - /url: /en/terms
+          - link "Privacy" [ref=e48] [cursor=pointer]:
+            - /url: /en/privacy
+          - link "About" [ref=e49] [cursor=pointer]:
+            - /url: /en/about
+      - generic [ref=e52]:
+        - generic [ref=e53]:
+          - heading "Join Shopi today" [level=1] [ref=e54]
+          - paragraph [ref=e55]: Discover what people near you are selling
+        - generic [ref=e56]:
+          - generic [ref=e57]:
+            - button "Continue with Apple" [ref=e58]:
+              - img [ref=e59]
+              - generic [ref=e61]: Continue with Apple
+            - button "Continue with Google" [ref=e62]:
+              - img [ref=e63]
+              - generic [ref=e68]: Continue with Google
+          - generic [ref=e71]: or use email
+          - link "Sign up with Email" [ref=e73] [cursor=pointer]:
+            - /url: /en/auth/register
+          - paragraph [ref=e74]:
+            - text: By continuing you agree to our
+            - link "Terms" [ref=e75] [cursor=pointer]:
+              - /url: /en/terms
+            - text: "&"
+            - link "Privacy Policy" [ref=e76] [cursor=pointer]:
+              - /url: /en/privacy
+            - text: .
+          - paragraph [ref=e77]:
+            - text: Already a member?
+            - link "Sign in" [ref=e78] [cursor=pointer]:
+              - /url: /en/auth/login
+  - region "Notifications alt+T"

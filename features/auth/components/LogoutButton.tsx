@@ -31,7 +31,7 @@ export function LogoutButton({ lang }: { lang: string }) {
       <button
         onClick={handleLogout}
         disabled={loading}
-        className="px-6 py-3 rounded-2xl bg-error text-white font-semibold text-sm active:opacity-75 transition-opacity disabled:opacity-50"
+        className="px-6 py-2 bg-primary  rounded-md text-white font-semibold text-sm active:opacity-75 transition-opacity disabled:opacity-50"
       >
         {loading ? "Signing out…" : "Sign out"}
       </button>

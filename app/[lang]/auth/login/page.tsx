@@ -64,15 +64,15 @@ export default async function LoginPage({
 
         {/* Top bar */}
         <div className="flex w-full justify-center items-center  px-5 pt-5 pb-1 shrink-0">
-          <ShopiLogo height={150} width={150} />
+          <ShopiLogo height={48} />
         </div>
 
         {/* Heading */}
-        <div className="px-6 pt-4 pb-3 shrink-0">
-          <h1 className="text-[26px] font-bold leading-tight text-default font-display tracking-tight">
+        <div className="px-6 pt-4 pb-3 shrink-0 text-center">
+          <h1 className="text-2xl font-bold leading-tight text-default font-display tracking-tight">
             Welcome back
           </h1>
-          <p className="mt-1 text-[14px] text-muted">
+          <p className="mt-1 text-sm text-muted">
             Sign in to keep your feed personalized.
           </p>
         </div>
@@ -87,11 +87,11 @@ export default async function LoginPage({
 
       {/* ── Desktop right-panel content ───────────────────────── */}
       <div className="hidden lg:flex flex-col gap-6">
-        <div>
-          <h1 className="text-[26px] font-bold text-default font-display tracking-tight">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-default font-display tracking-tight">
             Welcome back
           </h1>
-          <p className="mt-1.5 text-[15px] text-muted leading-relaxed">
+          <p className="mt-1.5 text-base text-muted leading-relaxed">
             Sign in to keep your feed personalized.
           </p>
         </div>

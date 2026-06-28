@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -7,6 +8,20 @@ import MuxPlayer from "@mux/mux-player-react";
 import { useRouter } from "next/navigation";
 import { useCreateStore } from "@/stores/create";
 import { PublishDraftDocument } from "@/types/__generated__/graphql";
+import { gql } from "@apollo/client";
+import { invalidatePublishedContentCache } from "@/lib/apollo/feedCache";
+
+const POST_TO_TIKTOK = gql`
+  mutation PostToTiktok($contentId: String!) {
+    postToTiktok(contentId: $contentId)
+  }
+`;
+
+const TIKTOK_CONNECT_URL = gql`
+  mutation TiktokConnectUrlReady($returnUrl: String) {
+    tiktokConnectUrl(returnUrl: $returnUrl)
+  }
+`;
 import type MuxPlayerElement from "@mux/mux-player";
 import {
   getMediaPreviewSrc,
@@ -25,10 +40,12 @@ export function StepReady({ lang }: StepReadyProps) {
     hashtags,
     mediaItems,
     contentType,
+    tiktokEmbed,
     price,
     isFree,
     currency,
     visibilityMode,
+    postOnTiktok,
     reset,
     setStep,
     setError,
@@ -37,6 +54,7 @@ export function StepReady({ lang }: StepReadyProps) {
 
   const router = useRouter();
   const [publishing, setPublishing] = useState(false);
+  const [tiktokReconnectNeeded, setTiktokReconnectNeeded] = useState(false);
   const saving = false;
   const [muted, setMuted] = useState(true);
   const [paused, setPaused] = useState(false);
@@ -53,6 +71,9 @@ export function StepReady({ lang }: StepReadyProps) {
   const scrubBarRef = useRef<HTMLDivElement>(null);
 
   const [publishDraft] = useMutation(PublishDraftDocument);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [postToTiktok] = useMutation(POST_TO_TIKTOK) as any;
+  const [getTiktokConnectUrl] = useMutation(TIKTOK_CONNECT_URL) as any;
 
   const cover = mediaItems[0];
   const coverSrc = getMediaPreviewSrc(cover);
@@ -135,7 +156,29 @@ export function StepReady({ lang }: StepReadyProps) {
         return;
       }
       if (data?.publishDraft) {
+        const contentId = data.publishDraft.id as string;
         setPublished(true);
+
+        if (postOnTiktok && contentId) {
+          // Await so we can show the reconnect banner before auto-redirect
+          try {
+            const tiktokResult = await postToTiktok({
+              variables: { contentId },
+            });
+            const tiktokErrors = tiktokResult?.errors ?? [];
+            const needsReconnect = tiktokErrors.some(
+              (e: { message?: string }) =>
+                (e.message ?? "").includes("TIKTOK_RECONNECT_REQUIRED"),
+            );
+            if (needsReconnect) {
+              setTiktokReconnectNeeded(true);
+              return; // don't auto-redirect — let user see the reconnect banner
+            }
+          } catch {
+            // network error — still redirect normally
+          }
+        }
+
         setTimeout(() => {
           reset();
           router.push(`/${lang}/feed`);
@@ -195,6 +238,51 @@ export function StepReady({ lang }: StepReadyProps) {
             Your post is live on the feed
           </p>
         </div>
+
+        {tiktokReconnectNeeded && (
+          <div
+            className="w-full max-w-xs rounded-xl px-4 py-3 text-center"
+            style={{
+              backgroundColor: "rgb(var(--color-bg-subtle))",
+              border: "1px solid rgb(var(--color-border))",
+            }}
+          >
+            <p
+              className="font-semibold text-sm mb-1"
+              style={{ color: "rgb(var(--color-text))" }}
+            >
+              TikTok cross-post needs reconnect
+            </p>
+            <p
+              className="text-xs mb-3"
+              style={{ color: "rgb(var(--color-text-muted))" }}
+            >
+              Your TikTok connection needs the posting permission. Reconnect
+              once and it will work automatically next time.
+            </p>
+            <button
+              onClick={async () => {
+                try {
+                  const { data: urlData } = await getTiktokConnectUrl({
+                    variables: { returnUrl: undefined },
+                  });
+                  const url = urlData?.tiktokConnectUrl;
+                  if (url)
+                    window.open(url, "tiktok-connect", "width=520,height=680");
+                } catch {
+                  /* ignore */
+                }
+              }}
+              className="text-xs font-semibold px-4 py-2 rounded-full"
+              style={{
+                backgroundColor: "rgb(var(--brand-primary))",
+                color: "white",
+              }}
+            >
+              Reconnect TikTok
+            </button>
+          </div>
+        )}
       </div>
     );
   }
@@ -234,7 +322,25 @@ export function StepReady({ lang }: StepReadyProps) {
           }}
         >
           {/* ── MuxPlayer fills column, contain keeps aspect ratio ─────── */}
-          {cover?.muxPlaybackId ? (
+          {tiktokEmbed ? (
+            // Embed-backed post: we don't host the video. Show the TikTok cover
+            // as the publish preview; the live embed renders in the feed.
+            <>
+              {tiktokEmbed.coverImageUrl && (
+                <Image
+                  src={tiktokEmbed.coverImageUrl}
+                  alt={tiktokEmbed.title ?? "TikTok video"}
+                  fill
+                  sizes="430px"
+                  className="object-contain"
+                  unoptimized
+                />
+              )}
+              <span className="absolute right-3 top-3 z-10 rounded-full bg-black/65 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm">
+                TikTok
+              </span>
+            </>
+          ) : cover?.muxPlaybackId ? (
             <MuxPlayer
               ref={playerRef}
               playbackId={cover.muxPlaybackId}
@@ -719,7 +825,7 @@ export function StepReady({ lang }: StepReadyProps) {
                 alt={title}
                 fill
                 sizes="100vw"
-                className="object-cover"
+                className="object-contain"
                 unoptimized={shouldUnoptimizeMedia(coverSrc)}
               />
             ) : (
@@ -808,7 +914,7 @@ export function StepReady({ lang }: StepReadyProps) {
                     alt={title}
                     fill
                     sizes="100vw"
-                    className="object-cover"
+                    className="object-contain"
                     unoptimized={shouldUnoptimizeMedia(coverSrc)}
                   />
                 ) : (

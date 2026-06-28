@@ -1,0 +1,33 @@
+export interface NotificationActor {
+  id: string;
+  username?: string | null;
+  displayName: string;
+  avatar?: string | null;
+}
+
+export interface NotificationItem {
+  id: string;
+  type: "FOLLOW" | "SAVE" | "POST_LIVE";
+  title: string;
+  body: string;
+  actorCount: number;
+  actors: NotificationActor[];
+  isRead: boolean;
+  readAt?: string | null;
+  actionPath?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NotificationPage {
+  items: NotificationItem[];
+  nextCursor?: string | null;
+  hasMore: boolean;
+  unreadCount: number;
+}
+
+export interface NotificationSocketPayload {
+  action: "upserted" | "read" | "read_all";
+  notification?: NotificationItem;
+  unreadCount: number;
+}

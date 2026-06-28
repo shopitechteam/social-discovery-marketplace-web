@@ -1,155 +1,182 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-
-/**
- * ContentDetail — full-page post view.
- *
- * Layout (mobile-first, max-w 430px):
- *   ┌─────────────────────────────┐
- *   │  ← Back          [share]   │  sticky header
- *   ├─────────────────────────────┤
- *   │         media               │  video / image gallery
- *   ├─────────────────────────────┤
- *   │  [avatar] Name  · Follow    │
- *   │  Title                      │
- *   │  Caption…                   │
- *   │  #tag #tag                  │
- *   │  📍 location · 2h ago       │
- *   │  KES 310,000 · negotiable   │
- *   ├─────────────────────────────┤
- *   │  ❤️ Like  💬 Comment  ↗ Share│  action bar
- *   ├─────────────────────────────┤
- *   │  Comments (inline)          │
- *   │  ────────────────────────── │
- *   │  [avatar] add comment…  [➤] │  sticky input
- *   └─────────────────────────────┘
- */
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+  Download,
+  Bookmark,
+  Send,
+  Share2,
+  X,
+  MoreHorizontal,
+  Link2,
+  Flag,
+  MessageCircle,
+  Phone,
+} from "lucide-react";
+import { gql } from "@apollo/client";
+import { toast } from "sonner";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
-import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
 import { useFollow } from "../hooks/useFollow";
 import { useQuery, useMutation, useApolloClient } from "@apollo/client/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { SHIMMER, SHIMMER_AVATAR, SHIMMER_PORTRAIT } from "@/lib/shimmer";
 import {
-  GetContentDocument,
-  GetCommentsDocument,
-  AddCommentDocument,
-  ToggleLikeDocument,
   ShareContentDocument,
   ViewContentDocument,
 } from "@/types/__generated__/graphql";
-import type {
-  GetContentQuery,
-  GetCommentsQuery,
-} from "@/types/__generated__/graphql";
-import { useAuthStore } from "@/stores/auth";
+import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { useAuthGuard } from "../hooks/useAuthGuard";
 import { useHlsVideo } from "@/lib/useHlsVideo";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BufferSpinner } from "./BufferSpinner";
+import { useFeedPreferencesStore } from "@/stores/feedPreferences";
+import { InlineChatPanel } from "@/features/messaging/components/InlineChatPanel";
+import {
+  CommentThread,
+  CommentList,
+  useCommentThread,
+} from "./CommentThread";
+import { fmtCompact as fmt } from "@/lib/format";
+import { avatarGradient as avatarColors } from "@/lib/avatar";
+import { useIsDesktop } from "@/hooks/useIsDesktop";
+import { VideoProgressBar } from "./VideoProgressBar";
+import { usePageFocused } from "../hooks/usePageFocused";
+import { shouldFire } from "@/lib/interactionDedup";
+import { timeAgoLong as timeAgo } from "@/lib/time";
 
-type CommentItem = NonNullable<GetCommentsQuery["comments"]["items"]>[number];
+type DetailPost = ContentCardFieldsFragment & {
+  categoryId?: string | null;
+  specs?: Array<{ key: string; value: string }>;
+  aiClassification?: {
+    categoryId?: string | null;
+    confidence?: number | null;
+    level1?: string | null;
+    level2?: string | null;
+    level3?: string | null;
+    rawLabel?: string | null;
+  } | null;
+  location?:
+    | (ContentCardFieldsFragment["location"] & {
+        country?: string | null;
+      })
+    | null;
+};
+
+const ContentDetailDocument = gql`
+  query ContentDetailPdp($id: String!) {
+    content(id: $id) {
+      id
+      type
+      source
+      isLive
+      tiktokEmbed {
+        videoId
+        shareUrl
+        coverImageUrl
+        authorUsername
+        authorName
+        title
+        duration
+      }
+      title
+      caption
+      hashtags
+      creatorId
+      categoryId
+      allowDownload
+      hdEnabled
+      createdAt
+      creator {
+        id
+        username
+        isVerified
+        isFollowedByMe
+        followerCount
+        profile {
+          firstName
+          lastName
+          avatar
+        }
+      }
+      media {
+        mediaType
+        url
+        imageUrl
+        thumbnailUrl
+        sortOrder
+        displayWidth
+        displayHeight
+        muxMeta {
+          playbackId
+          duration
+          aspectRatio
+          thumbnailUrl
+          animatedThumbnailUrl
+        }
+        r2Variants {
+          url
+          variant
+          width
+          height
+        }
+      }
+      price {
+        amount
+        currency
+        negotiable
+      }
+      specs {
+        key
+        value
+      }
+      aiClassification {
+        categoryId
+        confidence
+        level1
+        level2
+        level3
+        rawLabel
+      }
+      stats {
+        views
+        likes
+        shares
+        saves
+        comments
+      }
+      location {
+        country
+        county
+        subregion
+        placeName
+        formattedAddress
+      }
+      ranking {
+        rankScore
+        trendingScore
+      }
+      isLikedByMe
+      isSavedByMe
+      isMyContent
+    }
+  }
+`;
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
+// Shared utilities (fmt, avatarColors/initials, useIsDesktop) now live in
+// @/lib and @/hooks; imported above and aliased to keep call sites unchanged.
 
-function timeAgo(raw: unknown): string {
-  if (!raw) return "";
-  const diff = Date.now() - new Date(raw as string).getTime();
-  const s = Math.floor(diff / 1000);
-  if (s < 60) return "just now";
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  const d = Math.floor(h / 24);
-  if (d < 30) return `${d}d ago`;
-  return `${Math.floor(d / 30)}mo ago`;
-}
-
-function fmt(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return String(n);
-}
-
-function avatarColors(id: string) {
-  const palette = [
-    "from-primary to-secondary",
-    "from-violet-500 to-purple-600",
-    "from-emerald-400 to-teal-500",
-    "from-orange-400 to-rose-500",
-    "from-sky-400 to-blue-600",
-  ];
-  return palette[parseInt(id.slice(-1), 16) % palette.length];
-}
-
-function initials(id: string) {
-  return id.slice(-2).toUpperCase();
-}
-
-// ─── CommentRow ────────────────────────────────────────────────────────────────
-
-function CommentRow({
-  comment,
-  currentUserId,
-}: {
-  comment: CommentItem;
-  currentUserId?: string;
-}) {
-  const isOwn = currentUserId && comment.creatorId === currentUserId;
-  // Until comment creator profiles are fetched, show a stable short alias
-  const displayName = isOwn ? "You" : `User ···${comment.creatorId.slice(-4)}`;
-  return (
-    <div className="flex gap-3 py-3">
-      <div
-        className={`w-8 h-8 rounded-full bg-gradient-to-br ${avatarColors(comment.creatorId)} flex items-center justify-center flex-shrink-0 mt-0.5`}
-      >
-        <span className="text-white text-[10px] font-bold">
-          {initials(comment.creatorId)}
-        </span>
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="bg-surface rounded-2xl rounded-tl-sm px-3 py-2">
-          <span className="text-xs font-semibold text-default">
-            {displayName}
-          </span>
-          <p className="text-sm text-default leading-snug mt-0.5">
-            {comment.text}
-          </p>
-        </div>
-        <div className="flex items-center gap-3 mt-1 px-1">
-          <span className="text-[11px] text-muted-foreground">
-            {timeAgo(comment.createdAt)}
-          </span>
-          {(comment.likeCount ?? 0) > 0 && (
-            <span className="text-[11px] text-muted-foreground flex items-center gap-0.5">
-              ❤️ {comment.likeCount}
-            </span>
-          )}
-          <button className="text-[11px] font-semibold text-muted-foreground hover:text-primary transition-colors">
-            Reply
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ─── MobileImageCarousel ──────────────────────────────────────────────────────
 
-type MediaItem = NonNullable<
-  NonNullable<
-    import("@/types/__generated__/graphql").GetContentQuery["content"]
-  >["media"]
->[number];
+type MediaItem = NonNullable<DetailPost["media"]>[number];
 
 function MobileImageCarousel({
   media,
@@ -183,8 +210,8 @@ function MobileImageCarousel({
     <div
       ref={trackRef}
       onScroll={handleScroll}
-      className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
-      style={{ height: "100svh", scrollSnapType: "x mandatory" }}
+      className="flex h-full overflow-x-auto snap-x snap-mandatory scrollbar-hide"
+      style={{ scrollSnapType: "x mandatory" }}
     >
       {media.map((item, i) => {
         const src =
@@ -196,8 +223,7 @@ function MobileImageCarousel({
         return (
           <div
             key={i}
-            className="relative shrink-0 w-full snap-center bg-black"
-            style={{ height: "100svh" }}
+            className="relative h-full shrink-0 w-full snap-center bg-black"
           >
             {src && (
               <Image
@@ -218,63 +244,375 @@ function MobileImageCarousel({
   );
 }
 
+function downloadSrc(post: DetailPost): string | null {
+  const first = post.media?.[0];
+  if (!first) return null;
+
+  if (post.type === "VIDEO") {
+    const playbackId = first.muxMeta?.playbackId;
+    return (
+      first.url ??
+      (playbackId ? `https://stream.mux.com/${playbackId}.m3u8` : null)
+    );
+  }
+
+  const preferredVariant = post.hdEnabled ? "original" : "large";
+  return (
+    first.r2Variants?.find((v) => v.variant === preferredVariant)?.url ??
+    first.r2Variants?.find((v) => v.variant === "large")?.url ??
+    first.r2Variants?.find((v) => v.variant === "medium")?.url ??
+    first.r2Variants?.[0]?.url ??
+    first.imageUrl ??
+    first.thumbnailUrl ??
+    null
+  );
+}
+
+function ContentVideo({
+  hlsUrl,
+  thumbnailUrl,
+  muted,
+  setMuted,
+  fill = false,
+  showMuteButton = false,
+  showSpinner = false,
+  onVideoCompleted,
+  onVideoReplayed,
+}: {
+  hlsUrl: string;
+  thumbnailUrl?: string | null;
+  muted: boolean;
+  setMuted?: (muted: boolean) => void;
+  fill?: boolean;
+  showMuteButton?: boolean;
+  showSpinner?: boolean;
+  onVideoCompleted?: (completionRate: number, watchDuration: number) => void;
+  onVideoReplayed?: () => void;
+}) {
+  const pageFocused = usePageFocused();
+  const [manualPaused, setManualPaused] = useState(false);
+  const [videoEnded, setVideoEnded] = useState(false);
+  const shouldPlay = pageFocused && !manualPaused;
+  // Reconcile mute state when the browser forces the element muted to satisfy
+  // autoplay policy, so the speaker icon matches the video's real audio state.
+  const onMutedChange = useCallback(
+    (forcedMuted: boolean) => setMuted?.(forcedMuted),
+    [setMuted],
+  );
+  const { videoRef, buffering } = useHlsVideo(
+    hlsUrl,
+    shouldPlay,
+    videoEnded,
+    onMutedChange,
+  );
+
+  // Authoritative mute toggle — apply to the element AND the store in one tap.
+  const toggleMuted = useCallback(() => {
+    const next = !muted;
+    const video = videoRef.current;
+    if (video) {
+      video.muted = next;
+      if (!next) video.play().catch(() => {});
+    }
+    setMuted?.(next);
+  }, [muted, videoRef, setMuted]);
+  const [playing, setPlaying] = useState(false);
+  const endedCountRef = useRef(0);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.muted = muted;
+    video.defaultMuted = muted;
+    video.playsInline = true;
+    // Unmuting requires the user gesture's activation to actually emit audio;
+    // re-issue play so a video that autoplayed muted starts sounding on one tap
+    // (covers the parent-chrome mute button which only flips the store).
+    if (!muted && shouldPlay) video.play().catch(() => {});
+
+    const markPlaying = () => setPlaying(true);
+    const markStopped = () => setPlaying(false);
+    const handleEnded = () => {
+      setPlaying(false);
+      setVideoEnded(true);
+      const duration = video.duration || 0;
+      const watched = video.currentTime || duration;
+      const completionRate = duration > 0 ? Math.min(watched / duration, 1) : 1;
+      endedCountRef.current += 1;
+      if (endedCountRef.current === 1) {
+        onVideoCompleted?.(completionRate, watched);
+      } else {
+        onVideoReplayed?.();
+      }
+    };
+
+    video.addEventListener("playing", markPlaying);
+    video.addEventListener("pause", markStopped);
+    video.addEventListener("ended", handleEnded);
+
+    return () => {
+      video.removeEventListener("playing", markPlaying);
+      video.removeEventListener("pause", markStopped);
+      video.removeEventListener("ended", handleEnded);
+    };
+  }, [hlsUrl, muted, shouldPlay, videoRef, onVideoCompleted, onVideoReplayed]);
+
+  function handleReplay() {
+    const video = videoRef.current;
+    if (!video) return;
+    endedCountRef.current += 1;
+    setVideoEnded(false);
+    setManualPaused(false);
+    video.currentTime = 0;
+    video.play().catch(() => {});
+    onVideoReplayed?.();
+  }
+
+  const objectClass = "object-contain";
+  const videoClassName = fill
+    ? `absolute inset-0 w-full h-full ${objectClass}`
+    : `max-w-full max-h-full ${objectClass}`;
+  const showPlayOverlay =
+    manualPaused || (!playing && !buffering && pageFocused);
+
+  function togglePlayback() {
+    const video = videoRef.current;
+
+    if (manualPaused || video?.paused) {
+      setManualPaused(false);
+      video?.play().catch(() => {});
+      return;
+    }
+
+    setManualPaused(true);
+    video?.pause();
+  }
+
+  return (
+    <div className="relative w-full h-full flex items-center justify-center bg-black">
+      {thumbnailUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={thumbnailUrl}
+          alt=""
+          aria-hidden
+          className={`absolute inset-0 w-full h-full ${objectClass} transition-opacity duration-500 pointer-events-none z-10 ${playing && !buffering ? "opacity-0" : "opacity-100"}`}
+        />
+      )}
+
+      <video
+        ref={videoRef}
+        muted={muted}
+        playsInline
+        preload="auto"
+        poster={thumbnailUrl ?? undefined}
+        className={videoClassName}
+        style={fill ? undefined : { maxHeight: "100vh" }}
+      />
+
+      {/* Replay overlay — shown when video finishes */}
+      {videoEnded ? (
+        <button
+          type="button"
+          onClick={handleReplay}
+          className="absolute inset-0 z-20 flex items-center justify-center bg-black/40"
+          aria-label="Replay video"
+        >
+          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm">
+            <svg className="h-7 w-7" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" />
+            </svg>
+          </span>
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={togglePlayback}
+          className="absolute inset-0 z-20 flex items-center justify-center"
+          aria-label={manualPaused || !playing ? "Play video" : "Pause video"}
+        >
+          <span
+            className={[
+              "flex h-16 w-16 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm transition-opacity duration-200",
+              showPlayOverlay ? "opacity-100" : "opacity-0",
+            ].join(" ")}
+          >
+            {manualPaused || !playing ? (
+              <svg
+                className="ml-1 h-7 w-7"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            ) : (
+              <svg className="h-7 w-7" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M7 5h4v14H7zM13 5h4v14h-4z" />
+              </svg>
+            )}
+          </span>
+        </button>
+      )}
+
+      {showSpinner && buffering && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+          <BufferSpinner />
+        </div>
+      )}
+
+      <VideoProgressBar videoRef={videoRef} active={playing} showTime={!fill} />
+
+      {showMuteButton && setMuted && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleMuted();
+          }}
+          className="absolute bottom-12 right-4 z-50 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white"
+        >
+          {muted ? (
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fillRule="evenodd"
+                d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z"
+                clipRule="evenodd"
+              />
+            </svg>
+          ) : (
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fillRule="evenodd"
+                d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.146 5.146a5 5 0 010 9.708v-1.717a3.001 3.001 0 000-6.274V5.146zm2.829-2.83a9 9 0 010 15.37l-.708-1.225a7 7 0 000-12.92l.708-1.225z"
+                clipRule="evenodd"
+              />
+            </svg>
+          )}
+        </button>
+      )}
+    </div>
+  );
+}
+
 // ─── Main component ────────────────────────────────────────────────────────────
 
 interface Props {
   id: string;
   lang: string;
+  desktopMode?: "page" | "sheet";
+  onRequestClose?: () => void;
+  /** Sheet mode: notifies the host so it can widen the panel for the chat column. */
+  onChatOpenChange?: (open: boolean) => void;
 }
 
-export function ContentDetail({ id, lang }: Props) {
+export function ContentDetail({
+  id,
+  lang,
+  desktopMode = "page",
+  onRequestClose,
+  onChatOpenChange,
+}: Props) {
   const router = useRouter();
+  const goBack = onRequestClose ?? (() => router.back());
   const { requireAuth } = useAuthGuard(lang);
-  const currentUser = useAuthStore((s) => s.user);
+  const isSheet = desktopMode === "sheet";
+  // Stored in state (not a ref) so the Popover portal target is stable across
+  // renders and available the first time the menu opens.
+  const [rootEl, setRootEl] = useState<HTMLDivElement | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
+
+  const openChat = useCallback(() => {
+    if (!requireAuth({ contentId: id })) return;
+    setChatOpen(true);
+    onChatOpenChange?.(true);
+  }, [requireAuth, id, onChatOpenChange]);
+
+  const closeChat = useCallback(() => {
+    setChatOpen(false);
+    onChatOpenChange?.(false);
+  }, [onChatOpenChange]);
 
   // ── Content query ──────────────────────────────────────────────────────────
-  const { data, loading } = useQuery(GetContentDocument, {
+  const { data, loading } = useQuery(ContentDetailDocument as any, {
     variables: { id },
     // Always fetch fresh data for detail view so isLikedByMe / isFollowedByMe
     // reflect the current server state rather than a potentially stale cache.
     fetchPolicy: "cache-and-network",
-  });
-
-  // ── Comments query ─────────────────────────────────────────────────────────
-  const {
-    data: commentsData,
-    loading: commentsLoading,
-    fetchMore,
-  } = useQuery(GetCommentsDocument, {
-    variables: { contentId: id, limit: 20 },
-    fetchPolicy: "cache-and-network",
-  });
+  }) as {
+    data?: { content?: DetailPost | null };
+    loading: boolean;
+  };
 
   // ── Mutations ──────────────────────────────────────────────────────────────
+  // Comments are handled by the shared CommentThread / useCommentThread.
   const client = useApolloClient();
-  const [toggleLikeMutation] = useMutation(ToggleLikeDocument);
-  const [addCommentMutation] = useMutation(AddCommentDocument);
+  const [trackInteractionMutation] = useMutation(gql`
+    mutation TrackInteractionDetail(
+      $contentId: String!
+      $type: InteractionType!
+      $watchDuration: Float
+      $completionRate: Float
+    ) {
+      trackInteraction(
+        input: {
+          contentId: $contentId
+          type: $type
+          watchDuration: $watchDuration
+          completionRate: $completionRate
+        }
+      )
+    }
+  `);
   const [shareMutation] = useMutation(ShareContentDocument);
   const [viewMutation] = useMutation(ViewContentDocument);
+  const [toggleSaveMutation] = useMutation(gql`
+    mutation ToggleSaveDetail($contentId: String!, $collectionId: String) {
+      toggleSave(contentId: $contentId, collectionId: $collectionId) {
+        saved
+        saveCount
+        collectionId
+      }
+    }
+  `) as any;
+  const [reportMutation] = useMutation(gql`
+    mutation ReportContentDetail($contentId: String!) {
+      reportContent(contentId: $contentId)
+    }
+  `);
 
   // ── Local state ────────────────────────────────────────────────────────────
   const post = data?.content;
+  const [menuOpen, setMenuOpen] = useState(false);
   const [imgIdx, setImgIdx] = useState(0);
-  const [muted, setMuted] = useState(false);
-  const [showCommentDrawer, setShowCommentDrawer] = useState(false);
-  // Read liked/count straight from the Apollo cache (post updates reactively)
-  const resolvedLiked = post?.isLikedByMe ?? false;
-  const resolvedLikeCount = post?.stats?.likes ?? 0;
+  const muted = useFeedPreferencesStore((s) => s.videoMuted);
+  const setVideoMuted = useFeedPreferencesStore((s) => s.setVideoMuted);
+  const isDesktop = useIsDesktop();
+  const resolvedSaved =
+    (post as typeof post & { isSavedByMe?: boolean })?.isSavedByMe ?? false;
+  const resolvedSaveCount = post?.stats?.saves ?? 0;
   const [commentCountOverride, setCommentCountOverride] = useState<
     number | null
   >(null);
   const resolvedCommentCount =
     commentCountOverride ?? post?.stats?.comments ?? 0;
-  const [commentText, setCommentText] = useState("");
-  const [optimisticComments, setOptimisticComments] = useState<CommentItem[]>(
-    [],
-  );
+
+  // Shared comment thread (list + replies + optimistic posting). The mobile PDP
+  // renders its list inline and drives the composer from the fixed bottom bar.
+  const mobileThread = useCommentThread({
+    contentId: id,
+    onCommentAdded: () => setCommentCountOverride(null),
+  });
+  const {
+    text: mobileCommentText,
+    setText: setMobileCommentText,
+    replyingTo: mobileReplyingTo,
+    setReplyingTo: setMobileReplyingTo,
+    handleSend: handleMobileSend,
+    inputRef: mobileCommentInputRef,
+  } = mobileThread;
+
   const [captionExpanded, setCaptionExpanded] = useState(false);
-  const [paused, setPaused] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
   const commentsRef = useRef<HTMLDivElement>(null);
 
   const isVideo = post?.type === "VIDEO";
@@ -285,56 +623,70 @@ export function ContentDetail({ id, lang }: Props) {
   const hlsUrl = mux?.playbackId
     ? `https://stream.mux.com/${mux.playbackId}.m3u8`
     : null;
-
-  // hls.js — fast ABR + buffering state. Always active; paused by tap.
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const { videoRef, buffering: videoBuffering } = useHlsVideo(
-    isVideo ? hlsUrl : null,
-    true,
-    paused,
-  );
+  const videoThumbnail =
+    media[0]?.thumbnailUrl ??
+    (mux?.playbackId
+      ? `https://image.mux.com/${mux.playbackId}/thumbnail.jpg?time=0&width=900&fit_mode=smartcrop`
+      : null);
 
   // Fire view on mount
   useEffect(() => {
     viewMutation({ variables: { contentId: id } }).catch(() => {});
   }, [id, viewMutation]);
 
-  // ── Cache writer — keeps feed cards + detail in sync ──────────────────────
-  function writeLikeToCache(liked: boolean, likeCount: number) {
+  // ── Video completion / replay tracking ────────────────────────────────────
+  const handleVideoCompleted = useCallback(
+    (completionRate: number, watchDuration: number) => {
+      if (shouldFire(id, "VIDEO_COMPLETED")) {
+        trackInteractionMutation({
+          variables: {
+            contentId: id,
+            type: "VIDEO_COMPLETED",
+            completionRate,
+            watchDuration,
+          },
+        }).catch(() => {});
+      }
+    },
+    [id, trackInteractionMutation],
+  );
+
+  const handleVideoReplayed = useCallback(() => {
+    // VIDEO_REPLAYED is always allowed (not in SESSION_ONCE)
+    trackInteractionMutation({
+      variables: { contentId: id, type: "VIDEO_REPLAYED" },
+    }).catch(() => {});
+  }, [id, trackInteractionMutation]);
+
+  // ── Cache writer — keeps feed cards + detail in sync ─────────────────────
+  function writeSaveToCache(saved: boolean, saveCount: number) {
     client.cache.modify({
       id: client.cache.identify({ __typename: "Content", id }),
       fields: {
-        isLikedByMe: () => liked,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        stats: (existing: any) => ({ ...existing, likes: likeCount }),
+        isSavedByMe: () => saved,
+        stats: (existing: any) => ({ ...existing, saves: saveCount }),
       },
     });
   }
 
-  // ── Like handler ───────────────────────────────────────────────────────────
-  async function handleLike() {
-    if (!requireAuth({ contentId: id, action: "like" })) return;
-    const wasLiked = resolvedLiked;
-    const newLiked = !wasLiked;
-    const newCount = resolvedLikeCount + (wasLiked ? -1 : 1);
-
-    // Optimistic update straight into the cache
-    writeLikeToCache(newLiked, newCount);
-
+  // ── Save handler ───────────────────────────────────────────────────────────
+  async function handleSave(collectionId?: string) {
+    if (!requireAuth({ contentId: id, action: "save" })) return;
+    const wasSaved = resolvedSaved;
+    const newSaved = !wasSaved;
+    const newCount = resolvedSaveCount + (wasSaved ? -1 : 1);
+    writeSaveToCache(newSaved, newCount);
     try {
-      const { data: res } = await toggleLikeMutation({
-        variables: { contentId: id },
+      const { data: res } = await toggleSaveMutation({
+        variables: { contentId: id, collectionId: collectionId ?? null },
       });
-      if (res?.toggleLike) {
-        writeLikeToCache(res.toggleLike.liked, res.toggleLike.likeCount);
-      }
+      if (res?.toggleSave)
+        writeSaveToCache(res.toggleSave.saved, res.toggleSave.saveCount);
     } catch {
-      // Rollback
-      writeLikeToCache(wasLiked, resolvedLikeCount);
+      writeSaveToCache(wasSaved, resolvedSaveCount);
     }
   }
 
-  // ── Share handler ──────────────────────────────────────────────────────────
   function handleShare() {
     shareMutation({ variables: { contentId: id } }).catch(() => {});
     if (navigator.share && post) {
@@ -344,94 +696,56 @@ export function ContentDetail({ id, lang }: Props) {
     }
   }
 
-  // ── Comment submit ─────────────────────────────────────────────────────────
-  async function handleSend() {
-    const trimmed = commentText.trim();
-    if (!trimmed) return;
-    if (!requireAuth({ contentId: id, action: "comment" })) return;
-
-    setCommentText("");
-    const tempId = `temp-${Date.now()}`;
-    const optimistic: CommentItem = {
-      id: tempId,
-      text: trimmed,
-      creatorId: currentUser?.id ?? "me",
-      createdAt: new Date().toISOString() as unknown,
-      parentId: null,
-      likeCount: 0,
-      replyCount: 0,
-      isLikedByMe: false,
-      author: null,
-    };
-    setOptimisticComments((p) => [optimistic, ...p]);
-    setCommentCountOverride(resolvedCommentCount + 1);
-
-    // Scroll to the comments heading after optimistic insert
-    commentsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-
+  async function handleCopyLink() {
     try {
-      const { data: res } = await addCommentMutation({
-        variables: { input: { contentId: id, text: trimmed } },
-      });
-      if (res?.addComment) {
-        setOptimisticComments((p) =>
-          p.map((c) =>
-            c.id === tempId
-              ? { ...res.addComment, parentId: res.addComment.parentId ?? null }
-              : c,
-          ),
-        );
-      }
+      const url =
+        typeof window !== "undefined"
+          ? `${window.location.origin}/${lang}/content/${id}`
+          : "";
+      await navigator.clipboard?.writeText(url);
+      toast.success("Link copied");
     } catch {
-      setOptimisticComments((p) => p.filter((c) => c.id !== tempId));
-      setCommentCountOverride(resolvedCommentCount - 1);
+      toast.error("Couldn't copy link");
     }
   }
 
-  // ── Load more comments on scroll ───────────────────────────────────────────
-  const serverComments = commentsData?.comments?.items ?? [];
-  const hasMore = commentsData?.comments?.hasMore ?? false;
-  const endCursor = commentsData?.comments?.endCursor;
-  const serverIds = new Set(serverComments.map((c) => c.id));
-  const allComments: CommentItem[] = [
-    ...optimisticComments.filter((c) => !serverIds.has(c.id)),
-    ...serverComments,
-  ];
+  async function handleReport() {
+    await reportMutation({ variables: { contentId: id } });
+  }
 
-  const handleLoadMore = useCallback(() => {
-    if (!hasMore || !endCursor) return;
-    fetchMore({
-      variables: { contentId: id, limit: 20, after: endCursor },
-      updateQuery: (prev, { fetchMoreResult }) => {
-        if (!fetchMoreResult) return prev;
-        return {
-          comments: {
-            ...fetchMoreResult.comments,
-            items: [
-              ...(prev.comments?.items ?? []),
-              ...(fetchMoreResult.comments?.items ?? []),
-            ],
-          },
-        };
-      },
-    });
-  }, [hasMore, endCursor, fetchMore, id]);
+  async function handleDownload() {
+    if (!post || typeof document === "undefined") return;
+    const src = downloadSrc(post);
+    if (!src) return;
 
-  const { sentinelRef: commentSentinelRef } = useInfiniteScroll({
-    hasMore,
-    loading: commentsLoading,
-    onLoadMore: handleLoadMore,
-  });
+    setIsDownloading(true);
+    try {
+      const res = await fetch(src);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = post.title || "shopi-post";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      const a = document.createElement("a");
+      a.href = src;
+      a.download = post.title || "shopi-post";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } finally {
+      setIsDownloading(false);
+    }
+  }
 
   // ── Follow — must be called unconditionally before any early returns ───────
-  // data?.content is typed correctly via GetContentQuery — creator includes isFollowedByMe/followerCount
-  const postCreatorForFollow = (data as GetContentQuery | undefined)?.content
-    ?.creator;
-  const {
-    following,
-    toggle: handleFollow,
-    loading: followLoading,
-  } = useFollow({
+  // Creator includes follow state when the detail query resolves.
+  const postCreatorForFollow = data?.content?.creator;
+  const { following, toggle: handleFollow } = useFollow({
     userId: postCreatorForFollow?.id ?? data?.content?.creatorId ?? "",
     initialFollowing: postCreatorForFollow?.isFollowedByMe ?? false,
     initialFollowerCount: postCreatorForFollow?.followerCount ?? 0,
@@ -439,37 +753,157 @@ export function ContentDetail({ id, lang }: Props) {
   });
 
   // ── Loading state — full-screen TikTok skeleton ───────────────────────────
-  if (loading) {
+  // Only show the skeleton on the FIRST load (no data yet). With
+  // cache-and-network, `loading` flips true on every background refresh too —
+  // gating on `!post` keeps cached content on screen instead of flashing the
+  // skeleton each time the query refetches.
+  if (loading && !post) {
     return (
-      <div className="md:hidden fixed inset-0 bg-black">
-        {/* Media area */}
-        <Skeleton className="absolute inset-0 rounded-none bg-neutral-900" />
-        {/* Back button */}
-        <Skeleton
-          className="absolute left-4 w-12 h-12 rounded-full bg-neutral-700"
-          style={{ top: "max(env(safe-area-inset-top,0px),16px)" }}
-        />
-        {/* Right action column */}
+      <>
         <div
-          className="absolute right-4 flex flex-col items-center gap-6"
-          style={{ bottom: 180 }}
+          className={[
+            "hidden md:flex overflow-hidden bg-app",
+            isSheet ? "h-full" : "h-screen",
+          ].join(" ")}
         >
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="flex flex-col items-center gap-1.5">
-              <Skeleton className="w-[52px] h-[52px] rounded-full bg-neutral-700" />
-              <Skeleton className="h-2.5 w-8 rounded-full bg-neutral-700" />
+          {/* Left: media */}
+          <div className="flex-1 bg-surface p-8">
+            <Skeleton className="h-full w-full rounded-2xl bg-foreground/10" />
+          </div>
+          {/* Right: info + actions + comments + composer */}
+          <div
+            className="flex shrink-0 flex-col border-l border-default bg-app"
+            style={{ width: isSheet ? 420 : 380 }}
+          >
+            {/* Header */}
+            <div className="flex h-12 shrink-0 items-center gap-2 border-b border-default px-3">
+              <Skeleton className="h-8 w-8 rounded-full bg-foreground/10" />
+              <Skeleton className="h-3.5 w-40 rounded-full bg-foreground/10" />
             </div>
-          ))}
+
+            {/* Meta: creator + title + caption */}
+            <div className="space-y-4 border-b border-default p-4">
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-10 w-10 rounded-full bg-foreground/10" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-3.5 w-32 rounded-full bg-foreground/10" />
+                  <Skeleton className="h-3 w-20 rounded-full bg-foreground/10" />
+                </div>
+                <Skeleton className="h-8 w-20 rounded-full bg-foreground/10" />
+              </div>
+              <Skeleton className="h-7 w-36 rounded-full bg-foreground/10" />
+              <Skeleton className="h-4 w-full rounded-full bg-foreground/10" />
+              <Skeleton className="h-4 w-4/5 rounded-full bg-foreground/10" />
+            </div>
+
+            {/* Action pills — Save / Comment / Message */}
+            <div className="flex items-center gap-2 border-b border-default px-4 py-3">
+              <Skeleton className="h-10 w-20 rounded-full bg-foreground/10" />
+              <Skeleton className="h-10 w-24 rounded-full bg-foreground/10" />
+              <Skeleton className="h-10 flex-1 rounded-full bg-foreground/10" />
+            </div>
+
+            {/* Comments list */}
+            <div className="flex-1 space-y-4 overflow-hidden p-4">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="flex gap-3">
+                  <Skeleton className="h-8 w-8 shrink-0 rounded-full bg-foreground/10" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-3 w-24 rounded-full bg-foreground/10" />
+                    <Skeleton className="h-3.5 w-full rounded-full bg-foreground/10" />
+                    <Skeleton className="h-3.5 w-2/3 rounded-full bg-foreground/10" />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Composer */}
+            <div className="flex items-center gap-2 border-t border-default p-3">
+              <Skeleton className="h-10 flex-1 rounded-2xl bg-foreground/10" />
+              <Skeleton className="h-9 w-9 rounded-full bg-foreground/10" />
+            </div>
+          </div>
         </div>
-        {/* Bottom text overlay */}
-        <div className="absolute bottom-0 left-0 right-20 px-4 pb-10 flex flex-col gap-2.5">
-          <Skeleton className="h-3 w-20 rounded-full bg-neutral-700" />
-          <Skeleton className="h-5 w-3/4 rounded-full bg-neutral-700" />
-          <Skeleton className="h-7 w-1/2 rounded-full bg-neutral-700" />
-          <Skeleton className="h-3 w-full rounded-full bg-neutral-700" />
-          <Skeleton className="h-3 w-2/3 rounded-full bg-neutral-700" />
+        <div className="fixed inset-0 z-70 overflow-x-hidden overflow-y-auto bg-app md:hidden">
+          {/* Header — back + title + share */}
+          <div
+            className="sticky top-0 z-10 flex items-center gap-2 bg-app px-3 pb-2.5"
+            style={{ paddingTop: "max(env(safe-area-inset-top, 0px), 10px)" }}
+          >
+            <Skeleton className="h-10 w-10 rounded-full bg-foreground/10" />
+            <Skeleton className="h-4 min-w-0 flex-1 rounded-full bg-foreground/10" />
+            <Skeleton className="h-10 w-10 rounded-full bg-foreground/10" />
+          </div>
+
+          {/* Media */}
+          <div className="h-[56svh] min-h-85 max-h-155 bg-surface">
+            <Skeleton className="h-full w-full rounded-none bg-foreground/10" />
+          </div>
+
+          {/* Title + price + caption (PostInfo) */}
+          <div className="space-y-2.5 border-b border-default px-4 py-4">
+            <Skeleton className="h-7 w-28 rounded-full bg-foreground/10" />
+            <Skeleton className="h-5 w-4/5 rounded-full bg-foreground/10" />
+            <Skeleton className="h-4 w-full rounded-full bg-foreground/10" />
+            <Skeleton className="h-4 w-3/4 rounded-full bg-foreground/10" />
+          </div>
+
+          {/* Stats grid — Views / Saves / Comments */}
+          <div className="px-4 pt-4">
+            <div className="grid grid-cols-3 divide-x divide-default rounded-lg border border-default bg-surface">
+              {[...Array(3)].map((_, i) => (
+                <div
+                  key={i}
+                  className="flex flex-col items-center gap-1.5 px-2 py-3"
+                >
+                  <Skeleton className="h-4 w-10 rounded-full bg-foreground/10" />
+                  <Skeleton className="h-2.5 w-12 rounded-full bg-foreground/10" />
+                </div>
+              ))}
+            </div>
+            {/* Message | Call 2-grid */}
+            <div className="mt-4 grid grid-cols-2 gap-2.5 pb-4">
+              <Skeleton className="h-11 rounded-full bg-foreground/10" />
+              <Skeleton className="h-11 rounded-full bg-foreground/10" />
+            </div>
+          </div>
+
+          {/* Creator row */}
+          <div className="flex items-center gap-3 border-b border-default px-4 py-3">
+            <Skeleton className="h-10 w-10 rounded-full bg-foreground/10" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-3.5 w-28 rounded-full bg-foreground/10" />
+              <Skeleton className="h-3 w-20 rounded-full bg-foreground/10" />
+            </div>
+            <Skeleton className="h-8 w-20 rounded-full bg-foreground/10" />
+          </div>
+
+          {/* Comments */}
+          <div className="space-y-4 px-4 pb-28 pt-4">
+            <Skeleton className="h-4 w-24 rounded-full bg-foreground/10" />
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="flex gap-3">
+                <Skeleton className="h-8 w-8 shrink-0 rounded-full bg-foreground/10" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-3 w-24 rounded-full bg-foreground/10" />
+                  <Skeleton className="h-3.5 w-full rounded-full bg-foreground/10" />
+                  <Skeleton className="h-3.5 w-2/3 rounded-full bg-foreground/10" />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Bottom bar — comment composer (input pill only) */}
+          <div
+            className="fixed inset-x-0 bottom-0 border-t border-default bg-app px-3 pt-2.5"
+            style={{
+              paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)",
+            }}
+          >
+            <Skeleton className="h-11 w-full rounded-full bg-foreground/10" />
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
@@ -478,10 +912,7 @@ export function ContentDetail({ id, lang }: Props) {
       <div className="min-h-svh flex flex-col items-center justify-center gap-3 px-6 text-center">
         <div className="text-4xl">😕</div>
         <p className="text-default font-semibold">Post not found</p>
-        <button
-          onClick={() => router.back()}
-          className="text-primary text-sm font-semibold"
-        >
+        <button onClick={goBack} className="text-primary text-sm font-semibold">
           Go back
         </button>
       </div>
@@ -492,8 +923,8 @@ export function ContentDetail({ id, lang }: Props) {
   const isLongCaption = caption.length > 180;
   const displayCaption =
     isLongCaption && !captionExpanded ? caption.slice(0, 180) + "…" : caption;
-  // Use the properly typed creator — GetContentQuery.content.creator has isFollowedByMe + followerCount
-  const postCreator = (data as GetContentQuery).content?.creator;
+  // Use the creator returned with the post; it includes follow state.
+  const postCreator = data?.content?.creator;
   const creatorName = postCreator?.profile?.firstName
     ? `${postCreator.profile.firstName} ${postCreator.profile.lastName ?? ""}`.trim()
     : postCreator === null
@@ -506,7 +937,7 @@ export function ContentDetail({ id, lang }: Props) {
   const CreatorRow = (
     <div className="flex items-center gap-3 px-4 pt-4 pb-3">
       <div
-        className={`w-10 h-10 rounded-full shrink-0  relative overflow-hidden ${avatarUrl ? "bg-surface" : `bg-gradient-to-br ${avatarColors(post.creatorId)}`} flex items-center justify-center`}
+        className={`w-10 h-10 rounded-full shrink-0  relative overflow-hidden ${avatarUrl ? "bg-surface" : `bg-linear-to-br ${avatarColors(post.creatorId)}`} flex items-center justify-center`}
       >
         {avatarUrl ? (
           <Image
@@ -532,24 +963,100 @@ export function ContentDetail({ id, lang }: Props) {
         ) : (
           <div className="h-3.5 w-28 rounded-full bg-surface animate-pulse" />
         )}
-        <p className="text-[11px] text-muted-foreground mt-0.5">
+        <p className="text-xs text-muted-foreground mt-0.5">
           {timeAgo(post.createdAt)}
         </p>
       </div>
       {!isOwnPost && (
         <button
           onClick={handleFollow}
-          disabled={followLoading}
           className={[
-            "text-xs font-semibold px-3.5 py-1.5 rounded-full border transition-all disabled:opacity-60",
+            "text-xs font-semibold px-3.5 py-1.5 rounded-full border transition-all",
             following
               ? "border-border text-muted-foreground bg-surface"
               : "border-primary text-primary hover:bg-primary/5",
           ].join(" ")}
         >
-          {followLoading ? "…" : following ? "Following" : "+ Follow"}
+          {following ? "Following" : "+ Follow"}
         </button>
       )}
+
+      {/* More options — matches PostCard's 3-dot menu beside Follow */}
+      <Popover open={menuOpen} onOpenChange={setMenuOpen}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className="w-8 h-8 lg:cursor-pointer flex items-center justify-center rounded-full hover:bg-surface text-muted-foreground transition-colors"
+            aria-label="Post options"
+          >
+            <MoreHorizontal className="w-5 h-5" strokeWidth={2.6} />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent
+          align="end"
+          sideOffset={8}
+          container={isSheet ? rootEl : undefined}
+          className="w-52 p-1.5 rounded-2xl border border-border bg-elevated shadow-lg z-80"
+        >
+          <button
+            type="button"
+            onClick={() => {
+              setMenuOpen(false);
+              void handleCopyLink();
+            }}
+            className="flex lg:cursor-pointer w-full text-sm items-center gap-3 px-4 py-3 rounded-xl font-semibold text-default hover:bg-surface transition-colors"
+          >
+            <Link2
+              className="w-4 h-4 shrink-0 text-muted-foreground"
+              strokeWidth={2.2}
+            />
+            Copy link
+          </button>
+
+          {post.allowDownload && (
+            <button
+              type="button"
+              onClick={handleDownload}
+              disabled={isDownloading}
+              className="flex lg:cursor-pointer w-full text-sm items-center gap-3 px-4 py-3 rounded-xl font-semibold text-default hover:bg-surface transition-colors disabled:opacity-60"
+            >
+              <Download className="w-4 h-4 shrink-0" strokeWidth={1.8} />
+              {isDownloading ? "Downloading…" : "Download"}
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => {
+              setMenuOpen(false);
+              handleShare();
+            }}
+            className="flex lg:cursor-pointer w-full text-sm items-center gap-3 px-4 py-3 rounded-xl font-semibold text-default hover:bg-surface transition-colors"
+          >
+            <Share2
+              className="w-4 h-4 shrink-0 text-muted-foreground"
+              strokeWidth={2.2}
+            />
+            Share content
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (!requireAuth({ contentId: id })) return;
+              setMenuOpen(false);
+              void handleReport().then(() => toast.success("Report submitted"));
+            }}
+            className="flex lg:cursor-pointer w-full text-sm items-center gap-3 px-4 py-3 rounded-xl font-semibold text-default hover:bg-surface transition-colors"
+          >
+            <Flag
+              className="w-4 h-4 shrink-0 text-muted-foreground"
+              strokeWidth={2.2}
+            />
+            Report listing
+          </button>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 
@@ -591,7 +1098,10 @@ export function ContentDetail({ id, lang }: Props) {
       {post.hashtags && post.hashtags.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-3">
           {post.hashtags.map((tag) => (
-            <span key={tag} className="text-primary text-xs font-medium">
+            <span
+              key={tag}
+              className="text-muted-foreground text-xs font-medium"
+            >
               #{tag}
             </span>
           ))}
@@ -600,7 +1110,7 @@ export function ContentDetail({ id, lang }: Props) {
       {post.location?.placeName && (
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
           <svg
-            className="w-3.5 h-3.5 flex-shrink-0"
+            className="w-3.5 h-3.5 shrink-0"
             fill="currentColor"
             viewBox="0 0 20 20"
           >
@@ -617,353 +1127,364 @@ export function ContentDetail({ id, lang }: Props) {
     </div>
   );
 
-  // Desktop inline action row (like/comment counts + share + message buttons)
+  const categoryPath = [
+    post.aiClassification?.level1,
+    post.aiClassification?.level2,
+    post.aiClassification?.level3,
+  ]
+    .filter(Boolean)
+    .join(" / ");
+  const specs = (post.specs ?? []).filter((spec) => spec.key && spec.value);
+  const fullLocation = [
+    post.location?.placeName,
+    post.location?.subregion,
+    post.location?.county,
+    post.location?.country,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  const DetailMeta = (categoryPath ||
+    post.categoryId ||
+    fullLocation ||
+    specs.length > 0) && (
+    <div className="border-b border-default px-4 py-4">
+      <h2 className="mb-3 text-xs font-bold uppercase tracking-normal text-muted-foreground">
+        Details
+      </h2>
+      <div className="grid gap-3 text-sm">
+        {(categoryPath || post.categoryId) && (
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground">
+              Category
+            </p>
+            <p className="mt-0.5 text-default">
+              {categoryPath || post.categoryId}
+            </p>
+          </div>
+        )}
+        {fullLocation && (
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground">
+              Location
+            </p>
+            <p className="mt-0.5 text-default">{fullLocation}</p>
+          </div>
+        )}
+        {specs.length > 0 && (
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground">Specs</p>
+            <dl className="mt-2 grid grid-cols-2 gap-2">
+              {specs.map((spec) => (
+                <div
+                  key={`${spec.key}-${spec.value}`}
+                  className="rounded-lg border border-default bg-surface px-3 py-2"
+                >
+                  <dt className="truncate text-[11px] font-semibold text-muted-foreground">
+                    {spec.key}
+                  </dt>
+                  <dd className="mt-0.5 truncate text-xs font-semibold text-default">
+                    {spec.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // Desktop inline action row
   const DesktopActions = (
-    <div className="hidden md:flex items-center gap-3 px-4 py-3 border-b border-default">
-      {/* Like */}
+    <div className="hidden md:flex items-center gap-2 px-4 py-3 border-b border-default">
+      {/* Save pill — outlined, active = filled primary (matches PostCard) */}
       <button
-        onClick={handleLike}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all"
+        onClick={() => handleSave()}
+        className="flex lg:cursor-pointer items-center gap-1.5 px-4 py-2.5 rounded-full border text-xs font-semibold transition-all active:scale-95"
         style={{
-          borderColor: resolvedLiked
+          borderColor: resolvedSaved
             ? "rgb(var(--brand-primary))"
             : "rgb(var(--color-border))",
-          color: resolvedLiked
+          color: resolvedSaved
             ? "rgb(var(--brand-primary))"
-            : "rgb(var(--color-text-muted))",
-          backgroundColor: resolvedLiked
-            ? "rgb(var(--brand-primary) / 0.06)"
+            : "rgb(var(--color-text-default))",
+          backgroundColor: resolvedSaved
+            ? "rgb(var(--brand-primary) / 0.08)"
             : "transparent",
         }}
       >
-        <svg
+        <Bookmark
           className="w-4 h-4"
-          viewBox="0 0 24 24"
-          fill={resolvedLiked ? "currentColor" : "none"}
-          stroke="currentColor"
-          strokeWidth={resolvedLiked ? 0 : 1.8}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-          />
-        </svg>
-        <span className="text-xs font-semibold">
-          {resolvedLikeCount > 0 ? `${fmt(resolvedLikeCount)} Likes` : "Like"}
-        </span>
-      </button>
-      {/* Comment count */}
-      <div className="flex items-center gap-1.5 text-muted-foreground">
-        <svg
-          className="w-4 h-4"
-          fill="none"
-          stroke="currentColor"
+          fill={resolvedSaved ? "rgb(var(--brand-primary))" : "none"}
           strokeWidth={1.8}
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-          />
-        </svg>
-        <span className="text-xs">
-          {resolvedCommentCount > 0
-            ? `${fmt(resolvedCommentCount)} Comments`
-            : "Comments"}
-        </span>
-      </div>
-      {/* Spacer */}
-      <div className="flex-1" />
-      {/* Share */}
-      <button
-        onClick={handleShare}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-default text-muted-foreground hover:border-primary hover:text-primary transition-all text-xs font-semibold"
-      >
-        <svg
-          className="w-4 h-4"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={1.8}
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-          />
-        </svg>
-        Share
+        />
+        <span>{resolvedSaveCount > 0 ? fmt(resolvedSaveCount) : "Save"}</span>
       </button>
-      {/* Message */}
-      <button
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-white transition-all"
-        style={{
-          background:
-            "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary, var(--brand-primary))))",
-        }}
-      >
-        <svg
-          className="w-4 h-4"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={1.8}
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-          />
-        </svg>
-        Message Seller
-      </button>
-    </div>
-  );
 
-  const CommentsSection = (
-    <div ref={commentsRef} className="px-4 pt-4">
-      <h2 className="font-bold text-default text-sm mb-1">
-        {resolvedCommentCount > 0
-          ? `${fmt(resolvedCommentCount)} Comments`
-          : "Comments"}
-      </h2>
-      {commentsLoading && allComments.length === 0 && (
-        <div className="flex justify-center py-8">
-          <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-        </div>
-      )}
-      {!commentsLoading && allComments.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-10 text-center">
-          <span className="text-3xl mb-2">💬</span>
-          <p className="text-sm text-muted-foreground">No comments yet.</p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Be the first to comment!
-          </p>
-        </div>
-      )}
-      <div className="divide-y divide-default">
-        {allComments.map((comment) => (
-          <CommentRow
-            key={comment.id}
-            comment={comment}
-            currentUserId={currentUser?.id}
-          />
-        ))}
-      </div>
-      <div ref={commentSentinelRef} className="h-1" />
-      <div className="h-6" />
-    </div>
-  );
-
-  const CommentInput = (
-    <div
-      className="flex items-center gap-2.5 px-3 pt-2.5 pb-3"
-      style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)" }}
-    >
-      <div
-        className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white text-[10px] font-bold bg-gradient-to-br ${avatarColors(currentUser?.id ?? "00")}`}
-      >
-        {currentUser?.id ? initials(currentUser.id) : "?"}
-      </div>
-      <input
-        ref={inputRef}
-        type="text"
-        value={commentText}
-        onChange={(e) => setCommentText(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            handleSend();
-          }
-        }}
-        onFocus={() => {
-          if (!requireAuth({ contentId: id, action: "comment" }))
-            inputRef.current?.blur();
-        }}
-        placeholder="Add a comment…"
-        maxLength={500}
-        className="flex-1 bg-surface text-default text-sm rounded-full px-4 py-2.5 outline-none placeholder:text-muted-foreground border border-default focus:border-primary transition-colors"
-      />
+      {/* Comment pill — scrolls to the comments section below */}
       <button
-        onClick={handleSend}
-        disabled={!commentText.trim()}
-        className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center transition-opacity disabled:opacity-35"
-        style={{
-          background:
-            "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary, var(--brand-primary))))",
-        }}
+        onClick={() =>
+          commentsRef.current?.scrollIntoView({ behavior: "smooth" })
+        }
+        className="flex lg:cursor-pointer items-center gap-1.5 px-4 py-2.5 rounded-full border border-border text-xs font-semibold text-default transition-all active:scale-95"
       >
         <svg
-          className="w-4 h-4 text-white"
+          xmlns="http://www.w3.org/2000/svg"
           fill="none"
-          stroke="currentColor"
-          strokeWidth={2.5}
           viewBox="0 0 24 24"
+          strokeWidth={1.5}
+          stroke="currentColor"
+          className="size-4"
         >
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
-            d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"
+            d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z"
           />
         </svg>
+        {resolvedCommentCount > 0 ? (
+          <span>{fmt(resolvedCommentCount)}</span>
+        ) : (
+          <span>Comment</span>
+        )}
       </button>
+
+      {/* Message — primary, takes remaining width (matches PostCard).
+          In the desktop sheet this opens an in-place chat column instead of
+          navigating away; on mobile/page it routes to the full chat screen. */}
+      {!isOwnPost && (
+        <button
+          onClick={() => {
+            if (isSheet) {
+              openChat();
+              return;
+            }
+            if (!requireAuth({ contentId: id })) return;
+            router.push(`/${lang}/notifications/${id}?source=content`);
+          }}
+          className="flex-1 lg:cursor-pointer flex items-center justify-center gap-1.5 px-8 py-2.5 rounded-full bg-primary/90 text-xs font-semibold text-[#f1f1f1] transition-all active:scale-95"
+        >
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.8}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+            />
+          </svg>
+          Message
+        </button>
+      )}
     </div>
   );
 
   return (
-    <div className="min-h-svh flex flex-col bg-app">
+    <div
+      ref={setRootEl}
+      className={[
+        "flex flex-col bg-app",
+        isSheet ? "h-full min-h-0" : "min-h-svh",
+      ].join(" ")}
+    >
       {/* ════════════════════════════════════════════════════════
           DESKTOP LAYOUT  (md+)
           Left col: media (sticky)   Right col: info + comments
           Inspired by Facebook/Instagram post detail
       ════════════════════════════════════════════════════════ */}
-      <div className="hidden md:flex h-screen overflow-hidden">
-        {/* ── Left: media ────────────────────────────────────────────────────── */}
+      {isDesktop === true && (
         <div
-          className="flex-1 bg-black flex items-center justify-center overflow-hidden"
-          style={{ minWidth: 0 }}
+          className={[
+            "flex overflow-hidden",
+            isSheet ? "h-full min-h-0" : "h-screen",
+          ].join(" ")}
         >
-          {isVideo && hlsUrl ? (
-            <div className="relative w-full h-full flex items-center justify-center">
-              <video
-                ref={videoRef}
-                loop
+          {/* ── Left: media ────────────────────────────────────────────────────── */}
+          <div
+            className="flex-1 bg-black flex items-center justify-center overflow-hidden"
+            style={{ minWidth: 0 }}
+          >
+            {isVideo && hlsUrl ? (
+              <ContentVideo
+                hlsUrl={hlsUrl}
+                thumbnailUrl={videoThumbnail}
                 muted={muted}
-                playsInline
-                className="max-w-full max-h-full object-contain"
-                style={{ maxHeight: "100vh" }}
-                onClick={() => setPaused((p) => !p)}
+                setMuted={setVideoMuted}
+                showMuteButton
+                onVideoCompleted={handleVideoCompleted}
+                onVideoReplayed={handleVideoReplayed}
               />
+            ) : (
+              <div className="relative w-full h-full flex items-center justify-center">
+                {media[imgIdx] && (
+                  <Image
+                    src={
+                      media[imgIdx].r2Variants?.find(
+                        (v) => v.variant === "large",
+                      )?.url ??
+                      media[imgIdx].r2Variants?.[0]?.url ??
+                      media[imgIdx].imageUrl ??
+                      media[imgIdx].thumbnailUrl ??
+                      ""
+                    }
+                    alt={post.title}
+                    fill
+                    sizes={isSheet ? "58vw" : "65vw"}
+                    className="object-contain"
+                    priority
+                    placeholder="blur"
+                    blurDataURL={SHIMMER}
+                  />
+                )}
+                {/* Prev/next arrows for multi-image */}
+                {media.length > 1 && (
+                  <>
+                    <button
+                      onClick={() => setImgIdx((i) => Math.max(0, i - 1))}
+                      disabled={imgIdx === 0}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center disabled:opacity-30"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2.5}
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M15 19l-7-7 7-7"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() =>
+                        setImgIdx((i) => Math.min(media.length - 1, i + 1))
+                      }
+                      disabled={imgIdx === media.length - 1}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center disabled:opacity-30"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2.5}
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </button>
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
+                      {media.map((_, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setImgIdx(i)}
+                          className={[
+                            "rounded-full transition-all",
+                            i === imgIdx
+                              ? "w-4 h-1.5 bg-white"
+                              : "w-1.5 h-1.5 bg-white/50",
+                          ].join(" ")}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* ── Right: info + comments + input ─────────────────────────────────── */}
+          <div
+            className="flex flex-col border-l border-default bg-app overflow-hidden"
+            style={{ width: isSheet ? 420 : 380, flexShrink: 0 }}
+          >
+            {/* Header row */}
+            <div className="flex items-center gap-2 h-12 border-b border-default shrink-0 px-2">
               <button
-                onClick={() => setMuted((m) => !m)}
-                className="absolute bottom-6 right-4 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white"
+                onClick={goBack}
+                aria-label={isSheet ? "Close post" : "Go back"}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface transition-colors"
               >
-                {muted ? (
-                  <svg
-                    className="w-4 h-4"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+                {isSheet ? (
+                  <X className="h-5 w-5 text-default" strokeWidth={2.2} />
                 ) : (
                   <svg
-                    className="w-4 h-4"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
+                    className="w-5 h-5 text-default"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2.5}
+                    viewBox="0 0 24 24"
                   >
                     <path
-                      fillRule="evenodd"
-                      d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.146 5.146a5 5 0 010 9.708v-1.717a3.001 3.001 0 000-6.274V5.146zm2.829-2.83a9 9 0 010 15.37l-.708-1.225a7 7 0 000-12.92l.708-1.225z"
-                      clipRule="evenodd"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M15 19l-7-7 7-7"
                     />
                   </svg>
                 )}
               </button>
+              <span className="font-semibold text-default text-sm truncate flex-1">
+                {post.title}
+              </span>
             </div>
-          ) : (
-            <div className="relative w-full h-full flex items-center justify-center">
-              {media[imgIdx] && (
-                <Image
-                  src={
-                    media[imgIdx].r2Variants?.find((v) => v.variant === "large")
-                      ?.url ??
-                    media[imgIdx].r2Variants?.[0]?.url ??
-                    media[imgIdx].imageUrl ??
-                    media[imgIdx].thumbnailUrl ??
-                    ""
-                  }
-                  alt={post.title}
-                  fill
-                  sizes="65vw"
-                  className="object-contain"
-                  priority
-                  placeholder="blur"
-                  blurDataURL={SHIMMER}
-                />
-              )}
-              {/* Prev/next arrows for multi-image */}
-              {media.length > 1 && (
-                <>
-                  <button
-                    onClick={() => setImgIdx((i) => Math.max(0, i - 1))}
-                    disabled={imgIdx === 0}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center disabled:opacity-30"
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2.5}
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M15 19l-7-7 7-7"
-                      />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() =>
-                      setImgIdx((i) => Math.min(media.length - 1, i + 1))
-                    }
-                    disabled={imgIdx === media.length - 1}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center disabled:opacity-30"
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2.5}
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
-                  </button>
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
-                    {media.map((_, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setImgIdx(i)}
-                        className={[
-                          "rounded-full transition-all",
-                          i === imgIdx
-                            ? "w-4 h-1.5 bg-white"
-                            : "w-1.5 h-1.5 bg-white/50",
-                        ].join(" ")}
-                      />
-                    ))}
-                  </div>
-                </>
-              )}
+
+            {/* Post meta — scrolls internally if tall, but caps so the comment
+                thread below always has room. */}
+            <div className="max-h-[55%] shrink-0 overflow-y-auto">
+              {CreatorRow}
+              {PostInfo}
+              {DetailMeta}
+              {DesktopActions}
             </div>
+
+            {/* Comments + replies + reply-aware composer (shared thread) */}
+            <div className="flex min-h-0 flex-1 flex-col border-t border-default">
+              <CommentThread contentId={id} contentCreatorId={post.creatorId} />
+            </div>
+          </div>
+
+          {/* ── Chat column (sheet only) — in-place messaging, no navigation.
+              Rendered unconditionally so InlineChatPanel can animate its exit;
+              contentId=null keeps it collapsed. ─── */}
+          {isSheet && (
+            <InlineChatPanel
+              lang={lang}
+              contentId={chatOpen ? id : null}
+              onClose={closeChat}
+              className="flex flex-col border-l border-default bg-app overflow-hidden h-full w-[400px] shrink-0"
+            />
           )}
         </div>
+      )}
 
-        {/* ── Right: info + comments + input ─────────────────────────────────── */}
-        <div
-          className="flex flex-col border-l border-default bg-app overflow-hidden"
-          style={{ width: 380, flexShrink: 0 }}
-        >
-          {/* Header row */}
-          <div className="flex items-center gap-2  h-12 border-b border-default shrink-0">
+      {/* ════════════════════════════════════════════════════════
+          MOBILE LAYOUT  (< md) — full PDP in the intercepted route
+      ════════════════════════════════════════════════════════ */}
+      {isDesktop === false && (
+        <div className="fixed inset-0 z-70 overflow-x-hidden overflow-y-auto overscroll-contain bg-app">
+          <header
+            className="sticky top-0 z-40 flex items-center gap-2 bg-app/95 px-3 pb-2.5 backdrop-blur-md"
+            style={{ paddingTop: "max(env(safe-area-inset-top, 0px), 10px)" }}
+          >
             <button
-              onClick={() => router.back()}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface transition-colors"
+              type="button"
+              onClick={goBack}
+              aria-label="Go back"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-default transition-colors active:bg-surface"
             >
               <svg
-                className="w-5 h-5 text-default"
+                className="h-5 w-5"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth={2.5}
@@ -976,340 +1497,307 @@ export function ContentDetail({ id, lang }: Props) {
                 />
               </svg>
             </button>
-            <span className="font-semibold text-default text-sm truncate flex-1">
-              {post.title}
-            </span>
-          </div>
-
-          {/* Scrollable middle: creator + info + actions + comments */}
-          <div className="flex-1 overflow-y-auto">
-            {CreatorRow}
-            {PostInfo}
-            {DesktopActions}
-            {CommentsSection}
-          </div>
-
-          {/* Sticky comment input at bottom of right panel */}
-          <div
-            className="shrink-0 border-t border-default"
-            style={{ backgroundColor: "rgb(var(--color-bg-elevated))" }}
-          >
-            {CommentInput}
-          </div>
-        </div>
-      </div>
-
-      {/* ════════════════════════════════════════════════════════
-          MOBILE LAYOUT  (< md) — fixed full-screen, no scroll
-      ════════════════════════════════════════════════════════ */}
-      <div className="md:hidden fixed inset-0 bg-black overflow-hidden">
-        {/* ── Full-screen media ───────────────────────────────────────────── */}
-        <div className="absolute inset-0">
-          {isVideo && hlsUrl ? (
-            <>
-              <video
-                ref={videoRef}
-                loop
-                muted={muted}
-                playsInline
-                className="absolute inset-0 w-full h-full object-contain"
-                onClick={() => setPaused((p) => !p)}
-              />
-              {/* Tap-to-pause indicator */}
-              {paused && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-                  <div className="w-16 h-16 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center">
-                    <svg
-                      className="w-8 h-8 text-white"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-                    </svg>
-                  </div>
-                </div>
-              )}
-              {/* Buffer spinner */}
-              {videoBuffering && !paused && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-                  <BufferSpinner />
-                </div>
-              )}
-            </>
-          ) : (
-            <MobileImageCarousel
-              media={media}
-              title={post.title}
-              idx={imgIdx}
-              onIdx={setImgIdx}
-            />
-          )}
-
-          {/* Back — top-left */}
-          <button
-            onClick={() => router.back()}
-            className="absolute  z-30 w-12 h-12 rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center text-white"
-            style={{ top: "max(env(safe-area-inset-top, 0px), 16px)" }}
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2.5}
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-          </button>
-
-          {/* Video mute — top-right */}
-          {isVideo && (
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-default">
+                {post.title}
+              </p>
+              {/* {creatorName ? (
+                <p className="truncate text-xs text-muted-foreground">
+                  {creatorName}
+                </p>
+              ) : null} */}
+            </div>
             <button
-              onClick={() => setMuted((m) => !m)}
-              className="absolute z-30 w-12 h-12 rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center text-white"
-              style={{
-                top: "max(env(safe-area-inset-top, 0px), 16px)",
-                right: 16,
-              }}
-            >
-              {muted ? (
-                <svg
-                  className="w-6 h-6"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              ) : (
-                <svg
-                  className="w-6 h-6"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.146 5.146a5 5 0 010 9.708v-1.717a3.001 3.001 0 000-6.274V5.146zm2.829-2.83a9 9 0 010 15.37l-.708-1.225a7 7 0 000-12.92l.708-1.225z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              )}
-            </button>
-          )}
-
-          {/* Right-side action column */}
-          <div
-            className="absolute right-4 z-30 flex flex-col items-center gap-6"
-            style={{
-              bottom: "max(env(safe-area-inset-bottom, 0px) + 140px, 160px)",
-            }}
-          >
-            {/* Like */}
-            <button
-              onClick={handleLike}
-              className="flex flex-col items-center gap-1.5"
-            >
-              <div className="w-13 h-13 w-[52px] h-[52px] rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center">
-                <svg
-                  className="w-7 h-7 transition-all"
-                  viewBox="0 0 24 24"
-                  fill={resolvedLiked ? "rgb(var(--brand-primary))" : "none"}
-                  stroke={resolvedLiked ? "rgb(var(--brand-primary))" : "white"}
-                  strokeWidth={1.8}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                  />
-                </svg>
-              </div>
-              <span className="text-white text-xs font-semibold drop-shadow">
-                {resolvedLikeCount > 0 ? fmt(resolvedLikeCount) : "Like"}
-              </span>
-            </button>
-
-            {/* Comment — opens drawer */}
-            <button
-              onClick={() => {
-                if (!requireAuth({ contentId: id, action: "comment" })) return;
-                setShowCommentDrawer(true);
-              }}
-              className="flex flex-col items-center gap-1.5"
-            >
-              <div className="w-[52px] h-[52px] rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center">
-                <svg
-                  className="w-7 h-7 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={1.8}
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                  />
-                </svg>
-              </div>
-              <span className="text-white text-xs font-semibold drop-shadow">
-                {resolvedCommentCount > 0
-                  ? fmt(resolvedCommentCount)
-                  : "Comment"}
-              </span>
-            </button>
-
-            {/* Repost */}
-            <button className="flex flex-col items-center gap-1.5">
-              <div className="w-[52px] h-[52px] rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center">
-                <svg
-                  className="w-7 h-7 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={1.8}
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                  />
-                </svg>
-              </div>
-              <span className="text-white text-xs font-semibold drop-shadow">
-                Repost
-              </span>
-            </button>
-
-            {/* Share */}
-            <button
+              type="button"
               onClick={handleShare}
-              className="flex flex-col items-center gap-1.5"
+              aria-label="Share post"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-default transition-colors active:bg-surface"
             >
-              <div className="w-[52px] h-[52px] rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center">
-                <svg
-                  className="w-7 h-7 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={1.8}
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-                  />
-                </svg>
-              </div>
-              <span className="text-white text-xs font-semibold drop-shadow">
-                Share
-              </span>
+              <Share2 className="h-5 w-5" strokeWidth={2} />
             </button>
-          </div>
+          </header>
 
-          {/* Overlay: title + description + creator bottom-left */}
-          <div className="absolute bottom-0 left-0 right-16 z-20 px-4 pb-8 pt-20 bg-linear-to-t from-black/85 via-black/40 to-transparent">
-            {/* Creator name */}
-            {creatorName ? (
-              <p className="text-white/80 text-sm font-semibold mb-1 drop-shadow">
-                {creatorName}
-              </p>
-            ) : null}
-
-            {/* Title */}
-            <h1 className="text-white font-bold text-xl leading-snug drop-shadow-md">
-              {post.title}
-            </h1>
-
-            {/* Price — larger, prominent */}
-            {post.price && (
-              <p className="text-white font-extrabold text-xl mt-1 drop-shadow-md">
-                {post.price.amount === 0
-                  ? "Free"
-                  : `${post.price.currency} ${post.price.amount.toLocaleString()}`}
-                {post.price.negotiable && (
-                  <span className="font-normal text-white/70 text-base ml-2">
-                    · negeotiable
-                  </span>
-                )}
-              </p>
+          <section className="relative h-[56svh] min-h-85 max-h-155 bg-black">
+            {isVideo && hlsUrl ? (
+              <ContentVideo
+                hlsUrl={hlsUrl}
+                thumbnailUrl={videoThumbnail}
+                muted={muted}
+                setMuted={setVideoMuted}
+                fill
+                showSpinner
+                onVideoCompleted={handleVideoCompleted}
+                onVideoReplayed={handleVideoReplayed}
+              />
+            ) : (
+              <MobileImageCarousel
+                media={media}
+                title={post.title}
+                idx={imgIdx}
+                onIdx={setImgIdx}
+              />
             )}
 
-            {/* Description — 2 lines, tap "more" to expand like LinkedIn */}
-            {caption && (
-              <p
-                className="text-white/90 text-base leading-relaxed mt-2 drop-shadow"
-                style={{ textShadow: "0 1px 3px rgba(0,0,0,0.7)" }}
+            {isVideo && (
+              <button
+                type="button"
+                onClick={() => setVideoMuted(!muted)}
+                aria-label={muted ? "Unmute video" : "Mute video"}
+                className="absolute right-4 top-4 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm"
               >
-                <span className={captionExpanded ? "" : "line-clamp-2"}>
-                  {caption}
-                </span>
-                {isLongCaption && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setCaptionExpanded((v) => !v);
-                    }}
-                    className="text-white/60 font-semibold ml-1 underline underline-offset-2"
+                {muted ? (
+                  <svg
+                    className="w-6 h-6"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
                   >
-                    {captionExpanded ? "less" : "more"}
-                  </button>
+                    <path
+                      fillRule="evenodd"
+                      d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    className="w-6 h-6"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.146 5.146a5 5 0 010 9.708v-1.717a3.001 3.001 0 000-6.274V5.146zm2.829-2.83a9 9 0 010 15.37l-.708-1.225a7 7 0 000-12.92l.708-1.225z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
                 )}
-              </p>
+              </button>
             )}
 
-            {/* Dot indicators for image carousel */}
             {!isVideo && media.length > 1 && (
-              <div className="flex gap-1 mt-3">
+              <div className="absolute bottom-4 left-1/2 z-30 flex -translate-x-1/2 gap-1.5 rounded-full bg-black/35 px-2.5 py-2 backdrop-blur-sm">
                 {media.map((_, i) => (
                   <button
                     key={i}
+                    type="button"
                     onClick={() => setImgIdx(i)}
+                    aria-label={`Show media ${i + 1}`}
                     className={[
                       "rounded-full transition-all",
                       i === imgIdx
-                        ? "w-4 h-1.5 bg-white"
-                        : "w-1.5 h-1.5 bg-white/50",
+                        ? "h-1.5 w-4 bg-white"
+                        : "h-1.5 w-1.5 bg-white/50",
                     ].join(" ")}
                   />
                 ))}
               </div>
             )}
-          </div>
-        </div>
+          </section>
 
-        {/* ── Comments drawer ──────────────────────────────────────────────── */}
-        <Drawer open={showCommentDrawer} onOpenChange={setShowCommentDrawer}>
-          <DrawerContent className="max-h-[80svh] flex flex-col">
-            <DrawerHeader className="shrink-0 pb-2">
-              <DrawerTitle>
+          <main className="pb-32">
+            <section className="border-b border-default px-4 py-4">
+              {post.price && (
+                <div className="mb-2">
+                  <span
+                    className="text-2xl font-extrabold tracking-normal"
+                    style={{ color: "rgb(var(--brand-primary))" }}
+                  >
+                    {post.price.amount === 0
+                      ? "Free"
+                      : `${post.price.currency} ${post.price.amount.toLocaleString()}`}
+                  </span>
+                  {post.price.negotiable && (
+                    <span className="ml-2 text-sm font-semibold text-muted-foreground">
+                      Negotiable
+                    </span>
+                  )}
+                </div>
+              )}
+
+              <h1 className="text-xl font-bold leading-snug text-default">
+                {post.title}
+              </h1>
+
+              {fullLocation && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {fullLocation && (
+                    <span className="rounded-full bg-surface px-3 py-1 text-xs font-semibold text-muted-foreground">
+                      {fullLocation}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {caption && (
+                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                  {displayCaption}
+                  {isLongCaption && (
+                    <button
+                      type="button"
+                      onClick={() => setCaptionExpanded((v) => !v)}
+                      className="ml-1 font-semibold text-primary"
+                    >
+                      {captionExpanded ? "less" : "more"}
+                    </button>
+                  )}
+                </p>
+              )}
+
+              {post.hashtags && post.hashtags.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {post.hashtags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="text-xs font-semibold text-muted-foreground"
+                    >
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-4 grid grid-cols-3 divide-x divide-default rounded-lg border border-default bg-surface">
+                <div className="px-2 py-3 text-center">
+                  <p className="text-sm font-bold text-default">
+                    {fmt(post.stats.views)}
+                  </p>
+                  <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">
+                    Views
+                  </p>
+                </div>
+                <div className="px-2 py-3 text-center">
+                  <p className="text-sm font-bold text-default">
+                    {fmt(resolvedSaveCount)}
+                  </p>
+                  <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">
+                    Saves
+                  </p>
+                </div>
+                <div className="px-2 py-3 text-center">
+                  <p className="text-sm font-bold text-default">
+                    {fmt(resolvedCommentCount)}
+                  </p>
+                  <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">
+                    Comments
+                  </p>
+                </div>
+              </div>
+
+              {/* Contact the seller — Message + Call (hidden on own posts) */}
+              {!isOwnPost && (
+                <div className="mt-4 grid grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!requireAuth({ contentId: id })) return;
+                      router.push(`/${lang}/notifications/${id}?source=content`);
+                    }}
+                    className="flex items-center justify-center gap-2 rounded-full bg-primary py-3 text-sm font-bold text-white transition-transform active:scale-[0.98]"
+                  >
+                    <MessageCircle className="h-4 w-4" strokeWidth={2.2} />
+                    Message
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // TODO: wire to a tel: link once the backend exposes a
+                      // seller phone number on the content/creator.
+                      toast("Calling coming soon");
+                    }}
+                    className="flex items-center justify-center gap-2 rounded-full border border-default py-3 text-sm font-bold text-default transition-colors active:bg-surface"
+                  >
+                    <Phone className="h-4 w-4" strokeWidth={2.2} />
+                    Call
+                  </button>
+                </div>
+              )}
+            </section>
+
+            <section className="border-b border-default">{CreatorRow}</section>
+            {DetailMeta}
+            <div ref={commentsRef} className="px-2 pt-2">
+              <h2 className="px-2 pb-1 text-sm font-bold text-default">
                 {resolvedCommentCount > 0
                   ? `${fmt(resolvedCommentCount)} Comments`
                   : "Comments"}
-              </DrawerTitle>
-            </DrawerHeader>
-            <div className="flex-1 overflow-y-auto px-4 pb-2">
-              {CommentsSection}
+              </h2>
+              <CommentList
+                thread={mobileThread}
+                contentCreatorId={post.creatorId}
+                className=""
+              />
             </div>
-            <div
-              className="shrink-0 border-t border-default"
-              style={{
-                backgroundColor: "rgb(var(--color-bg-elevated))",
-                paddingBottom: "env(safe-area-inset-bottom, 0px)",
-              }}
-            >
-              {CommentInput}
+          </main>
+
+          <div
+            className="fixed inset-x-0 bottom-0 z-40 border-t border-default bg-app/95 px-3 pt-2.5 backdrop-blur-md"
+            style={{
+              paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)",
+            }}
+          >
+            {/* Replying-to chip — appears when the user taps Reply on a comment */}
+            {mobileReplyingTo && (
+              <div className="mb-2 flex items-center justify-between rounded-full bg-surface px-3 py-1.5 text-xs text-muted-foreground">
+                <span>
+                  Replying to{" "}
+                  <span className="font-medium text-default">
+                    {mobileReplyingTo.author?.profile?.firstName ??
+                      `User ${mobileReplyingTo.creatorId.slice(-6)}`}
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setMobileReplyingTo(null)}
+                  className="ml-2 text-muted-foreground hover:text-default"
+                  aria-label="Cancel reply"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              {/* Comment / reply input — inline (no drawer) */}
+              <input
+                ref={mobileCommentInputRef as React.RefObject<HTMLInputElement>}
+                type="text"
+                value={mobileCommentText}
+                onChange={(e) => setMobileCommentText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleMobileSend();
+                  }
+                }}
+                onFocus={() => {
+                  if (!requireAuth({ contentId: id, action: "comment" }))
+                    mobileCommentInputRef.current?.blur();
+                }}
+                placeholder={
+                  mobileReplyingTo ? "Write a reply…" : "Say something…"
+                }
+                maxLength={500}
+                className="min-w-0 flex-1 rounded-full border border-default bg-surface px-4 py-2.5 text-sm text-default outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
+              />
+
+              {/* Send — only shown once there's text; the input is the bar's
+                  sole job now (Message/Call moved up under the stats). */}
+              {mobileCommentText.trim() && (
+                <button
+                  type="button"
+                  onClick={handleMobileSend}
+                  aria-label="Send comment"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white transition-transform active:scale-[0.98]"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary, var(--brand-primary))))",
+                  }}
+                >
+                  <Send className="h-5 w-5" strokeWidth={2.2} />
+                </button>
+              )}
             </div>
-          </DrawerContent>
-        </Drawer>
-      </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
