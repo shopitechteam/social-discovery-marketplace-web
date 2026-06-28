@@ -78,14 +78,14 @@ export function DesktopNearbyColumn({ lang }: { lang: string }) {
     ? "granted"
     : permState;
 
-  const { items, loading, hasMore, loadMore } = useNearbyFeed(
+  const { items, loading, loadingMore, hasMore, loadMore } = useNearbyFeed(
     effectiveLocation,
     nearbyRadiusKm,
   );
 
   const { sentinelRef } = useInfiniteScroll({
     hasMore,
-    loading,
+    loading: loading || loadingMore,
     onLoadMore: loadMore,
     rootMargin: "1400px",
   });
@@ -346,7 +346,7 @@ export function DesktopNearbyColumn({ lang }: { lang: string }) {
 
       <div ref={sentinelRef} className="h-1" />
 
-      {loading && items.length > 0 && (
+      {loadingMore && (
         <div className="overflow-hidden rounded-3xl border border-default bg-elevated">
           <PostCardSkeleton />
         </div>

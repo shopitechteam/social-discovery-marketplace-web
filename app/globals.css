@@ -181,10 +181,22 @@
 
 html {
   color-scheme: light;
+  /* Always reserve the scrollbar gutter so opening a Sheet/Dialog (which locks
+     body scroll and removes the scrollbar) doesn't shift page content sideways. */
+  scrollbar-gutter: stable;
 }
 
 html.dark {
   color-scheme: dark;
+}
+
+/* Radix's scroll-lock (RemoveScroll) compensates the removed scrollbar by
+   adding padding-right to the body. With `scrollbar-gutter: stable` above the
+   gutter is already reserved, so that compensation would double up and shift
+   content the other way — neutralise it. */
+body[data-scroll-locked] {
+  padding-right: 0 !important;
+  margin-right: 0 !important;
 }
 
 body {

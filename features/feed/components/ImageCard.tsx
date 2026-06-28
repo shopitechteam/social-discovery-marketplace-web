@@ -44,7 +44,7 @@ export function ImageCard({ post, lang, priority, variant = "tall" }: Props) {
 
   return (
     <article
-      onClick={() => router.push(`/${lang}/content/${post.id}`)}
+      onClick={() => router.push(`/${lang}/content/${post.id}`, { scroll: false })}
       className="relative cursor-pointer group rounded-xl overflow-hidden bg-surface select-none"
       style={{ aspectRatio }}
       aria-label={post.title}

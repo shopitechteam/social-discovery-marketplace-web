@@ -140,6 +140,7 @@ function PostTile({
         {/* Whole thumbnail navigates to content detail */}
         <Link
           href={`/${lang}/content/${post.id}`}
+          scroll={false}
           className="absolute inset-0 z-10"
           aria-label={post.title}
         />
@@ -232,6 +233,7 @@ function PostTile({
               >
                 <Link
                   href={`/${lang}/content/${post.id}`}
+                  scroll={false}
                   className="flex items-center gap-2 px-3 py-2 font-medium transition-colors hover:bg-surface"
                   style={{
                     fontSize: "var(--text-sm)",
@@ -278,7 +280,11 @@ function PostTile({
       </div>
 
       {/* Meta — title / location / performance (matches /profile cards) */}
-      <Link href={`/${lang}/content/${post.id}`} className="block p-2.5">
+      <Link
+        href={`/${lang}/content/${post.id}`}
+        scroll={false}
+        className="block p-2.5"
+      >
         {post.title && (
           <p
             className="line-clamp-1 leading-tight"

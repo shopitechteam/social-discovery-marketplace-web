@@ -57,7 +57,7 @@ function TrendingRow({
   return (
     <button
       ref={containerRef}
-      onClick={() => router.push(`/${lang}/content/${post.id}`)}
+      onClick={() => router.push(`/${lang}/content/${post.id}`, { scroll: false })}
       className="group flex w-full items-center gap-3 rounded-2xl p-2 text-left transition-colors hover:bg-surface"
     >
       {/* Rank */}

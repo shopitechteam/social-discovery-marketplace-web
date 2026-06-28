@@ -75,7 +75,7 @@ export function VideoCard({ post, lang, priority }: Props) {
   return (
     <article
       ref={containerRef}
-      onClick={() => router.push(`/${lang}/content/${post.id}`)}
+      onClick={() => router.push(`/${lang}/content/${post.id}`, { scroll: false })}
       className="relative cursor-pointer group select-none"
       style={{ aspectRatio }}
       aria-label={post.title}

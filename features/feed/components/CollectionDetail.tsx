@@ -135,7 +135,7 @@ export function CollectionDetail({ lang, collectionId, from }: { lang: string; c
                 {/* Tap to open PDP */}
                 <button
                   className="absolute inset-0"
-                  onClick={() => router.push(`/${lang}/content/${item.id}`)}
+                  onClick={() => router.push(`/${lang}/content/${item.id}`, { scroll: false })}
                 />
 
                 {/* Price badge */}

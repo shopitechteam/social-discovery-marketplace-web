@@ -99,10 +99,12 @@ function DesktopPostCard({
 // ── For You column ───────────────────────────────────────────────────────────
 
 function ForYouColumn({ lang }: { lang: string }) {
-  const { items, loading, hasMore, loadMore } = useForYouFeed();
+  const { items, loading, loadingMore, hasMore, loadMore } = useForYouFeed();
   const { sentinelRef } = useInfiniteScroll({
     hasMore,
-    loading,
+    // Block the sentinel during the initial load AND while a page is in flight,
+    // otherwise it re-fires repeatedly and pagination spins without loading.
+    loading: loading || loadingMore,
     onLoadMore: loadMore,
     rootMargin: "1400px",
   });
@@ -125,7 +127,7 @@ function ForYouColumn({ lang }: { lang: string }) {
         <DesktopPostCard key={post.id} post={post} lang={lang} priority={i < 2} />
       ))}
       <div ref={sentinelRef} className="h-1" />
-      {loading && items.length > 0 && (
+      {loadingMore && (
         <div className="overflow-hidden rounded-3xl border border-default bg-elevated">
           <PostCardSkeleton />
         </div>
@@ -143,10 +145,10 @@ function ForYouColumn({ lang }: { lang: string }) {
 
 function FollowingColumn({ lang }: { lang: string }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated());
-  const { items, loading, hasMore, loadMore } = useFollowingFeed();
+  const { items, loading, loadingMore, hasMore, loadMore } = useFollowingFeed();
   const { sentinelRef } = useInfiniteScroll({
     hasMore,
-    loading,
+    loading: loading || loadingMore,
     onLoadMore: loadMore,
     rootMargin: "1400px",
   });
@@ -204,7 +206,7 @@ function FollowingColumn({ lang }: { lang: string }) {
         <DesktopPostCard key={post.id} post={post} lang={lang} priority={i < 2} />
       ))}
       <div ref={sentinelRef} className="h-1" />
-      {loading && items.length > 0 && (
+      {loadingMore && (
         <div className="overflow-hidden rounded-3xl border border-default bg-elevated">
           <PostCardSkeleton />
         </div>

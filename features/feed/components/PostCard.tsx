@@ -1048,7 +1048,7 @@ export function PostCard({ post, lang, priority, onMessage }: Props) {
     if (shouldFire(post.id, "DETAIL_VIEWED")) {
       trackDetailViewed({ variables: { contentId: post.id } }).catch(() => {});
     }
-    router.push(`/${lang}/content/${post.id}`);
+    router.push(`/${lang}/content/${post.id}`, { scroll: false });
   }
 
   async function handleCopyLink() {

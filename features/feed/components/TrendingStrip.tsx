@@ -65,7 +65,7 @@ function TrendingItem({
   return (
     <button
       ref={containerRef}
-      onClick={() => router.push(`/${lang}/content/${post.id}`)}
+      onClick={() => router.push(`/${lang}/content/${post.id}`, { scroll: false })}
       className="relative flex-none w-28 bg-gray-200 rounded-xl overflow-hidden group"
       style={{ aspectRatio: "9/14" }}
       aria-label={post.title}

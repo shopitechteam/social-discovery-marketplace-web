@@ -112,6 +112,7 @@ function PostThumbnail({
   return (
     <Link
       href={`/${lang}/content/${post.id}`}
+      scroll={false}
       className="group block overflow-hidden rounded-xl border outline-none focus-visible:ring-2 focus-visible:ring-primary"
       style={{
         borderColor: "rgb(var(--color-border))",

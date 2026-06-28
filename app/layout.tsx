@@ -120,7 +120,8 @@ const themeScript = `
 (function(){
   try {
     var s = JSON.parse(localStorage.getItem('shopi-theme') || '{}');
-    var t = s.state?.theme || 'system';
+    // Default to light when the user hasn't chosen a theme yet.
+    var t = s.state?.theme || 'light';
     var dark = t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
     if (dark) document.documentElement.classList.add('dark');
   } catch(e){}

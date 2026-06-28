@@ -1,10 +1,19 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { gql, NetworkStatus, type TypedDocumentNode } from "@apollo/client";
 import { useQuery } from "@apollo/client/react";
 import {
   ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
   Check,
   MapPin,
   Search,
@@ -24,9 +33,9 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { DiscoverGridCard } from "./DiscoverGridCard";
@@ -37,6 +46,8 @@ type DiscoverySort =
   | "NEWEST"
   | "PRICE_LOW_TO_HIGH"
   | "PRICE_HIGH_TO_LOW";
+
+type LocationSheetStep = "county" | "subcounty" | "ward";
 
 type CategoryFacet = {
   id: string;
@@ -388,10 +399,12 @@ function LocationOption({
   item,
   active,
   onClick,
+  indicator = "check",
 }: {
   item: LocationFacet;
   active: boolean;
   onClick: () => void;
+  indicator?: "check" | "chevron";
 }) {
   return (
     <button
@@ -405,10 +418,17 @@ function LocationOption({
       <div className="min-w-0">
         <p className="truncate text-sm font-medium text-default">{item.name}</p>
         <p className="mt-0.5 text-xs text-muted-foreground">
-          {item.count} posts
+          {item.count} {item.count === 1 ? "item" : "items"}
         </p>
       </div>
-      {active ? <Check size={18} className="text-primary" /> : null}
+      {indicator === "chevron" ? (
+        <ChevronRight
+          size={18}
+          className={active ? "text-primary" : "text-muted-foreground"}
+        />
+      ) : active ? (
+        <Check size={18} className="text-primary" />
+      ) : null}
     </button>
   );
 }
@@ -442,6 +462,57 @@ function SortOption({
   );
 }
 
+function LocationSheetHeader({
+  title,
+  subtitle,
+  onBack,
+  action,
+}: {
+  title: string;
+  subtitle?: string;
+  onBack: () => void;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="border-b border-default px-4 py-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-start gap-3">
+          <button
+            type="button"
+            onClick={onBack}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-default bg-app text-default transition-colors hover:bg-surface"
+            aria-label="Back"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <div className="min-w-0">
+            <SheetTitle className="truncate text-base">{title}</SheetTitle>
+            {subtitle ? (
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                {subtitle}
+              </p>
+            ) : null}
+          </div>
+        </div>
+        {action ?? <div className="h-9 w-9 shrink-0" aria-hidden />}
+      </div>
+    </div>
+  );
+}
+
+function locationSheetDepth(step: LocationSheetStep | null) {
+  switch (step) {
+    case "county":
+      return 1;
+    case "subcounty":
+      return 2;
+    case "ward":
+      return 3;
+    default:
+      return 0;
+  }
+}
+
 export function DiscoverPage({ lang }: { lang: string }) {
   const [searchDraft, setSearchDraft] = useState("");
   const [query, setQuery] = useState("");
@@ -458,8 +529,10 @@ export function DiscoverPage({ lang }: { lang: string }) {
   // (backend support pending). minPrice/maxPrice are raw input strings.
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
-  const [negotiable, setNegotiable] = useState<"ANY" | "YES" | "NO">("ANY");
-  const [locationOpen, setLocationOpen] = useState(false);
+  const [negotiableOnly, setNegotiableOnly] = useState(false);
+  const [locationStep, setLocationStep] = useState<LocationSheetStep | null>(
+    null,
+  );
   const [sortOpen, setSortOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
 
@@ -585,6 +658,9 @@ export function DiscoverPage({ lang }: { lang: string }) {
     selectedSubCounty?.name ??
     selectedCounty?.name ??
     "All Kenya";
+  const locationDepth = locationSheetDepth(locationStep);
+  const overlayDepth =
+    (sortOpen ? 1 : 0) + (filterOpen ? 1 : 0) + locationDepth;
   // Count only what lives inside the filter sheet (location + price + negotiable);
   // category and sort have their own controls outside the sheet.
   const hasLocation = Boolean(
@@ -593,41 +669,213 @@ export function DiscoverPage({ lang }: { lang: string }) {
   const activeFilterCount =
     (hasLocation ? 1 : 0) +
     (minPrice.trim() || maxPrice.trim() ? 1 : 0) +
-    (negotiable !== "ANY" ? 1 : 0);
+    (negotiableOnly ? 1 : 0);
 
-  function clearLocation() {
+  const overlayDepthRef = useRef(overlayDepth);
+  const lastPushedOverlayDepthRef = useRef(overlayDepth);
+  const ignoredPopStateCountRef = useRef(0);
+
+  useEffect(() => {
+    overlayDepthRef.current = overlayDepth;
+  }, [overlayDepth]);
+
+  const clearLocation = useCallback(() => {
     setSelectedCounty(null);
     setSelectedSubCounty(null);
     setSelectedWard(null);
-  }
+  }, []);
 
-  function clearFilters() {
+  const clearFilters = useCallback(() => {
     clearLocation();
     setMinPrice("");
     setMaxPrice("");
-    setNegotiable("ANY");
-  }
+    setNegotiableOnly(false);
+  }, [clearLocation]);
 
-  function clearSearch() {
+  const clearSearch = useCallback(() => {
     setSearchDraft("");
     setQuery("");
-  }
+  }, []);
 
-  function pickCounty(item: LocationFacet | null) {
+  const closeTopOverlayState = useCallback(() => {
+    if (locationStep === "ward") {
+      setLocationStep("subcounty");
+      return;
+    }
+    if (locationStep === "subcounty") {
+      setLocationStep("county");
+      return;
+    }
+    if (locationStep === "county") {
+      setLocationStep(null);
+      return;
+    }
+    if (filterOpen) {
+      setFilterOpen(false);
+      return;
+    }
+    if (sortOpen) setSortOpen(false);
+  }, [filterOpen, locationStep, sortOpen]);
+
+  const closeTopOverlayStateRef = useRef(closeTopOverlayState);
+
+  useEffect(() => {
+    closeTopOverlayStateRef.current = closeTopOverlayState;
+  }, [closeTopOverlayState]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const onPopState = () => {
+      if (ignoredPopStateCountRef.current > 0) {
+        ignoredPopStateCountRef.current -= 1;
+        return;
+      }
+
+      if (overlayDepthRef.current > 0) {
+        closeTopOverlayStateRef.current();
+      }
+    };
+
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const previousDepth = lastPushedOverlayDepthRef.current;
+    if (overlayDepth > previousDepth) {
+      for (let i = 0; i < overlayDepth - previousDepth; i += 1) {
+        window.history.pushState({ discoverMobileSheet: true }, "");
+      }
+    }
+
+    lastPushedOverlayDepthRef.current = overlayDepth;
+  }, [overlayDepth]);
+
+  const requestHistoryClose = useCallback((delta = 1) => {
+    if (typeof window === "undefined") return;
+    ignoredPopStateCountRef.current += 1;
+    if (delta > 1) {
+      window.history.go(-delta);
+      return;
+    }
+    window.history.back();
+  }, []);
+
+  const openFilterSheet = useCallback(() => {
+    setSortOpen(false);
+    setFilterOpen(true);
+  }, []);
+
+  const closeFilterSheet = useCallback(() => {
+    if (!filterOpen) return;
+    setFilterOpen(false);
+    requestHistoryClose();
+  }, [filterOpen, requestHistoryClose]);
+
+  const openSortSheet = useCallback(() => {
+    setFilterOpen(false);
+    setLocationStep(null);
+    setSortOpen(true);
+  }, []);
+
+  const closeSortSheet = useCallback(() => {
+    if (!sortOpen) return;
+    setSortOpen(false);
+    requestHistoryClose();
+  }, [requestHistoryClose, sortOpen]);
+
+  const openCountySheet = useCallback(() => {
+    setSortOpen(false);
+    setLocationStep("county");
+  }, []);
+
+  const collapseLocationSheets = useCallback(() => {
+    const depth = locationSheetDepth(locationStep);
+    if (depth === 0) return;
+    setLocationStep(null);
+    requestHistoryClose(depth);
+  }, [locationStep, requestHistoryClose]);
+
+  const applyNationwideLocation = useCallback(() => {
+    clearLocation();
+    collapseLocationSheets();
+  }, [clearLocation, collapseLocationSheets]);
+
+  const applyCountyOnly = useCallback(() => {
+    setSelectedSubCounty(null);
+    setSelectedWard(null);
+    collapseLocationSheets();
+  }, [collapseLocationSheets]);
+
+  const applySubCountyOnly = useCallback(() => {
+    setSelectedWard(null);
+    collapseLocationSheets();
+  }, [collapseLocationSheets]);
+
+  const handleCountySelection = useCallback((item: LocationFacet) => {
     setSelectedCounty(item);
     setSelectedSubCounty(null);
     setSelectedWard(null);
-  }
+    setLocationStep("subcounty");
+  }, []);
 
-  function pickSubCounty(item: LocationFacet | null) {
+  const handleSubCountySelection = useCallback((item: LocationFacet) => {
     setSelectedSubCounty(item);
     setSelectedWard(null);
-  }
+    setLocationStep("ward");
+  }, []);
+
+  const handleWardSelection = useCallback(
+    (item: LocationFacet) => {
+      setSelectedWard(item);
+      collapseLocationSheets();
+    },
+    [collapseLocationSheets],
+  );
+
+  const stepBackLocationSheet = useCallback(() => {
+    if (locationStep === "ward") {
+      setLocationStep("subcounty");
+      requestHistoryClose();
+      return;
+    }
+    if (locationStep === "subcounty") {
+      setLocationStep("county");
+      requestHistoryClose();
+      return;
+    }
+    if (locationStep === "county") {
+      setLocationStep(null);
+      requestHistoryClose();
+    }
+  }, [locationStep, requestHistoryClose]);
+
+  const subCountySheetTitle = selectedCounty?.name ?? "Subcounties";
+  const wardSheetTitle = selectedSubCounty?.name ?? "Wards";
+  const wardSheetSubtitle = selectedSubCounty
+    ? `Choose a ward inside ${selectedSubCounty.name}.`
+    : "Choose the most precise place for these results.";
 
   const categories = categoriesData?.discoveryFacets.categories ?? [];
-  const counties = locationFacets?.counties ?? [];
-  const subCounties = locationFacets?.subCounties ?? [];
-  const wards = locationFacets?.wards ?? [];
+  const counties = useMemo(
+    () => locationFacets?.counties ?? [],
+    [locationFacets?.counties],
+  );
+  const subCounties = useMemo(
+    () => locationFacets?.subCounties ?? [],
+    [locationFacets?.subCounties],
+  );
+  const wards = useMemo(
+    () => locationFacets?.wards ?? [],
+    [locationFacets?.wards],
+  );
+  const nationwideCount = useMemo(
+    () => counties.reduce((sum, item) => sum + item.count, 0),
+    [counties],
+  );
 
   // When searching, results span every category, so the category bar would be
   // misleading (most categories hide / counts no longer reflect the row). Hide
@@ -649,7 +897,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
             <div className="space-y-3">
               <button
                 type="button"
-                onClick={() => setLocationOpen(true)}
+                onClick={openCountySheet}
                 className="flex w-full items-center justify-between rounded-2xl border border-default px-4 py-3 text-left"
               >
                 <div>
@@ -663,7 +911,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
 
               <button
                 type="button"
-                onClick={() => setSortOpen(true)}
+                onClick={openSortSheet}
                 className="flex w-full items-center justify-between rounded-2xl border border-default px-4 py-3 text-left"
               >
                 <div>
@@ -749,7 +997,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
               {/* Sort + Filter icon buttons — opposite the search bar */}
               <button
                 type="button"
-                onClick={() => setSortOpen(true)}
+                onClick={openSortSheet}
                 className={cn(
                   "flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors md:hidden",
                   sort !== "RELEVANCE"
@@ -762,7 +1010,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
               </button>
               <button
                 type="button"
-                onClick={() => setFilterOpen(true)}
+                onClick={openFilterSheet}
                 className={cn(
                   "relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors md:hidden",
                   activeFilterCount > 0
@@ -887,7 +1135,16 @@ export function DiscoverPage({ lang }: { lang: string }) {
       {/* Filter sheet — full-width, slides in from the right. Holds location,
           price range, and negotiable. (Category and sort have their own
           controls outside the sheet.) */}
-      <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
+      <Sheet
+        open={filterOpen}
+        onOpenChange={(open) => {
+          if (open) {
+            openFilterSheet();
+            return;
+          }
+          if (filterOpen && locationStep === null) closeFilterSheet();
+        }}
+      >
         <SheetContent
           side="right"
           className="flex w-full max-w-none flex-col gap-0 bg-app p-0 sm:max-w-none"
@@ -904,7 +1161,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
               </p>
               <button
                 type="button"
-                onClick={() => setLocationOpen(true)}
+                onClick={openCountySheet}
                 className="flex w-full items-center justify-between rounded-2xl border border-default px-4 py-3.5 text-left"
               >
                 <div className="min-w-0">
@@ -912,7 +1169,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
                     {locationLabel}
                   </p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    Tap to change county, subcounty or ward
+                    Drill down from county to ward
                   </p>
                 </div>
                 <MapPin size={18} className="shrink-0 text-muted-foreground" />
@@ -962,47 +1219,23 @@ export function DiscoverPage({ lang }: { lang: string }) {
               <p className="mb-3 text-sm font-semibold text-default">
                 Negotiable
               </p>
-              <RadioGroup
-                value={negotiable}
-                onValueChange={(v) => setNegotiable(v as "ANY" | "YES" | "NO")}
-                className="gap-0 overflow-hidden rounded-2xl border border-default"
-              >
-                {[
-                  { value: "ANY", label: "Any", hint: "Show all listings" },
-                  {
-                    value: "YES",
-                    label: "Negotiable",
-                    hint: "Price can be discussed",
-                  },
-                  {
-                    value: "NO",
-                    label: "Fixed price",
-                    hint: "Non-negotiable only",
-                  },
-                ].map((opt, i) => (
-                  <label
-                    key={opt.value}
-                    htmlFor={`negotiable-${opt.value}`}
-                    className={cn(
-                      "flex cursor-pointer items-center justify-between px-4 py-3.5",
-                      i > 0 && "border-t border-default",
-                    )}
-                  >
-                    <div>
-                      <p className="text-sm font-medium text-default">
-                        {opt.label}
-                      </p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {opt.hint}
-                      </p>
-                    </div>
-                    <RadioGroupItem
-                      id={`negotiable-${opt.value}`}
-                      value={opt.value}
-                    />
-                  </label>
-                ))}
-              </RadioGroup>
+              <div className="flex items-start justify-between gap-4 rounded-2xl border border-default px-4 py-4">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-default">
+                    Negotiable only
+                  </p>
+                  <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
+                    Show listings where the seller is open to discussing the
+                    price.
+                  </p>
+                </div>
+                <Switch
+                  checked={negotiableOnly}
+                  onCheckedChange={setNegotiableOnly}
+                  aria-label="Toggle negotiable only"
+                  className="mt-0.5"
+                />
+              </div>
             </section>
           </div>
 
@@ -1017,7 +1250,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
             </button>
             <button
               type="button"
-              onClick={() => setFilterOpen(false)}
+              onClick={closeFilterSheet}
               className="h-11 flex-1 rounded-full bg-primary text-sm font-semibold text-white"
             >
               Show results
@@ -1026,117 +1259,214 @@ export function DiscoverPage({ lang }: { lang: string }) {
         </SheetContent>
       </Sheet>
 
-      <Drawer open={locationOpen} onOpenChange={setLocationOpen}>
-        <DrawerContent className="mx-auto max-w-107.5 max-h-[82svh]">
-          <DrawerHeader className="pb-2 text-left">
-            <DrawerTitle className="text-base">Choose location</DrawerTitle>
-          </DrawerHeader>
-          <div className="overflow-y-auto px-4 pb-5">
-            <div className="space-y-6">
-              <section>
-                <div className="mb-3 flex items-center justify-between">
-                  <p className="text-sm font-semibold text-default">County</p>
-                  {selectedCounty || selectedSubCounty || selectedWard ? (
-                    <button
-                      type="button"
-                      onClick={clearLocation}
-                      className="text-xs text-primary"
-                    >
-                      Clear
-                    </button>
-                  ) : null}
-                </div>
-                <div className="space-y-2">
-                  <button
-                    type="button"
-                    onClick={() => pickCounty(null)}
-                    className={cn(
-                      "flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left",
-                      selectedCounty === null &&
-                        selectedSubCounty === null &&
-                        selectedWard === null
-                        ? "border-primary bg-primary/5"
-                        : "border-default bg-app",
-                    )}
-                  >
-                    <div>
-                      <p className="text-sm font-medium text-default">
-                        All Kenya
-                      </p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        Browse nationwide
-                      </p>
-                    </div>
-                    {selectedCounty === null &&
-                    selectedSubCounty === null &&
-                    selectedWard === null ? (
-                      <Check size={18} className="text-primary" />
-                    ) : null}
-                  </button>
-                  {counties.map((item) => (
-                    <LocationOption
-                      key={item.id}
-                      item={item}
-                      active={selectedCounty?.id === item.id}
-                      onClick={() => pickCounty(item)}
-                    />
-                  ))}
-                </div>
-              </section>
+      <Sheet
+        open={locationDepth >= 1}
+        onOpenChange={(open) => {
+          if (!open && locationStep === "county") stepBackLocationSheet();
+        }}
+      >
+        <SheetContent
+          side="right"
+          className="flex w-full max-w-none flex-col gap-0 bg-app p-0 sm:max-w-sm [&>button:last-of-type]:hidden"
+        >
+          <LocationSheetHeader
+            title="Choose county"
+            subtitle="Start broad, then drill into the exact place."
+            onBack={stepBackLocationSheet}
+            action={
+              hasLocation ? (
+                <button
+                  type="button"
+                  onClick={clearLocation}
+                  className="h-9 shrink-0 rounded-full px-3 text-xs font-semibold text-primary"
+                >
+                  Clear
+                </button>
+              ) : undefined
+            }
+          />
 
-              {selectedCounty ? (
-                <section>
-                  <p className="mb-3 text-sm font-semibold text-default">
-                    Subcounty
-                  </p>
-                  <div className="space-y-2">
-                    {subCounties.length === 0 ? (
-                      <p className="rounded-2xl border border-dashed border-default px-4 py-3 text-sm text-muted-foreground">
-                        No subcounty clusters yet for this selection.
-                      </p>
-                    ) : (
-                      subCounties.map((item) => (
-                        <LocationOption
-                          key={item.id}
-                          item={item}
-                          active={selectedSubCounty?.id === item.id}
-                          onClick={() => pickSubCounty(item)}
-                        />
-                      ))
-                    )}
-                  </div>
-                </section>
+          <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
+            <button
+              type="button"
+              onClick={applyNationwideLocation}
+              className={cn(
+                "flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-colors",
+                !hasLocation
+                  ? "border-primary bg-primary/5"
+                  : "border-default bg-app",
+              )}
+            >
+              <div>
+                <p className="text-sm font-medium text-default">All Kenya</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {nationwideCount} {nationwideCount === 1 ? "item" : "items"}{" "}
+                  available nationwide
+                </p>
+              </div>
+              {!hasLocation ? (
+                <Check size={18} className="text-primary" />
               ) : null}
+            </button>
 
-              {selectedCounty ? (
-                <section>
-                  <p className="mb-3 text-sm font-semibold text-default">
-                    Ward
-                  </p>
-                  <div className="space-y-2">
-                    {wards.length === 0 ? (
-                      <p className="rounded-2xl border border-dashed border-default px-4 py-3 text-sm text-muted-foreground">
-                        Ward options appear where sellers posted at ward level.
-                      </p>
-                    ) : (
-                      wards.map((item) => (
-                        <LocationOption
-                          key={item.id}
-                          item={item}
-                          active={selectedWard?.id === item.id}
-                          onClick={() => setSelectedWard(item)}
-                        />
-                      ))
-                    )}
-                  </div>
-                </section>
-              ) : null}
+            <div className="space-y-2">
+              {counties.map((item) => (
+                <LocationOption
+                  key={item.id}
+                  item={item}
+                  active={selectedCounty?.id === item.id}
+                  indicator="chevron"
+                  onClick={() => handleCountySelection(item)}
+                />
+              ))}
             </div>
           </div>
-        </DrawerContent>
-      </Drawer>
+        </SheetContent>
+      </Sheet>
 
-      <Drawer open={sortOpen} onOpenChange={setSortOpen}>
+      <Sheet
+        open={locationDepth >= 2}
+        onOpenChange={(open) => {
+          if (!open && locationStep === "subcounty") stepBackLocationSheet();
+        }}
+      >
+        <SheetContent
+          side="right"
+          className="flex w-full max-w-none flex-col gap-0 bg-app p-0 sm:max-w-sm [&>button:last-of-type]:hidden"
+        >
+          <LocationSheetHeader
+            title={subCountySheetTitle}
+            subtitle="Pick a subcounty, or keep the whole county selected."
+            onBack={stepBackLocationSheet}
+          />
+
+          <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
+            {selectedCounty ? (
+              <button
+                type="button"
+                onClick={applyCountyOnly}
+                className={cn(
+                  "flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-colors",
+                  selectedCounty !== null &&
+                    selectedSubCounty === null &&
+                    selectedWard === null
+                    ? "border-primary bg-primary/5"
+                    : "border-default bg-app",
+                )}
+              >
+                <div>
+                  <p className="text-sm font-medium text-default">
+                    Use {selectedCounty.name}
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {selectedCounty.count}{" "}
+                    {selectedCounty.count === 1 ? "item" : "items"} in this
+                    county
+                  </p>
+                </div>
+                {selectedSubCounty === null && selectedWard === null ? (
+                  <Check size={18} className="text-primary" />
+                ) : null}
+              </button>
+            ) : null}
+
+            <div className="space-y-2">
+              {subCounties.length === 0 ? (
+                <p className="rounded-2xl border border-dashed border-default px-4 py-3 text-sm leading-6 text-muted-foreground">
+                  No subcounty clusters yet for this county. You can keep the
+                  county selection and continue browsing.
+                </p>
+              ) : (
+                subCounties.map((item) => (
+                  <LocationOption
+                    key={item.id}
+                    item={item}
+                    active={selectedSubCounty?.id === item.id}
+                    indicator="chevron"
+                    onClick={() => handleSubCountySelection(item)}
+                  />
+                ))
+              )}
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <Sheet
+        open={locationDepth >= 3}
+        onOpenChange={(open) => {
+          if (!open && locationStep === "ward") stepBackLocationSheet();
+        }}
+      >
+        <SheetContent
+          side="right"
+          className="flex w-full max-w-none flex-col gap-0 bg-app p-0 sm:max-w-sm [&>button:last-of-type]:hidden"
+        >
+          <LocationSheetHeader
+            title={wardSheetTitle}
+            subtitle={wardSheetSubtitle}
+            onBack={stepBackLocationSheet}
+          />
+
+          <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
+            {selectedSubCounty ? (
+              <button
+                type="button"
+                onClick={applySubCountyOnly}
+                className={cn(
+                  "flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-colors",
+                  selectedSubCounty !== null && selectedWard === null
+                    ? "border-primary bg-primary/5"
+                    : "border-default bg-app",
+                )}
+              >
+                <div>
+                  <p className="text-sm font-medium text-default">
+                    Use {selectedSubCounty.name}
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {selectedSubCounty.count}{" "}
+                    {selectedSubCounty.count === 1 ? "item" : "items"} in this
+                    subcounty
+                  </p>
+                </div>
+                {selectedWard === null ? (
+                  <Check size={18} className="text-primary" />
+                ) : null}
+              </button>
+            ) : null}
+
+            <div className="space-y-2">
+              {wards.length === 0 ? (
+                <p className="rounded-2xl border border-dashed border-default px-4 py-3 text-sm leading-6 text-muted-foreground">
+                  Ward-level options will show up here whenever listings are
+                  tagged that precisely.
+                </p>
+              ) : (
+                wards.map((item) => (
+                  <LocationOption
+                    key={item.id}
+                    item={item}
+                    active={selectedWard?.id === item.id}
+                    onClick={() => handleWardSelection(item)}
+                  />
+                ))
+              )}
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <Drawer
+        open={sortOpen}
+        onOpenChange={(open) => {
+          if (open) {
+            openSortSheet();
+            return;
+          }
+          if (sortOpen) closeSortSheet();
+        }}
+      >
         <DrawerContent className="mx-auto max-w-107.5">
           <DrawerHeader className="pb-2 text-left">
             <DrawerTitle className="text-base">Sort results</DrawerTitle>
@@ -1150,7 +1480,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
                 active={sort === option.value}
                 onClick={() => {
                   setSort(option.value);
-                  setSortOpen(false);
+                  closeSortSheet();
                 }}
               />
             ))}

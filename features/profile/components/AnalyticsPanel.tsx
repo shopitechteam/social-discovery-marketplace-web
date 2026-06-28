@@ -493,6 +493,7 @@ export function AnalyticsPanel({ data, lang }: Props) {
             {data.topPost && (
               <Link
                 href={`/${lang}/content/${data.topPost.contentId}`}
+                scroll={false}
                 className="group rounded-lg border p-4 outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 style={{
                   backgroundColor: "rgb(var(--color-bg-elevated))",
