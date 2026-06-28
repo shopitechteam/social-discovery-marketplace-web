@@ -98,6 +98,124 @@ export function breadcrumbSchema(items: { name: string; url: string }[]) {
   };
 }
 
+/**
+ * A single marketplace listing as a schema.org Product with an Offer. This is
+ * what powers rich product results in Google and lets answer/generative engines
+ * (AEO/GEO) understand the item — what it is, its price, where it's sold, and by
+ * whom. `price` of 0 is treated as "contact for price" (no Offer price emitted).
+ */
+export function productSchema(input: {
+  id: string;
+  url: string;
+  title: string;
+  description?: string | null;
+  images: string[];
+  price?: number | null;
+  currency?: string | null;
+  negotiable?: boolean | null;
+  sellerName?: string | null;
+  locationName?: string | null;
+  category?: string | null;
+  createdAt?: string | null;
+}) {
+  const hasPrice = typeof input.price === "number" && input.price > 0;
+
+  const offer: Record<string, unknown> = {
+    "@type": "Offer",
+    url: input.url,
+    priceCurrency: input.currency || "KES",
+    availability: "https://schema.org/InStock",
+    itemCondition: "https://schema.org/UsedCondition",
+    ...(hasPrice
+      ? { price: String(input.price) }
+      : { price: "0", description: "Contact seller for price" }),
+    ...(input.sellerName
+      ? {
+          seller: { "@type": "Person", name: input.sellerName },
+        }
+      : {}),
+    ...(input.locationName
+      ? {
+          areaServed: { "@type": "Place", name: input.locationName },
+        }
+      : {}),
+  };
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "@id": `${input.url}#product`,
+    name: input.title,
+    ...(input.description ? { description: input.description } : {}),
+    ...(input.images.length ? { image: input.images } : {}),
+    ...(input.category ? { category: input.category } : {}),
+    ...(input.createdAt ? { releaseDate: input.createdAt } : {}),
+    brand: { "@type": "Brand", name },
+    offers: offer,
+    isRelatedTo: { "@id": `${url}/#app` },
+  };
+}
+
+/**
+ * A creator/seller profile as a schema.org ProfilePage wrapping a Person. Helps
+ * search + answer engines (AEO/GEO) understand who the seller is and surface
+ * their entity (name, handle, follower/post counts) in results and AI answers.
+ */
+export function profilePageSchema(input: {
+  url: string;
+  displayName: string;
+  username?: string | null;
+  bio?: string | null;
+  avatar?: string | null;
+  website?: string | null;
+  followerCount?: number | null;
+  postCount?: number | null;
+}) {
+  const sameAs = [input.website].filter(Boolean) as string[];
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "ProfilePage",
+    "@id": `${input.url}#profile`,
+    url: input.url,
+    mainEntity: {
+      "@type": "Person",
+      name: input.displayName,
+      ...(input.username ? { alternateName: `@${input.username}` } : {}),
+      ...(input.bio ? { description: input.bio } : {}),
+      ...(input.avatar ? { image: input.avatar } : {}),
+      ...(sameAs.length ? { sameAs } : {}),
+      url: input.url,
+      memberOf: { "@id": `${url}/#organization` },
+      ...(typeof input.followerCount === "number" ||
+      typeof input.postCount === "number"
+        ? {
+            interactionStatistic: [
+              ...(typeof input.followerCount === "number"
+                ? [
+                    {
+                      "@type": "InteractionCounter",
+                      interactionType: "https://schema.org/FollowAction",
+                      userInteractionCount: input.followerCount,
+                    },
+                  ]
+                : []),
+              ...(typeof input.postCount === "number"
+                ? [
+                    {
+                      "@type": "InteractionCounter",
+                      interactionType: "https://schema.org/WriteAction",
+                      userInteractionCount: input.postCount,
+                    },
+                  ]
+                : []),
+            ],
+          }
+        : {}),
+    },
+  };
+}
+
 /** Renders one or more schema objects as a single JSON-LD script payload. */
 export function jsonLd(...schemas: object[]): string {
   return JSON.stringify(schemas.length === 1 ? schemas[0] : schemas).replace(

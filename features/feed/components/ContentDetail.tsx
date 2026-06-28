@@ -11,6 +11,8 @@ import {
   MoreHorizontal,
   Link2,
   Flag,
+  MessageCircle,
+  Phone,
 } from "lucide-react";
 import { gql } from "@apollo/client";
 import { toast } from "sonner";
@@ -766,7 +768,7 @@ export function ContentDetail({
         >
           {/* Left: media */}
           <div className="flex-1 bg-surface p-8">
-            <Skeleton className="h-full w-full rounded-2xl bg-default/8" />
+            <Skeleton className="h-full w-full rounded-2xl bg-foreground/10" />
           </div>
           {/* Right: info + actions + comments + composer */}
           <div
@@ -775,41 +777,41 @@ export function ContentDetail({
           >
             {/* Header */}
             <div className="flex h-12 shrink-0 items-center gap-2 border-b border-default px-3">
-              <Skeleton className="h-8 w-8 rounded-full bg-default/8" />
-              <Skeleton className="h-3.5 w-40 rounded-full bg-default/8" />
+              <Skeleton className="h-8 w-8 rounded-full bg-foreground/10" />
+              <Skeleton className="h-3.5 w-40 rounded-full bg-foreground/10" />
             </div>
 
             {/* Meta: creator + title + caption */}
             <div className="space-y-4 border-b border-default p-4">
               <div className="flex items-center gap-3">
-                <Skeleton className="h-10 w-10 rounded-full bg-default/8" />
+                <Skeleton className="h-10 w-10 rounded-full bg-foreground/10" />
                 <div className="flex-1 space-y-2">
-                  <Skeleton className="h-3.5 w-32 rounded-full bg-default/8" />
-                  <Skeleton className="h-3 w-20 rounded-full bg-default/8" />
+                  <Skeleton className="h-3.5 w-32 rounded-full bg-foreground/10" />
+                  <Skeleton className="h-3 w-20 rounded-full bg-foreground/10" />
                 </div>
-                <Skeleton className="h-8 w-20 rounded-full bg-default/8" />
+                <Skeleton className="h-8 w-20 rounded-full bg-foreground/10" />
               </div>
-              <Skeleton className="h-7 w-36 rounded-full bg-default/8" />
-              <Skeleton className="h-4 w-full rounded-full bg-default/8" />
-              <Skeleton className="h-4 w-4/5 rounded-full bg-default/8" />
+              <Skeleton className="h-7 w-36 rounded-full bg-foreground/10" />
+              <Skeleton className="h-4 w-full rounded-full bg-foreground/10" />
+              <Skeleton className="h-4 w-4/5 rounded-full bg-foreground/10" />
             </div>
 
             {/* Action pills — Save / Comment / Message */}
             <div className="flex items-center gap-2 border-b border-default px-4 py-3">
-              <Skeleton className="h-10 w-20 rounded-full bg-default/8" />
-              <Skeleton className="h-10 w-24 rounded-full bg-default/8" />
-              <Skeleton className="h-10 flex-1 rounded-full bg-default/8" />
+              <Skeleton className="h-10 w-20 rounded-full bg-foreground/10" />
+              <Skeleton className="h-10 w-24 rounded-full bg-foreground/10" />
+              <Skeleton className="h-10 flex-1 rounded-full bg-foreground/10" />
             </div>
 
             {/* Comments list */}
             <div className="flex-1 space-y-4 overflow-hidden p-4">
               {[...Array(4)].map((_, i) => (
                 <div key={i} className="flex gap-3">
-                  <Skeleton className="h-8 w-8 shrink-0 rounded-full bg-default/8" />
+                  <Skeleton className="h-8 w-8 shrink-0 rounded-full bg-foreground/10" />
                   <div className="flex-1 space-y-2">
-                    <Skeleton className="h-3 w-24 rounded-full bg-default/8" />
-                    <Skeleton className="h-3.5 w-full rounded-full bg-default/8" />
-                    <Skeleton className="h-3.5 w-2/3 rounded-full bg-default/8" />
+                    <Skeleton className="h-3 w-24 rounded-full bg-foreground/10" />
+                    <Skeleton className="h-3.5 w-full rounded-full bg-foreground/10" />
+                    <Skeleton className="h-3.5 w-2/3 rounded-full bg-foreground/10" />
                   </div>
                 </div>
               ))}
@@ -817,8 +819,8 @@ export function ContentDetail({
 
             {/* Composer */}
             <div className="flex items-center gap-2 border-t border-default p-3">
-              <Skeleton className="h-10 flex-1 rounded-2xl bg-default/8" />
-              <Skeleton className="h-9 w-9 rounded-full bg-default/8" />
+              <Skeleton className="h-10 flex-1 rounded-2xl bg-foreground/10" />
+              <Skeleton className="h-9 w-9 rounded-full bg-foreground/10" />
             </div>
           </div>
         </div>
@@ -828,76 +830,77 @@ export function ContentDetail({
             className="sticky top-0 z-10 flex items-center gap-2 bg-app px-3 pb-2.5"
             style={{ paddingTop: "max(env(safe-area-inset-top, 0px), 10px)" }}
           >
-            <Skeleton className="h-10 w-10 rounded-full bg-default/8" />
-            <Skeleton className="h-4 min-w-0 flex-1 rounded-full bg-default/8" />
-            <Skeleton className="h-10 w-10 rounded-full bg-default/8" />
+            <Skeleton className="h-10 w-10 rounded-full bg-foreground/10" />
+            <Skeleton className="h-4 min-w-0 flex-1 rounded-full bg-foreground/10" />
+            <Skeleton className="h-10 w-10 rounded-full bg-foreground/10" />
           </div>
 
           {/* Media */}
           <div className="h-[56svh] min-h-85 max-h-155 bg-surface">
-            <Skeleton className="h-full w-full rounded-none bg-default/8" />
+            <Skeleton className="h-full w-full rounded-none bg-foreground/10" />
           </div>
 
           {/* Title + price + caption (PostInfo) */}
           <div className="space-y-2.5 border-b border-default px-4 py-4">
-            <Skeleton className="h-7 w-28 rounded-full bg-default/8" />
-            <Skeleton className="h-5 w-4/5 rounded-full bg-default/8" />
-            <Skeleton className="h-4 w-full rounded-full bg-default/8" />
-            <Skeleton className="h-4 w-3/4 rounded-full bg-default/8" />
+            <Skeleton className="h-7 w-28 rounded-full bg-foreground/10" />
+            <Skeleton className="h-5 w-4/5 rounded-full bg-foreground/10" />
+            <Skeleton className="h-4 w-full rounded-full bg-foreground/10" />
+            <Skeleton className="h-4 w-3/4 rounded-full bg-foreground/10" />
           </div>
 
           {/* Stats grid — Views / Saves / Comments */}
-          <div className="px-4 py-4">
+          <div className="px-4 pt-4">
             <div className="grid grid-cols-3 divide-x divide-default rounded-lg border border-default bg-surface">
               {[...Array(3)].map((_, i) => (
                 <div
                   key={i}
                   className="flex flex-col items-center gap-1.5 px-2 py-3"
                 >
-                  <Skeleton className="h-4 w-10 rounded-full bg-default/8" />
-                  <Skeleton className="h-2.5 w-12 rounded-full bg-default/8" />
+                  <Skeleton className="h-4 w-10 rounded-full bg-foreground/10" />
+                  <Skeleton className="h-2.5 w-12 rounded-full bg-foreground/10" />
                 </div>
               ))}
+            </div>
+            {/* Message | Call 2-grid */}
+            <div className="mt-4 grid grid-cols-2 gap-2.5 pb-4">
+              <Skeleton className="h-11 rounded-full bg-foreground/10" />
+              <Skeleton className="h-11 rounded-full bg-foreground/10" />
             </div>
           </div>
 
           {/* Creator row */}
           <div className="flex items-center gap-3 border-b border-default px-4 py-3">
-            <Skeleton className="h-10 w-10 rounded-full bg-default/8" />
+            <Skeleton className="h-10 w-10 rounded-full bg-foreground/10" />
             <div className="flex-1 space-y-2">
-              <Skeleton className="h-3.5 w-28 rounded-full bg-default/8" />
-              <Skeleton className="h-3 w-20 rounded-full bg-default/8" />
+              <Skeleton className="h-3.5 w-28 rounded-full bg-foreground/10" />
+              <Skeleton className="h-3 w-20 rounded-full bg-foreground/10" />
             </div>
-            <Skeleton className="h-8 w-20 rounded-full bg-default/8" />
+            <Skeleton className="h-8 w-20 rounded-full bg-foreground/10" />
           </div>
 
           {/* Comments */}
           <div className="space-y-4 px-4 pb-28 pt-4">
-            <Skeleton className="h-4 w-24 rounded-full bg-default/8" />
+            <Skeleton className="h-4 w-24 rounded-full bg-foreground/10" />
             {[...Array(3)].map((_, i) => (
               <div key={i} className="flex gap-3">
-                <Skeleton className="h-8 w-8 shrink-0 rounded-full bg-default/8" />
+                <Skeleton className="h-8 w-8 shrink-0 rounded-full bg-foreground/10" />
                 <div className="flex-1 space-y-2">
-                  <Skeleton className="h-3 w-24 rounded-full bg-default/8" />
-                  <Skeleton className="h-3.5 w-full rounded-full bg-default/8" />
-                  <Skeleton className="h-3.5 w-2/3 rounded-full bg-default/8" />
+                  <Skeleton className="h-3 w-24 rounded-full bg-foreground/10" />
+                  <Skeleton className="h-3.5 w-full rounded-full bg-foreground/10" />
+                  <Skeleton className="h-3.5 w-2/3 rounded-full bg-foreground/10" />
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Bottom bar — input pill + Save + Message */}
+          {/* Bottom bar — comment composer (input pill only) */}
           <div
             className="fixed inset-x-0 bottom-0 border-t border-default bg-app px-3 pt-2.5"
             style={{
               paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)",
             }}
           >
-            <div className="flex items-center gap-2">
-              <Skeleton className="h-11 flex-1 rounded-full bg-default/8" />
-              <Skeleton className="h-11 w-11 rounded-full bg-default/8" />
-              <Skeleton className="h-11 w-24 rounded-full bg-default/8" />
-            </div>
+            <Skeleton className="h-11 w-full rounded-full bg-foreground/10" />
           </div>
         </div>
       </>
@@ -1678,6 +1681,35 @@ export function ContentDetail({
                   </p>
                 </div>
               </div>
+
+              {/* Contact the seller — Message + Call (hidden on own posts) */}
+              {!isOwnPost && (
+                <div className="mt-4 grid grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!requireAuth({ contentId: id })) return;
+                      router.push(`/${lang}/notifications/${id}?source=content`);
+                    }}
+                    className="flex items-center justify-center gap-2 rounded-full bg-primary py-3 text-sm font-bold text-white transition-transform active:scale-[0.98]"
+                  >
+                    <MessageCircle className="h-4 w-4" strokeWidth={2.2} />
+                    Message
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // TODO: wire to a tel: link once the backend exposes a
+                      // seller phone number on the content/creator.
+                      toast("Calling coming soon");
+                    }}
+                    className="flex items-center justify-center gap-2 rounded-full border border-default py-3 text-sm font-bold text-default transition-colors active:bg-surface"
+                  >
+                    <Phone className="h-4 w-4" strokeWidth={2.2} />
+                    Call
+                  </button>
+                </div>
+              )}
             </section>
 
             <section className="border-b border-default">{CreatorRow}</section>
@@ -1746,66 +1778,21 @@ export function ContentDetail({
                 className="min-w-0 flex-1 rounded-full border border-default bg-surface px-4 py-2.5 text-sm text-default outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
               />
 
-              {mobileCommentText.trim() ? (
+              {/* Send — only shown once there's text; the input is the bar's
+                  sole job now (Message/Call moved up under the stats). */}
+              {mobileCommentText.trim() && (
                 <button
                   type="button"
                   onClick={handleMobileSend}
-                  className="flex shrink-0 items-center justify-center gap-1.5 rounded-full px-5 py-3 text-sm font-bold text-white transition-transform active:scale-[0.98]"
+                  aria-label="Send comment"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white transition-transform active:scale-[0.98]"
                   style={{
                     background:
                       "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary, var(--brand-primary))))",
                   }}
                 >
-                  <Send className="h-4 w-4" strokeWidth={2.2} />
-                  Send
+                  <Send className="h-5 w-5" strokeWidth={2.2} />
                 </button>
-              ) : (
-                <>
-                  {/* Save */}
-                  <button
-                    type="button"
-                    onClick={() => handleSave()}
-                    aria-label={resolvedSaved ? "Unsave post" : "Save post"}
-                    className={[
-                      "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border transition-colors",
-                      resolvedSaved
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-default text-default",
-                    ].join(" ")}
-                  >
-                    <Bookmark
-                      className="h-5 w-5"
-                      fill={resolvedSaved ? "currentColor" : "none"}
-                      strokeWidth={2}
-                    />
-                  </button>
-
-                  {/* Message seller (or Share on own post) */}
-                  {!isOwnPost ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!requireAuth({ contentId: id })) return;
-                        router.push(
-                          `/${lang}/notifications/${id}?source=content`,
-                        );
-                      }}
-                      className="flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-primary px-5 py-3 text-sm font-bold text-white transition-transform active:scale-[0.98]"
-                    >
-                      <Send className="h-4 w-4" strokeWidth={2.2} />
-                      Message
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleShare}
-                      className="flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-primary px-5 py-3 text-sm font-bold text-white transition-transform active:scale-[0.98]"
-                    >
-                      <Share2 className="h-4 w-4" strokeWidth={2.2} />
-                      Share
-                    </button>
-                  )}
-                </>
               )}
             </div>
           </div>
