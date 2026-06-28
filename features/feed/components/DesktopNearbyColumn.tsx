@@ -87,7 +87,6 @@ export function DesktopNearbyColumn({ lang }: { lang: string }) {
     hasMore,
     loading: loading || loadingMore,
     onLoadMore: loadMore,
-    rootMargin: "1400px",
   });
 
   const requestLocation = useCallback(() => {

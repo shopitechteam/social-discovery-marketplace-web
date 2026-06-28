@@ -106,7 +106,6 @@ function ForYouColumn({ lang }: { lang: string }) {
     // otherwise it re-fires repeatedly and pagination spins without loading.
     loading: loading || loadingMore,
     onLoadMore: loadMore,
-    rootMargin: "1400px",
   });
 
   if (loading && items.length === 0) return <ColumnSkeleton />;
@@ -150,7 +149,6 @@ function FollowingColumn({ lang }: { lang: string }) {
     hasMore,
     loading: loading || loadingMore,
     onLoadMore: loadMore,
-    rootMargin: "1400px",
   });
 
   if (!isAuthenticated) {

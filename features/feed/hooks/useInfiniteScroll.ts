@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, RefObject } from "react";
+import { useCallback, useEffect, useRef, useState, type RefCallback } from "react";
 
 interface UseInfiniteScrollOptions {
   hasMore: boolean;
@@ -11,7 +11,7 @@ interface UseInfiniteScrollOptions {
 }
 
 interface UseInfiniteScrollResult {
-  sentinelRef: RefObject<HTMLDivElement | null>;
+  sentinelRef: RefCallback<HTMLDivElement>;
 }
 
 /**
@@ -29,15 +29,29 @@ export function useInfiniteScroll({
   rootMargin = "400px",
   enabled = true,
 }: UseInfiniteScrollOptions): UseInfiniteScrollResult {
-  const sentinelRef = useRef<HTMLDivElement>(null);
+  const [sentinelEl, setSentinelEl] = useState<HTMLDivElement | null>(null);
+  const latest = useRef({ hasMore, loading, onLoadMore });
+  const wasEnabled = useRef(enabled);
 
   useEffect(() => {
-    const el = sentinelRef.current;
+    latest.current = { hasMore, loading, onLoadMore };
+  }, [hasMore, loading, onLoadMore]);
+
+  const sentinelRef = useCallback<RefCallback<HTMLDivElement>>((node) => {
+    setSentinelEl(node);
+  }, []);
+
+  useEffect(() => {
+    const el = sentinelEl;
+    const recheckOnEnable = enabled && !wasEnabled.current;
+    wasEnabled.current = enabled;
+
     if (!el) return;
     if (!enabled) return;
 
     const maybeLoadMore = () => {
-      if (hasMore && !loading) onLoadMore();
+      const state = latest.current;
+      if (state.hasMore && !state.loading) state.onLoadMore();
     };
 
     const observer = new IntersectionObserver(
@@ -49,23 +63,24 @@ export function useInfiniteScroll({
 
     observer.observe(el);
 
-    // When a feed is hidden with display:none, the observer can be attached
-    // while the sentinel has no layout box. Re-check on the next frame after
-    // the feed becomes enabled so returning to Home can page immediately if
-    // the sentinel is already inside the load margin.
-    const frame = requestAnimationFrame(() => {
-      const rect = el.getBoundingClientRect();
-      const margin = Number.parseFloat(rootMargin) || 0;
-      if (rect.top <= window.innerHeight + margin && rect.bottom >= -margin) {
-        maybeLoadMore();
-      }
-    });
+    let frame = 0;
+    if (recheckOnEnable) {
+      // When a feed returns from display:none, re-check once. Do not run this
+      // after every page append; that would chain-load the whole feed.
+      frame = requestAnimationFrame(() => {
+        const rect = el.getBoundingClientRect();
+        const margin = Number.parseFloat(rootMargin) || 0;
+        if (rect.top <= window.innerHeight + margin && rect.bottom >= -margin) {
+          maybeLoadMore();
+        }
+      });
+    }
 
     return () => {
-      cancelAnimationFrame(frame);
+      if (frame) cancelAnimationFrame(frame);
       observer.disconnect();
     };
-  }, [enabled, hasMore, loading, onLoadMore, rootMargin]);
+  }, [enabled, rootMargin, sentinelEl]);
 
   return { sentinelRef };
 }

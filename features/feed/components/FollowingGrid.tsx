@@ -83,7 +83,6 @@ export function FollowingGrid({ lang, active = true }: Props) {
     hasMore,
     loading: loading || loadingMore,
     onLoadMore: loadMore,
-    rootMargin: "1400px",
   });
 
   if (!isAuthenticated) return <LoginWall lang={lang} />;

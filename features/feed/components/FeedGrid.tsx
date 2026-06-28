@@ -21,7 +21,6 @@ function FeedGrid({ lang, active = true }: Props) {
     hasMore,
     loading: loading || loadingMore,
     onLoadMore: loadMore,
-    rootMargin: "1400px",
   });
 
   if (loading && items.length === 0) return <FeedSkeleton />;
