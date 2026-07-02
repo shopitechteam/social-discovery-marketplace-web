@@ -33,6 +33,11 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
@@ -534,6 +539,9 @@ export function DiscoverPage({ lang }: { lang: string }) {
     null,
   );
   const [sortOpen, setSortOpen] = useState(false);
+  // Desktop uses an anchored popover instead of the bottom drawer used on
+  // mobile, so it needs its own open state.
+  const [sortPopoverOpen, setSortPopoverOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
 
   useEffect(() => {
@@ -909,19 +917,39 @@ export function DiscoverPage({ lang }: { lang: string }) {
                 <MapPin size={18} className="text-muted-foreground" />
               </button>
 
-              <button
-                type="button"
-                onClick={openSortSheet}
-                className="flex w-full items-center justify-between rounded-2xl border border-default px-4 py-3 text-left"
-              >
-                <div>
-                  <p className="text-sm font-medium text-default">Sort</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {activeSort.label}
-                  </p>
-                </div>
-                <ArrowUpDown size={18} className="text-muted-foreground" />
-              </button>
+              <Popover open={sortPopoverOpen} onOpenChange={setSortPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between rounded-2xl border border-default px-4 py-3 text-left"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-default">Sort</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {activeSort.label}
+                      </p>
+                    </div>
+                    <ArrowUpDown size={18} className="text-muted-foreground" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent
+                  align="start"
+                  className="w-[--radix-popover-trigger-width] bg-white border border-gray-200 shadow-2xl space-y-2 p-2"
+                >
+                  {SORT_OPTIONS.map((option) => (
+                    <SortOption
+                      key={option.value}
+                      label={option.label}
+                      hint={option.hint}
+                      active={sort === option.value}
+                      onClick={() => {
+                        setSort(option.value);
+                        setSortPopoverOpen(false);
+                      }}
+                    />
+                  ))}
+                </PopoverContent>
+              </Popover>
             </div>
 
             {showCategories ? (

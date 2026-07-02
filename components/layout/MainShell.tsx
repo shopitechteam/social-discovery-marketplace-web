@@ -58,7 +58,7 @@ export function MainShell({
         className={[
           "flex min-h-svh flex-col bg-app",
           "mx-auto max-w-107.5",
-          "md:mx-0 md:ml-60 md:max-w-none",
+          "md:mx-0 md:ml-[var(--side-nav-width,220px)] md:max-w-none",
         ].join(" ")}
       >
         <main

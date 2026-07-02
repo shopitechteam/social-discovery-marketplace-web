@@ -45,7 +45,7 @@ function ColumnSkeleton() {
       {[...Array(3)].map((_, i) => (
         <div
           key={i}
-          className="overflow-hidden rounded-3xl border border-default bg-elevated"
+          className="overflow-hidden rounded-2xl border border-default bg-elevated"
         >
           <PostCardSkeleton />
         </div>
@@ -66,7 +66,7 @@ function EmptyState({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-4 rounded-3xl border border-default bg-elevated px-6 py-20 text-center">
+    <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-default bg-elevated px-6 py-20 text-center">
       <div className="text-5xl">{emoji}</div>
       <div>
         <h3 className="mb-1 text-lg font-bold text-default">{title}</h3>
@@ -90,7 +90,7 @@ function DesktopPostCard({
   priority?: boolean;
 }) {
   return (
-    <div className="overflow-hidden rounded-3xl border border-default bg-elevated shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-default bg-elevated shadow-sm shadow-black/5 dark:shadow-black/25">
       <PostCard post={post} lang={lang} priority={priority} />
     </div>
   );
@@ -127,7 +127,7 @@ function ForYouColumn({ lang }: { lang: string }) {
       ))}
       <div ref={sentinelRef} className="h-1" />
       {loadingMore && (
-        <div className="overflow-hidden rounded-3xl border border-default bg-elevated">
+        <div className="overflow-hidden rounded-2xl border border-default bg-elevated">
           <PostCardSkeleton />
         </div>
       )}
@@ -205,7 +205,7 @@ function FollowingColumn({ lang }: { lang: string }) {
       ))}
       <div ref={sentinelRef} className="h-1" />
       {loadingMore && (
-        <div className="overflow-hidden rounded-3xl border border-default bg-elevated">
+        <div className="overflow-hidden rounded-2xl border border-default bg-elevated">
           <PostCardSkeleton />
         </div>
       )}
@@ -279,9 +279,8 @@ export default function DesktopFeed({ lang = "en" }: { lang?: string }) {
                 <TrendingStrip lang={lang} />
               </div>
 
-              {/* Tabs — sticky so they stay reachable while scrolling */}
-              <div className="sticky top-0 z-20 -mx-1 mb-4 bg-app/85 px-1 pb-2 pt-1 backdrop-blur-md">
-                <div className="flex items-center gap-1 rounded-full border border-default bg-elevated p-1 shadow-sm">
+              <div className="sticky top-0 z-20 -mx-1 mb-4 bg-app/90 px-1 pb-3 pt-1 backdrop-blur-md">
+                <div className="flex min-w-0 items-center gap-6">
                   {TABS.map((t) => (
                     <button
                       key={t.id}
@@ -290,16 +289,11 @@ export default function DesktopFeed({ lang = "en" }: { lang?: string }) {
                         window.scrollTo({ top: 0, behavior: "instant" });
                       }}
                       className={[
-                        "flex-1 rounded-full px-4 py-2.5 text-sm font-semibold transition-colors",
+                        "relative py-1 text-sm font-bold transition-colors",
                         tab === t.id
-                          ? "bg-primary text-white"
+                          ? "text-default after:absolute after:-bottom-1.5 after:left-0 after:h-0.5 after:w-full after:rounded-full after:bg-primary"
                           : "text-muted-foreground hover:text-default",
                       ].join(" ")}
-                      style={
-                        tab === t.id
-                          ? { backgroundColor: "rgb(var(--brand-primary))" }
-                          : undefined
-                      }
                     >
                       {t.label}
                     </button>
@@ -313,12 +307,12 @@ export default function DesktopFeed({ lang = "en" }: { lang?: string }) {
             </div>
 
             {/* ── Right rail: trending, or the inline chat panel ────────── */}
-            <aside className="hidden xl:block sticky top-6 h-[calc(100svh-3rem)] self-start overflow-hidden">
+            <aside className="sticky top-5 hidden h-[calc(100svh-2.5rem)] self-start overflow-hidden xl:block">
               {/* Trending fades out under the chat panel when one is open. */}
               <motion.div
                 animate={{ opacity: chatOpen ? 0 : 1 }}
                 transition={{ duration: 0.2, ease: "easeOut" }}
-                className="h-full"
+                className="h-full overflow-y-auto no-scroll-indicator"
                 aria-hidden={chatOpen}
               >
                 <DesktopTrendingRail lang={lang} />
@@ -328,7 +322,7 @@ export default function DesktopFeed({ lang = "en" }: { lang?: string }) {
                 lang={lang}
                 contentId={chatContentId}
                 onClose={closeChat}
-                className="absolute inset-0 h-full overflow-hidden rounded-3xl border border-default bg-elevated shadow-sm"
+                className="absolute inset-0 h-full overflow-hidden rounded-2xl border border-default bg-elevated shadow-sm"
               />
             </aside>
           </div>
