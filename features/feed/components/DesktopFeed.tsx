@@ -322,6 +322,10 @@ export default function DesktopFeed({ lang = "en" }: { lang?: string }) {
                 lang={lang}
                 contentId={chatContentId}
                 onClose={closeChat}
+                // The originating post card in the feed already shows the
+                // seller's name + avatar, so hide them in this chat header to
+                // avoid repeating the same identity right beside it.
+                hideParticipantHeader
                 className="absolute inset-0 h-full overflow-hidden rounded-2xl border border-default bg-elevated shadow-sm"
               />
             </aside>

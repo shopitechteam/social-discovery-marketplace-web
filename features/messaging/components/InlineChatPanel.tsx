@@ -14,6 +14,12 @@ interface Props {
   onClose: () => void;
   /** Extra classes for the animated container (e.g. width, border, radius). */
   className?: string;
+  /**
+   * Hide the participant's name + avatar in the chat header. Set by the desktop
+   * feed right rail, where the originating post card already shows the seller;
+   * the PDP content sheet leaves it off and keeps the usual header.
+   */
+  hideParticipantHeader?: boolean;
 }
 
 /**
@@ -22,7 +28,13 @@ interface Props {
  * slide-in so both surfaces get the same open/close motion. State (which post,
  * open/closed) is owned by the host.
  */
-export function InlineChatPanel({ lang, contentId, onClose, className }: Props) {
+export function InlineChatPanel({
+  lang,
+  contentId,
+  onClose,
+  className,
+  hideParticipantHeader,
+}: Props) {
   return (
     <AnimatePresence initial={false}>
       {contentId !== null && (
@@ -39,6 +51,7 @@ export function InlineChatPanel({ lang, contentId, onClose, className }: Props) 
             lang={lang}
             contentId={contentId}
             onClose={onClose}
+            hideParticipantHeader={hideParticipantHeader}
           />
         </motion.div>
       )}

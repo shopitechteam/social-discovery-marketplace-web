@@ -1295,6 +1295,11 @@ export function DiscoverPage({ lang }: { lang: string }) {
       >
         <SheetContent
           side="right"
+          // The location sheets stack (county → subcounty → ward), and each
+          // Radix Sheet paints its own 80% overlay — stacked, they compound
+          // into an ever-darker backdrop. Keep a single backdrop: only paint
+          // one here when this is the base layer (no filter sheet underneath).
+          overlayClassName={filterOpen ? "bg-transparent" : undefined}
           className="flex w-full max-w-none flex-col gap-0 bg-app p-0 sm:max-w-sm [&>button:last-of-type]:hidden"
         >
           <LocationSheetHeader
@@ -1360,6 +1365,9 @@ export function DiscoverPage({ lang }: { lang: string }) {
       >
         <SheetContent
           side="right"
+          // Deeper location layer — the county sheet under it already paints
+          // the backdrop, so a transparent overlay here avoids compounding it.
+          overlayClassName="bg-transparent"
           className="flex w-full max-w-none flex-col gap-0 bg-app p-0 sm:max-w-sm [&>button:last-of-type]:hidden"
         >
           <LocationSheetHeader
@@ -1428,6 +1436,9 @@ export function DiscoverPage({ lang }: { lang: string }) {
       >
         <SheetContent
           side="right"
+          // Deepest location layer — same reasoning as the subcounty sheet:
+          // keep this overlay transparent so backdrops don't compound.
+          overlayClassName="bg-transparent"
           className="flex w-full max-w-none flex-col gap-0 bg-app p-0 sm:max-w-sm [&>button:last-of-type]:hidden"
         >
           <LocationSheetHeader
