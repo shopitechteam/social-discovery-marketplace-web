@@ -29,7 +29,7 @@ const PAGE_SIZE = 10;
  * clear would silently freeze pagination forever, which is exactly the failure
  * we're fixing.
  */
-function usePaginationGuard(currentCount: number) {
+export function usePaginationGuard(currentCount: number) {
   // The cursor of the last request and the item count at that time.
   const lastCursor = useRef<string | null>(null);
   const lastCount = useRef<number>(-1);

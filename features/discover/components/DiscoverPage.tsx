@@ -45,6 +45,7 @@ import { cn } from "@/lib/utils";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { DiscoverGridCard } from "./DiscoverGridCard";
 import { useInfiniteScroll } from "@/features/feed/hooks/useInfiniteScroll";
+import { usePaginationGuard } from "@/features/feed/hooks/useFeed";
 
 type DiscoverySort =
   | "RELEVANCE"
@@ -599,6 +600,10 @@ export function DiscoverPage({ lang }: { lang: string }) {
       variables: feedVariables,
       fetchPolicy: "cache-and-network",
       nextFetchPolicy: "cache-first",
+      // The discoveryFeed field policy needs `existing` during refetches so a
+      // background page-1 refresh splices over the head of the accumulated
+      // window instead of replacing it (Apollo's default is "overwrite").
+      refetchWritePolicy: "merge",
       notifyOnNetworkStatusChange: true,
     },
   );
@@ -625,32 +630,30 @@ export function DiscoverPage({ lang }: { lang: string }) {
   const pageInfo = data?.discoveryFeed.pageInfo;
   const locationFacets = locationFacetsData?.discoveryFacets;
   const isFetchingMore = networkStatus === NetworkStatus.fetchMore;
-  // A full reload (initial load OR a filter/search/sort change refetch), as
-  // opposed to pagination. While this is in flight we show the skeleton instead
-  // of the stale results grid, so old items never sit under the loader.
-  const isReloading = loading && !isFetchingMore;
+  // A full reload with nothing to show yet: the very first load, or a
+  // filter/search/sort change whose combination has never been cached. A
+  // revisit (or a previously used filter combo) has cached items, renders them
+  // instantly, and refreshes silently in the background — no skeleton flash,
+  // no scroll loss.
+  const isReloading = loading && !isFetchingMore && items.length === 0;
 
+  const itemCount = items.length;
+  const guard = usePaginationGuard(itemCount);
   const loadMore = useCallback(() => {
     if (!pageInfo?.hasNextPage || !pageInfo.endCursor) return;
-    void fetchMore({
-      variables: {
-        ...feedVariables,
-        after: pageInfo.endCursor,
-      },
-      updateQuery(prev, { fetchMoreResult }) {
-        if (!fetchMoreResult) return prev;
-        return {
-          discoveryFeed: {
-            ...fetchMoreResult.discoveryFeed,
-            items: [
-              ...(prev.discoveryFeed?.items ?? []),
-              ...fetchMoreResult.discoveryFeed.items,
-            ],
-          },
-        };
-      },
-    });
-  }, [fetchMore, feedVariables, pageInfo]);
+    const cursor = pageInfo.endCursor;
+    // The discoveryFeed cache field policy appends + dedupes the page; the
+    // guard stops a duplicate-only page from re-requesting the same cursor
+    // forever.
+    guard(cursor, itemCount, () =>
+      fetchMore({
+        variables: {
+          ...feedVariables,
+          after: cursor,
+        },
+      }),
+    );
+  }, [fetchMore, feedVariables, pageInfo, guard, itemCount]);
 
   const { sentinelRef } = useInfiniteScroll({
     hasMore: pageInfo?.hasNextPage ?? false,
@@ -1299,7 +1302,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
           // Radix Sheet paints its own 80% overlay — stacked, they compound
           // into an ever-darker backdrop. Keep a single backdrop: only paint
           // one here when this is the base layer (no filter sheet underneath).
-          overlayClassName={filterOpen ? "bg-transparent" : undefined}
+          overlayClassName={filterOpen ? "!bg-transparent" : undefined}
           className="flex w-full max-w-none flex-col gap-0 bg-app p-0 sm:max-w-sm [&>button:last-of-type]:hidden"
         >
           <LocationSheetHeader
@@ -1367,7 +1370,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
           side="right"
           // Deeper location layer — the county sheet under it already paints
           // the backdrop, so a transparent overlay here avoids compounding it.
-          overlayClassName="bg-transparent"
+          overlayClassName="!bg-transparent"
           className="flex w-full max-w-none flex-col gap-0 bg-app p-0 sm:max-w-sm [&>button:last-of-type]:hidden"
         >
           <LocationSheetHeader
@@ -1438,7 +1441,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
           side="right"
           // Deepest location layer — same reasoning as the subcounty sheet:
           // keep this overlay transparent so backdrops don't compound.
-          overlayClassName="bg-transparent"
+          overlayClassName="!bg-transparent"
           className="flex w-full max-w-none flex-col gap-0 bg-app p-0 sm:max-w-sm [&>button:last-of-type]:hidden"
         >
           <LocationSheetHeader

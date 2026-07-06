@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Bookmark, Eye, MapPin, Play } from "lucide-react";
@@ -71,7 +72,7 @@ function StatChip({ icon: Icon, value }: { icon: typeof Eye; value: number }) {
   );
 }
 
-export function DiscoverGridCard({
+function DiscoverGridCardImpl({
   post,
   lang,
   priority,
@@ -198,3 +199,8 @@ export function DiscoverGridCard({
     </Link>
   );
 }
+
+// The Discover grid re-renders on every pagination/filter state change; memo
+// keeps already-rendered tiles from re-rendering when pages append (Apollo
+// cache items are referentially stable).
+export const DiscoverGridCard = memo(DiscoverGridCardImpl);

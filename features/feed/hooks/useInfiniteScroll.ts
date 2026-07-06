@@ -65,14 +65,10 @@ export function useInfiniteScroll({
 
     let frame = 0;
     if (recheckOnEnable) {
-      // When a feed returns from display:none, re-check once. Do not run this
-      // after every page append; that would chain-load the whole feed.
+      // When a feed returns from display:none, re-check once. The page-append
+      // recheck lives in its own effect below.
       frame = requestAnimationFrame(() => {
-        const rect = el.getBoundingClientRect();
-        const margin = Number.parseFloat(rootMargin) || 0;
-        if (rect.top <= window.innerHeight + margin && rect.bottom >= -margin) {
-          maybeLoadMore();
-        }
+        if (sentinelWithinMargin(el, rootMargin)) maybeLoadMore();
       });
     }
 
@@ -82,5 +78,31 @@ export function useInfiniteScroll({
     };
   }, [enabled, rootMargin, sentinelEl]);
 
+  // IntersectionObserver only fires on intersection CHANGES. If an appended
+  // page is shorter than rootMargin (e.g. a grid of small tiles), the sentinel
+  // never leaves the margin, no new event fires, and pagination silently
+  // stalls with hasMore still true. So when a load finishes, re-check once:
+  // still within the margin → request the next page. This chain-fills only
+  // until the sentinel clears the margin, and hasMore/loading gate it.
+  const wasLoading = useRef(loading);
+  useEffect(() => {
+    const justFinished = wasLoading.current && !loading;
+    wasLoading.current = loading;
+    if (!justFinished || !enabled || !sentinelEl) return;
+
+    const frame = requestAnimationFrame(() => {
+      const state = latest.current;
+      if (!state.hasMore || state.loading) return;
+      if (sentinelWithinMargin(sentinelEl, rootMargin)) state.onLoadMore();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [loading, enabled, rootMargin, sentinelEl]);
+
   return { sentinelRef };
+}
+
+function sentinelWithinMargin(el: HTMLElement, rootMargin: string) {
+  const rect = el.getBoundingClientRect();
+  const margin = Number.parseFloat(rootMargin) || 0;
+  return rect.top <= window.innerHeight + margin && rect.bottom >= -margin;
 }

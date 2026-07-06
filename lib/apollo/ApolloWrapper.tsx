@@ -4,7 +4,7 @@ import { ApolloLink, HttpLink, Observable } from "@apollo/client";
 import type { Reference } from "@apollo/client/cache";
 import { CombinedGraphQLErrors } from "@apollo/client/errors";
 import { ErrorLink } from "@apollo/client/link/error";
-import { setContext } from "@apollo/client/link/context";
+import { SetContextLink } from "@apollo/client/link/context";
 import {
   ApolloClient,
   ApolloNextAppProvider,
@@ -26,10 +26,7 @@ function makeClient() {
 // Tracks an in-flight refresh so concurrent requests don't trigger multiple refreshes
 let refreshPromise: Promise<string | null> | null = null;
 
-async function doRefresh(
-  httpLink: HttpLink,
-  refreshToken: string,
-): Promise<string | null> {
+async function doRefresh(refreshToken: string): Promise<string | null> {
   try {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/graphql`, {
       method: "POST",
@@ -164,7 +161,7 @@ function createClient() {
   });
 
   // Attach Authorization header from store on every request
-  const authLink = setContext((_, { headers }) => {
+  const authLink = new SetContextLink(({ headers }) => {
     const token = useAuthStore.getState().accessToken;
     return {
       headers: {
@@ -196,7 +193,7 @@ function createClient() {
     return new Observable((observer) => {
       // Deduplicate: all concurrent expired requests share one refresh call
       if (!refreshPromise) {
-        refreshPromise = doRefresh(httpLink, refreshToken).finally(() => {
+        refreshPromise = doRefresh(refreshToken).finally(() => {
           refreshPromise = null;
         });
       }
@@ -249,6 +246,29 @@ function createClient() {
               keyArgs: ["latitude", "longitude", "radiusKm", "county", "subregion"],
               merge: mergeFeedPage,
             },
+            discoveryFacets: {
+              // Facets vary with the active filters, so key on them. Two
+              // separate queries share this field with disjoint selections
+              // (categories vs counties/subCounties/wards) — merge:true unions
+              // them instead of letting one wipe the other's cached fields.
+              keyArgs: ["query", "categoryId", "countyId", "subCountyId", "wardId"],
+              merge: true,
+            },
+            discoveryFeed: {
+              // Each search/filter/sort combination is its own list; `limit`
+              // and `after` only paginate within it. Sharing mergeFeedPage
+              // means revisiting Explore restores the accumulated window
+              // instead of collapsing back to page 1.
+              keyArgs: [
+                "query",
+                "categoryId",
+                "countyId",
+                "subCountyId",
+                "wardId",
+                "sort",
+              ],
+              merge: mergeFeedPage,
+            },
             comments: {
               keyArgs: ["contentId"],
               merge(existing, incoming, { args }) {
@@ -294,6 +314,14 @@ function createClient() {
             isLikedByMe: { merge: false },
             isMyContent: { merge: false },
             creator: { merge: false },
+            // EngagementStats / ContentLocation have no IDs of their own and
+            // different queries select different subsets of their fields.
+            // Without merge:true an incoming subset REPLACES the cached object
+            // and silently drops fields (e.g. a feed query without
+            // stats.comments wiping the comment count a detail query loaded).
+            stats: { merge: true },
+            location: { merge: true },
+            price: { merge: true },
           },
         },
 

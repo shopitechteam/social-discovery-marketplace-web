@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  memo,
   useRef,
   useEffect,
   useState,
@@ -968,7 +969,7 @@ function ImageMedia({
 
 // ── Main PostCard ─────────────────────────────────────────────────────────────
 
-export function PostCard({ post, lang, priority, onMessage }: Props) {
+function PostCardImpl({ post, lang, priority, onMessage }: Props) {
   const router = useRouter();
   // Desktop feed provides an inline-chat opener via context; an explicit
   // `onMessage` prop still wins if passed directly.
@@ -1529,3 +1530,9 @@ export function PostCard({ post, lang, priority, onMessage }: Props) {
     </article>
   );
 }
+
+// Feed lists re-render on every pagination/loading-state change; memo keeps
+// the (heavy: video, observers, portals) cards from re-rendering unless their
+// own post changes. Apollo cache results are referentially stable per item,
+// so the shallow compare holds across page appends.
+export const PostCard = memo(PostCardImpl);
