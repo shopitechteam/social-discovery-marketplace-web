@@ -12,6 +12,13 @@ import { PostCardSkeleton } from "./FeedSkeleton";
 import { useNearbyFeed } from "../hooks/useFeed";
 import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
 import { useFeedPreferencesStore } from "@/stores/feedPreferences";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type PermissionState =
   | "checking"
@@ -28,7 +35,7 @@ interface Location {
   label?: string | null;
 }
 
-const RADIUS_OPTIONS = [5, 10, 25, 50, 100, 200] as const;
+const RADIUS_OPTIONS = [1, 2, 3, 5, 10, 25, 50, 100, 200] as const;
 
 function Panel({ children }: { children: React.ReactNode }) {
   return (
@@ -316,18 +323,24 @@ export function DesktopNearbyColumn({ lang }: { lang: string }) {
             </span>
           </div>
 
-          <select
-            value={nearbyRadiusKm}
-            onChange={(event) => setNearbyRadiusKm(Number(event.target.value))}
-            className="h-9 rounded-full border border-default bg-surface px-3 text-sm font-medium text-default"
-            aria-label="Nearby distance"
+          <Select
+            value={String(nearbyRadiusKm)}
+            onValueChange={(value) => setNearbyRadiusKm(Number(value))}
           >
-            {RADIUS_OPTIONS.map((km) => (
-              <option key={km} value={km}>
-                {km} km
-              </option>
-            ))}
-          </select>
+            <SelectTrigger
+              className="h-9 w-auto shrink-0 gap-1 rounded-full border-default bg-surface px-3 py-0 text-sm font-medium text-default"
+              aria-label="Nearby distance"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {RADIUS_OPTIONS.map((km) => (
+                <SelectItem key={km} value={String(km)}>
+                  {km} km
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
           <button
             onClick={requestLocation}

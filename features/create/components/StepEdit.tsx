@@ -52,7 +52,15 @@ function scrollFieldIntoView(field: string) {
   visible?.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
-export function StepEdit({ onBack }: { onBack?: () => void }) {
+export function StepEdit({
+  onBack,
+  embedded = false,
+}: {
+  onBack?: () => void;
+  /** Inside the desktop create dialog: it owns the header (back/stepper) and
+   *  the live preview panel, so this step renders only the form column. */
+  embedded?: boolean;
+}) {
   const {
     draftId,
     title,
@@ -317,6 +325,25 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [titleValue, watchCaption, tags, categoryId, location]);
+
+  // ── Live-sync to store ─────────────────────────────────────────────────────
+  // Mirror the local form state into the create store as the user types so the
+  // desktop dialog's live preview panel updates in real time. Lightly debounced
+  // to avoid a sessionStorage write per keystroke (the store is persisted).
+  // Local state never reads back from the store after mount, so no loop.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setTitle(titleValue);
+      setCaption(watchCaption ?? "");
+      setHashtags(tags);
+      const parsed = priceInput.trim() ? Number(priceInput) : 0;
+      if (Number.isFinite(parsed) && parsed >= 0) {
+        setPrice(parsed, parsed === 0);
+      }
+    }, 150);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [titleValue, watchCaption, tags, priceInput]);
 
   // ── Form validity (drives the sticky Next button's disabled state) ──────────
   // Mirrors the synchronously-checkable rules in onNext: a non-empty title, a
@@ -910,55 +937,65 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
 
   return (
     <div className="flex flex-col md:flex-row h-full flex-1">
-      {/* ── Desktop left panel — media preview ── */}
-      {desktopPreview}
+      {/* ── Desktop left panel — media preview (standalone page only; the
+             dialog shows the live preview panel instead) ── */}
+      {!embedded && desktopPreview}
 
       {/* ── Right / mobile column — header + form ── */}
       <div className="flex flex-col flex-1 h-full min-h-0">
-        {/* Header — sticky so it stays pinned while the form scrolls */}
-        <div
-          className="sticky top-0 z-50 flex items-center justify-between px-4 pt-4 pb-3 shrink-0 border-b"
-          style={{
-            backgroundColor: "rgb(var(--color-bg))",
-            borderColor: "rgb(var(--color-border))",
-          }}
-        >
-          <button
-            onClick={onBack}
-            className="flex items-center gap-1"
+        {/* Header — sticky so it stays pinned while the form scrolls.
+            Hidden when embedded: the dialog header owns back + stepper. */}
+        {!embedded && (
+          <div
+            className="sticky top-0 z-50 flex items-center justify-between px-4 pt-4 pb-3 shrink-0 border-b"
             style={{
-              color: "rgb(var(--color-text-muted))",
-              fontSize: "var(--text-sm)",
+              backgroundColor: "rgb(var(--color-bg))",
+              borderColor: "rgb(var(--color-border))",
             }}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M15 18l-6-6 6-6"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            Back
-          </button>
-          <h2
-            className="font-semibold"
-            style={{
-              fontSize: "var(--text-lg)",
-              color: "rgb(var(--color-text))",
-            }}
-          >
-            Details
-          </h2>
-          {/* Spacer balances the back button so the title stays centred.
-              The primary action now lives in the sticky bottom bar. */}
-          <span aria-hidden className="w-12" />
-        </div>
+            <button
+              onClick={onBack}
+              className="flex items-center gap-1"
+              style={{
+                color: "rgb(var(--color-text-muted))",
+                fontSize: "var(--text-sm)",
+              }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M15 18l-6-6 6-6"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              Back
+            </button>
+            <h2
+              className="font-semibold"
+              style={{
+                fontSize: "var(--text-lg)",
+                color: "rgb(var(--color-text))",
+              }}
+            >
+              Details
+            </h2>
+            {/* Spacer balances the back button so the title stays centred.
+                The primary action now lives in the sticky bottom bar. */}
+            <span aria-hidden className="w-12" />
+          </div>
+        )}
 
-        <div className="flex-1 overflow-y-auto px-4 pb-8">
-          {/* Mobile-only: media picker (dotted picker / photo grid / video) */}
-          <div className="mb-5 mt-4 md:hidden" data-field="media">
+        <div
+          className={`flex-1 overflow-y-auto pb-8 ${embedded ? "px-8" : "px-4"}`}
+        >
+          {/* Media picker (dotted picker / photo grid / video). On the
+              standalone page desktop shows it in the left panel instead. */}
+          <div
+            className={`mb-5 mt-4 ${embedded ? "" : "md:hidden"}`}
+            data-field="media"
+          >
             <MediaPicker />
             {mediaErrorBlock}
           </div>
@@ -1006,7 +1043,7 @@ export function StepEdit({ onBack }: { onBack?: () => void }) {
             required fields are valid. Replaces the old top-right button so the
             primary action sits where the thumb is. */}
         <div
-          className="sticky bottom-0 z-50 shrink-0 border-t px-4 pt-3"
+          className={`sticky bottom-0 z-50 shrink-0 border-t pt-3 ${embedded ? "px-8" : "px-4"}`}
           style={{
             backgroundColor: "rgb(var(--color-bg))",
             borderColor: "rgb(var(--color-border))",

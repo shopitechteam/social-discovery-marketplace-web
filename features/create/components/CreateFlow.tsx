@@ -11,9 +11,17 @@ import { StepOptions } from "./StepOptions";
 import { useRouter } from "next/navigation";
 import { GetDraftDocument, GetMediaAssetDocument } from "@/types/__generated__/graphql";
 import type { DraftStep, ContentType } from "@/types/__generated__/graphql";
+import { useIsDesktop } from "@/hooks/useIsDesktop";
 
 interface CreateFlowProps {
   lang: string;
+  /**
+   * True when rendered inside the desktop create dialog (DesktopCreateFlow).
+   * Embedded mode never navigates between routes — "back to picker" just
+   * resets the store so the dialog's picker step shows — and the steps hide
+   * their own headers/side panels (the dialog provides stepper + preview).
+   */
+  embedded?: boolean;
 }
 
 /** Map backend DraftStep → frontend CreateStep */
@@ -56,7 +64,7 @@ function getAssetPreviewUrl(asset: {
   );
 }
 
-export function CreateFlow({ lang }: CreateFlowProps) {
+export function CreateFlow({ lang, embedded = false }: CreateFlowProps) {
   const store = useCreateStore();
   const {
     step,
@@ -82,6 +90,22 @@ export function CreateFlow({ lang }: CreateFlowProps) {
 
   const router = useRouter();
   const apolloClient = useApolloClient();
+  const isDesktop = useIsDesktop();
+
+  // Desktop no longer uses this full-page route — the whole flow lives in the
+  // /upload dialog (DesktopCreateFlow). Redirect there; the store is
+  // session-persisted so the dialog resumes on the same step.
+  useEffect(() => {
+    if (!embedded && isDesktop) {
+      router.replace(`/${lang}/upload`);
+    }
+  }, [embedded, isDesktop, lang, router]);
+
+  /** Leave the flow back to the picker without a route change (embedded). */
+  function backToPicker() {
+    useCreateStore.getState().reset();
+    if (!embedded) router.replace(`/${lang}/upload`);
+  }
 
   // Track whether Zustand persist has finished loading from sessionStorage.
   // Until it has, we render nothing — avoids acting on stale DEFAULT_STATE.
@@ -111,7 +135,7 @@ export function CreateFlow({ lang }: CreateFlowProps) {
       // for its id instead of bouncing back to the picker.
       if (draftPending) return;
       // Nothing in session — send back to picker
-      router.replace(`/${lang}/upload`);
+      backToPicker();
       return;
     }
 
@@ -160,8 +184,7 @@ export function CreateFlow({ lang }: CreateFlowProps) {
       .then(({ data, error }) => {
         if (cancelled) return;
         if (error || !data?.draft) {
-          useCreateStore.getState().reset();
-          router.replace(`/${lang}/upload`);
+          backToPicker();
           return;
         }
 
@@ -259,20 +282,27 @@ export function CreateFlow({ lang }: CreateFlowProps) {
   // strand the user on a blank editor; send them back to the picker.
   useEffect(() => {
     if (hydrated && !draftId && !draftPending && step !== "pick") {
-      router.replace(`/${lang}/upload`);
+      backToPicker();
     }
-  }, [hydrated, draftId, draftPending, step, router, lang]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, draftId, draftPending, step]);
 
   function handleBack() {
-    // Reset draft so the picker doesn't immediately redirect back here
-    useCreateStore.getState().reset();
-    router.push(`/${lang}/feed`);
+    // Reset draft so the picker doesn't immediately redirect back here, then
+    // return to the PICKER (the previous step) — not all the way to the feed.
+    backToPicker();
   }
 
   // ── Not yet rehydrated from sessionStorage ────────────────────────────────
   if (!hydrated || restoring) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div
+        className={
+          embedded
+            ? "flex flex-1 items-center justify-center"
+            : "flex items-center justify-center min-h-screen"
+        }
+      >
         <div className="flex flex-col items-center gap-3 text-muted-foreground">
           <div className="w-8 h-8 border-2 border-current border-t-transparent rounded-full animate-spin" />
           <span className="text-sm">Restoring your draft…</span>
@@ -284,15 +314,23 @@ export function CreateFlow({ lang }: CreateFlowProps) {
   // ── Redirecting (no draftId or step === "pick") ───────────────────────────
   if (step === "pick") return null;
 
+  const steps = (
+    <>
+      {step === "media" && <StepMediaReview onBack={handleBack} />}
+      {step === "edit" && <StepEdit onBack={handleBack} embedded={embedded} />}
+      {step === "options" && <StepOptions lang={lang} embedded={embedded} />}
+    </>
+  );
+
+  // Embedded (desktop dialog): the dialog owns the chrome — just fill it.
+  if (embedded) {
+    return <div className="flex min-h-0 flex-1 flex-col">{steps}</div>;
+  }
+
+  // Mobile full-page route (desktop redirects to /upload above).
   return (
-    <div className="md:fixed md:inset-0 md:z-50 md:flex md:items-center md:justify-center md:bg-black/50 md:backdrop-blur-sm">
-      <div className="create-flow-card flex flex-col bg-app w-full md:rounded-2xl md:shadow-2xl md:overflow-hidden">
-        <div className="flex-1 flex flex-col">
-          {step === "media" && <StepMediaReview onBack={handleBack} />}
-          {step === "edit" && <StepEdit onBack={handleBack} />}
-          {step === "options" && <StepOptions lang={lang} />}
-        </div>
-      </div>
+    <div className="create-flow-card flex w-full flex-col bg-app">
+      <div className="flex-1 flex flex-col">{steps}</div>
     </div>
   );
 }
