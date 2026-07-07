@@ -11,35 +11,42 @@ export function HowItWorksSection({ dict }: { dict: Dictionary }) {
   return (
     <section
       id="how-it-works"
-      className="py-16 px-5 bg-surface border-t border-default border-b border-default"
+      className="border-y border-default bg-surface px-5 py-16 md:py-24"
     >
-      <div className="max-w-300 mx-auto">
+      <div className="mx-auto max-w-6xl">
         {/* Header */}
-        <div className="text-center mb-16">
-          <p className="text-(length:--text-sm) font-bold tracking-widest uppercase text-accent mb-3">
-            {dict.howItWorks.sectionLabel}
+        <div className="mb-12 grid gap-5 md:mb-16 md:grid-cols-[0.82fr_1fr] md:items-end">
+          <div>
+            <p className="mb-3 text-sm font-bold uppercase tracking-normal text-primary">
+              {dict.howItWorks.eyebrow}
+            </p>
+            <h2 className="max-w-2xl font-display text-[clamp(1.8rem,3.6vw,3.25rem)] font-bold leading-tight tracking-normal text-foreground">
+              {dict.howItWorks.headline}
+            </h2>
+          </div>
+          <p className="max-w-xl text-base leading-normal text-muted md:ml-auto">
+            {dict.howItWorks.intro}
           </p>
-          <h2 className="font-display font-bold text-[clamp(1.75rem,3.5vw,3rem)] leading-[1.15] text-foreground">
-            {dict.howItWorks.headline}
-          </h2>
         </div>
 
         {/* Steps */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 relative">
-          {steps.map(({ number, title, body }) => (
-            <div key={number} className="text-center px-2">
+        <div className="relative grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {steps.map(({ number, title, body }, i) => (
+            <div
+              key={number}
+              className="landing-reveal rounded-[1.25rem] border border-default bg-elevated p-6 shadow-sm"
+              style={{ animationDelay: `${i * 85}ms` }}
+            >
               {/* Step circle */}
               <div
-                className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-6 font-display font-bold text-(length:--text-base) text-white relative z-1"
+                className="relative z-1 mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-primary font-display text-(length:--text-base) font-bold text-white"
                 style={{
-                  background:
-                    "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-accent)))",
-                  boxShadow: "0 0 0 6px rgb(var(--color-bg-subtle))",
+                  background: "",
                 }}
               >
                 {number}
               </div>
-              <h3 className="font-display font-semibold text-(length:--text-lg) text-foreground mb-2.5">
+              <h3 className="mb-2.5 font-display text-(length:--text-lg) font-semibold text-foreground">
                 {title}
               </h3>
               <p className="text-(length:--text-base) text-muted leading-normal">

@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { AudienceSection } from "@/components/landing/AudienceSection";
 //import { BlogSection } from "@/components/landing/BlogSection";
+import { DeepDivesSection } from "@/components/landing/DeepDivesSection";
 import { DownloadSection } from "@/components/landing/DownloadSection";
-import { FeaturesSection } from "@/components/landing/FeaturesSection";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { HowItWorksSection } from "@/components/landing/HowItWorksSection";
+import { PillarsSection } from "@/components/landing/PillarsSection";
+import { StatsSection } from "@/components/landing/StatsSection";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { LandingNav } from "@/components/landing/LandingNav";
 //import { SupportChat } from "@/components/landing/SupportChat";
@@ -121,10 +122,11 @@ export default async function Rootpage({ params }: PageProps<"/[lang]">) {
       />
 
       <LandingNav dict={dict} lang={lang} />
-      <HeroSection dict={dict} />
-      <FeaturesSection dict={dict} />
+      <HeroSection dict={dict} lang={lang} />
+      <PillarsSection dict={dict} />
+      <StatsSection dict={dict} />
+      <DeepDivesSection dict={dict} lang={lang} />
       <HowItWorksSection dict={dict} />
-      <AudienceSection dict={dict} />
       <TestimonialsSection dict={dict} />
       {/* <BlogSection dict={dict} /> */}
       {/* Visible FAQ — strong AEO signal and matches the FAQ structured data */}
@@ -142,14 +144,14 @@ function HomeFaq() {
       id="faq"
       style={{ padding: "5rem 1.25rem", maxWidth: 760, margin: "0 auto" }}
     >
-      <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
+      <div style={{ marginBottom: "2.5rem" }}>
         <p
           style={{
             fontSize: "var(--text-sm)",
             fontWeight: 700,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "rgb(var(--brand-primary))",
+            color: "rgb(var(--color-text-muted))",
             marginBottom: "0.75rem",
           }}
         >
@@ -159,8 +161,9 @@ function HomeFaq() {
           style={{
             fontFamily: "var(--font-display)",
             fontWeight: 700,
-            fontSize: "clamp(1.75rem, 4vw, 2.75rem)",
+            fontSize: "clamp(1.6rem, 3.2vw, 2.5rem)",
             letterSpacing: 0,
+            lineHeight: 1.25,
             color: "rgb(var(--color-text))",
           }}
         >

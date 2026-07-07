@@ -65,15 +65,15 @@ export function TestimonialsSection({ dict }: { dict: Dictionary }) {
         borderBottom: "1px solid rgb(var(--color-border))",
       }}
     >
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-        <div style={{ textAlign: "center", marginBottom: "3.5rem" }}>
+      <div style={{ maxWidth: 1152, margin: "0 auto" }}>
+        <div style={{ marginBottom: "3rem" }}>
           <p
             style={{
               fontSize: "var(--text-sm)",
               fontWeight: 700,
               letterSpacing: "0.1em",
               textTransform: "uppercase",
-              color: "rgb(var(--brand-accent))",
+              color: "rgb(var(--color-text-muted))",
               marginBottom: "0.75rem",
             }}
           >
@@ -83,8 +83,10 @@ export function TestimonialsSection({ dict }: { dict: Dictionary }) {
             style={{
               fontFamily: "var(--font-display)",
               fontWeight: 700,
-              fontSize: "clamp(1.75rem, 4vw, 3rem)",
+              fontSize: "clamp(1.6rem, 3.2vw, 2.5rem)",
               letterSpacing: 0,
+              lineHeight: 1.25,
+              maxWidth: "42rem",
               color: "rgb(var(--color-text))",
             }}
           >

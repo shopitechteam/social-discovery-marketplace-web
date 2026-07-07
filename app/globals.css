@@ -2,8 +2,8 @@
 @import "tw-animate-css";
 
 :root {
-  /* Brand */
-  --brand-primary: 234, 25, 121;
+  /* Brand — space-separated channels so `rgb(var(--x) / alpha)` works */
+  --brand-primary: 234 25 121;
   --brand-secondary: 255 159 64;
   --brand-accent: 99 91 255;
 
@@ -255,6 +255,42 @@ body {
   box-shadow: var(--shadow-sm);
 }
 
+/* ── Landing marketing motion ─────────────────────────────────────────────── */
+@keyframes landing-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.landing-reveal {
+  animation: landing-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.landing-reveal-delay-1 {
+  animation-delay: 110ms;
+}
+
+.landing-hero-board {
+  transform: translateZ(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-reveal {
+    animation: none;
+  }
+
+  .landing-hero-board,
+  .landing-reveal,
+  .landing-reveal * {
+    transition: none !important;
+  }
+}
+
 /* ── Create flow card ──────────────────────────────────────────────────────
    Mobile  (default): full-height narrow page, centred at 430px.
    Desktop (≥ 768px): dialog card at 860px wide, max 90vh tall.
@@ -307,3 +343,5 @@ textarea.no-scroll-indicator::-webkit-scrollbar {
   display: none !important;
   background: transparent !important;
 }
+
+/* trigger rebuild */

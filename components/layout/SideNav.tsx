@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSyncExternalStore } from "react";
 import {
@@ -16,6 +15,7 @@ import {
 } from "lucide-react";
 import { useInboxUnreadCount } from "@/features/messaging/hooks/useUnreadCount";
 import { useAuthStore } from "@/stores/auth";
+import { Logo } from "@/components/ui/Logo";
 
 type Tab = {
   key: string;
@@ -71,21 +71,8 @@ export function SideNav({ lang = "en" }: { lang: string }) {
       style={{ width: "var(--side-nav-width, 220px)" }}
     >
       <div className="flex shrink-0 items-center px-5 pb-4 pt-5">
-        <Link
-          href={`/${lang}/feed`}
-          scroll={false}
-          className="flex items-center gap-3"
-        >
-          <Image
-            src="/assets/shopi-logo.png"
-            height={32}
-            width={32}
-            alt="Shopi"
-            className="rounded-xl"
-          />
-          <span className="text-lg font-black tracking-tight text-default">
-            Shopi
-          </span>
+        <Link href={`/${lang}/feed`} scroll={false}>
+          <Logo variant="lockup" size={32} />
         </Link>
       </div>
 

@@ -9,6 +9,7 @@ import Link from "next/link";
 import type { Dictionary } from "@/i18n/getDictionary";
 import type { Locale } from "@/i18n/config";
 import { ShopiLogo } from "@/features/auth/components/AuthIcons";
+import { Menu, Moon, Sun, X } from "lucide-react";
 
 const NAV_HREFS = ["#features", "#how-it-works", "#creators"] as const;
 
@@ -102,10 +103,7 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
           right: 0,
           zIndex: 50,
           padding: "0 1.25rem",
-          height: "70px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
+          height: "76px",
           backgroundColor: "rgb(var(--color-bg) / 0.95)",
           backdropFilter: "blur(18px)",
           WebkitBackdropFilter: "blur(18px)",
@@ -115,67 +113,78 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
           transition: "background-color 0.25s ease, border-color 0.25s ease",
         }}
       >
-        {/* Logo → home */}
-        <Link
-          href="/"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.5rem",
-            textDecoration: "none",
-          }}
-        >
-          <ShopiLogo height={34} />
-        </Link>
-
-        {/* Desktop nav links */}
+        {/* Inner container — same width as the page content so the logo
+            lines up with the hero headline, Tolstoy-style */}
         <div
-          className="landing-nav-links"
           style={{
+            maxWidth: 1152,
+            margin: "0 auto",
+            height: "100%",
             display: "flex",
             alignItems: "center",
-            gap: "2rem",
-            fontSize: "var(--text-base)",
-            fontWeight: 500,
-            color: "rgb(var(--color-text-muted))",
+            justifyContent: "space-between",
           }}
         >
-          {NAV_LINKS.map(({ label, href }) => {
-            const isActive = activeHash === href;
-            return (
-              <a
-                key={label}
-                href={sectionHref(href)}
-                onClick={(e) => handleHashLink(e, href)}
-                style={{
-                  textDecoration: "none",
-                  color: isActive
-                    ? "rgb(var(--color-text))"
-                    : "rgb(var(--color-text-muted))",
-                  transition: "color 0.15s ease",
-                  whiteSpace: "nowrap",
-                  paddingBottom: "4px",
-                  borderBottom: isActive
-                    ? "2px solid rgb(var(--brand-primary))"
-                    : "2px solid transparent",
-                }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.color = "rgb(var(--color-text))")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.color = isActive
-                    ? "rgb(var(--color-text))"
-                    : "rgb(var(--color-text-muted))")
-                }
-              >
-                {label}
-              </a>
-            );
-          })}
+        {/* Left cluster — logo + section links, Tolstoy-style */}
+        <div style={{ display: "flex", alignItems: "center", gap: "2.5rem" }}>
+          <Link
+            href="/"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              textDecoration: "none",
+            }}
+          >
+            <ShopiLogo height={32} />
+          </Link>
+
+          {/* Desktop nav links */}
+          <div
+            className="landing-nav-links"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "1.75rem",
+              fontSize: "var(--text-sm)",
+              fontWeight: 500,
+              color: "rgb(var(--color-text-muted))",
+            }}
+          >
+            {NAV_LINKS.map(({ label, href }) => {
+              const isActive = activeHash === href;
+              return (
+                <a
+                  key={label}
+                  href={sectionHref(href)}
+                  onClick={(e) => handleHashLink(e, href)}
+                  style={{
+                    textDecoration: "none",
+                    color: isActive
+                      ? "rgb(var(--color-text))"
+                      : "rgb(var(--color-text-muted))",
+                    transition: "color 0.15s ease",
+                    whiteSpace: "nowrap",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.color = "rgb(var(--color-text))")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.color = isActive
+                      ? "rgb(var(--color-text))"
+                      : "rgb(var(--color-text-muted))")
+                  }
+                >
+                  {label}
+                </a>
+              );
+            })}
+          </div>
         </div>
 
         {/* Right actions */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.65rem" }}>
+          {/* Sign in — quiet text link */}
           {/* Theme toggle */}
           <div style={{ width: 36, height: 36 }}>
             {hydrated && (
@@ -196,26 +205,42 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
                 }}
               >
                 {resolvedTheme === "dark" ? (
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="4" />
-                    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
-                  </svg>
+                  <Sun size={17} />
                 ) : (
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                  </svg>
+                  <Moon size={17} />
                 )}
               </button>
             )}
           </div>
 
-          {/* Desktop CTA */}
+          {/* Sign in — quiet text link */}
           <Link
-            href="/feed"
-            className="btn-primary landing-nav-cta"
+            href={`${homeBase}/auth/login`}
+            className="landing-nav-cta"
             style={{
-              padding: "0.5rem 1.25rem",
+              padding: "0.5rem 0.75rem",
               fontSize: "var(--text-sm)",
+              fontWeight: 500,
+              color: "rgb(var(--color-text-muted))",
+              textDecoration: "none",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {dict?.auth.login.submit ?? "Sign in"}
+          </Link>
+
+          {/* Desktop CTA pair — outline + solid, Tolstoy-style */}
+          <Link
+            href={`${homeBase}/feed`}
+            className="landing-nav-cta"
+            style={{
+              padding: "0.5rem 1.1rem",
+              fontSize: "var(--text-sm)",
+              fontWeight: 600,
+              borderRadius: 9999,
+              border: "1px solid rgb(var(--color-border))",
+              background: "rgb(var(--color-bg-elevated))",
+              color: "rgb(var(--color-text))",
               textDecoration: "none",
               display: "inline-flex",
               alignItems: "center",
@@ -223,6 +248,24 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
             }}
           >
             {dict?.common.openFeed ?? "Open the feed"}
+          </Link>
+          <Link
+            href={`${homeBase}/upload`}
+            className="landing-nav-cta"
+            style={{
+              padding: "0.5rem 1.1rem",
+              fontSize: "var(--text-sm)",
+              fontWeight: 600,
+              borderRadius: 9999,
+              background: "rgb(var(--color-text))",
+              color: "rgb(var(--color-bg))",
+              textDecoration: "none",
+              display: "inline-flex",
+              alignItems: "center",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {dict?.landing.hero.ctaSecondary ?? "Start selling"}
           </Link>
 
           {/* Language switcher */}
@@ -249,42 +292,9 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
               flexShrink: 0,
             }}
           >
-            <span
-              style={{
-                display: "block",
-                width: 16,
-                height: 2,
-                borderRadius: 1,
-                background: "rgb(var(--color-text))",
-                transition: "transform 0.2s ease, opacity 0.2s ease",
-                transform: menuOpen ? "translateY(6px) rotate(45deg)" : "none",
-              }}
-            />
-            <span
-              style={{
-                display: "block",
-                width: 16,
-                height: 2,
-                borderRadius: 1,
-                background: "rgb(var(--color-text))",
-                opacity: menuOpen ? 0 : 1,
-                transition: "opacity 0.2s ease",
-              }}
-            />
-            <span
-              style={{
-                display: "block",
-                width: 16,
-                height: 2,
-                borderRadius: 1,
-                background: "rgb(var(--color-text))",
-                transition: "transform 0.2s ease, opacity 0.2s ease",
-                transform: menuOpen
-                  ? "translateY(-6px) rotate(-45deg)"
-                  : "none",
-              }}
-            />
+            {menuOpen ? <X size={18} /> : <Menu size={18} />}
           </button>
+        </div>
         </div>
       </nav>
 
@@ -293,7 +303,7 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
         <div
           style={{
             position: "fixed",
-            top: "60px",
+            top: "76px",
             left: 0,
             right: 0,
             bottom: 0,
@@ -311,7 +321,7 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
           {NAV_LINKS.map(({ label, href }) => (
             <a
               key={label}
-              href={pathname === "/" ? href : `/${href}`}
+              href={sectionHref(href)}
               onClick={(e) => handleHashLink(e, href)}
               style={{
                 padding: "0.65rem 0",
@@ -336,7 +346,7 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
             }}
           >
             <Link
-              href="/feed"
+              href={`${homeBase}/feed`}
               onClick={() => setMenuOpen(false)}
               style={{
                 display: "flex",

@@ -8,7 +8,6 @@
     "openFeed": "Fungua malisho",
     "startFree": "Anza bure"
   },
-
   "nav": {
     "features": "Vipengele",
     "howItWorks": "Jinsi Inavyofanya Kazi",
@@ -18,7 +17,6 @@
     "toggleTheme": "Badilisha mandhari",
     "language": "Lugha"
   },
-
   "hero": {
     "badge": "Malisho ya matangazo ya kijamii Kenya",
     "headline": "Soko la kijamii la Kenya, limepangwa kulingana na unachopenda.",
@@ -27,7 +25,6 @@
     "ctaExplore": "Fungua malisho",
     "ctaHowItWorks": "Ona jinsi inavyofanya kazi"
   },
-
   "features": {
     "sectionLabel": "Kwa nini Shopi",
     "headline": "Kipate karibu nawe. Mtumie muuzaji ujumbe. Mkubaliane wenyewe.",
@@ -58,10 +55,11 @@
       }
     }
   },
-
   "howItWorks": {
     "sectionLabel": "Jinsi inavyofanya kazi",
+    "eyebrow": "Mtiririko wa dili ya moja kwa moja",
     "headline": "Biashara ya karibu bila njia ndefu.",
+    "intro": "Fungua feed, pata kilicho karibu, mtumie muuzaji ujumbe, kisha mkubaliane moja kwa moja.",
     "steps": {
       "1": {
         "title": "Fungua malisho",
@@ -81,7 +79,6 @@
       }
     }
   },
-
   "audience": {
     "sectionLabel": "Ni kwa ajili ya nani",
     "headline": "Kwa watu wanaonunua na kuuza Kenya kila siku.",
@@ -98,19 +95,16 @@
       "cta": "Anza kuuza bure"
     }
   },
-
   "testimonials": {
     "sectionLabel": "Matumizi ya karibu",
     "headline": "Imejengwa kwa maisha ya kununua na kuuza Kenya."
   },
-
   "download": {
     "sectionLabel": "Anza kuangalia",
     "headline": "Kitu kizuri kinaweza kuwa scroll chache mbele.",
     "body": "Fungua feed uone watu wa karibu wanauza nini leo. Hakuna checkout, hakuna commission, hakuna pressure ya kufungua account kabla hujaanza kubrowse.",
     "webCta": "Fungua malisho →"
   },
-
   "footer": {
     "tagline": "Feed ya soko la karibu Kenya. Kigundue, mtumie muuzaji ujumbe, mkubaliane moja kwa moja.",
     "links": {
@@ -120,7 +114,6 @@
     },
     "copyright": "© {year} Shopi. Haki zote zimehifadhiwa."
   },
-
   "support": {
     "agentName": "Amina · Msaada wa Shopi",
     "agentSubtitle": "Hujibu kawaida ndani ya dakika chache",
@@ -132,7 +125,6 @@
     "minimize": "Punguza mazungumzo",
     "send": "Tuma ujumbe"
   },
-
   "auth": {
     "login": {
       "title": "Karibu tena",
@@ -162,12 +154,92 @@
       "backToLogin": "Rudi kuingia"
     }
   },
-
   "routes": {
     "feed": "Nyumbani",
     "explore": "Chunguza",
     "notifications": "Kikasha",
     "profile": "Wasifu Wangu",
     "upload": "Unda Chapisho"
+  },
+  "landing": {
+    "hero": {
+      "headline": "Soko la kijamii la Kenya.",
+      "subheadline": "Teleza kwenye feed ya vitu halisi vinavyouzwa karibu nawe — magari, simu, samani, mazao freshi — kisha mtumie muuzaji ujumbe moja kwa moja. Shopi haichukui commission na haishiki pesa kamwe.",
+      "ctaPrimary": "Fungua feed",
+      "ctaSecondary": "Anza kuuza",
+      "reassurance": "Bure kubrowse · Bure kupost · Hakuna commission"
+    },
+    "pillars": {
+      "feed": {
+        "title": "Feed",
+        "tagline": "Vitu halisi vinavyouzwa, karibu nawe"
+      },
+      "chat": {
+        "title": "Chat ya moja kwa moja",
+        "tagline": "Ongea na muuzaji, si checkout"
+      },
+      "sell": {
+        "title": "Uza kwa sekunde",
+        "tagline": "Post mara moja — wanunuzi walio karibu wanaiona"
+      }
+    },
+    "stats": {
+      "eyebrow": "Imejengwa kwa uaminifu wa karibu",
+      "headline": "Kwa nini wanunuzi na wauzaji wanachagua Shopi",
+      "intro": "Shopi hupunguza hatua kutoka “nimekiona” hadi “nimemtumia muuzaji ujumbe”: discovery ya karibu, media halisi, chat ya moja kwa moja, na hakuna checkout ya Shopi katikati.",
+      "zero": {
+        "figure": "KES 0",
+        "label": "Commission au ada",
+        "body": "Shopi haiingii ndani ya biashara yako. Wauzaji wanabaki na bei yao, na wanunuzi wanamlipa muuzaji — si sisi."
+      },
+      "counties": {
+        "figure": "47",
+        "label": "Kaunti, feed moja",
+        "body": "Post za karibu zinakuja kwanza — Nairobi, Mombasa, Kisumu, Meru na kila mji katikati."
+      },
+      "chat": {
+        "figure": "1",
+        "label": "Chat kutoka kupata hadi dili",
+        "body": "Iione, mtumie muuzaji ujumbe, mkubaliane bei na mahali pa kuchukua. Hakuna cart, hakuna checkout, hakuna dalali."
+      }
+    },
+    "dives": {
+      "feed": {
+        "eyebrow": "Feed",
+        "title": "Feed inayojifunza unachopenda.",
+        "body": "Search inafanya kazi ukijua maneno kamili. Feed ni ya zile nyakati zingine: unateleza na kukutana na sofa, simu safi, gari ya mtumba au mazao freshi ambayo hukupanga kuyatafuta.",
+        "bullets": [
+          "Wauzaji wa karibu wanaonekana kwanza, kuanzia mtaa wako",
+          "Post za video na picha zikiwa na bei halisi na mahali",
+          "Inapangwa na unachofungua, kuhifadhi na ku-message — si matangazo"
+        ],
+        "ctaPrimary": "Fungua feed",
+        "ctaSecondary": "Ona jinsi inavyofanya kazi"
+      },
+      "chat": {
+        "eyebrow": "Chat ya moja kwa moja",
+        "title": "Hakuna checkout. Ni mazungumzo tu.",
+        "body": "Hakuna cart, escrow wala wakala wa Shopi anayeshika pesa. Bonyeza ku-chat, omba picha zaidi, jadiliana bei, na mchague mahali pa kukutana au jinsi ya kufikisha — dili inabaki kati yenu.",
+        "bullets": [
+          "Mtumie muuzaji ujumbe kwa mbonyezo mmoja",
+          "Kubalianeni bei, mahali pa kuchukua na malipo moja kwa moja",
+          "Shopi haishiki pesa yako kamwe"
+        ],
+        "ctaPrimary": "Fungua feed",
+        "ctaSecondary": "Ona jinsi inavyofanya kazi"
+      },
+      "sell": {
+        "eyebrow": "Uza kwenye Shopi",
+        "title": "Post kwa sekunde. Uza karibu nawe.",
+        "body": "Rekodi unachouza, weka bei na mahali, kisha post. Wanunuzi walio karibu wanaipata kwenye feed na kukutumia ujumbe moja kwa moja — hakuna website, hakuna kuseti checkout, hakuna commission inayotolewa kwenye mauzo yako.",
+        "bullets": [
+          "Bure kuweka bidhaa, kila wakati",
+          "Share post ile ile moja kwa moja hadi TikTok",
+          "Baki na kila shilingi ya bei yako"
+        ],
+        "ctaPrimary": "Anza kuuza",
+        "ctaSecondary": "Ona feed kwanza"
+      }
+    }
   }
 }
