@@ -42,8 +42,8 @@ export function DeepDivesSection({
   ];
 
   return (
-    <section className="px-5">
-      <div className="mx-auto flex max-w-6xl flex-col gap-8 md:gap-14">
+    <section className="px-[var(--landing-page-x)]">
+      <div className="mx-auto flex max-w-[var(--landing-page-max)] flex-col gap-8 md:gap-14">
         {dives.map(({ id, copy, mockup, tint, primaryHref }, i) => (
           <article
             key={id}

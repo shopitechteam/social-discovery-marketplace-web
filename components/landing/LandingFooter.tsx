@@ -12,7 +12,7 @@ export function LandingFooter({ dict }: { dict?: Dictionary }) {
     <footer
       style={{
         borderTop: "1px solid rgb(var(--color-border))",
-        padding: "3rem 1.25rem 2rem",
+        padding: "3rem var(--landing-page-x) 2rem",
         background: "rgb(var(--color-bg-subtle))",
       }}
     >
@@ -187,7 +187,7 @@ export function LandingFooter({ dict }: { dict?: Dictionary }) {
       {/* Bottom bar */}
       <div
         style={{
-          maxWidth: "1200px",
+          maxWidth: "var(--landing-page-max)",
           margin: "0 auto",
           paddingTop: "1.5rem",
           borderTop: "1px solid rgb(var(--color-border))",
@@ -210,7 +210,7 @@ export function LandingFooter({ dict }: { dict?: Dictionary }) {
 
       <style>{`
         .footer-grid {
-          max-width: 1200px;
+          max-width: var(--landing-page-max);
           margin: 0 auto 3rem;
           display: grid;
           grid-template-columns: 1fr;

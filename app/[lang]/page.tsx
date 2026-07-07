@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { CSSProperties } from "react";
 //import { BlogSection } from "@/components/landing/BlogSection";
 import { DeepDivesSection } from "@/components/landing/DeepDivesSection";
 import { DownloadSection } from "@/components/landing/DownloadSection";
@@ -107,7 +108,16 @@ export default async function Rootpage({ params }: PageProps<"/[lang]">) {
   const dict = await getDictionary(lang);
 
   return (
-    <div>
+    <div
+      className="lg:px-30"
+      style={
+        {
+          // Adjust these two values to tune every landing section at once.
+          "--landing-page-x": "clamp(0.875rem, 1.2vw, 1.25rem)",
+          "--landing-page-max": "1400px",
+        } as CSSProperties
+      }
+    >
       {/* Structured data — Organization, WebSite (+search), marketplace app, FAQ */}
       <script
         type="application/ld+json"
@@ -142,7 +152,11 @@ function HomeFaq() {
   return (
     <section
       id="faq"
-      style={{ padding: "5rem 1.25rem", maxWidth: 760, margin: "0 auto" }}
+      style={{
+        padding: "5rem var(--landing-page-x)",
+        maxWidth: "min(760px, var(--landing-page-max))",
+        margin: "0 auto",
+      }}
     >
       <div style={{ marginBottom: "2.5rem" }}>
         <p

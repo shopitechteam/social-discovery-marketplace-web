@@ -59,13 +59,13 @@ export function TestimonialsSection({ dict }: { dict: Dictionary }) {
   return (
     <section
       style={{
-        padding: "5rem 1.25rem",
+        padding: "5rem var(--landing-page-x)",
         background: "rgb(var(--color-bg-subtle))",
         borderTop: "1px solid rgb(var(--color-border))",
         borderBottom: "1px solid rgb(var(--color-border))",
       }}
     >
-      <div style={{ maxWidth: 1152, margin: "0 auto" }}>
+      <div style={{ maxWidth: "var(--landing-page-max)", margin: "0 auto" }}>
         <div style={{ marginBottom: "3rem" }}>
           <p
             style={{

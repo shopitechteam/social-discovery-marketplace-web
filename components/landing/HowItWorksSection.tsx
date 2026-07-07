@@ -11,9 +11,9 @@ export function HowItWorksSection({ dict }: { dict: Dictionary }) {
   return (
     <section
       id="how-it-works"
-      className="border-y border-default bg-surface px-5 py-14 md:py-20"
+      className="border-y border-default bg-surface px-[var(--landing-page-x)] py-14 md:py-20"
     >
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-[var(--landing-page-max)]">
         {/* Header */}
         <div className="mb-10 max-w-3xl md:mb-12">
           <p className="mb-3 text-xs font-bold uppercase tracking-normal text-primary md:text-sm">

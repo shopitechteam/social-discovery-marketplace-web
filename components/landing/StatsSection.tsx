@@ -9,8 +9,8 @@ export function StatsSection({ dict }: { dict: Dictionary }) {
   const cards = [t.zero, t.counties, t.chat];
 
   return (
-    <section className="px-5 py-14 md:py-20">
-      <div className="mx-auto max-w-6xl">
+    <section className="px-[var(--landing-page-x)] py-14 md:py-20">
+      <div className="mx-auto max-w-[var(--landing-page-max)]">
         <div className="max-w-3xl">
           <p className="text-xs font-bold uppercase tracking-normal text-primary md:text-sm">
             {t.eyebrow}

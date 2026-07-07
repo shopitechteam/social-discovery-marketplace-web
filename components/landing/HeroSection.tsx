@@ -16,9 +16,9 @@ export function HeroSection({
   return (
     <section
       id="hero"
-      className="relative overflow-hidden px-5 pb-12 pt-28 md:pb-20 md:pt-36"
+      className="relative overflow-hidden px-[var(--landing-page-x)] pb-12 pt-28 md:pb-20 md:pt-36"
     >
-      <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1fr_0.78fr]">
+      <div className="mx-auto grid max-w-[var(--landing-page-max)] items-center gap-10 lg:grid-cols-[1fr_0.78fr]">
         <div className="landing-reveal">
           <h1 className="max-w-4xl text-balance font-display text-[clamp(2.45rem,5.2vw,4.85rem)] font-semibold leading-[1.02] tracking-normal text-default">
             {t.headline}

@@ -37,8 +37,11 @@ export function PillarsSection({ dict }: { dict: Dictionary }) {
   ];
 
   return (
-    <section id="features" className="px-5 pb-18 md:pb-24">
-      <div className="mx-auto grid max-w-6xl gap-5 md:grid-cols-3">
+    <section
+      id="features"
+      className="px-[var(--landing-page-x)] pb-18 md:pb-24"
+    >
+      <div className="mx-auto grid max-w-[var(--landing-page-max)] gap-5 md:grid-cols-3">
         {cards.map(({ key, title, tagline, icon: Icon, proof, tint }, i) => (
           <article
             key={key}

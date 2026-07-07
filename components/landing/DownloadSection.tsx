@@ -8,8 +8,8 @@ export function DownloadSection({ dict }: { dict: Dictionary }) {
     <section
       id="download"
       style={{
-        padding: "5rem 1.25rem",
-        maxWidth: 1100,
+        padding: "5rem var(--landing-page-x)",
+        maxWidth: "var(--landing-page-max)",
         margin: "0 auto",
         textAlign: "center",
       }}

@@ -95,14 +95,14 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
   return (
     <>
       <nav
-        className="z-50"
+        className="z-50 lg:px-30 px-4"
         style={{
           position: "fixed",
           top: 0,
           left: 0,
           right: 0,
           zIndex: 50,
-          padding: "0 1.25rem",
+          //padding: "0 var(--landing-page-x)",
           height: "76px",
           backgroundColor: "rgb(var(--color-bg) / 0.95)",
           backdropFilter: "blur(18px)",
@@ -117,7 +117,7 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
             lines up with the hero headline, Tolstoy-style */}
         <div
           style={{
-            maxWidth: 1152,
+            maxWidth: "var(--landing-page-max)",
             margin: "0 auto",
             height: "100%",
             display: "flex",
@@ -125,176 +125,178 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
             justifyContent: "space-between",
           }}
         >
-        {/* Left cluster — logo + section links, Tolstoy-style */}
-        <div style={{ display: "flex", alignItems: "center", gap: "2.5rem" }}>
-          <Link
-            href="/"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              textDecoration: "none",
-            }}
-          >
-            <ShopiLogo height={32} />
-          </Link>
+          {/* Left cluster — logo + section links, Tolstoy-style */}
+          <div style={{ display: "flex", alignItems: "center", gap: "2.5rem" }}>
+            <Link
+              href="/"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                textDecoration: "none",
+              }}
+            >
+              <ShopiLogo height={32} />
+            </Link>
 
-          {/* Desktop nav links */}
+            {/* Desktop nav links */}
+            <div
+              className="landing-nav-links"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "1.75rem",
+                fontSize: "var(--text-sm)",
+                fontWeight: 500,
+                color: "rgb(var(--color-text-muted))",
+              }}
+            >
+              {NAV_LINKS.map(({ label, href }) => {
+                const isActive = activeHash === href;
+                return (
+                  <a
+                    key={label}
+                    href={sectionHref(href)}
+                    onClick={(e) => handleHashLink(e, href)}
+                    style={{
+                      textDecoration: "none",
+                      color: isActive
+                        ? "rgb(var(--color-text))"
+                        : "rgb(var(--color-text-muted))",
+                      transition: "color 0.15s ease",
+                      whiteSpace: "nowrap",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.color = "rgb(var(--color-text))")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.color = isActive
+                        ? "rgb(var(--color-text))"
+                        : "rgb(var(--color-text-muted))")
+                    }
+                  >
+                    {label}
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Right actions */}
           <div
-            className="landing-nav-links"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "1.75rem",
-              fontSize: "var(--text-sm)",
-              fontWeight: 500,
-              color: "rgb(var(--color-text-muted))",
-            }}
+            style={{ display: "flex", alignItems: "center", gap: "0.65rem" }}
           >
-            {NAV_LINKS.map(({ label, href }) => {
-              const isActive = activeHash === href;
-              return (
-                <a
-                  key={label}
-                  href={sectionHref(href)}
-                  onClick={(e) => handleHashLink(e, href)}
+            {/* Sign in — quiet text link */}
+            {/* Theme toggle */}
+            <div style={{ width: 36, height: 36 }}>
+              {hydrated && (
+                <button
+                  onClick={toggleTheme}
+                  aria-label="Toggle theme"
                   style={{
-                    textDecoration: "none",
-                    color: isActive
-                      ? "rgb(var(--color-text))"
-                      : "rgb(var(--color-text-muted))",
-                    transition: "color 0.15s ease",
-                    whiteSpace: "nowrap",
+                    width: 36,
+                    height: 36,
+                    borderRadius: "var(--radius-full)",
+                    border: "1px solid rgb(var(--color-border))",
+                    background: "rgb(var(--color-bg-elevated))",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "rgb(var(--color-text))",
                   }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.color = "rgb(var(--color-text))")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.color = isActive
-                      ? "rgb(var(--color-text))"
-                      : "rgb(var(--color-text-muted))")
-                  }
                 >
-                  {label}
-                </a>
-              );
-            })}
+                  {resolvedTheme === "dark" ? (
+                    <Sun size={17} />
+                  ) : (
+                    <Moon size={17} />
+                  )}
+                </button>
+              )}
+            </div>
+
+            {/* Sign in — quiet text link */}
+            <Link
+              href={`${homeBase}/auth/login`}
+              className="landing-nav-cta"
+              style={{
+                padding: "0.5rem 0.75rem",
+                fontSize: "var(--text-sm)",
+                fontWeight: 500,
+                color: "rgb(var(--color-text-muted))",
+                textDecoration: "none",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {dict?.auth.login.submit ?? "Sign in"}
+            </Link>
+
+            {/* Desktop CTA pair — outline + solid, Tolstoy-style */}
+            <Link
+              href={`${homeBase}/feed`}
+              className="landing-nav-cta"
+              style={{
+                padding: "0.5rem 1.1rem",
+                fontSize: "var(--text-sm)",
+                fontWeight: 600,
+                borderRadius: 9999,
+                border: "1px solid rgb(var(--color-border))",
+                background: "rgb(var(--color-bg-elevated))",
+                color: "rgb(var(--color-text))",
+                textDecoration: "none",
+                display: "inline-flex",
+                alignItems: "center",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {dict?.common.openFeed ?? "Open the feed"}
+            </Link>
+            <Link
+              href={`${homeBase}/upload`}
+              className="landing-nav-cta"
+              style={{
+                padding: "0.5rem 1.1rem",
+                fontSize: "var(--text-sm)",
+                fontWeight: 600,
+                borderRadius: 9999,
+                background: "rgb(var(--color-text))",
+                color: "rgb(var(--color-bg))",
+                textDecoration: "none",
+                display: "inline-flex",
+                alignItems: "center",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {dict?.landing.hero.ctaSecondary ?? "Start selling"}
+            </Link>
+
+            {/* Language switcher */}
+            {/* <LanguageSwitcher current={lang} /> */}
+
+            {/* Hamburger — mobile only */}
+            <button
+              className="landing-hamburger"
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
+              onClick={() => setMenuOpen((v) => !v)}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: "var(--radius-sm)",
+                border: "1px solid rgb(var(--color-border))",
+                background: "rgb(var(--color-bg-elevated))",
+                cursor: "pointer",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 4,
+                padding: 0,
+                flexShrink: 0,
+              }}
+            >
+              {menuOpen ? <X size={18} /> : <Menu size={18} />}
+            </button>
           </div>
-        </div>
-
-        {/* Right actions */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.65rem" }}>
-          {/* Sign in — quiet text link */}
-          {/* Theme toggle */}
-          <div style={{ width: 36, height: 36 }}>
-            {hydrated && (
-              <button
-                onClick={toggleTheme}
-                aria-label="Toggle theme"
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: "var(--radius-full)",
-                  border: "1px solid rgb(var(--color-border))",
-                  background: "rgb(var(--color-bg-elevated))",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "rgb(var(--color-text))",
-                }}
-              >
-                {resolvedTheme === "dark" ? (
-                  <Sun size={17} />
-                ) : (
-                  <Moon size={17} />
-                )}
-              </button>
-            )}
-          </div>
-
-          {/* Sign in — quiet text link */}
-          <Link
-            href={`${homeBase}/auth/login`}
-            className="landing-nav-cta"
-            style={{
-              padding: "0.5rem 0.75rem",
-              fontSize: "var(--text-sm)",
-              fontWeight: 500,
-              color: "rgb(var(--color-text-muted))",
-              textDecoration: "none",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {dict?.auth.login.submit ?? "Sign in"}
-          </Link>
-
-          {/* Desktop CTA pair — outline + solid, Tolstoy-style */}
-          <Link
-            href={`${homeBase}/feed`}
-            className="landing-nav-cta"
-            style={{
-              padding: "0.5rem 1.1rem",
-              fontSize: "var(--text-sm)",
-              fontWeight: 600,
-              borderRadius: 9999,
-              border: "1px solid rgb(var(--color-border))",
-              background: "rgb(var(--color-bg-elevated))",
-              color: "rgb(var(--color-text))",
-              textDecoration: "none",
-              display: "inline-flex",
-              alignItems: "center",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {dict?.common.openFeed ?? "Open the feed"}
-          </Link>
-          <Link
-            href={`${homeBase}/upload`}
-            className="landing-nav-cta"
-            style={{
-              padding: "0.5rem 1.1rem",
-              fontSize: "var(--text-sm)",
-              fontWeight: 600,
-              borderRadius: 9999,
-              background: "rgb(var(--color-text))",
-              color: "rgb(var(--color-bg))",
-              textDecoration: "none",
-              display: "inline-flex",
-              alignItems: "center",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {dict?.landing.hero.ctaSecondary ?? "Start selling"}
-          </Link>
-
-          {/* Language switcher */}
-          {/* <LanguageSwitcher current={lang} /> */}
-
-          {/* Hamburger — mobile only */}
-          <button
-            className="landing-hamburger"
-            aria-label={menuOpen ? "Close menu" : "Open menu"}
-            onClick={() => setMenuOpen((v) => !v)}
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: "var(--radius-sm)",
-              border: "1px solid rgb(var(--color-border))",
-              background: "rgb(var(--color-bg-elevated))",
-              cursor: "pointer",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 4,
-              padding: 0,
-              flexShrink: 0,
-            }}
-          >
-            {menuOpen ? <X size={18} /> : <Menu size={18} />}
-          </button>
-        </div>
         </div>
       </nav>
 
@@ -313,7 +315,7 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
             WebkitBackdropFilter: "blur(18px)",
             display: "flex",
             flexDirection: "column",
-            padding: "1.25rem 1.25rem",
+            padding: "1.25rem var(--landing-page-x)",
             gap: "0",
             overflowY: "auto",
           }}
