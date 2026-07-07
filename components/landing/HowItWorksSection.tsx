@@ -11,20 +11,18 @@ export function HowItWorksSection({ dict }: { dict: Dictionary }) {
   return (
     <section
       id="how-it-works"
-      className="border-y border-default bg-surface px-5 py-16 md:py-24"
+      className="border-y border-default bg-surface px-5 py-14 md:py-20"
     >
       <div className="mx-auto max-w-6xl">
         {/* Header */}
-        <div className="mb-12 grid gap-5 md:mb-16 md:grid-cols-[0.82fr_1fr] md:items-end">
-          <div>
-            <p className="mb-3 text-sm font-bold uppercase tracking-normal text-primary">
-              {dict.howItWorks.eyebrow}
-            </p>
-            <h2 className="max-w-2xl font-display text-[clamp(1.8rem,3.6vw,3.25rem)] font-bold leading-tight tracking-normal text-foreground">
-              {dict.howItWorks.headline}
-            </h2>
-          </div>
-          <p className="max-w-xl text-base leading-normal text-muted md:ml-auto">
+        <div className="mb-10 max-w-3xl md:mb-12">
+          <p className="mb-3 text-xs font-bold uppercase tracking-normal text-primary md:text-sm">
+            {dict.howItWorks.eyebrow}
+          </p>
+          <h2 className="font-display text-[clamp(1.65rem,2.7vw,2.45rem)] font-bold leading-tight tracking-normal text-foreground">
+            {dict.howItWorks.headline}
+          </h2>
+          <p className="mt-4 max-w-2xl text-base leading-normal text-muted">
             {dict.howItWorks.intro}
           </p>
         </div>
@@ -34,7 +32,7 @@ export function HowItWorksSection({ dict }: { dict: Dictionary }) {
           {steps.map(({ number, title, body }, i) => (
             <div
               key={number}
-              className="landing-reveal rounded-[1.25rem] border border-default bg-elevated p-6 shadow-sm"
+              className="landing-reveal rounded-[1.1rem] border border-default bg-elevated p-5 shadow-sm"
               style={{ animationDelay: `${i * 85}ms` }}
             >
               {/* Step circle */}

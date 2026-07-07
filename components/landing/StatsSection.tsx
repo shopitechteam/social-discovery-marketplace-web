@@ -9,29 +9,27 @@ export function StatsSection({ dict }: { dict: Dictionary }) {
   const cards = [t.zero, t.counties, t.chat];
 
   return (
-    <section className="px-5 py-16 md:py-24">
+    <section className="px-5 py-14 md:py-20">
       <div className="mx-auto max-w-6xl">
-        <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-end">
-          <div>
-            <p className="text-sm font-bold uppercase tracking-normal text-primary">
-              {t.eyebrow}
-            </p>
-            <h2 className="mt-3 max-w-2xl text-balance font-display text-[clamp(1.8rem,3.8vw,3.25rem)] font-bold leading-tight tracking-normal text-default">
-              {t.headline}
-            </h2>
-          </div>
-          <p className="max-w-xl text-base leading-normal text-muted lg:ml-auto">
+        <div className="max-w-3xl">
+          <p className="text-xs font-bold uppercase tracking-normal text-primary md:text-sm">
+            {t.eyebrow}
+          </p>
+          <h2 className="mt-3 text-balance font-display text-[clamp(1.65rem,2.7vw,2.45rem)] font-bold leading-tight tracking-normal text-default">
+            {t.headline}
+          </h2>
+          <p className="mt-4 max-w-2xl text-base leading-normal text-muted">
             {t.intro}
           </p>
         </div>
-        <div className="mt-10 grid gap-5 md:grid-cols-3">
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
           {cards.map(({ figure, label, body }, i) => (
             <div
               key={label}
-              className="landing-reveal rounded-[1.35rem] border border-default bg-elevated p-7 shadow-sm"
+              className="landing-reveal rounded-[1.1rem] border border-default bg-elevated p-5 shadow-sm"
               style={{ animationDelay: `${i * 90}ms` }}
             >
-              <p className="font-display text-[2.75rem] font-bold leading-none tracking-normal text-default tabular-nums">
+              <p className="font-display text-[2.15rem] font-bold leading-none tracking-normal text-default tabular-nums">
                 {figure}
               </p>
               <p className="mt-2 text-md font-semibold text-default">{label}</p>
