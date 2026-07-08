@@ -4,13 +4,15 @@ import type { Dictionary } from "@/i18n/getDictionary";
  * Honest structural facts as big-numeral outlined cards — no invented
  * metrics, just how Shopi is built: free, local-first, direct.
  */
+const REVEAL_DELAYS = ["", "[animation-delay:90ms]", "[animation-delay:180ms]"];
+
 export function StatsSection({ dict }: { dict: Dictionary }) {
   const t = dict.landing.stats;
   const cards = [t.zero, t.counties, t.chat];
 
   return (
-    <section className="px-[var(--landing-page-x)] py-14 md:py-20">
-      <div className="mx-auto max-w-[var(--landing-page-max)]">
+    <section className="px-(--landing-page-x) py-14 md:py-20">
+      <div className="mx-auto max-w-(--landing-page-max)">
         <div className="max-w-3xl">
           <p className="text-xs font-bold uppercase tracking-normal text-primary md:text-sm">
             {t.eyebrow}
@@ -26,8 +28,7 @@ export function StatsSection({ dict }: { dict: Dictionary }) {
           {cards.map(({ figure, label, body }, i) => (
             <div
               key={label}
-              className="landing-reveal rounded-[1.1rem] border border-default bg-elevated p-5 shadow-sm"
-              style={{ animationDelay: `${i * 90}ms` }}
+              className={`landing-reveal rounded-[1.1rem] border border-default bg-elevated p-5 shadow-sm ${REVEAL_DELAYS[i] ?? ""}`}
             >
               <p className="font-display text-[2.15rem] font-bold leading-none tracking-normal text-default tabular-nums">
                 {figure}

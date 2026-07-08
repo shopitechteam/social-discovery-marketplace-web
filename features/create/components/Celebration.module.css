@@ -1,0 +1,146 @@
+/* Celebration overlay — confetti rain, success badge, and rise-in text.
+   Extracted from styled-jsx so the components stay class-driven. */
+
+.root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.confettiLayer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.confettiPiece {
+  position: absolute;
+  top: -24px;
+  opacity: 0;
+  will-change: transform, opacity;
+  animation-name: confettiFall;
+  animation-timing-function: cubic-bezier(0.45, 0.05, 0.55, 0.95);
+  animation-iteration-count: infinite;
+}
+
+@keyframes confettiFall {
+  0% {
+    transform: translate3d(0, -10vh, 0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(var(--drift), 105vh, 0) rotate(var(--rotate));
+    opacity: 1;
+  }
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+}
+
+/* ── Success badge — burst ring + pop-in checkmark ─────────────── */
+
+.badgeWrap {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.badge {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    135deg,
+    rgb(var(--brand-primary)),
+    rgb(var(--brand-secondary))
+  );
+  box-shadow: 0 10px 36px rgb(var(--brand-primary) / 0.45);
+  transform: scale(0);
+  animation: badgePop 0.55s cubic-bezier(0.17, 0.89, 0.32, 1.28) forwards;
+}
+
+.burstRing {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 3px solid rgb(var(--brand-primary) / 0.5);
+  transform: scale(0.7);
+  opacity: 0.8;
+  animation: burst 0.8s ease-out 0.2s forwards;
+}
+
+.checkPath {
+  stroke-dasharray: 30;
+  stroke-dashoffset: 30;
+  animation: checkDraw 0.4s ease-out 0.45s forwards;
+}
+
+@keyframes badgePop {
+  0% {
+    transform: scale(0);
+  }
+  70% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes burst {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+@keyframes checkDraw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* ── Rise-in text/CTA used on the publish success screen ───────── */
+
+.celebrateText,
+.celebrateCta {
+  opacity: 0;
+  animation: celebrateRise 0.5s ease-out 0.5s forwards;
+}
+
+.celebrateCta {
+  animation-delay: 0.7s;
+}
+
+@keyframes celebrateRise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

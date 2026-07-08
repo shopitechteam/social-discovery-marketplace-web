@@ -46,8 +46,7 @@ export default async function LoginPage({
     <AuthDesktopShell lang={lang}>
       {/* ── Mobile layout ─────────────────────────────────────── */}
       <div
-        className="relative flex flex-col h-svh overflow-hidden bg-app lg:hidden"
-        style={{ maxWidth: 430, margin: "0 auto" }}
+        className="relative mx-auto flex h-svh max-w-107.5 flex-col overflow-hidden bg-app lg:hidden"
       >
         <Link
           href={`/${lang}/auth/auth-welcome`}
@@ -58,8 +57,7 @@ export default async function LoginPage({
         </Link>
         <div
           aria-hidden
-          className="pointer-events-none absolute -top-20 -right-20 w-64 h-64 rounded-full blur-3xl"
-          style={{ background: "rgb(var(--brand-primary) / 0.07)" }}
+          className="pointer-events-none absolute -top-20 -right-20 w-64 h-64 rounded-full blur-3xl bg-[rgb(var(--brand-primary)/0.07)]"
         />
 
         {/* Top bar */}

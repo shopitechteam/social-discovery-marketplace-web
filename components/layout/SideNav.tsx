@@ -33,10 +33,10 @@ const tabs: Tab[] = [
 ];
 
 const browse = [
-  { label: "Beauty & Skincare", color: "rgb(var(--brand-primary))" },
-  { label: "Electronics", color: "#38A8FF" },
-  { label: "Automotive", color: "rgb(var(--brand-secondary))" },
-  { label: "Food & Fresh", color: "rgb(var(--color-success))" },
+  { label: "Beauty & Skincare", dot: "bg-primary" },
+  { label: "Electronics", dot: "bg-[#38A8FF]" },
+  { label: "Automotive", dot: "bg-secondary" },
+  { label: "Food & Fresh", dot: "bg-success" },
 ];
 
 export function SideNav({ lang = "en" }: { lang: string }) {
@@ -67,8 +67,7 @@ export function SideNav({ lang = "en" }: { lang: string }) {
 
   return (
     <aside
-      className="fixed left-0 top-0 z-40 hidden h-full flex-col border-r border-default bg-elevated md:flex"
-      style={{ width: "var(--side-nav-width, 220px)" }}
+      className="fixed left-0 top-0 z-40 hidden h-full w-(--side-nav-width,220px) flex-col border-r border-default bg-elevated md:flex"
     >
       <div className="flex shrink-0 items-center px-5 pb-4 pt-5">
         <Link href={`/${lang}/feed`} scroll={false}>
@@ -125,10 +124,7 @@ export function SideNav({ lang = "en" }: { lang: string }) {
               key={item.label}
               className="flex items-center gap-2 text-xs font-medium text-muted"
             >
-              <span
-                className="h-1.5 w-1.5 rounded-full"
-                style={{ backgroundColor: item.color }}
-              />
+              <span className={`h-1.5 w-1.5 rounded-full ${item.dot}`} />
               {item.label}
             </div>
           ))}

@@ -46,149 +46,50 @@ export function HowItWorksDialog({ onClose }: { onClose: () => void }) {
       aria-modal="true"
       aria-label="How Shopi works"
       onClick={onClose}
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 200,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "1rem",
-        background: "rgba(0,0,0,0.55)",
-        backdropFilter: "blur(6px)",
-        WebkitBackdropFilter: "blur(6px)",
-        animation: "fadeIn 0.18s ease",
-      }}
+      className="animate-in fade-in fixed inset-0 z-200 flex items-center justify-center bg-black/55 p-4 backdrop-blur-[6px] duration-180"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        style={{
-          width: "100%",
-          maxWidth: 560,
-          maxHeight: "90vh",
-          overflowY: "auto",
-          borderRadius: 20,
-          background: "rgb(var(--color-bg-elevated))",
-          border: "1px solid rgb(var(--color-border))",
-          boxShadow: "0 32px 80px rgba(0,0,0,0.35)",
-          animation: "slideUp 0.22s ease",
-        }}
+        className="animate-in fade-in slide-in-from-bottom-6 max-h-[90vh] w-full max-w-140 overflow-y-auto rounded-lg border border-border bg-elevated shadow-[0_32px_80px_rgba(0,0,0,0.35)] duration-220"
       >
         {/* Header */}
-        <div
-          style={{
-            padding: "1.5rem 1.5rem 0",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
+        <div className="flex items-center justify-between p-6 pb-0">
           <div>
-            <p
-              style={{
-                fontSize: "0.7rem",
-                fontWeight: 700,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                color: "rgb(var(--brand-accent))",
-                marginBottom: "0.25rem",
-              }}
-            >
+            <p className="mb-1 text-[0.7rem] font-bold tracking-widest uppercase text-accent">
               How it works
             </p>
-            <h2
-              style={{
-                fontFamily: "var(--font-display)",
-                fontSize: "clamp(1.2rem, 3vw, 1.6rem)",
-                fontWeight: 700,
-                letterSpacing: "-0.025em",
-                color: "rgb(var(--color-text))",
-                lineHeight: 1.2,
-              }}
-            >
+            <h2 className="font-display text-[clamp(1.2rem,3vw,1.6rem)] font-bold tracking-tight leading-[1.2] text-foreground">
               Discover locally. Connect directly.
             </h2>
           </div>
           <button
             onClick={onClose}
             aria-label="Close"
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: "50%",
-              border: "1px solid rgb(var(--color-border))",
-              background: "rgb(var(--color-bg-subtle))",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "1.1rem",
-              color: "rgb(var(--color-text-muted))",
-              flexShrink: 0,
-              marginLeft: "1rem",
-            }}
+            className="ml-4 flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-border bg-surface text-[1.1rem] text-muted"
           >
             ✕
           </button>
         </div>
 
         {/* Steps */}
-        <div style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+        <div className="flex flex-col gap-4 p-6">
           {steps.map(({ number, emoji, title, body }) => (
             <div
               key={number}
-              style={{
-                display: "flex",
-                gap: "1rem",
-                alignItems: "flex-start",
-                padding: "1.25rem",
-                borderRadius: 14,
-                background: "rgb(var(--color-bg-subtle))",
-                border: "1px solid rgb(var(--color-border))",
-              }}
+              className="flex items-start gap-4 rounded-[14px] border border-border bg-surface p-5"
             >
               {/* Number badge */}
-              <div
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: "50%",
-                  background:
-                    "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-accent)))",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontFamily: "var(--font-display)",
-                  fontWeight: 700,
-                  fontSize: "0.8rem",
-                  color: "#fff",
-                  flexShrink: 0,
-                }}
-              >
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,rgb(var(--brand-primary)),rgb(var(--brand-accent)))] font-display text-[0.8rem] font-bold text-white">
                 {number}
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.375rem" }}>
-                  <span style={{ fontSize: "1.1rem" }}>{emoji}</span>
-                  <h3
-                    style={{
-                      fontFamily: "var(--font-display)",
-                      fontWeight: 700,
-                      fontSize: "0.95rem",
-                      color: "rgb(var(--color-text))",
-                      lineHeight: 1.3,
-                    }}
-                  >
+              <div className="min-w-0 flex-1">
+                <div className="mb-1.5 flex items-center gap-2">
+                  <span className="text-[1.1rem]">{emoji}</span>
+                  <h3 className="font-display text-[0.95rem] font-bold leading-[1.3] text-foreground">
                     {title}
                   </h3>
                 </div>
-                <p
-                  style={{
-                    fontSize: "0.85rem",
-                    color: "rgb(var(--color-text-muted))",
-                    lineHeight: 1.65,
-                  }}
-                >
+                <p className="text-[0.85rem] leading-[1.65] text-muted">
                   {body}
                 </p>
               </div>
@@ -197,56 +98,22 @@ export function HowItWorksDialog({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Footer CTA */}
-        <div
-          style={{
-            padding: "0 1.5rem 1.5rem",
-            display: "flex",
-            gap: "0.75rem",
-            flexWrap: "wrap",
-          }}
-        >
+        <div className="flex flex-wrap gap-3 px-6 pb-6">
           <a
             href="#download"
             onClick={onClose}
-            className="btn-primary"
-            style={{
-              flex: 1,
-              minWidth: 160,
-              padding: "0.8rem 1.25rem",
-              textDecoration: "none",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "0.5rem",
-              fontSize: "0.9rem",
-            }}
+            className="btn-primary flex min-w-40 flex-1 items-center justify-center gap-2 px-5 py-[0.8rem] text-[0.9rem] no-underline"
           >
             Download Shopi →
           </a>
           <button
             onClick={onClose}
-            style={{
-              flex: 1,
-              minWidth: 120,
-              padding: "0.8rem 1.25rem",
-              borderRadius: "var(--radius-full)",
-              border: "1px solid rgb(var(--color-border))",
-              background: "rgb(var(--color-bg-elevated))",
-              color: "rgb(var(--color-text-muted))",
-              fontSize: "0.9rem",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
+            className="min-w-30 flex-1 cursor-pointer rounded-full border border-border bg-elevated px-5 py-[0.8rem] text-[0.9rem] font-semibold text-muted"
           >
             Close
           </button>
         </div>
       </div>
-
-      <style>{`
-        @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(24px) } to { opacity: 1; transform: translateY(0) } }
-      `}</style>
     </div>
   );
 }

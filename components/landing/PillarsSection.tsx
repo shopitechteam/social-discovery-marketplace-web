@@ -5,6 +5,8 @@ import { MessageCircle, PlusCircle, ScanSearch } from "lucide-react";
  * The three product pillars — Feed, Direct chat, Sell — as copy-led cards.
  * Images stay out of this section so the value proposition remains the focus.
  */
+const REVEAL_DELAYS = ["", "[animation-delay:90ms]", "[animation-delay:180ms]"];
+
 export function PillarsSection({ dict }: { dict: Dictionary }) {
   const t = dict.landing.pillars;
   const dives = dict.landing.dives;
@@ -16,7 +18,7 @@ export function PillarsSection({ dict }: { dict: Dictionary }) {
       tagline: t.feed.tagline,
       icon: ScanSearch,
       proof: dives.feed.bullets[0],
-      tint: "rgb(var(--brand-primary) / 0.12)",
+      tint: "bg-[linear-gradient(180deg,rgb(var(--brand-primary)/0.12),transparent_58%)]",
     },
     {
       key: "chat",
@@ -24,7 +26,7 @@ export function PillarsSection({ dict }: { dict: Dictionary }) {
       tagline: t.chat.tagline,
       icon: MessageCircle,
       proof: dives.chat.bullets[0],
-      tint: "rgb(var(--brand-accent) / 0.12)",
+      tint: "bg-[linear-gradient(180deg,rgb(var(--brand-accent)/0.12),transparent_58%)]",
     },
     {
       key: "sell",
@@ -32,24 +34,20 @@ export function PillarsSection({ dict }: { dict: Dictionary }) {
       tagline: t.sell.tagline,
       icon: PlusCircle,
       proof: dives.sell.bullets[0],
-      tint: "rgb(var(--brand-secondary) / 0.16)",
+      tint: "bg-[linear-gradient(180deg,rgb(var(--brand-secondary)/0.16),transparent_58%)]",
     },
   ];
 
   return (
     <section
       id="features"
-      className="px-[var(--landing-page-x)] pb-18 md:pb-24"
+      className="px-(--landing-page-x) pb-18 md:pb-24"
     >
-      <div className="mx-auto grid max-w-[var(--landing-page-max)] gap-5 md:grid-cols-3">
+      <div className="mx-auto grid max-w-(--landing-page-max) gap-5 md:grid-cols-3">
         {cards.map(({ key, title, tagline, icon: Icon, proof, tint }, i) => (
           <article
             key={key}
-            className="landing-reveal rounded-[1.2rem] border border-default bg-elevated p-6 shadow-sm transition-transform duration-300 hover:-translate-y-1"
-            style={{
-              animationDelay: `${i * 90}ms`,
-              background: `linear-gradient(180deg, ${tint}, transparent 58%)`,
-            }}
+            className={`landing-reveal rounded-[1.2rem] border border-default bg-elevated p-6 shadow-sm transition-transform duration-300 hover:-translate-y-1 ${tint} ${REVEAL_DELAYS[i] ?? ""}`}
           >
             <span className="flex h-11 w-11 items-center justify-center rounded-full border border-default bg-elevated text-primary shadow-sm">
               <Icon size={20} />

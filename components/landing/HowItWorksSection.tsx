@@ -1,5 +1,12 @@
 import type { Dictionary } from "@/i18n/getDictionary";
 
+const REVEAL_DELAYS = [
+  "",
+  "[animation-delay:85ms]",
+  "[animation-delay:170ms]",
+  "[animation-delay:255ms]",
+];
+
 export function HowItWorksSection({ dict }: { dict: Dictionary }) {
   const s = dict.howItWorks.steps;
   const steps: { number: string; title: string; body: string }[] = [
@@ -11,9 +18,9 @@ export function HowItWorksSection({ dict }: { dict: Dictionary }) {
   return (
     <section
       id="how-it-works"
-      className="border-y border-default bg-surface px-[var(--landing-page-x)] py-14 md:py-20"
+      className="border-y border-default bg-surface px-(--landing-page-x) py-14 md:py-20"
     >
-      <div className="mx-auto max-w-[var(--landing-page-max)]">
+      <div className="mx-auto max-w-(--landing-page-max)">
         {/* Header */}
         <div className="mb-10 max-w-3xl md:mb-12">
           <p className="mb-3 text-xs font-bold uppercase tracking-normal text-primary md:text-sm">
@@ -32,16 +39,10 @@ export function HowItWorksSection({ dict }: { dict: Dictionary }) {
           {steps.map(({ number, title, body }, i) => (
             <div
               key={number}
-              className="landing-reveal rounded-[1.1rem] border border-default bg-elevated p-5 shadow-sm"
-              style={{ animationDelay: `${i * 85}ms` }}
+              className={`landing-reveal rounded-[1.1rem] border border-default bg-elevated p-5 shadow-sm ${REVEAL_DELAYS[i] ?? ""}`}
             >
               {/* Step circle */}
-              <div
-                className="relative z-1 mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-primary font-display text-(length:--text-base) font-bold text-white"
-                style={{
-                  background: "",
-                }}
-              >
+              <div className="relative z-1 mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-primary font-display text-(length:--text-base) font-bold text-white">
                 {number}
               </div>
               <h3 className="mb-2.5 font-display text-(length:--text-lg) font-semibold text-foreground">

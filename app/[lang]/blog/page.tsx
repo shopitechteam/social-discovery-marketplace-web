@@ -33,6 +33,9 @@ const categoryColors: Record<string, string> = {
   "Success Stories": "#f59e0b",
 };
 
+const cardHover =
+  "transition-[box-shadow,transform] duration-200 hover:-translate-y-[3px] hover:shadow-(--shadow-lg)";
+
 export default function BlogIndexPage() {
   const [featured, ...rest] = blogPosts;
   const lang = "en"; // static fallback — blog has no dynamic lang param here
@@ -40,154 +43,74 @@ export default function BlogIndexPage() {
   return (
     <>
       <LegalNav lang={lang} />
-      <main className="blog-main-wrap">
+      <main className="mx-auto max-w-[1100px] px-4 pt-16 pb-12 sm:px-5 sm:pt-20 sm:pb-16">
         {/* Header */}
-        <div style={{ marginBottom: "2rem", textAlign: "center" }}>
-          <p
-            style={{
-              fontSize: "0.8rem",
-              fontWeight: 700,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              color: "rgb(var(--brand-primary))",
-              marginBottom: "1rem",
-            }}
-          >
+        <div className="mb-8 text-center">
+          <p className="mb-4 text-[0.8rem] font-bold tracking-widest uppercase text-primary">
             Shopi Blog
           </p>
-          <h1
-            style={{
-              fontFamily: "var(--font-display)",
-              fontSize: "clamp(1.75rem, 4vw, 3rem)",
-              fontWeight: 700,
-              letterSpacing: "-0.03em",
-              color: "rgb(var(--color-text))",
-              marginBottom: "1rem",
-            }}
-          >
+          <h1 className="mb-4 font-display text-[clamp(1.75rem,4vw,3rem)] font-bold tracking-[-0.03em] text-foreground">
             Insights for Kenya&apos;s social sellers
           </h1>
-          <p
-            style={{
-              fontSize: "1.05rem",
-              color: "rgb(var(--color-text-muted))",
-              maxWidth: 540,
-              margin: "0 auto",
-              lineHeight: 1.65,
-            }}
-          >
+          <p className="mx-auto max-w-135 text-[1.05rem] leading-[1.65] text-muted">
             Guides, trends, and real seller stories — everything you need to grow
             your business through video and social discovery.
           </p>
         </div>
 
         {/* Featured post */}
-        <Link
-          href={`/blog/${featured.slug}`}
-          style={{ textDecoration: "none", display: "block", marginBottom: "2rem" }}
-        >
-          <article className="blog-featured-card blog-card-hover">
+        <Link href={`/blog/${featured.slug}`} className="mb-8 block no-underline">
+          <article
+            className={`grid grid-cols-1 overflow-hidden rounded-lg border border-border bg-elevated min-[900px]:grid-cols-2 ${cardHover}`}
+          >
             {/* Visual — clean typographic header, no emoji */}
-            <div className="blog-featured-visual">
+            <div className="relative flex min-h-50 items-center justify-center overflow-hidden bg-[linear-gradient(135deg,rgb(var(--brand-primary)/0.15)_0%,rgb(var(--brand-accent)/0.15)_100%)] p-8 sm:min-h-60 min-[900px]:min-h-70">
+              <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,rgb(var(--brand-primary)/0.04)_0px,rgb(var(--brand-primary)/0.04)_1px,transparent_1px,transparent_22px)]" />
               <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  background:
-                    "repeating-linear-gradient(45deg, rgb(var(--brand-primary) / 0.04) 0px, rgb(var(--brand-primary) / 0.04) 1px, transparent 1px, transparent 22px)",
-                }}
-              />
-              <div
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: 4,
-                  background: categoryColors[featured.category],
-                }}
+                className="absolute top-0 right-0 left-0 h-1"
+                style={{ background: categoryColors[featured.category] }}
               />
               <span
-                style={{
-                  position: "relative",
-                  fontFamily: "var(--font-display)",
-                  fontWeight: 700,
-                  fontSize: "clamp(1.25rem, 3vw, 1.9rem)",
-                  letterSpacing: "-0.02em",
-                  color: categoryColors[featured.category],
-                  textAlign: "center",
-                }}
+                className="relative text-center font-display text-[clamp(1.25rem,3vw,1.9rem)] font-bold tracking-[-0.02em]"
+                style={{ color: categoryColors[featured.category] }}
               >
                 {featured.category}
               </span>
             </div>
             {/* Content */}
-            <div style={{ padding: "1.75rem" }}>
-              <div style={{ display: "flex", gap: 8, marginBottom: "1rem", flexWrap: "wrap" }}>
+            <div className="p-7">
+              <div className="mb-4 flex flex-wrap gap-2">
                 <span
+                  className="rounded-full px-[10px] py-[3px] text-[0.7rem] font-bold tracking-[0.04em] uppercase"
                   style={{
-                    fontSize: "0.7rem",
-                    fontWeight: 700,
-                    padding: "3px 10px",
-                    borderRadius: 9999,
                     background: `${categoryColors[featured.category]}22`,
                     color: categoryColors[featured.category],
-                    letterSpacing: "0.04em",
-                    textTransform: "uppercase",
                   }}
                 >
                   {featured.category}
                 </span>
-                <span style={{ fontSize: "0.75rem", color: "rgb(var(--color-text-muted))" }}>
+                <span className="text-[0.75rem] text-muted">
                   {featured.readTime}
                 </span>
               </div>
-              <h2
-                style={{
-                  fontFamily: "var(--font-display)",
-                  fontSize: "clamp(1.1rem, 2vw, 1.6rem)",
-                  fontWeight: 700,
-                  letterSpacing: "-0.02em",
-                  color: "rgb(var(--color-text))",
-                  marginBottom: "0.875rem",
-                  lineHeight: 1.2,
-                }}
-              >
+              <h2 className="mb-3.5 font-display text-[clamp(1.1rem,2vw,1.6rem)] font-bold tracking-[-0.02em] leading-[1.2] text-foreground">
                 {featured.title}
               </h2>
-              <p
-                style={{
-                  color: "rgb(var(--color-text-muted))",
-                  fontSize: "0.9rem",
-                  lineHeight: 1.65,
-                  marginBottom: "1.5rem",
-                }}
-              >
+              <p className="mb-6 text-[0.9rem] leading-[1.65] text-muted">
                 {featured.excerpt}
               </p>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div className="flex items-center gap-2.5">
                 <div
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: "50%",
-                    background: featured.author.color,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "0.7rem",
-                    fontWeight: 700,
-                    color: "#fff",
-                    flexShrink: 0,
-                  }}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[0.7rem] font-bold text-white"
+                  style={{ background: featured.author.color }}
                 >
                   {featured.author.initials}
                 </div>
                 <div>
-                  <div style={{ fontSize: "0.8rem", fontWeight: 600, color: "rgb(var(--color-text))" }}>
+                  <div className="text-[0.8rem] font-semibold text-foreground">
                     {featured.author.name}
                   </div>
-                  <div style={{ fontSize: "0.72rem", color: "rgb(var(--color-text-muted))" }}>
+                  <div className="text-[0.72rem] text-muted">
                     {new Date(featured.publishedAt).toLocaleDateString("en-KE", {
                       day: "numeric",
                       month: "long",
@@ -201,136 +124,64 @@ export default function BlogIndexPage() {
         </Link>
 
         {/* Grid of remaining posts */}
-        <div className="blog-cards-grid">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 min-[900px]:grid-cols-3">
           {rest.map((post) => (
-            <Link
-              key={post.slug}
-              href={`/blog/${post.slug}`}
-              style={{ textDecoration: "none" }}
-            >
+            <Link key={post.slug} href={`/blog/${post.slug}`} className="no-underline">
               <article
-                style={{
-                  borderRadius: 16,
-                  border: "1px solid rgb(var(--color-border))",
-                  background: "rgb(var(--color-bg-elevated))",
-                  overflow: "hidden",
-                  display: "flex",
-                  flexDirection: "column",
-                  height: "100%",
-                  transition: "box-shadow 0.2s ease, transform 0.2s ease",
-                }}
-                className="blog-card-hover"
+                className={`flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-elevated ${cardHover}`}
               >
                 {/* Card visual — clean typographic header, no emoji */}
                 <div
+                  className="relative flex h-30 items-end overflow-hidden p-[0.9rem]"
                   style={{
-                    height: 120,
                     background: `linear-gradient(135deg, ${categoryColors[post.category]}1f, ${categoryColors[post.category]}08)`,
-                    display: "flex",
-                    alignItems: "flex-end",
-                    padding: "0.9rem",
-                    position: "relative",
-                    overflow: "hidden",
                   }}
                 >
+                  <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,rgba(0,0,0,0.02)_0px,rgba(0,0,0,0.02)_1px,transparent_1px,transparent_22px)]" />
                   <div
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      background:
-                        "repeating-linear-gradient(45deg, rgba(0,0,0,0.02) 0px, rgba(0,0,0,0.02) 1px, transparent 1px, transparent 22px)",
-                    }}
-                  />
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      height: 3,
-                      background: categoryColors[post.category],
-                    }}
+                    className="absolute top-0 right-0 left-0 h-[3px]"
+                    style={{ background: categoryColors[post.category] }}
                   />
                   <span
-                    style={{
-                      position: "relative",
-                      fontFamily: "var(--font-display)",
-                      fontWeight: 700,
-                      fontSize: "1.05rem",
-                      letterSpacing: "-0.01em",
-                      color: categoryColors[post.category],
-                    }}
+                    className="relative font-display text-[1.05rem] font-bold tracking-[-0.01em]"
+                    style={{ color: categoryColors[post.category] }}
                   >
                     {post.category}
                   </span>
                 </div>
-                <div style={{ padding: "1.25rem 1.25rem 1.5rem", flex: 1, display: "flex", flexDirection: "column" }}>
-                  <div style={{ display: "flex", gap: 8, marginBottom: "0.75rem", alignItems: "center" }}>
+                <div className="flex flex-1 flex-col p-5 pb-6">
+                  <div className="mb-3 flex items-center gap-2">
                     <span
+                      className="rounded-full px-2 py-[2px] text-[0.65rem] font-bold tracking-[0.04em] uppercase"
                       style={{
-                        fontSize: "0.65rem",
-                        fontWeight: 700,
-                        padding: "2px 8px",
-                        borderRadius: 9999,
                         background: `${categoryColors[post.category]}22`,
                         color: categoryColors[post.category],
-                        letterSpacing: "0.04em",
-                        textTransform: "uppercase",
                       }}
                     >
                       {post.category}
                     </span>
-                    <span style={{ fontSize: "0.7rem", color: "rgb(var(--color-text-muted))" }}>
+                    <span className="text-[0.7rem] text-muted">
                       {post.readTime}
                     </span>
                   </div>
-                  <h3
-                    style={{
-                      fontFamily: "var(--font-display)",
-                      fontSize: "1rem",
-                      fontWeight: 700,
-                      letterSpacing: "-0.01em",
-                      color: "rgb(var(--color-text))",
-                      marginBottom: "0.6rem",
-                      lineHeight: 1.3,
-                    }}
-                  >
+                  <h3 className="mb-[0.6rem] font-display text-[1rem] font-bold tracking-[-0.01em] leading-[1.3] text-foreground">
                     {post.title}
                   </h3>
-                  <p
-                    style={{
-                      color: "rgb(var(--color-text-muted))",
-                      fontSize: "0.825rem",
-                      lineHeight: 1.6,
-                      flex: 1,
-                      marginBottom: "1rem",
-                    }}
-                  >
+                  <p className="mb-4 flex-1 text-[0.825rem] leading-[1.6] text-muted">
                     {post.excerpt}
                   </p>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div className="flex items-center gap-2">
                     <div
-                      style={{
-                        width: 26,
-                        height: 26,
-                        borderRadius: "50%",
-                        background: post.author.color,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "0.6rem",
-                        fontWeight: 700,
-                        color: "#fff",
-                        flexShrink: 0,
-                      }}
+                      className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full text-[0.6rem] font-bold text-white"
+                      style={{ background: post.author.color }}
                     >
                       {post.author.initials}
                     </div>
                     <div>
-                      <div style={{ fontSize: "0.75rem", fontWeight: 600, color: "rgb(var(--color-text))" }}>
+                      <div className="text-[0.75rem] font-semibold text-foreground">
                         {post.author.name}
                       </div>
-                      <div style={{ fontSize: "0.68rem", color: "rgb(var(--color-text-muted))" }}>
+                      <div className="text-[0.68rem] text-muted">
                         {new Date(post.publishedAt).toLocaleDateString("en-KE", {
                           day: "numeric",
                           month: "short",
@@ -344,55 +195,6 @@ export default function BlogIndexPage() {
             </Link>
           ))}
         </div>
-
-        <style>{`
-          .blog-main-wrap {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 4rem 1rem 3rem;
-          }
-          @media (min-width: 640px) {
-            .blog-main-wrap { padding: 5rem 1.25rem 4rem; }
-          }
-          .blog-featured-card {
-            border-radius: 20px;
-            border: 1px solid rgb(var(--color-border));
-            background: rgb(var(--color-bg-elevated));
-            overflow: hidden;
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 0;
-            transition: box-shadow 0.2s ease, transform 0.2s ease;
-          }
-          .blog-featured-visual {
-            min-height: 200px;
-            background: linear-gradient(135deg, rgb(var(--brand-primary) / 0.15) 0%, rgb(var(--brand-accent) / 0.15) 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem;
-            position: relative;
-            overflow: hidden;
-          }
-          .blog-cards-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 1.25rem;
-          }
-          @media (min-width: 640px) {
-            .blog-cards-grid { grid-template-columns: repeat(2, 1fr); }
-            .blog-featured-visual { min-height: 240px; }
-          }
-          @media (min-width: 900px) {
-            .blog-featured-card { grid-template-columns: 1fr 1fr; }
-            .blog-featured-visual { min-height: 280px; }
-            .blog-cards-grid { grid-template-columns: repeat(3, 1fr); }
-          }
-          .blog-card-hover:hover {
-            box-shadow: var(--shadow-lg);
-            transform: translateY(-3px);
-          }
-        `}</style>
       </main>
       <LandingFooter />
     </>

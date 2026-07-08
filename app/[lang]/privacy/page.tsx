@@ -17,15 +17,15 @@ export default async function PrivacyPage({ params }: Props) {
   return (
     <>
       <LegalNav lang={lang} />
-      <main style={{ maxWidth: 780, margin: "0 auto", padding: "5rem 1.25rem 6rem" }}>
-        <div style={{ marginBottom: "2.5rem" }}>
-          <p style={{ fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgb(var(--brand-primary))", marginBottom: "0.75rem" }}>
+      <main className="mx-auto max-w-195 px-5 pt-20 pb-24">
+        <div className="mb-10">
+          <p className="mb-3 text-[0.75rem] font-semibold tracking-[0.08em] uppercase text-primary">
             Legal
           </p>
-          <h1 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(1.75rem, 4vw, 2.75rem)", fontWeight: 800, letterSpacing: "-0.03em", color: "rgb(var(--color-text))", marginBottom: "0.75rem" }}>
+          <h1 className="mb-3 font-display text-[clamp(1.75rem,4vw,2.75rem)] font-extrabold tracking-[-0.03em] text-foreground">
             Privacy Policy
           </h1>
-          <p style={{ color: "rgb(var(--color-text-muted))", fontSize: "0.875rem" }}>
+          <p className="text-[0.875rem] text-muted">
             Last updated: {LAST_UPDATED}
           </p>
         </div>
@@ -147,16 +147,16 @@ export default async function PrivacyPage({ params }: Props) {
           <p>
             Questions or concerns about this Privacy Policy? Contact our Data Protection Officer:
           </p>
-          <address style={{ fontStyle: "normal", lineHeight: 1.8 }}>
+          <address className="not-italic leading-[1.8]">
             <strong>Shopi Limited</strong><br />
             Nairobi, Kenya<br />
             Email: <a href="mailto:privacy@shopi.app">privacy@shopi.app</a>
           </address>
         </LegalSection>
 
-        <div style={{ marginTop: "3rem", paddingTop: "2rem", borderTop: "1px solid rgb(var(--color-border))", display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
-          <Link href={`${base}/terms`} style={{ fontSize: "0.875rem", color: "rgb(var(--brand-primary))" }}>Terms of Service</Link>
-          <Link href={`${base}/cookies`} style={{ fontSize: "0.875rem", color: "rgb(var(--brand-primary))" }}>Cookie Policy</Link>
+        <div className="mt-12 flex flex-wrap gap-6 border-t border-border pt-8">
+          <Link href={`${base}/terms`} className="text-[0.875rem] text-primary">Terms of Service</Link>
+          <Link href={`${base}/cookies`} className="text-[0.875rem] text-primary">Cookie Policy</Link>
         </div>
       </main>
     </>
@@ -165,21 +165,15 @@ export default async function PrivacyPage({ params }: Props) {
 
 function LegalSection({ title, children }: { title?: string; children: React.ReactNode }) {
   return (
-    <section style={{ marginBottom: "2.25rem" }}>
+    <section className="mb-9">
       {title && (
-        <h2 style={{ fontFamily: "var(--font-display)", fontSize: "1.15rem", fontWeight: 700, color: "rgb(var(--color-text))", marginBottom: "0.875rem", paddingBottom: "0.5rem", borderBottom: "1px solid rgb(var(--color-border))" }}>
+        <h2 className="mb-3.5 border-b border-border pb-2 font-display text-[1.15rem] font-bold text-foreground">
           {title}
         </h2>
       )}
-      <div style={{ fontSize: "0.9rem", color: "rgb(var(--color-text-muted))", lineHeight: 1.8, display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+      <div className="flex flex-col gap-3 text-[0.9rem] leading-[1.8] text-muted [&_a]:text-primary [&_a]:underline [&_h3]:mt-4 [&_h3]:mb-[0.4rem] [&_h3]:text-[0.875rem] [&_h3]:font-bold [&_h3]:text-foreground [&_ul]:m-0 [&_ul]:flex [&_ul]:flex-col [&_ul]:gap-[0.4rem] [&_ul]:pl-5">
         {children}
       </div>
-      <style>{`
-        section h3 { font-size: 0.875rem; font-weight: 700; color: rgb(var(--color-text)); margin: 1rem 0 0.4rem; }
-        section ul { padding-left: 1.25rem; margin: 0; display: flex; flex-direction: column; gap: 0.4rem; }
-        section a { color: rgb(var(--brand-primary)); text-decoration: underline; }
-        address a { color: rgb(var(--brand-primary)); }
-      `}</style>
     </section>
   );
 }

@@ -95,62 +95,21 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
   return (
     <>
       <nav
-        className="z-50 lg:px-30 px-4"
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 50,
-          //padding: "0 var(--landing-page-x)",
-          height: "76px",
-          backgroundColor: "rgb(var(--color-bg) / 0.95)",
-          backdropFilter: "blur(18px)",
-          WebkitBackdropFilter: "blur(18px)",
-          borderBottom: scrolled
-            ? "1px solid rgb(var(--color-border))"
-            : "1px solid transparent",
-          transition: "background-color 0.25s ease, border-color 0.25s ease",
-        }}
+        className={`fixed top-0 right-0 left-0 z-50 h-19 border-b bg-[rgb(var(--color-bg)/0.95)] px-4 backdrop-blur-[18px] transition-[background-color,border-color] duration-250 lg:px-30 ${
+          scrolled ? "border-border" : "border-transparent"
+        }`}
       >
         {/* Inner container — same width as the page content so the logo
             lines up with the hero headline, Tolstoy-style */}
-        <div
-          style={{
-            maxWidth: "var(--landing-page-max)",
-            margin: "0 auto",
-            height: "100%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
+        <div className="mx-auto flex h-full max-w-(--landing-page-max) items-center justify-between">
           {/* Left cluster — logo + section links, Tolstoy-style */}
-          <div style={{ display: "flex", alignItems: "center", gap: "2.5rem" }}>
-            <Link
-              href="/"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                textDecoration: "none",
-              }}
-            >
+          <div className="flex items-center gap-10">
+            <Link href="/" className="flex items-center gap-2 no-underline">
               <ShopiLogo height={32} />
             </Link>
 
             {/* Desktop nav links */}
-            <div
-              className="landing-nav-links"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "1.75rem",
-                fontSize: "var(--text-sm)",
-                fontWeight: 500,
-                color: "rgb(var(--color-text-muted))",
-              }}
-            >
+            <div className="hidden items-center gap-7 text-sm font-medium text-muted md:flex">
               {NAV_LINKS.map(({ label, href }) => {
                 const isActive = activeHash === href;
                 return (
@@ -158,22 +117,9 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
                     key={label}
                     href={sectionHref(href)}
                     onClick={(e) => handleHashLink(e, href)}
-                    style={{
-                      textDecoration: "none",
-                      color: isActive
-                        ? "rgb(var(--color-text))"
-                        : "rgb(var(--color-text-muted))",
-                      transition: "color 0.15s ease",
-                      whiteSpace: "nowrap",
-                    }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.color = "rgb(var(--color-text))")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.color = isActive
-                        ? "rgb(var(--color-text))"
-                        : "rgb(var(--color-text-muted))")
-                    }
+                    className={`whitespace-nowrap no-underline transition-colors duration-150 hover:text-foreground ${
+                      isActive ? "text-foreground" : "text-muted"
+                    }`}
                   >
                     {label}
                   </a>
@@ -183,28 +129,15 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
           </div>
 
           {/* Right actions */}
-          <div
-            style={{ display: "flex", alignItems: "center", gap: "0.65rem" }}
-          >
+          <div className="flex items-center gap-[0.65rem]">
             {/* Sign in — quiet text link */}
             {/* Theme toggle */}
-            <div style={{ width: 36, height: 36 }}>
+            <div className="h-9 w-9">
               {hydrated && (
                 <button
                   onClick={toggleTheme}
                   aria-label="Toggle theme"
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: "var(--radius-full)",
-                    border: "1px solid rgb(var(--color-border))",
-                    background: "rgb(var(--color-bg-elevated))",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "rgb(var(--color-text))",
-                  }}
+                  className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-border bg-elevated text-foreground"
                 >
                   {resolvedTheme === "dark" ? (
                     <Sun size={17} />
@@ -218,15 +151,7 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
             {/* Sign in — quiet text link */}
             <Link
               href={`${homeBase}/auth/login`}
-              className="landing-nav-cta"
-              style={{
-                padding: "0.5rem 0.75rem",
-                fontSize: "var(--text-sm)",
-                fontWeight: 500,
-                color: "rgb(var(--color-text-muted))",
-                textDecoration: "none",
-                whiteSpace: "nowrap",
-              }}
+              className="hidden px-3 py-2 text-sm font-medium whitespace-nowrap text-muted no-underline md:inline-flex"
             >
               {dict?.auth.login.submit ?? "Sign in"}
             </Link>
@@ -234,38 +159,13 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
             {/* Desktop CTA pair — outline + solid, Tolstoy-style */}
             <Link
               href={`${homeBase}/feed`}
-              className="landing-nav-cta"
-              style={{
-                padding: "0.5rem 1.1rem",
-                fontSize: "var(--text-sm)",
-                fontWeight: 600,
-                borderRadius: 9999,
-                border: "1px solid rgb(var(--color-border))",
-                background: "rgb(var(--color-bg-elevated))",
-                color: "rgb(var(--color-text))",
-                textDecoration: "none",
-                display: "inline-flex",
-                alignItems: "center",
-                whiteSpace: "nowrap",
-              }}
+              className="hidden items-center rounded-full border border-border bg-elevated px-[1.1rem] py-2 text-sm font-semibold whitespace-nowrap text-foreground no-underline md:inline-flex"
             >
               {dict?.common.openFeed ?? "Open the feed"}
             </Link>
             <Link
               href={`${homeBase}/upload`}
-              className="landing-nav-cta"
-              style={{
-                padding: "0.5rem 1.1rem",
-                fontSize: "var(--text-sm)",
-                fontWeight: 600,
-                borderRadius: 9999,
-                background: "rgb(var(--color-text))",
-                color: "rgb(var(--color-bg))",
-                textDecoration: "none",
-                display: "inline-flex",
-                alignItems: "center",
-                whiteSpace: "nowrap",
-              }}
+              className="hidden items-center rounded-full bg-foreground px-[1.1rem] py-2 text-sm font-semibold whitespace-nowrap text-background no-underline md:inline-flex"
             >
               {dict?.landing.hero.ctaSecondary ?? "Start selling"}
             </Link>
@@ -275,24 +175,9 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
 
             {/* Hamburger — mobile only */}
             <button
-              className="landing-hamburger"
               aria-label={menuOpen ? "Close menu" : "Open menu"}
               onClick={() => setMenuOpen((v) => !v)}
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: "var(--radius-sm)",
-                border: "1px solid rgb(var(--color-border))",
-                background: "rgb(var(--color-bg-elevated))",
-                cursor: "pointer",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 4,
-                padding: 0,
-                flexShrink: 0,
-              }}
+              className="flex h-9 w-9 shrink-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-sm border border-border bg-elevated p-0 md:hidden"
             >
               {menuOpen ? <X size={18} /> : <Menu size={18} />}
             </button>
@@ -302,96 +187,33 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
 
       {/* Mobile menu overlay */}
       {menuOpen && (
-        <div
-          style={{
-            position: "fixed",
-            top: "76px",
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 49,
-            background: "rgb(var(--color-bg) / 0.97)",
-            backdropFilter: "blur(18px)",
-            WebkitBackdropFilter: "blur(18px)",
-            display: "flex",
-            flexDirection: "column",
-            padding: "1.25rem var(--landing-page-x)",
-            gap: "0",
-            overflowY: "auto",
-          }}
-        >
+        <div className="fixed top-19 right-0 bottom-0 left-0 z-49 flex flex-col overflow-y-auto bg-[rgb(var(--color-bg)/0.97)] px-(--landing-page-x) py-5 backdrop-blur-[18px]">
           {NAV_LINKS.map(({ label, href }) => (
             <a
               key={label}
               href={sectionHref(href)}
               onClick={(e) => handleHashLink(e, href)}
-              style={{
-                padding: "0.65rem 0",
-                fontSize: "0.85rem",
-                fontWeight: 600,
-                color: "rgb(var(--color-text))",
-                textDecoration: "none",
-                borderBottom: "1px solid rgb(var(--color-border))",
-              }}
+              className="border-b border-border py-[0.65rem] text-[0.85rem] font-semibold text-foreground no-underline"
             >
               {label}
             </a>
           ))}
 
           {/* Primary CTA → feed */}
-          <div
-            style={{
-              marginTop: "1.25rem",
-              display: "flex",
-              flexDirection: "column",
-              gap: "0.75rem",
-            }}
-          >
+          <div className="mt-5 flex flex-col gap-3">
             <Link
               href={`${homeBase}/feed`}
               onClick={() => setMenuOpen(false)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "0.5rem",
-                padding: "0.85rem 1.25rem",
-                borderRadius: 9999,
-                background: "rgb(var(--brand-primary))",
-                color: "#fff",
-                fontWeight: 700,
-                fontSize: "0.9rem",
-                textDecoration: "none",
-              }}
+              className="flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-[0.85rem] text-[0.9rem] font-bold text-white no-underline"
             >
               {dict?.common.openFeed ?? "Open the feed"} →
             </Link>
-            <p
-              style={{
-                textAlign: "center",
-                fontSize: "0.78rem",
-                color: "rgb(var(--color-text-muted))",
-                margin: 0,
-              }}
-            >
+            <p className="text-center text-[0.78rem] text-muted">
               Free to use · No account needed to start looking
             </p>
           </div>
         </div>
       )}
-
-      <style>{`
-        @media (min-width: 768px) {
-          .landing-nav-links { display: flex !important; }
-          .landing-nav-cta { display: inline-flex !important; }
-          .landing-hamburger { display: none !important; }
-        }
-        @media (max-width: 767px) {
-          .landing-nav-links { display: none !important; }
-          .landing-nav-cta { display: none !important; }
-          .landing-hamburger { display: flex !important; }
-        }
-      `}</style>
     </>
   );
 }

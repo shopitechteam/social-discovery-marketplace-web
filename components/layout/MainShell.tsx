@@ -62,12 +62,11 @@ export function MainShell({
         ].join(" ")}
       >
         <main
-          className="flex-1"
-          style={{
-            paddingBottom: hideBottomNav
-              ? 0
-              : "calc(var(--nav-height, 0px) + var(--safe-bottom, 0px))",
-          }}
+          className={`flex-1 ${
+            hideBottomNav
+              ? ""
+              : "pb-[calc(var(--nav-height,0px)+var(--safe-bottom,0px))]"
+          }`}
         >
           {/* Persistent Home feed — hidden (not unmounted) when off /feed.
               Wrapped in Suspense because FeedPage reads useSearchParams(): on a

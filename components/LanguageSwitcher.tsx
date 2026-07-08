@@ -18,7 +18,7 @@ export function LanguageSwitcher({ current }: { current: Locale }) {
   }
 
   return (
-    <div className="flex items-center gap-1 rounded-full border border-default px-1 py-0.5" style={{ background: "rgb(var(--color-bg-elevated))" }}>
+    <div className="flex items-center gap-1 rounded-full border border-default bg-elevated px-1 py-0.5">
       {locales.map((locale) => (
         <button
           key={locale}
@@ -26,14 +26,9 @@ export function LanguageSwitcher({ current }: { current: Locale }) {
           aria-label={localeLabels[locale]}
           className={`rounded-full px-2.5 py-1 text-(length:--text-xs) font-semibold transition-colors ${
             locale === current
-              ? "text-white"
+              ? "bg-primary text-white"
               : "text-muted hover:text-foreground"
           }`}
-          style={
-            locale === current
-              ? { background: "rgb(var(--brand-primary))" }
-              : {}
-          }
         >
           {locale.toUpperCase()}
         </button>

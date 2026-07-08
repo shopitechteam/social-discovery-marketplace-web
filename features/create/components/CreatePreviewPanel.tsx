@@ -146,7 +146,6 @@ export function CreatePreviewPanel() {
             <TikTokCreatePreview
               embed={tiktokEmbed}
               className="absolute inset-0 h-full w-full"
-              style={{ aspectRatio: "auto" }}
               sizes="300px"
             />
           ) : cover?.type === "video" && cover.localUri ? (

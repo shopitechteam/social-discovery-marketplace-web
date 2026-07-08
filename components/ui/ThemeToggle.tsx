@@ -30,7 +30,7 @@ export function ThemeToggle() {
       <Sun
         size={14}
         strokeWidth={2.1}
-        style={{ color: isDark ? "rgb(var(--color-text-placeholder))" : "rgb(var(--brand-secondary))" }}
+        className={isDark ? "text-placeholder" : "text-secondary"}
         aria-hidden
       />
       <Switch
@@ -41,7 +41,7 @@ export function ThemeToggle() {
       <Moon
         size={14}
         strokeWidth={2.1}
-        style={{ color: isDark ? "rgb(var(--brand-accent))" : "rgb(var(--color-text-placeholder))" }}
+        className={isDark ? "text-accent" : "text-placeholder"}
         aria-hidden
       />
     </div>

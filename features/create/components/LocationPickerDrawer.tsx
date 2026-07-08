@@ -197,11 +197,11 @@ interface Props {
 function RadioCircle({ checked }: { checked: boolean }) {
   return (
     <span
-      className="flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors"
-      style={{
-        borderColor: checked ? "rgb(var(--brand-primary))" : "rgb(var(--color-border-strong))",
-        backgroundColor: checked ? "rgb(var(--brand-primary))" : "transparent",
-      }}
+      className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+        checked
+          ? "border-primary bg-primary"
+          : "border-[rgb(var(--color-border-strong))] bg-transparent"
+      }`}
     >
       {checked && <span className="w-2 h-2 rounded-full bg-white" />}
     </span>
@@ -211,7 +211,7 @@ function RadioCircle({ checked }: { checked: boolean }) {
 function Spinner({ small }: { small?: boolean }) {
   const s = small ? 14 : 24;
   return (
-    <svg className="animate-spin" width={s} height={s} viewBox="0 0 24 24" fill="none" style={{ color: "rgb(var(--brand-primary))" }}>
+    <svg className="animate-spin text-primary" width={s} height={s} viewBox="0 0 24 24" fill="none">
       <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
       <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
     </svg>
@@ -220,7 +220,7 @@ function Spinner({ small }: { small?: boolean }) {
 
 function LoadMoreRow({ label }: { label: string }) {
   return (
-    <div className="flex items-center justify-center gap-2 py-5" style={{ color: "rgb(var(--color-text-muted))", fontSize: "var(--text-xs)" }}>
+    <div className="flex items-center justify-center gap-2 py-5 text-xs text-muted">
       <Spinner small />
       <span>{label}</span>
     </div>
@@ -593,24 +593,23 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
     return (
       <button
         type="button"
-        className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:opacity-60"
-        style={{ borderBottom: "1px solid rgb(var(--color-border))" }}
+        className="flex w-full items-center gap-3 border-b border-border px-4 py-3.5 text-left active:opacity-60"
         onClick={() => { setSelectedId(id); onPick(); }}
         disabled={resolving}
       >
         <RadioCircle checked={selectedId === id} />
         <div className="flex-1 min-w-0">
-          <p className="font-semibold truncate" style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text))" }}>
+          <p className="truncate text-sm font-semibold text-foreground">
             {primary}
           </p>
           {secondary && (
-            <p className="truncate mt-0.5" style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}>
+            <p className="mt-0.5 truncate text-xs text-muted">
               {secondary}
             </p>
           )}
         </div>
         {region && (
-          <span className="flex-shrink-0 ml-2 text-right" style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}>
+          <span className="ml-2 flex-shrink-0 text-right text-xs text-muted">
             {region}
           </span>
         )}
@@ -659,14 +658,13 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
 
         {/* Header */}
         <DrawerHeader className="px-4 pt-5 pb-0 flex items-center justify-between flex-shrink-0">
-          <DrawerTitle style={{ fontSize: "var(--text-base)", color: "rgb(var(--color-text))" }}>
+          <DrawerTitle className="text-base text-foreground">
             Locations
           </DrawerTitle>
           <DrawerClose asChild>
             <button
               type="button"
-              className="w-8 h-8 flex items-center justify-center rounded-full"
-              style={{ color: "rgb(var(--color-text-muted))", backgroundColor: "rgb(var(--color-bg-subtle))" }}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-surface text-muted"
               aria-label="Close"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -677,18 +675,19 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
         </DrawerHeader>
 
         {/* Tabs */}
-        <div className="flex px-4 mt-3 flex-shrink-0" style={{ borderBottom: "1px solid rgb(var(--color-border))" }}>
+        <div className="mt-3 flex flex-shrink-0 border-b border-border px-4">
           {(["nearby", "all"] as Tab[]).map((t) => (
             <button
               key={t}
               type="button"
               onClick={() => setTab(t)}
-              className="mr-6 pb-2.5 text-sm font-semibold relative"
-              style={{ color: tab === t ? "rgb(var(--color-text))" : "rgb(var(--color-text-muted))" }}
+              className={`relative mr-6 pb-2.5 text-sm font-semibold ${
+                tab === t ? "text-foreground" : "text-muted"
+              }`}
             >
               {t === "nearby" ? "Nearby" : "All"}
               {tab === t && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full" style={{ backgroundColor: "rgb(var(--brand-primary))" }} />
+                <span className="absolute right-0 bottom-0 left-0 h-0.5 rounded-full bg-primary" />
               )}
             </button>
           ))}
@@ -699,20 +698,9 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
             type="button"
             onClick={handleUseCurrentLocation}
             disabled={currentLocationStatus === "loading" || resolving}
-            className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left active:opacity-70 disabled:opacity-70"
-            style={{
-              backgroundColor: "rgb(var(--brand-primary) / 0.08)",
-              border: "1px solid rgb(var(--brand-primary) / 0.18)",
-              color: "rgb(var(--color-text))",
-            }}
+            className="flex w-full items-center gap-3 rounded-xl border border-[rgb(var(--brand-primary)/0.18)] bg-[rgb(var(--brand-primary)/0.08)] px-3 py-3 text-left text-foreground active:opacity-70 disabled:opacity-70"
           >
-            <span
-              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{
-                backgroundColor: "rgb(var(--brand-primary) / 0.12)",
-                color: "rgb(var(--brand-primary))",
-              }}
-            >
+            <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary">
               {currentLocationStatus === "loading" ? (
                 <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none">
                   <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
@@ -727,12 +715,12 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
               )}
             </span>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold" style={{ fontSize: "var(--text-sm)" }}>
+              <p className="text-sm font-semibold">
                 {currentLocationStatus === "loading"
                   ? "Finding your location..."
                   : "Use my current location"}
               </p>
-              <p className="mt-0.5" style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}>
+              <p className="mt-0.5 text-xs text-muted">
                 {currentLocationStatus === "denied"
                   ? "Location permission is blocked. You can still search below."
                   : currentLocationStatus === "unavailable"
@@ -750,10 +738,7 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
         {/* Search — All tab */}
         {tab === "all" && (
           <div className="px-4 pt-3 pb-2 flex-shrink-0">
-            <div
-              className="flex items-center gap-2 rounded-xl px-3"
-              style={{ height: 42, backgroundColor: "rgb(var(--color-bg-subtle))", border: "1px solid rgb(var(--color-border))" }}
-            >
+            <div className="flex h-10.5 items-center gap-2 rounded-xl border border-border bg-surface px-3">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgb(var(--color-text-muted))" strokeWidth="2" strokeLinecap="round" className="flex-shrink-0">
                 <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
               </svg>
@@ -762,8 +747,7 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
                 value={query}
                 onChange={handleQueryChange}
                 placeholder="Search wards, towns, places…"
-                className="flex-1 bg-transparent outline-none"
-                style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text))", caretColor: "rgb(var(--brand-primary))" }}
+                className="flex-1 bg-transparent text-sm text-foreground caret-primary outline-none"
               />
               {query && (
                 <button
@@ -775,7 +759,7 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
                     setWards([]); setWardCursor(null); setWardHasMore(true);
                     loadWards(null);
                   }}
-                  style={{ color: "rgb(var(--color-text-muted))" }}
+                  className="text-muted"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                     <path d="M18 6L6 18M6 6l12 12" />
@@ -788,7 +772,7 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
 
         {/* Resolving indicator */}
         {resolving && (
-          <div className="px-4 py-2 flex items-center gap-2 flex-shrink-0" style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}>
+          <div className="flex flex-shrink-0 items-center gap-2 px-4 py-2 text-xs text-muted">
             <Spinner small />
             <span>Saving location…</span>
           </div>
@@ -801,7 +785,7 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
             {nearbyStatus === "loading" && (
               <div className="px-4 pt-3 space-y-0">
                 {Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-3 py-3.5" style={{ borderBottom: "1px solid rgb(var(--color-border))" }}>
+                  <div key={i} className="flex items-center gap-3 border-b border-border py-3.5">
                     <Skeleton className="w-5 h-5 rounded-full flex-shrink-0" />
                     <div className="flex-1 space-y-2">
                       <Skeleton className="h-3.5 w-2/3 rounded" />
@@ -820,7 +804,7 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
                   <circle cx="12" cy="10" r="3" />
                   <line x1="2" y1="2" x2="22" y2="22" />
                 </svg>
-                <p style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text-muted))" }}>
+                <p className="text-sm text-muted">
                   Location access denied.<br />Switch to <strong>All</strong> to search instead.
                 </p>
               </div>
@@ -832,23 +816,21 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
                   <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                   <circle cx="12" cy="10" r="3" />
                 </svg>
-                <p style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text-muted))" }}>
+                <p className="text-sm text-muted">
                   GPS signal weak — move to an open area or use <strong>All</strong> to search instead.
                 </p>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => { nearbyLoadedRef.current = false; setNearbyItems([]); radiusIndexRef.current = 0; startNearby(); }}
-                    className="px-4 py-2 rounded-lg text-sm font-semibold"
-                    style={{ backgroundColor: "rgb(var(--brand-primary) / 0.1)", color: "rgb(var(--brand-primary))" }}
+                    className="rounded-lg bg-[rgb(var(--brand-primary)/0.1)] px-4 py-2 text-sm font-semibold text-primary"
                   >
                     Retry
                   </button>
                   <button
                     type="button"
                     onClick={() => setTab("all")}
-                    className="px-4 py-2 rounded-lg text-sm font-semibold"
-                    style={{ backgroundColor: "rgb(var(--color-bg-subtle))", color: "rgb(var(--color-text))" }}
+                    className="rounded-lg bg-surface px-4 py-2 text-sm font-semibold text-foreground"
                   >
                     Search All
                   </button>
@@ -857,7 +839,7 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
             )}
 
             {(nearbyStatus === "done" || nearbyStatus === "loadingMore") && nearbyItems.length > 0 && (
-              <p className="px-4 py-2" style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}>
+              <p className="px-4 py-2 text-xs text-muted">
                 Within {radiusLabel(nearbyRadiusMeters)}
               </p>
             )}
@@ -882,13 +864,13 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
             {nearbyStatus === "loadingMore" && <LoadMoreRow label="Loading more places…" />}
 
             {nearbyStatus === "done" && !nearbyHasMore && nearbyItems.length > 0 && (
-              <p className="px-4 py-4 text-center" style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}>
+              <p className="px-4 py-4 text-center text-xs text-muted">
                 No more nearby places
               </p>
             )}
 
             {nearbyStatus === "done" && nearbyItems.length === 0 && (
-              <p className="px-4 py-10 text-center" style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text-muted))" }}>
+              <p className="px-4 py-10 text-center text-sm text-muted">
                 No places found nearby.
               </p>
             )}
@@ -902,7 +884,7 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
             {wardStatus === "loading" && (
               <div className="px-4 pt-3 space-y-0">
                 {Array.from({ length: 10 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-3 py-3.5" style={{ borderBottom: "1px solid rgb(var(--color-border))" }}>
+                  <div key={i} className="flex items-center gap-3 border-b border-border py-3.5">
                     <Skeleton className="w-5 h-5 rounded-full flex-shrink-0" />
                     <div className="flex-1 space-y-2">
                       <Skeleton className="h-3.5 w-1/2 rounded" />
@@ -914,7 +896,7 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
             )}
 
             {wardStatus !== "loading" && wards.length === 0 && query.trim().length >= 2 && (
-              <p className="px-4 py-10 text-center" style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text-muted))" }}>
+              <p className="px-4 py-10 text-center text-sm text-muted">
                 No results for &ldquo;{query}&rdquo;
               </p>
             )}
@@ -932,7 +914,7 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
             {wardStatus === "loadingMore" && <LoadMoreRow label="Loading more wards…" />}
 
             {wardStatus === "done" && !wardHasMore && wards.length > 0 && (
-              <p className="px-4 py-4 text-center" style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}>
+              <p className="px-4 py-4 text-center text-xs text-muted">
                 All wards loaded
               </p>
             )}

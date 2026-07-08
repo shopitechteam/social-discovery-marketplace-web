@@ -17,128 +17,45 @@ export default async function CareersPage({ params }: Props) {
       <LegalNav lang={lang} />
       <main>
         {/* Hero */}
-        <section
-          style={{
-            background:
-              "linear-gradient(135deg, rgb(var(--brand-primary) / 0.08) 0%, rgb(var(--brand-accent) / 0.06) 100%)",
-            padding: "6rem 1.25rem 4rem",
-            textAlign: "center",
-          }}
-        >
-          <div style={{ maxWidth: 640, margin: "0 auto" }}>
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.375rem",
-                padding: "0.35rem 1rem",
-                borderRadius: 9999,
-                border: "1px solid rgb(var(--brand-primary) / 0.3)",
-                background: "rgb(var(--brand-primary) / 0.07)",
-                color: "rgb(var(--brand-primary))",
-                fontSize: "0.75rem",
-                fontWeight: 600,
-                marginBottom: "1.5rem",
-                letterSpacing: "0.04em",
-              }}
-            >
+        <section className="bg-[linear-gradient(135deg,rgb(var(--brand-primary)/0.08)_0%,rgb(var(--brand-accent)/0.06)_100%)] px-5 pt-24 pb-16 text-center">
+          <div className="mx-auto max-w-160">
+            <div className="mb-6 inline-flex items-center gap-1.5 rounded-full border border-[rgb(var(--brand-primary)/0.3)] bg-[rgb(var(--brand-primary)/0.07)] px-4 py-[0.35rem] text-[0.75rem] font-semibold tracking-[0.04em] text-primary">
               ✦ We&apos;re hiring · 1 open role
             </div>
-            <h1
-              style={{
-                fontFamily: "var(--font-display)",
-                fontSize: "clamp(2rem, 5vw, 3.25rem)",
-                fontWeight: 800,
-                letterSpacing: "-0.03em",
-                color: "rgb(var(--color-text))",
-                lineHeight: 1.1,
-                marginBottom: "1.25rem",
-              }}
-            >
+            <h1 className="mb-5 font-display text-[clamp(2rem,5vw,3.25rem)] font-extrabold tracking-[-0.03em] leading-[1.1] text-foreground">
               Help us take care of every customer
             </h1>
-            <p
-              style={{
-                fontSize: "1.05rem",
-                color: "rgb(var(--color-text-muted))",
-                lineHeight: 1.7,
-              }}
-            >
+            <p className="text-[1.05rem] leading-[1.7] text-muted">
               We are a small remote team building Kenya&apos;s social commerce platform. Every person here matters — and right now, we need someone who will make every buyer and seller feel heard.
             </p>
           </div>
         </section>
 
         {/* Role card */}
-        <section style={{ maxWidth: 780, margin: "0 auto", padding: "3rem 1.25rem 6rem" }}>
-          <article
-            style={{
-              borderRadius: 20,
-              border: "1px solid rgb(var(--color-border))",
-              background: "rgb(var(--color-bg-elevated))",
-              overflow: "hidden",
-            }}
-          >
+        <section className="mx-auto max-w-195 px-5 pt-12 pb-24">
+          <article className="overflow-hidden rounded-lg border border-border bg-elevated">
             {/* Header */}
-            <div
-              style={{
-                padding: "2rem 2rem 1.75rem",
-                borderBottom: "1px solid rgb(var(--color-border))",
-                background: "rgb(var(--color-bg-subtle))",
-              }}
-            >
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginBottom: "1rem" }}>
+            <div className="border-b border-border bg-surface p-8 pb-7">
+              <div className="mb-4 flex flex-wrap gap-2">
                 {["Customer Service", "Full-time", "Remote — Kenya", "Salary: Negotiable"].map((tag) => (
                   <span
                     key={tag}
-                    style={{
-                      fontSize: "0.7rem",
-                      fontWeight: 700,
-                      padding: "3px 10px",
-                      borderRadius: 9999,
-                      background: "rgb(var(--brand-primary) / 0.1)",
-                      color: "rgb(var(--brand-primary))",
-                      letterSpacing: "0.04em",
-                      textTransform: "uppercase",
-                    }}
+                    className="rounded-full bg-[rgb(var(--brand-primary)/0.1)] px-[10px] py-[3px] text-[0.7rem] font-bold tracking-[0.04em] uppercase text-primary"
                   >
                     {tag}
                   </span>
                 ))}
               </div>
-              <h2
-                style={{
-                  fontFamily: "var(--font-display)",
-                  fontSize: "clamp(1.4rem, 3vw, 2rem)",
-                  fontWeight: 800,
-                  letterSpacing: "-0.02em",
-                  color: "rgb(var(--color-text))",
-                  marginBottom: "0.625rem",
-                }}
-              >
+              <h2 className="mb-2.5 font-display text-[clamp(1.4rem,3vw,2rem)] font-extrabold tracking-[-0.02em] text-foreground">
                 Customer Service Representative
               </h2>
-              <p
-                style={{
-                  fontSize: "0.95rem",
-                  color: "rgb(var(--color-text-muted))",
-                  lineHeight: 1.65,
-                  fontStyle: "italic",
-                }}
-              >
+              <p className="text-[0.95rem] leading-[1.65] text-muted italic">
                 Be the friendly face (and fast fingers) behind every great Shopi experience.
               </p>
             </div>
 
             {/* Body */}
-            <div
-              style={{
-                padding: "2rem",
-                display: "flex",
-                flexDirection: "column",
-                gap: "2rem",
-              }}
-            >
+            <div className="flex flex-col gap-8 p-8">
               {/* About */}
               <RoleSection title="About the role">
                 <p>
@@ -180,13 +97,7 @@ export default async function CareersPage({ params }: Props) {
 
               {/* Benefits */}
               <RoleSection title="What you get">
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr",
-                    gap: "0.875rem",
-                  }}
-                >
+                <div className="grid grid-cols-1 gap-3.5">
                   {[
                     {
                       icon: "🚀",
@@ -216,37 +127,16 @@ export default async function CareersPage({ params }: Props) {
                   ].map(({ icon, title, body }) => (
                     <div
                       key={title}
-                      style={{
-                        display: "flex",
-                        gap: "1rem",
-                        padding: "1.25rem",
-                        borderRadius: 12,
-                        border: "1px solid rgb(var(--color-border))",
-                        background: "rgb(var(--color-bg-subtle))",
-                        alignItems: "flex-start",
-                      }}
+                      className="flex items-start gap-4 rounded-md border border-border bg-surface p-5"
                     >
-                      <span style={{ fontSize: "1.5rem", flexShrink: 0, lineHeight: 1, marginTop: "0.1rem" }}>
+                      <span className="mt-[0.1rem] shrink-0 text-[1.5rem] leading-none">
                         {icon}
                       </span>
                       <div>
-                        <div
-                          style={{
-                            fontSize: "0.875rem",
-                            fontWeight: 700,
-                            color: "rgb(var(--color-text))",
-                            marginBottom: "0.3rem",
-                          }}
-                        >
+                        <div className="mb-[0.3rem] text-[0.875rem] font-bold text-foreground">
                           {title}
                         </div>
-                        <div
-                          style={{
-                            fontSize: "0.825rem",
-                            color: "rgb(var(--color-text-muted))",
-                            lineHeight: 1.65,
-                          }}
-                        >
+                        <div className="text-[0.825rem] leading-[1.65] text-muted">
                           {body}
                         </div>
                       </div>
@@ -256,41 +146,18 @@ export default async function CareersPage({ params }: Props) {
               </RoleSection>
 
               {/* Apply CTA */}
-              <div
-                style={{
-                  paddingTop: "1rem",
-                  borderTop: "1px solid rgb(var(--color-border))",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  flexWrap: "wrap",
-                  gap: "1rem",
-                }}
-              >
+              <div className="flex flex-wrap items-center justify-between gap-4 border-t border-border pt-4">
                 <div>
-                  <p style={{ fontSize: "0.875rem", fontWeight: 600, color: "rgb(var(--color-text))", marginBottom: "0.25rem" }}>
+                  <p className="mb-1 text-[0.875rem] font-semibold text-foreground">
                     Ready to apply?
                   </p>
-                  <p style={{ fontSize: "0.8rem", color: "rgb(var(--color-text-muted))" }}>
+                  <p className="text-[0.8rem] text-muted">
                     Send your CV and a short note (2–3 sentences) about why this role is a good fit for you.
                   </p>
                 </div>
                 <a
                   href="mailto:careers@shopi.app?subject=Application: Customer Service Representative"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                    padding: "0.75rem 1.75rem",
-                    borderRadius: 9999,
-                    background:
-                      "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-accent)))",
-                    color: "#fff",
-                    fontWeight: 700,
-                    fontSize: "0.875rem",
-                    textDecoration: "none",
-                    whiteSpace: "nowrap",
-                  }}
+                  className="inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,rgb(var(--brand-primary)),rgb(var(--brand-accent)))] px-7 py-3 text-[0.875rem] font-bold whitespace-nowrap text-white no-underline"
                 >
                   Apply now →
                 </a>
@@ -299,34 +166,13 @@ export default async function CareersPage({ params }: Props) {
           </article>
 
           {/* No other roles */}
-          <div
-            style={{
-              marginTop: "2.5rem",
-              padding: "2rem",
-              borderRadius: 16,
-              border: "1px solid rgb(var(--color-border))",
-              background: "rgb(var(--color-bg-subtle))",
-              textAlign: "center",
-            }}
-          >
-            <p
-              style={{
-                fontSize: "0.9rem",
-                color: "rgb(var(--color-text-muted))",
-                lineHeight: 1.7,
-                marginBottom: "1rem",
-              }}
-            >
+          <div className="mt-10 rounded-2xl border border-border bg-surface p-8 text-center">
+            <p className="mb-4 text-[0.9rem] leading-[1.7] text-muted">
               Don&apos;t see a role that fits? We are always open to hearing from great people.
             </p>
             <a
               href="mailto:careers@shopi.app?subject=Speculative Application"
-              style={{
-                fontSize: "0.875rem",
-                fontWeight: 600,
-                color: "rgb(var(--brand-primary))",
-                textDecoration: "underline",
-              }}
+              className="text-[0.875rem] font-semibold text-primary underline"
             >
               Send a speculative application
             </a>
@@ -341,28 +187,10 @@ export default async function CareersPage({ params }: Props) {
 function RoleSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h3
-        style={{
-          fontSize: "0.75rem",
-          fontWeight: 700,
-          letterSpacing: "0.07em",
-          textTransform: "uppercase",
-          color: "rgb(var(--color-text))",
-          marginBottom: "0.875rem",
-        }}
-      >
+      <h3 className="mb-3.5 text-[0.75rem] font-bold tracking-[0.07em] uppercase text-foreground">
         {title}
       </h3>
-      <div
-        style={{
-          fontSize: "0.9rem",
-          color: "rgb(var(--color-text-muted))",
-          lineHeight: 1.8,
-          display: "flex",
-          flexDirection: "column",
-          gap: "0.625rem",
-        }}
-      >
+      <div className="flex flex-col gap-2.5 text-[0.9rem] leading-[1.8] text-muted">
         {children}
       </div>
     </div>
@@ -371,20 +199,13 @@ function RoleSection({ title, children }: { title: string; children: React.React
 
 function BulletList({ items }: { items: string[] }) {
   return (
-    <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+    <ul className="m-0 flex list-none flex-col gap-2 p-0">
       {items.map((item) => (
         <li
           key={item}
-          style={{
-            display: "flex",
-            gap: "0.625rem",
-            fontSize: "0.875rem",
-            color: "rgb(var(--color-text-muted))",
-            lineHeight: 1.65,
-            alignItems: "flex-start",
-          }}
+          className="flex items-start gap-2.5 text-[0.875rem] leading-[1.65] text-muted"
         >
-          <span style={{ color: "rgb(var(--brand-primary))", flexShrink: 0, marginTop: "0.15em" }}>→</span>
+          <span className="mt-[0.15em] shrink-0 text-primary">→</span>
           {item}
         </li>
       ))}

@@ -535,35 +535,17 @@ export function StepEdit({
         placeholder="Add a title…"
         rows={1}
         data-title-input
-        className="w-full bg-transparent outline-none resize-none placeholder:text-base font-semibold leading-snug"
         aria-invalid={!!titleError}
-        style={{
-          fontSize: "var(--text-md)",
-          color: titleError
-            ? "rgb(var(--color-error))"
-            : "rgb(var(--color-text))",
-          caretColor: "rgb(var(--brand-primary))",
-          overflow: "hidden",
-        }}
+        className={`w-full overflow-hidden bg-transparent outline-none resize-none placeholder:text-base font-semibold leading-snug text-md caret-primary ${
+          titleError ? "text-error" : "text-foreground"
+        }`}
       />
       {titleError && (
-        <span
-          className="mt-1 font-medium"
-          style={{
-            fontSize: "var(--text-xs)",
-            color: "rgb(var(--color-error))",
-          }}
-        >
+        <span className="mt-1 text-xs font-medium text-error">
           {titleError}
         </span>
       )}
-      <span
-        className="mt-1"
-        style={{
-          fontSize: "var(--text-xs)",
-          color: "rgb(var(--color-text-muted))",
-        }}
-      >
+      <span className="mt-1 text-xs text-muted">
         {titleValue.length}/{MAX_TITLE}
       </span>
     </div>
@@ -572,23 +554,11 @@ export function StepEdit({
   const captionBlock = (
     <div>
       <div className="mb-1.5 flex items-center gap-2">
-        <label
-          className="font-medium"
-          style={{
-            fontSize: "var(--text-sm)",
-            color: "rgb(var(--color-text-muted))",
-          }}
-        >
+        <label className="text-sm font-medium text-muted">
           Detailed description (optional)
         </label>
         {isExtracting && (
-          <span
-            className="inline-flex items-center gap-1"
-            style={{
-              fontSize: "var(--text-xs)",
-              color: "rgb(var(--brand-primary))",
-            }}
-          >
+          <span className="inline-flex items-center gap-1 text-xs text-primary">
             <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
             Writing with AI…
           </span>
@@ -603,23 +573,10 @@ export function StepEdit({
         })}
         placeholder="Share what's on your mind…"
         rows={4}
-        className="w-full resize-none rounded-xl px-3 py-2.5 outline-none transition-all"
-        style={{
-          fontSize: "var(--text-base)",
-          color: "rgb(var(--color-text))",
-          backgroundColor: "rgb(var(--color-bg-subtle))",
-          border: "1px solid rgb(var(--color-border))",
-          caretColor: "rgb(var(--brand-primary))",
-        }}
+        className="w-full resize-none rounded-xl border border-border bg-surface px-3 py-2.5 text-base text-foreground caret-primary outline-none transition-all"
         maxLength={MAX_CAPTION}
       />
-      <p
-        className="text-right mt-1"
-        style={{
-          fontSize: "var(--text-xs)",
-          color: "rgb(var(--color-text-muted))",
-        }}
-      >
+      <p className="mt-1 text-right text-xs text-muted">
         {watchCaption?.length ?? 0}/{MAX_CAPTION}
       </p>
     </div>
@@ -627,33 +584,17 @@ export function StepEdit({
 
   const tagsBlock = (
     <div>
-      <label
-        className="block mb-1.5 font-medium"
-        style={{
-          fontSize: "var(--text-sm)",
-          color: "rgb(var(--color-text-muted))",
-        }}
-      >
+      <label className="mb-1.5 block text-sm font-medium text-muted">
         Tags (optional)
       </label>
       <div
-        className="flex flex-wrap gap-1.5 rounded-xl px-3 py-2.5 min-h-[44px]"
-        style={{
-          backgroundColor: "rgb(var(--color-bg-subtle))",
-          border: "1px solid rgb(var(--color-border))",
-        }}
+        className="flex min-h-11 flex-wrap gap-1.5 rounded-xl border border-border bg-surface px-3 py-2.5"
         onClick={() => document.getElementById("tag-input")?.focus()}
       >
         {tags.map((tag) => (
           <span
             key={tag}
-            className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5"
-            style={{
-              backgroundColor: "rgb(var(--brand-primary) / 0.12)",
-              color: "rgb(var(--brand-primary))",
-              fontSize: "var(--text-xs)",
-              fontWeight: 500,
-            }}
+            className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2.5 py-0.5 text-xs font-medium text-primary"
           >
             #{tag}
             <button
@@ -662,8 +603,7 @@ export function StepEdit({
                 e.stopPropagation();
                 removeTag(tag);
               }}
-              className="leading-none"
-              style={{ color: "rgb(var(--brand-primary))", opacity: 0.7 }}
+              className="leading-none text-primary opacity-70"
               aria-label={`Remove ${tag}`}
             >
               ×
@@ -681,21 +621,10 @@ export function StepEdit({
           placeholder={
             tags.length === 0 ? "fashion, style… (Enter to add)" : ""
           }
-          className="flex-1 min-w-30 bg-transparent outline-none"
-          style={{
-            fontSize: "var(--text-base)",
-            color: "rgb(var(--color-text))",
-            caretColor: "rgb(var(--brand-primary))",
-          }}
+          className="min-w-30 flex-1 bg-transparent text-base text-foreground caret-primary outline-none"
         />
       </div>
-      <p
-        style={{
-          fontSize: "var(--text-xs)",
-          color: "rgb(var(--color-text-muted))",
-          marginTop: 4,
-        }}
-      >
+      <p className="mt-1 text-xs text-muted">
         Press Enter or comma to add a tag
       </p>
     </div>
@@ -703,13 +632,7 @@ export function StepEdit({
 
   const categoryBlock = (
     <div data-field="category">
-      <label
-        className="block mb-1.5 font-medium"
-        style={{
-          fontSize: "var(--text-sm)",
-          color: "rgb(var(--color-text-muted))",
-        }}
-      >
+      <label className="mb-1.5 block text-sm font-medium text-muted">
         Category
       </label>
       <CategoryPickerDrawer
@@ -721,60 +644,24 @@ export function StepEdit({
         }}
       />
       {categoryError && (
-        <p
-          className="font-medium"
-          style={{
-            fontSize: "var(--text-xs)",
-            color: "rgb(var(--color-error))",
-            marginTop: 6,
-          }}
-        >
+        <p className="mt-1.5 text-xs font-medium text-error">
           {categoryError}
         </p>
       )}
       {hasExtracted && categoryId && categorySource === "ai" && (
-        <p
-          style={{
-            fontSize: "var(--text-xs)",
-            color: "rgb(var(--brand-primary))",
-            marginTop: 6,
-          }}
-        >
-          AI suggestion
-        </p>
+        <p className="mt-1.5 text-xs text-primary">AI suggestion</p>
       )}
     </div>
   );
 
   const priceBlock = (
     <div>
-      <label
-        className="block mb-1.5 font-medium"
-        style={{
-          fontSize: "var(--text-sm)",
-          color: "rgb(var(--color-text-muted))",
-        }}
-      >
+      <label className="mb-1.5 block text-sm font-medium text-muted">
         Price (optional)
       </label>
       <div className="flex items-center gap-3">
-        <div
-          className="flex items-center gap-2 flex-1 rounded-xl px-3"
-          style={{
-            height: 48,
-            backgroundColor: "rgb(var(--color-bg-subtle))",
-            border: "1px solid rgb(var(--color-border))",
-          }}
-        >
-          <span
-            style={{
-              color: "rgb(var(--color-text-muted))",
-              fontSize: "var(--text-sm)",
-              fontWeight: 500,
-            }}
-          >
-            {currency}
-          </span>
+        <div className="flex h-12 flex-1 items-center gap-2 rounded-xl border border-border bg-surface px-3">
+          <span className="text-sm font-medium text-muted">{currency}</span>
           <input
             type="number"
             min="0"
@@ -782,11 +669,7 @@ export function StepEdit({
             placeholder="0"
             value={priceInput}
             onChange={(e) => setPriceInput(e.target.value)}
-            className="flex-1 bg-transparent outline-none"
-            style={{
-              fontSize: "var(--text-md)",
-              color: "rgb(var(--color-text))",
-            }}
+            className="flex-1 bg-transparent text-md text-foreground outline-none"
           />
         </div>
         <button
@@ -795,29 +678,16 @@ export function StepEdit({
             setPriceInput("");
             setPrice(0, true);
           }}
-          className="rounded-xl  px-3 py-2 font-medium"
-          style={{
-            backgroundColor:
-              !priceInput || priceInput === "0"
-                ? "rgb(var(--brand-primary) / 0.12)"
-                : "rgb(var(--color-bg-subtle))",
-            color:
-              !priceInput || priceInput === "0"
-                ? "rgb(var(--brand-primary))"
-                : "rgb(var(--color-text-muted))",
-            fontSize: "var(--text-sm)",
-          }}
+          className={`rounded-xl px-3 py-2 text-sm font-medium ${
+            !priceInput || priceInput === "0"
+              ? "bg-primary-soft text-primary"
+              : "bg-surface text-muted"
+          }`}
         >
           Custom
         </button>
       </div>
-      <p
-        style={{
-          fontSize: "var(--text-xs)",
-          color: "rgb(var(--color-text-muted))",
-          marginTop: 6,
-        }}
-      >
+      <p className="mt-1.5 text-xs text-muted">
         Set a price in {currency} or leave at 0 for custom
       </p>
     </div>
@@ -825,13 +695,7 @@ export function StepEdit({
 
   const locationBlock = (
     <div data-field="location">
-      <label
-        className="block mb-1.5 font-medium"
-        style={{
-          fontSize: "var(--text-sm)",
-          color: "rgb(var(--color-text-muted))",
-        }}
-      >
+      <label className="mb-1.5 block text-sm font-medium text-muted">
         Location
       </label>
       <LocationPicker
@@ -846,24 +710,11 @@ export function StepEdit({
         }}
       />
       {locationError && (
-        <p
-          className="font-medium"
-          style={{
-            fontSize: "var(--text-xs)",
-            color: "rgb(var(--color-error))",
-            marginTop: 6,
-          }}
-        >
+        <p className="mt-1.5 text-xs font-medium text-error">
           {locationError}
         </p>
       )}
-      <p
-        style={{
-          fontSize: "var(--text-xs)",
-          color: "rgb(var(--color-text-muted))",
-          marginTop: 6,
-        }}
-      >
+      <p className="mt-1.5 text-xs text-muted">
         Helps buyers find your listing nearby
       </p>
     </div>
@@ -878,43 +729,18 @@ export function StepEdit({
   // media is, not buried in the bottom error bar.
   const mediaErrorBlock =
     mediaError && !hasUsableMedia ? (
-      <p
-        className="font-medium"
-        style={{
-          fontSize: "var(--text-xs)",
-          color: "rgb(var(--color-error))",
-          marginTop: 8,
-        }}
-      >
-        {mediaError}
-      </p>
+      <p className="mt-2 text-xs font-medium text-error">{mediaError}</p>
     ) : null;
 
   const errorBlock = error ? (
-    <div
-      className="rounded-xl px-4 py-3"
-      style={{
-        backgroundColor: "rgb(var(--color-error) / 0.08)",
-        border: "1px solid rgb(var(--color-error) / 0.2)",
-        color: "rgb(var(--color-error))",
-        fontSize: "var(--text-sm)",
-      }}
-    >
+    <div className="rounded-xl border border-[rgb(var(--color-error)/0.2)] bg-[rgb(var(--color-error)/0.08)] px-4 py-3 text-sm text-error">
       {error}
     </div>
   ) : null;
 
   // ── Desktop media preview panel (left column) ──────────────────────────────
   const desktopPreview = (
-    <div
-      className="hidden md:flex md:flex-col md:gap-4 md:p-8 md:overflow-y-auto"
-      style={{
-        width: 340,
-        flexShrink: 0,
-        borderRight: "1px solid rgb(var(--color-border))",
-        backgroundColor: "rgb(var(--color-bg-subtle))",
-      }}
-    >
+    <div className="hidden w-85 shrink-0 border-r border-border bg-surface md:flex md:flex-col md:gap-4 md:p-8 md:overflow-y-auto">
       <div data-field="media">
         <MediaPicker />
         {mediaErrorBlock}
@@ -922,13 +748,7 @@ export function StepEdit({
 
       {/* Title preview */}
       {titleValue && (
-        <p
-          className="text-center font-semibold line-clamp-2"
-          style={{
-            fontSize: "var(--text-base)",
-            color: "rgb(var(--color-text))",
-          }}
-        >
+        <p className="line-clamp-2 text-center text-base font-semibold text-foreground">
           {titleValue}
         </p>
       )}
@@ -946,20 +766,10 @@ export function StepEdit({
         {/* Header — sticky so it stays pinned while the form scrolls.
             Hidden when embedded: the dialog header owns back + stepper. */}
         {!embedded && (
-          <div
-            className="sticky top-0 z-50 flex items-center justify-between px-4 pt-4 pb-3 shrink-0 border-b"
-            style={{
-              backgroundColor: "rgb(var(--color-bg))",
-              borderColor: "rgb(var(--color-border))",
-            }}
-          >
+          <div className="sticky top-0 z-50 flex shrink-0 items-center justify-between border-b border-border bg-background px-4 pt-4 pb-3">
             <button
               onClick={onBack}
-              className="flex items-center gap-1"
-              style={{
-                color: "rgb(var(--color-text-muted))",
-                fontSize: "var(--text-sm)",
-              }}
+              className="flex items-center gap-1 text-sm text-muted"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                 <path
@@ -972,15 +782,7 @@ export function StepEdit({
               </svg>
               Back
             </button>
-            <h2
-              className="font-semibold"
-              style={{
-                fontSize: "var(--text-lg)",
-                color: "rgb(var(--color-text))",
-              }}
-            >
-              Details
-            </h2>
+            <h2 className="text-lg font-semibold text-foreground">Details</h2>
             {/* Spacer balances the back button so the title stays centred.
                 The primary action now lives in the sticky bottom bar. */}
             <span aria-hidden className="w-12" />
@@ -1043,12 +845,7 @@ export function StepEdit({
             required fields are valid. Replaces the old top-right button so the
             primary action sits where the thumb is. */}
         <div
-          className={`sticky bottom-0 z-50 shrink-0 border-t pt-3 ${embedded ? "px-8" : "px-4"}`}
-          style={{
-            backgroundColor: "rgb(var(--color-bg))",
-            borderColor: "rgb(var(--color-border))",
-            paddingBottom: "calc(0.75rem + var(--safe-bottom))",
-          }}
+          className={`sticky bottom-0 z-50 shrink-0 border-t border-border bg-background pt-3 pb-[calc(0.75rem+var(--safe-bottom))] ${embedded ? "px-8" : "px-4"}`}
         >
           <button
             onClick={handleSubmit(onNext)}
@@ -1059,11 +856,9 @@ export function StepEdit({
             // as a soft hint that something still needs attention.
             disabled={advancing}
             aria-disabled={!canProceed}
-            className="w-full h-12 rounded-full font-semibold bg-primary text-white transition-opacity disabled:cursor-not-allowed"
-            style={{
-              fontSize: "var(--text-base)",
-              opacity: advancing ? 0.6 : canProceed ? 1 : 0.55,
-            }}
+            className={`h-12 w-full rounded-full bg-primary text-base font-semibold text-white transition-opacity disabled:cursor-not-allowed ${
+              advancing ? "opacity-60" : canProceed ? "opacity-100" : "opacity-55"
+            }`}
           >
             {advancing ? "Saving…" : "Next"}
           </button>
@@ -1073,11 +868,6 @@ export function StepEdit({
   );
 }
 
-function Divider({ className }: { className?: string }) {
-  return (
-    <div
-      className={className}
-      style={{ height: 1, backgroundColor: "rgb(var(--color-border))" }}
-    />
-  );
+function Divider({ className = "" }: { className?: string }) {
+  return <div className={`h-px bg-border ${className}`} />;
 }

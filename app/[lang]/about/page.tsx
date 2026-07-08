@@ -74,44 +74,17 @@ export default async function AboutPage({ params }: Props) {
       <LegalNav lang={lang} />
       <main>
         {/* Hero */}
-        <section style={{ padding: "6rem 1.25rem 4rem", textAlign: "center" }}>
-          <div style={{ maxWidth: 680, margin: "0 auto" }}>
-            <p
-              style={{
-                fontSize: "0.8rem",
-                fontWeight: 700,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                color: "rgb(var(--brand-primary))",
-                marginBottom: "1rem",
-              }}
-            >
+        <section className="px-5 pt-24 pb-16 text-center">
+          <div className="mx-auto max-w-170">
+            <p className="mb-4 text-[0.8rem] font-bold tracking-widest uppercase text-primary">
               Our story
             </p>
-            <h1
-              style={{
-                fontFamily: "var(--font-display)",
-                fontSize: "clamp(2rem, 5vw, 3.25rem)",
-                fontWeight: 700,
-                letterSpacing: "-0.03em",
-                color: "rgb(var(--color-text))",
-                lineHeight: 1.1,
-                marginBottom: "1.25rem",
-              }}
-            >
+            <h1 className="mb-5 font-display text-[clamp(2rem,5vw,3.25rem)] font-bold tracking-[-0.03em] leading-[1.1] text-foreground">
               Commerce is social.
               <br />
               We built the proof.
             </h1>
-            <p
-              style={{
-                fontSize: "1.1rem",
-                color: "rgb(var(--color-text-muted))",
-                lineHeight: 1.7,
-                maxWidth: 560,
-                margin: "0 auto",
-              }}
-            >
+            <p className="mx-auto max-w-140 text-[1.1rem] leading-[1.7] text-muted">
               Shopi was born in Nairobi from a simple observation: Kenyans already
               discover and recommend products through WhatsApp groups, Instagram
               stories, and TikTok videos. We just built a marketplace that makes
@@ -121,25 +94,16 @@ export default async function AboutPage({ params }: Props) {
         </section>
 
         {/* Mission */}
-        <section style={{ maxWidth: 780, margin: "0 auto", padding: "2rem 1.25rem 4rem" }}>
-          <h2
-            style={{
-              fontFamily: "var(--font-display)",
-              fontSize: "1.6rem",
-              fontWeight: 700,
-              letterSpacing: "-0.02em",
-              color: "rgb(var(--color-text))",
-              marginBottom: "1rem",
-            }}
-          >
+        <section className="mx-auto max-w-195 px-5 pt-8 pb-16">
+          <h2 className="mb-4 font-display text-[1.6rem] font-bold tracking-[-0.02em] text-foreground">
             Our mission
           </h2>
-          <p style={{ fontSize: "1rem", color: "rgb(var(--color-text-muted))", lineHeight: 1.8 }}>
+          <p className="text-[1rem] leading-[1.8] text-muted">
             To make every Kenyan seller discoverable and every Kenyan buyer
             confident — without needing a big marketing budget or a complicated
             checkout flow.
           </p>
-          <p style={{ fontSize: "1rem", color: "rgb(var(--color-text-muted))", lineHeight: 1.8, marginTop: "0.875rem" }}>
+          <p className="mt-3.5 text-[1rem] leading-[1.8] text-muted">
             We believe the future of commerce in Africa is not built on catalogues
             and shopping carts — it is built on trust, community, and authentic
             content. Shopi is where that happens. We do not take a commission or
@@ -148,58 +112,23 @@ export default async function AboutPage({ params }: Props) {
         </section>
 
         {/* Values */}
-        <section style={{ background: "rgb(var(--color-bg-subtle))", padding: "4rem 1.25rem" }}>
-          <div style={{ maxWidth: 780, margin: "0 auto" }}>
-            <h2
-              style={{
-                fontFamily: "var(--font-display)",
-                fontSize: "1.6rem",
-                fontWeight: 700,
-                letterSpacing: "-0.02em",
-                color: "rgb(var(--color-text))",
-                marginBottom: "2.5rem",
-                textAlign: "center",
-              }}
-            >
+        <section className="bg-surface px-5 py-16">
+          <div className="mx-auto max-w-195">
+            <h2 className="mb-10 text-center font-display text-[1.6rem] font-bold tracking-[-0.02em] text-foreground">
               What we stand for
             </h2>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "1.25rem" }}>
+            <div className="grid grid-cols-1 gap-5">
               {values.map(({ title, body }) => (
                 <div
                   key={title}
-                  style={{
-                    display: "flex",
-                    gap: "1.25rem",
-                    padding: "1.5rem",
-                    borderRadius: 16,
-                    border: "1px solid rgb(var(--color-border))",
-                    background: "rgb(var(--color-bg-elevated))",
-                    alignItems: "flex-start",
-                  }}
+                  className="flex items-start gap-5 rounded-2xl border border-border bg-elevated p-6"
                 >
-                  <span
-                    style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: "50%",
-                      background: "rgb(var(--brand-primary))",
-                      flexShrink: 0,
-                      marginTop: 9,
-                    }}
-                  />
+                  <span className="mt-[9px] h-2 w-2 shrink-0 rounded-full bg-primary" />
                   <div>
-                    <h3
-                      style={{
-                        fontFamily: "var(--font-display)",
-                        fontSize: "1rem",
-                        fontWeight: 700,
-                        color: "rgb(var(--color-text))",
-                        marginBottom: "0.5rem",
-                      }}
-                    >
+                    <h3 className="mb-2 font-display text-[1rem] font-bold text-foreground">
                       {title}
                     </h3>
-                    <p style={{ fontSize: "0.875rem", color: "rgb(var(--color-text-muted))", lineHeight: 1.7 }}>
+                    <p className="text-[0.875rem] leading-[1.7] text-muted">
                       {body}
                     </p>
                   </div>
@@ -210,35 +139,21 @@ export default async function AboutPage({ params }: Props) {
         </section>
 
         {/* Team */}
-        <section style={{ maxWidth: 780, margin: "0 auto", padding: "4rem 1.25rem" }}>
-          <h2
-            style={{
-              fontFamily: "var(--font-display)",
-              fontSize: "1.6rem",
-              fontWeight: 700,
-              letterSpacing: "-0.02em",
-              color: "rgb(var(--color-text))",
-              marginBottom: "0.75rem",
-            }}
-          >
+        <section className="mx-auto max-w-195 px-5 py-16">
+          <h2 className="mb-3 font-display text-[1.6rem] font-bold tracking-[-0.02em] text-foreground">
             The team
           </h2>
-          <p style={{ fontSize: "0.95rem", color: "rgb(var(--color-text-muted))", lineHeight: 1.7, marginBottom: "2rem", maxWidth: 560 }}>
+          <p className="mb-8 max-w-140 text-[0.95rem] leading-[1.7] text-muted">
             We are a small, focused team building consumer technology and commerce
             for East Africa.
           </p>
-          <div
-            style={{
-              padding: "2rem",
-              borderRadius: 16,
-              border: "1px solid rgb(var(--color-border))",
-              background: "rgb(var(--color-bg-elevated))",
-              textAlign: "center",
-            }}
-          >
-            <p style={{ fontSize: "0.95rem", color: "rgb(var(--color-text-muted))", lineHeight: 1.7 }}>
+          <div className="rounded-2xl border border-border bg-elevated p-8 text-center">
+            <p className="text-[0.95rem] leading-[1.7] text-muted">
               Want to build with us? Check out our{" "}
-              <Link href={`/${lang}/careers`} style={{ color: "rgb(var(--brand-primary))", textDecoration: "underline" }}>
+              <Link
+                href={`/${lang}/careers`}
+                className="text-primary underline"
+              >
                 open roles
               </Link>
               .
@@ -247,35 +162,17 @@ export default async function AboutPage({ params }: Props) {
         </section>
 
         {/* Contact CTA */}
-        <section style={{ background: "rgb(var(--color-bg-subtle))", padding: "4rem 1.25rem", textAlign: "center" }}>
-          <div style={{ maxWidth: 520, margin: "0 auto" }}>
-            <h2
-              style={{
-                fontFamily: "var(--font-display)",
-                fontSize: "1.75rem",
-                fontWeight: 700,
-                letterSpacing: "-0.02em",
-                color: "rgb(var(--color-text))",
-                marginBottom: "1rem",
-              }}
-            >
+        <section className="bg-surface px-5 py-16 text-center">
+          <div className="mx-auto max-w-130">
+            <h2 className="mb-4 font-display text-[1.75rem] font-bold tracking-[-0.02em] text-foreground">
               Get in touch
             </h2>
-            <p style={{ fontSize: "0.95rem", color: "rgb(var(--color-text-muted))", lineHeight: 1.7, marginBottom: "1.75rem" }}>
+            <p className="mb-7 text-[0.95rem] leading-[1.7] text-muted">
               Partnership enquiries, press, or just want to say hello?
             </p>
             <a
               href="mailto:hello@shopi.co.ke"
-              style={{
-                display: "inline-block",
-                padding: "0.75rem 2rem",
-                borderRadius: 9999,
-                background: "rgb(var(--brand-primary))",
-                color: "#fff",
-                fontWeight: 700,
-                fontSize: "0.9rem",
-                textDecoration: "none",
-              }}
+              className="inline-block rounded-full bg-primary px-8 py-3 text-[0.9rem] font-bold text-white no-underline"
             >
               hello@shopi.co.ke
             </a>

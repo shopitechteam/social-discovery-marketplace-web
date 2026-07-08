@@ -129,11 +129,7 @@ export function MediaPicker() {
         <div>
           <TikTokCreatePreview
             embed={tiktokEmbed}
-            className="mx-auto rounded-2xl border"
-            style={{
-              maxWidth: 240,
-              borderColor: "rgb(var(--color-border))",
-            }}
+            className="mx-auto aspect-[9/16] max-w-60 rounded-2xl border border-border"
           />
         </div>
       );

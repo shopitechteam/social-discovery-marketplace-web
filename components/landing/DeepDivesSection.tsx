@@ -22,28 +22,28 @@ export function DeepDivesSection({
       id: "dive-feed",
       copy: t.feed,
       mockup: <FeedMockup />,
-      tint: "rgb(var(--brand-primary) / 0.07)",
+      tint: "bg-[rgb(var(--brand-primary)/0.07)]",
       primaryHref: `/${lang}/feed`,
     },
     {
       id: "dive-chat",
       copy: t.chat,
       mockup: <ChatMockup />,
-      tint: "rgb(var(--brand-accent) / 0.07)",
+      tint: "bg-[rgb(var(--brand-accent)/0.07)]",
       primaryHref: `/${lang}/feed`,
     },
     {
       id: "creators",
       copy: t.sell,
       mockup: <SellMockup />,
-      tint: "rgb(var(--brand-secondary) / 0.10)",
+      tint: "bg-[rgb(var(--brand-secondary)/0.10)]",
       primaryHref: `/${lang}/upload`,
     },
   ];
 
   return (
-    <section className="px-[var(--landing-page-x)]">
-      <div className="mx-auto flex max-w-[var(--landing-page-max)] flex-col gap-8 md:gap-14">
+    <section className="px-(--landing-page-x)">
+      <div className="mx-auto flex max-w-(--landing-page-max) flex-col gap-8 md:gap-14">
         {dives.map(({ id, copy, mockup, tint, primaryHref }, i) => (
           <article
             key={id}
@@ -52,10 +52,9 @@ export function DeepDivesSection({
           >
             {/* Media on a tinted canvas */}
             <div
-              className={`flex justify-center rounded-3xl p-8 md:p-14 ${
+              className={`flex justify-center rounded-3xl p-8 md:p-14 ${tint} ${
                 i % 2 === 1 ? "md:order-2" : ""
               }`}
-              style={{ backgroundColor: tint }}
             >
               {mockup}
             </div>

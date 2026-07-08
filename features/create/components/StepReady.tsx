@@ -202,12 +202,7 @@ export function StepReady({ lang }: StepReadyProps) {
     return (
       <div className="flex flex-col h-full items-center justify-center gap-5 px-6 pb-16">
         <div
-          className="w-20 h-20 rounded-full flex items-center justify-center"
-          style={{
-            background:
-              "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)))",
-            boxShadow: "0 8px 32px rgb(var(--brand-primary) / 0.4)",
-          }}
+          className="flex h-20 w-20 items-center justify-center rounded-full bg-[linear-gradient(135deg,rgb(var(--brand-primary)),rgb(var(--brand-secondary)))] shadow-[0_8px_32px_rgb(var(--brand-primary)/0.4)]"
         >
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
             <path
@@ -220,43 +215,20 @@ export function StepReady({ lang }: StepReadyProps) {
           </svg>
         </div>
         <div className="text-center">
-          <h2
-            className="font-bold mb-1"
-            style={{
-              fontSize: "var(--text-xl)",
-              color: "rgb(var(--color-text))",
-            }}
-          >
+          <h2 className="mb-1 text-xl font-bold text-foreground">
             Published! 🎉
           </h2>
-          <p
-            style={{
-              fontSize: "var(--text-base)",
-              color: "rgb(var(--color-text-muted))",
-            }}
-          >
-            Your post is live on the feed
-          </p>
+          <p className="text-base text-muted">Your post is live on the feed</p>
         </div>
 
         {tiktokReconnectNeeded && (
           <div
-            className="w-full max-w-xs rounded-xl px-4 py-3 text-center"
-            style={{
-              backgroundColor: "rgb(var(--color-bg-subtle))",
-              border: "1px solid rgb(var(--color-border))",
-            }}
+            className="w-full max-w-xs rounded-xl border border-border bg-surface px-4 py-3 text-center"
           >
-            <p
-              className="font-semibold text-sm mb-1"
-              style={{ color: "rgb(var(--color-text))" }}
-            >
+            <p className="mb-1 text-sm font-semibold text-foreground">
               TikTok cross-post needs reconnect
             </p>
-            <p
-              className="text-xs mb-3"
-              style={{ color: "rgb(var(--color-text-muted))" }}
-            >
+            <p className="mb-3 text-xs text-muted">
               Your TikTok connection needs the posting permission. Reconnect
               once and it will work automatically next time.
             </p>
@@ -273,11 +245,7 @@ export function StepReady({ lang }: StepReadyProps) {
                   /* ignore */
                 }
               }}
-              className="text-xs font-semibold px-4 py-2 rounded-full"
-              style={{
-                backgroundColor: "rgb(var(--brand-primary))",
-                color: "white",
-              }}
+              className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-white"
             >
               Reconnect TikTok
             </button>
@@ -289,38 +257,13 @@ export function StepReady({ lang }: StepReadyProps) {
 
   // ── VIDEO — fullscreen TikTok-style layout ────────────────────────────────
   if (isVideo) {
-    const safeBottom = "env(safe-area-inset-bottom)";
-    const safeTop = "env(safe-area-inset-top)";
-
     return (
-      <div
-        style={{
-          position: "fixed",
-          inset: 0,
-          zIndex: 50,
-          background: "black",
-          display: "flex",
-          alignItems: "stretch",
-          justifyContent: "center",
-        }}
-      >
+      <div className="fixed inset-0 z-50 flex items-stretch justify-center bg-black">
         {/* Dimmed side panels on desktop */}
-        <div
-          className="hidden md:block"
-          style={{ flex: 1, background: "rgba(0,0,0,0.7)" }}
-        />
+        <div className="hidden flex-1 bg-black/70 md:block" />
 
         {/* ── Main column ─────────────────────────────────────────────────── */}
-        <div
-          style={{
-            position: "relative",
-            width: "100%",
-            maxWidth: 430,
-            background: "black",
-            flexShrink: 0,
-            overflow: "hidden",
-          }}
-        >
+        <div className="relative w-full max-w-107.5 shrink-0 overflow-hidden bg-black">
           {/* ── MuxPlayer fills column, contain keeps aspect ratio ─────── */}
           {tiktokEmbed ? (
             // Embed-backed post: we don't host the video. Show the TikTok cover
@@ -350,17 +293,13 @@ export function StepReady({ lang }: StepReadyProps) {
               muted={muted}
               playsInline
               preload="auto"
-              className="object-contain?."
+              className="absolute inset-0 h-full w-full"
               poster={
                 cover.thumbnailUrl ??
                 `https://image.mux.com/${cover.muxPlaybackId}/thumbnail.webp?time=0&width=720`
               }
               style={
                 {
-                  position: "absolute",
-                  inset: 0,
-                  width: "100%",
-                  height: "100%",
                   // contain = letterbox; video fills as much as possible without cropping
                   "--media-object-fit": "contain",
                   "--media-object-position": "center center",
@@ -373,61 +312,26 @@ export function StepReady({ lang }: StepReadyProps) {
             // Blob fallback (regular upload still processing)
             <video
               src={cover.localUri}
-              style={{
-                position: "absolute",
-                inset: 0,
-                width: "100%",
-                height: "100%",
-                objectFit: "contain",
-              }}
+              className="absolute inset-0 h-full w-full object-contain"
               autoPlay
               loop
               muted={muted}
               playsInline
             />
           ) : (
-            <div
-              style={{ position: "absolute", inset: 0, background: "#111" }}
-            />
+            <div className="absolute inset-0 bg-[#111]" />
           )}
 
           {/* ── Tap overlay — play/pause (z:10) ─────────────────────────── */}
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              zIndex: 10,
-              cursor: "pointer",
-            }}
-            onClick={togglePlay}
-          />
+          <div className="absolute inset-0 z-10 cursor-pointer" onClick={togglePlay} />
 
           {/* ── Pause icon flash (z:20, no pointer events) ───────────────── */}
           {showPauseIcon && paused && (
             <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                zIndex: 20,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                pointerEvents: "none",
-              }}
+              className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center"
               onTransitionEnd={() => setShowPauseIcon(false)}
             >
-              <div
-                style={{
-                  width: 72,
-                  height: 72,
-                  borderRadius: "50%",
-                  background: "rgba(0,0,0,0.5)",
-                  backdropFilter: "blur(8px)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
+              <div className="flex h-18 w-18 items-center justify-center rounded-full bg-black/50 backdrop-blur-[8px]">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="white">
                   <rect x="6" y="4" width="4" height="16" rx="1" />
                   <rect x="14" y="4" width="4" height="16" rx="1" />
@@ -437,50 +341,14 @@ export function StepReady({ lang }: StepReadyProps) {
           )}
 
           {/* ── Gradients (z:20, no pointer events) ─────────────────────── */}
-          <div
-            style={{
-              position: "absolute",
-              inset: "0 0 auto 0",
-              height: 120,
-              zIndex: 20,
-              background:
-                "linear-gradient(to bottom,rgba(0,0,0,0.6),transparent)",
-              pointerEvents: "none",
-            }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              inset: "auto 0 0 0",
-              height: 260,
-              zIndex: 20,
-              background:
-                "linear-gradient(to top,rgba(0,0,0,0.85),transparent)",
-              pointerEvents: "none",
-            }}
-          />
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-30 bg-[linear-gradient(to_bottom,rgba(0,0,0,0.6),transparent)]" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-65 bg-[linear-gradient(to_top,rgba(0,0,0,0.85),transparent)]" />
 
           {/* ── Mute button (z:30) ──────────────────────────────────────── */}
           <button
             onClickCapture={handleMuteClick}
             aria-label={muted ? "Unmute" : "Mute"}
-            style={{
-              position: "absolute",
-              zIndex: 30,
-              top: `calc(44px + ${safeTop})`,
-              right: 16,
-              width: 40,
-              height: 40,
-              borderRadius: "50%",
-              background: "rgba(0,0,0,0.5)",
-              backdropFilter: "blur(8px)",
-              border: "none",
-              cursor: "pointer",
-              color: "white",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
+            className="absolute top-[calc(44px+env(safe-area-inset-top))] right-4 z-30 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border-none bg-black/50 text-white backdrop-blur-[8px]"
           >
             {muted ? (
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -524,20 +392,7 @@ export function StepReady({ lang }: StepReadyProps) {
           {/* ── Back button (z:30) ──────────────────────────────────────── */}
           <button
             onClick={() => setStep("options")}
-            style={{
-              position: "absolute",
-              zIndex: 30,
-              top: `calc(48px + ${safeTop})`,
-              left: 16,
-              color: "white",
-              fontSize: "var(--text-sm)",
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-            }}
+            className="absolute top-[calc(48px+env(safe-area-inset-top))] left-4 z-30 flex cursor-pointer items-center gap-1 border-none bg-transparent text-sm text-white"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
               <path
@@ -552,90 +407,31 @@ export function StepReady({ lang }: StepReadyProps) {
           </button>
 
           {/* ── Caption (z:30) ──────────────────────────────────────────── */}
-          <div
-            style={{
-              position: "absolute",
-              zIndex: 30,
-              left: 16,
-              right: 60,
-              bottom: `calc(168px + ${safeBottom})`,
-            }}
-          >
+          <div className="absolute right-15 bottom-[calc(168px+env(safe-area-inset-bottom))] left-4 z-30">
             {title && (
-              <p
-                style={{
-                  fontWeight: 600,
-                  color: "white",
-                  marginBottom: 4,
-                  fontSize: "var(--text-md)",
-                }}
-              >
-                {title}
-              </p>
+              <p className="mb-1 text-md font-semibold text-white">{title}</p>
             )}
             {caption && (
-              <p
-                style={
-                  {
-                    color: "rgba(255,255,255,0.8)",
-                    fontSize: "var(--text-sm)",
-                    display: "-webkit-box",
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: "vertical",
-                    overflow: "hidden",
-                  } as React.CSSProperties
-                }
-              >
-                {caption}
-              </p>
+              <p className="line-clamp-2 text-sm text-white/80">{caption}</p>
             )}
             {hashtags.length > 0 && (
-              <p
-                style={{
-                  marginTop: 4,
-                  fontSize: "var(--text-sm)",
-                  color: "rgb(var(--brand-primary))",
-                }}
-              >
+              <p className="mt-1 text-sm text-primary">
                 {hashtags.map((t) => `#${t}`).join(" ")}
               </p>
             )}
           </div>
 
           {/* ── Progress scrubber (z:30) ─────────────────────────────────── */}
-          <div
-            style={{
-              position: "absolute",
-              zIndex: 30,
-              left: 16,
-              right: 16,
-              bottom: `calc(124px + ${safeBottom})`,
-            }}
-          >
+          <div className="absolute right-4 bottom-[calc(124px+env(safe-area-inset-bottom))] left-4 z-30">
             {/* Time labels */}
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                marginBottom: 6,
-                fontSize: 10,
-                color: "rgba(255,255,255,0.7)",
-              }}
-            >
+            <div className="mb-1.5 flex justify-between text-[10px] text-white/70">
               <span>{fmt(currentTime)}</span>
               <span>{fmt(duration)}</span>
             </div>
             {/* Track — 20px tall for easy touch, 3px visual bar */}
             <div
               ref={scrubBarRef}
-              style={{
-                position: "relative",
-                width: "100%",
-                height: 20,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-              }}
+              className="relative flex h-5 w-full cursor-pointer items-center"
               onPointerDown={(e) => {
                 e.stopPropagation();
                 (e.currentTarget as HTMLDivElement).setPointerCapture(
@@ -653,78 +449,31 @@ export function StepReady({ lang }: StepReadyProps) {
               }}
             >
               {/* Track bg */}
-              <div
-                style={{
-                  position: "absolute",
-                  left: 0,
-                  right: 0,
-                  height: 3,
-                  borderRadius: 99,
-                  background: "rgba(255,255,255,0.3)",
-                }}
-              >
+              <div className="absolute right-0 left-0 h-[3px] rounded-[99px] bg-white/30">
                 {/* Fill */}
                 <div
-                  style={{
-                    position: "absolute",
-                    left: 0,
-                    top: 0,
-                    height: "100%",
-                    width: `${progress * 100}%`,
-                    background: "white",
-                    borderRadius: 99,
-                  }}
+                  className="absolute top-0 left-0 h-full rounded-[99px] bg-white"
+                  style={{ width: `${progress * 100}%` }}
                 />
               </div>
               {/* Thumb */}
               <div
-                style={{
-                  position: "absolute",
-                  left: `calc(${progress * 100}% - ${scrubbing ? 7 : 5}px)`,
-                  width: scrubbing ? 14 : 10,
-                  height: scrubbing ? 14 : 10,
-                  borderRadius: "50%",
-                  background: "white",
-                  boxShadow: "0 1px 4px rgba(0,0,0,0.5)",
-                  transition: scrubbing ? "none" : "width 0.1s, height 0.1s",
-                  zIndex: 1,
-                }}
+                className={`absolute z-1 rounded-full bg-white shadow-[0_1px_4px_rgba(0,0,0,0.5)] ${
+                  scrubbing
+                    ? "h-3.5 w-3.5"
+                    : "h-2.5 w-2.5 transition-[width,height] duration-100"
+                }`}
+                style={{ left: `calc(${progress * 100}% - ${scrubbing ? 7 : 5}px)` }}
               />
             </div>
           </div>
 
           {/* ── Action buttons (z:30) ────────────────────────────────────── */}
-          <div
-            style={{
-              position: "absolute",
-              zIndex: 30,
-              left: 0,
-              right: 0,
-              bottom: `calc(36px + ${safeBottom})`,
-              display: "flex",
-              gap: 12,
-              padding: "0 16px",
-            }}
-          >
+          <div className="absolute inset-x-0 bottom-[calc(36px+env(safe-area-inset-bottom))] z-30 flex gap-3 px-4">
             <button
               onClick={handleSaveDraft}
               disabled={saving || publishing}
-              style={{
-                flex: 1,
-                height: 52,
-                borderRadius: 16,
-                background: "rgba(255,255,255,0.15)",
-                backdropFilter: "blur(12px)",
-                border: "1px solid rgba(255,255,255,0.25)",
-                color: "white",
-                fontWeight: 600,
-                fontSize: "var(--text-base)",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-              }}
+              className="flex h-13 flex-1 cursor-pointer items-center justify-center gap-2 rounded-2xl border border-white/25 bg-white/15 text-base font-semibold text-white backdrop-blur-[12px]"
             >
               <SaveIcon /> Save draft
             </button>
@@ -734,27 +483,11 @@ export function StepReady({ lang }: StepReadyProps) {
                 handlePublish();
               }}
               disabled={publishing || saving}
-              style={{
-                flex: 1,
-                height: 52,
-                borderRadius: 16,
-                background: publishing
-                  ? "rgba(255,255,255,0.2)"
-                  : "linear-gradient(135deg,rgb(var(--brand-primary)),rgb(var(--brand-secondary)))",
-                border: "none",
-                color: "white",
-                fontWeight: 600,
-                fontSize: "var(--text-base)",
-                cursor: publishing ? "default" : "pointer",
-                opacity: publishing ? 0.7 : 1,
-                boxShadow: publishing
-                  ? "none"
-                  : "0 4px 20px rgb(var(--brand-primary)/0.5)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-              }}
+              className={`flex h-13 flex-1 items-center justify-center gap-2 rounded-2xl border-none text-base font-semibold text-white ${
+                publishing
+                  ? "cursor-default bg-white/20 opacity-70"
+                  : "cursor-pointer bg-[linear-gradient(135deg,rgb(var(--brand-primary)),rgb(var(--brand-secondary)))] shadow-[0_4px_20px_rgb(var(--brand-primary)/0.5)]"
+              }`}
             >
               {publishing ? (
                 <MiniSpinner />
@@ -768,30 +501,14 @@ export function StepReady({ lang }: StepReadyProps) {
 
           {/* Error */}
           {error && (
-            <div
-              style={{
-                position: "absolute",
-                zIndex: 30,
-                left: 16,
-                right: 16,
-                bottom: `calc(200px + ${safeBottom})`,
-                background: "rgb(var(--color-error)/0.9)",
-                color: "white",
-                fontSize: "var(--text-sm)",
-                borderRadius: 12,
-                padding: "12px 16px",
-              }}
-            >
+            <div className="absolute right-4 bottom-[calc(200px+env(safe-area-inset-bottom))] left-4 z-30 rounded-md bg-[rgb(var(--color-error)/0.9)] px-4 py-3 text-sm text-white">
               {error}
             </div>
           )}
         </div>
 
         {/* Dimmed right panel on desktop */}
-        <div
-          className="hidden md:block"
-          style={{ flex: 1, background: "rgba(0,0,0,0.7)" }}
-        />
+        <div className="hidden flex-1 bg-black/70 md:block" />
       </div>
     );
   }
@@ -802,22 +519,10 @@ export function StepReady({ lang }: StepReadyProps) {
       <div className="create-flow-card flex flex-col md:flex-row bg-app w-full md:rounded-2xl md:shadow-2xl md:overflow-hidden">
         {/* Desktop left — image preview */}
         <div
-          className="hidden md:flex md:flex-col md:justify-center md:items-center md:p-8 md:gap-4"
-          style={{
-            width: 420,
-            flexShrink: 0,
-            borderRight: "1px solid rgb(var(--color-border))",
-            backgroundColor: "rgb(var(--color-bg-subtle))",
-          }}
+          className="hidden w-105 shrink-0 border-r border-border bg-surface md:flex md:flex-col md:justify-center md:items-center md:p-8 md:gap-4"
         >
           <div
-            className="rounded-2xl overflow-hidden relative w-full"
-            style={{
-              aspectRatio: "1/1",
-              maxWidth: 320,
-              border: "1px solid rgb(var(--color-border))",
-              backgroundColor: "rgb(var(--color-bg))",
-            }}
+            className="relative aspect-square w-full max-w-80 overflow-hidden rounded-2xl border border-border bg-background"
           >
             {cover && coverSrc ? (
               <Image
@@ -829,36 +534,19 @@ export function StepReady({ lang }: StepReadyProps) {
                 unoptimized={shouldUnoptimizeMedia(coverSrc)}
               />
             ) : (
-              <div
-                className="absolute inset-0 flex items-center justify-center"
-                style={{ color: "rgb(var(--color-text-muted))" }}
-              >
+              <div className="absolute inset-0 flex items-center justify-center text-muted">
                 <PlaceholderIcon />
               </div>
             )}
             {mediaItems.length > 1 && <CountBadge count={mediaItems.length} />}
           </div>
           {title && (
-            <p
-              className="font-semibold text-center line-clamp-2"
-              style={{
-                fontSize: "var(--text-base)",
-                color: "rgb(var(--color-text))",
-                maxWidth: 320,
-              }}
-            >
+            <p className="line-clamp-2 max-w-80 text-center text-base font-semibold text-foreground">
               {title}
             </p>
           )}
           {hashtags.length > 0 && (
-            <p
-              className="text-center"
-              style={{
-                fontSize: "var(--text-sm)",
-                color: "rgb(var(--brand-primary))",
-                maxWidth: 320,
-              }}
-            >
+            <p className="max-w-80 text-center text-sm text-primary">
               {hashtags.map((t) => `#${t}`).join(" ")}
             </p>
           )}
@@ -869,11 +557,7 @@ export function StepReady({ lang }: StepReadyProps) {
           <div className="flex items-center justify-between px-4 pt-4 pb-3 shrink-0">
             <button
               onClick={() => setStep("options")}
-              className="flex items-center gap-1"
-              style={{
-                color: "rgb(var(--color-text-muted))",
-                fontSize: "var(--text-sm)",
-              }}
+              className="flex items-center gap-1 text-sm text-muted"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                 <path
@@ -886,28 +570,14 @@ export function StepReady({ lang }: StepReadyProps) {
               </svg>
               Back
             </button>
-            <h2
-              className="font-semibold"
-              style={{
-                fontSize: "var(--text-lg)",
-                color: "rgb(var(--color-text))",
-              }}
-            >
-              Preview
-            </h2>
-            <div style={{ width: 50 }} />
+            <h2 className="text-lg font-semibold text-foreground">Preview</h2>
+            <div className="w-12.5" />
           </div>
 
           <div className="flex-1 overflow-y-auto px-4 pb-6">
             {/* Mobile preview card */}
-            <div
-              className="rounded-2xl overflow-hidden md:hidden"
-              style={{
-                border: "1px solid rgb(var(--color-border))",
-                backgroundColor: "rgb(var(--color-bg-elevated))",
-              }}
-            >
-              <div className="relative w-full" style={{ aspectRatio: "1/1" }}>
+            <div className="overflow-hidden rounded-2xl border border-border bg-elevated md:hidden">
+              <div className="relative aspect-square w-full">
                 {cover && coverSrc ? (
                   <Image
                     src={coverSrc}
@@ -918,18 +588,8 @@ export function StepReady({ lang }: StepReadyProps) {
                     unoptimized={shouldUnoptimizeMedia(coverSrc)}
                   />
                 ) : (
-                  <div
-                    className="w-full h-full flex items-center justify-center"
-                    style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
-                  >
-                    <span
-                      style={{
-                        fontSize: "var(--text-sm)",
-                        color: "rgb(var(--color-text-muted))",
-                      }}
-                    >
-                      No preview
-                    </span>
+                  <div className="flex h-full w-full items-center justify-center bg-surface">
+                    <span className="text-sm text-muted">No preview</span>
                   </div>
                 )}
                 {mediaItems.length > 1 && (
@@ -937,35 +597,16 @@ export function StepReady({ lang }: StepReadyProps) {
                 )}
               </div>
               <div className="px-4 py-3">
-                <h3
-                  className="font-semibold mb-1"
-                  style={{
-                    fontSize: "var(--text-md)",
-                    color: "rgb(var(--color-text))",
-                  }}
-                >
+                <h3 className="mb-1 text-md font-semibold text-foreground">
                   {title || "Untitled"}
                 </h3>
                 {caption && (
-                  <p
-                    className="line-clamp-2"
-                    style={{
-                      fontSize: "var(--text-base)",
-                      color: "rgb(var(--color-text-muted))",
-                      lineHeight: 1.5,
-                    }}
-                  >
+                  <p className="line-clamp-2 text-base leading-[1.5] text-muted">
                     {caption}
                   </p>
                 )}
                 {hashtags.length > 0 && (
-                  <p
-                    className="mt-1.5"
-                    style={{
-                      fontSize: "var(--text-sm)",
-                      color: "rgb(var(--brand-primary))",
-                    }}
-                  >
+                  <p className="mt-1.5 text-sm text-primary">
                     {hashtags.map((t) => `#${t}`).join(" ")}
                   </p>
                 )}
@@ -974,25 +615,11 @@ export function StepReady({ lang }: StepReadyProps) {
 
             {/* Desktop title block */}
             <div className="hidden md:block mb-4">
-              <h3
-                className="font-bold mb-1"
-                style={{
-                  fontSize: "var(--text-xl)",
-                  color: "rgb(var(--color-text))",
-                }}
-              >
+              <h3 className="mb-1 text-xl font-bold text-foreground">
                 {title || "Untitled"}
               </h3>
               {caption && (
-                <p
-                  style={{
-                    fontSize: "var(--text-base)",
-                    color: "rgb(var(--color-text-muted))",
-                    lineHeight: 1.6,
-                  }}
-                >
-                  {caption}
-                </p>
+                <p className="text-base leading-[1.6] text-muted">{caption}</p>
               )}
             </div>
 
@@ -1022,36 +649,20 @@ export function StepReady({ lang }: StepReadyProps) {
             </div>
 
             {error && (
-              <div
-                className="mt-4 rounded-xl px-4 py-3"
-                style={{
-                  backgroundColor: "rgb(var(--color-error) / 0.08)",
-                  border: "1px solid rgb(var(--color-error) / 0.2)",
-                  color: "rgb(var(--color-error))",
-                  fontSize: "var(--text-sm)",
-                }}
-              >
+              <div className="mt-4 rounded-xl border border-[rgb(var(--color-error)/0.2)] bg-[rgb(var(--color-error)/0.08)] px-4 py-3 text-sm text-error">
                 {error}
               </div>
             )}
           </div>
 
           {/* Bottom actions */}
-          <div
-            className="px-4 pb-6 pt-3 flex gap-3 shrink-0"
-            style={{ borderTop: "1px solid rgb(var(--color-border))" }}
-          >
+          <div className="flex shrink-0 gap-3 border-t border-border px-4 pt-3 pb-6">
             <button
               onClick={handleSaveDraft}
               disabled={saving || publishing}
-              className="flex-1 h-13 rounded-2xl font-semibold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
-              style={{
-                backgroundColor: "rgb(var(--color-bg-elevated))",
-                border: "1px solid rgb(var(--color-border))",
-                color: "rgb(var(--color-text))",
-                fontSize: "var(--text-base)",
-                opacity: saving ? 0.6 : 1,
-              }}
+              className={`flex h-13 flex-1 items-center justify-center gap-2 rounded-2xl border border-border bg-elevated text-base font-semibold text-foreground transition-transform active:scale-[0.98] ${
+                saving ? "opacity-60" : ""
+              }`}
             >
               {saving ? (
                 <MiniSpinnerDark />
@@ -1064,17 +675,11 @@ export function StepReady({ lang }: StepReadyProps) {
             <button
               onClick={handlePublish}
               disabled={publishing || saving}
-              className="flex-1 h-13 rounded-2xl font-semibold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
-              style={{
-                background: publishing
-                  ? "rgb(var(--color-border))"
-                  : "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)))",
-                color: "white",
-                fontSize: "var(--text-base)",
-                boxShadow: publishing
-                  ? "none"
-                  : "0 6px 20px rgb(var(--brand-primary) / 0.4)",
-              }}
+              className={`flex h-13 flex-1 items-center justify-center gap-2 rounded-2xl text-base font-semibold text-white transition-transform active:scale-[0.98] ${
+                publishing
+                  ? "bg-border"
+                  : "bg-[linear-gradient(135deg,rgb(var(--brand-primary)),rgb(var(--brand-secondary)))] shadow-[0_6px_20px_rgb(var(--brand-primary)/0.4)]"
+              }`}
             >
               {publishing ? (
                 <MiniSpinner />
@@ -1096,17 +701,9 @@ export function StepReady({ lang }: StepReadyProps) {
 function CountBadge({ count }: { count: number }) {
   return (
     <div
-      className="absolute top-3 right-3 rounded-full px-2.5 py-1"
-      style={{
-        backgroundColor: "rgb(0 0 0 / 0.55)",
-        backdropFilter: "blur(8px)",
-      }}
+      className="absolute top-3 right-3 rounded-full bg-black/55 px-2.5 py-1 backdrop-blur-[8px]"
     >
-      <span
-        style={{ color: "white", fontSize: "var(--text-xs)", fontWeight: 600 }}
-      >
-        1/{count}
-      </span>
+      <span className="text-xs font-semibold text-white">1/{count}</span>
     </div>
   );
 }
@@ -1145,30 +742,12 @@ function MetaRow({
   value: string;
 }) {
   return (
-    <div
-      className="flex items-center justify-between rounded-xl px-4 py-3"
-      style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
-    >
+    <div className="flex items-center justify-between rounded-xl bg-surface px-4 py-3">
       <div className="flex items-center gap-2.5">
-        <span style={{ fontSize: 16 }}>{icon}</span>
-        <span
-          style={{
-            fontSize: "var(--text-sm)",
-            color: "rgb(var(--color-text-muted))",
-          }}
-        >
-          {label}
-        </span>
+        <span className="text-[16px]">{icon}</span>
+        <span className="text-sm text-muted">{label}</span>
       </div>
-      <span
-        style={{
-          fontSize: "var(--text-sm)",
-          fontWeight: 600,
-          color: "rgb(var(--color-text))",
-        }}
-      >
-        {value}
-      </span>
+      <span className="text-sm font-semibold text-foreground">{value}</span>
     </div>
   );
 }
