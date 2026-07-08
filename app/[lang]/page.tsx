@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { AudienceSection } from "@/components/landing/AudienceSection";
 //import { BlogSection } from "@/components/landing/BlogSection";
+import { DeepDivesSection } from "@/components/landing/DeepDivesSection";
 import { DownloadSection } from "@/components/landing/DownloadSection";
-import { FeaturesSection } from "@/components/landing/FeaturesSection";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { HowItWorksSection } from "@/components/landing/HowItWorksSection";
+import { PillarsSection } from "@/components/landing/PillarsSection";
+import { StatsSection } from "@/components/landing/StatsSection";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { LandingNav } from "@/components/landing/LandingNav";
 //import { SupportChat } from "@/components/landing/SupportChat";
@@ -106,7 +107,10 @@ export default async function Rootpage({ params }: PageProps<"/[lang]">) {
   const dict = await getDictionary(lang);
 
   return (
-    <div>
+    <div
+      // The two --landing-page-* vars tune every landing section at once.
+      className="lg:px-30 [--landing-page-max:1400px] [--landing-page-x:clamp(0.875rem,1.2vw,1.25rem)]"
+    >
       {/* Structured data — Organization, WebSite (+search), marketplace app, FAQ */}
       <script
         type="application/ld+json"
@@ -121,10 +125,11 @@ export default async function Rootpage({ params }: PageProps<"/[lang]">) {
       />
 
       <LandingNav dict={dict} lang={lang} />
-      <HeroSection dict={dict} />
-      <FeaturesSection dict={dict} />
+      <HeroSection dict={dict} lang={lang} />
+      <PillarsSection dict={dict} />
+      <StatsSection dict={dict} />
+      <DeepDivesSection dict={dict} lang={lang} />
       <HowItWorksSection dict={dict} />
-      <AudienceSection dict={dict} />
       <TestimonialsSection dict={dict} />
       {/* <BlogSection dict={dict} /> */}
       {/* Visible FAQ — strong AEO signal and matches the FAQ structured data */}
@@ -140,66 +145,27 @@ function HomeFaq() {
   return (
     <section
       id="faq"
-      style={{ padding: "5rem 1.25rem", maxWidth: 760, margin: "0 auto" }}
+      className="mx-auto max-w-[min(760px,var(--landing-page-max))] px-(--landing-page-x) py-20"
     >
-      <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
-        <p
-          style={{
-            fontSize: "var(--text-sm)",
-            fontWeight: 700,
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-            color: "rgb(var(--brand-primary))",
-            marginBottom: "0.75rem",
-          }}
-        >
+      <div className="mb-10">
+        <p className="mb-3 text-sm font-bold tracking-widest uppercase text-muted">
           Questions
         </p>
-        <h2
-          style={{
-            fontFamily: "var(--font-display)",
-            fontWeight: 700,
-            fontSize: "clamp(1.75rem, 4vw, 2.75rem)",
-            letterSpacing: 0,
-            color: "rgb(var(--color-text))",
-          }}
-        >
+        <h2 className="font-display text-[clamp(1.6rem,3.2vw,2.5rem)] font-bold tracking-normal leading-tight text-foreground">
           Everything you might be wondering.
         </h2>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+      <div className="flex flex-col gap-3">
         {HOME_FAQ.map(({ q, a }) => (
           <details
             key={q}
-            style={{
-              border: "1px solid rgb(var(--color-border))",
-              borderRadius: 14,
-              background: "rgb(var(--color-bg-elevated))",
-              overflow: "hidden",
-            }}
+            className="overflow-hidden rounded-[14px] border border-border bg-elevated"
           >
-            <summary
-              style={{
-                padding: "1rem 1.25rem",
-                cursor: "pointer",
-                fontWeight: 600,
-                fontSize: "var(--text-md)",
-                color: "rgb(var(--color-text))",
-                listStyle: "none",
-                userSelect: "none",
-              }}
-            >
+            <summary className="cursor-pointer list-none px-5 py-4 text-md font-semibold text-foreground select-none">
               {q}
             </summary>
-            <div
-              style={{
-                padding: "0 1.25rem 1.1rem",
-                fontSize: "var(--text-base)",
-                lineHeight: 1.7,
-                color: "rgb(var(--color-text-muted))",
-              }}
-            >
+            <div className="px-5 pb-[1.1rem] text-base leading-[1.7] text-muted">
               {a}
             </div>
           </details>

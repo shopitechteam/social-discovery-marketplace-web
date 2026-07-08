@@ -1,5 +1,12 @@
 import type { Dictionary } from "@/i18n/getDictionary";
 
+const REVEAL_DELAYS = [
+  "",
+  "[animation-delay:85ms]",
+  "[animation-delay:170ms]",
+  "[animation-delay:255ms]",
+];
+
 export function HowItWorksSection({ dict }: { dict: Dictionary }) {
   const s = dict.howItWorks.steps;
   const steps: { number: string; title: string; body: string }[] = [
@@ -11,35 +18,34 @@ export function HowItWorksSection({ dict }: { dict: Dictionary }) {
   return (
     <section
       id="how-it-works"
-      className="py-16 px-5 bg-surface border-t border-default border-b border-default"
+      className="border-y border-default bg-surface px-(--landing-page-x) py-14 md:py-20"
     >
-      <div className="max-w-300 mx-auto">
+      <div className="mx-auto max-w-(--landing-page-max)">
         {/* Header */}
-        <div className="text-center mb-16">
-          <p className="text-(length:--text-sm) font-bold tracking-widest uppercase text-accent mb-3">
-            {dict.howItWorks.sectionLabel}
+        <div className="mb-10 max-w-3xl md:mb-12">
+          <p className="mb-3 text-xs font-bold uppercase tracking-normal text-primary md:text-sm">
+            {dict.howItWorks.eyebrow}
           </p>
-          <h2 className="font-display font-bold text-[clamp(1.75rem,3.5vw,3rem)] leading-[1.15] text-foreground">
+          <h2 className="font-display text-[clamp(1.65rem,2.7vw,2.45rem)] font-bold leading-tight tracking-normal text-foreground">
             {dict.howItWorks.headline}
           </h2>
+          <p className="mt-4 max-w-2xl text-base leading-normal text-muted">
+            {dict.howItWorks.intro}
+          </p>
         </div>
 
         {/* Steps */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 relative">
-          {steps.map(({ number, title, body }) => (
-            <div key={number} className="text-center px-2">
+        <div className="relative grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {steps.map(({ number, title, body }, i) => (
+            <div
+              key={number}
+              className={`landing-reveal rounded-[1.1rem] border border-default bg-elevated p-5 shadow-sm ${REVEAL_DELAYS[i] ?? ""}`}
+            >
               {/* Step circle */}
-              <div
-                className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-6 font-display font-bold text-(length:--text-base) text-white relative z-1"
-                style={{
-                  background:
-                    "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-accent)))",
-                  boxShadow: "0 0 0 6px rgb(var(--color-bg-subtle))",
-                }}
-              >
+              <div className="relative z-1 mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-primary font-display text-(length:--text-base) font-bold text-white">
                 {number}
               </div>
-              <h3 className="font-display font-semibold text-(length:--text-lg) text-foreground mb-2.5">
+              <h3 className="mb-2.5 font-display text-(length:--text-lg) font-semibold text-foreground">
                 {title}
               </h3>
               <p className="text-(length:--text-base) text-muted leading-normal">

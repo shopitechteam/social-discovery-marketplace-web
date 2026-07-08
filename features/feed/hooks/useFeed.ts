@@ -2,7 +2,7 @@
 
 import { useQuery } from "@apollo/client/react";
 import { NetworkStatus } from "@apollo/client";
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import {
   ForYouFeedDocument,
   FollowingFeedDocument,
@@ -13,31 +13,47 @@ import {
 const PAGE_SIZE = 10;
 
 /**
- * Guards cursor-based pagination against the two ways infinite scroll can spin
- * without loading anything:
- *   1. A `fetchMore` already in flight (the IntersectionObserver can re-fire
- *      before `networkStatus` flips, especially with a large rootMargin).
- *   2. A page that returns only duplicates (server overlap) — the merge appends
- *      nothing yet `hasNextPage` stays true, so the same `endCursor` would be
- *      requested forever. We remember the last cursor we asked for and refuse to
- *      ask again until it actually advances.
+ * Guards cursor-based pagination against a page that returns only duplicates
+ * (server overlap): the merge appends nothing yet `hasNextPage` stays true, so
+ * the same `endCursor` would otherwise be requested forever.
  *
- * Returns `run(cursor, fetch)` — call it from `loadMore`; it invokes `fetch`
- * only when the cursor is new and nothing is in flight.
+ * `run(cursor, currentCount, fetch)` fires `fetch` UNLESS the exact same cursor
+ * was already requested AND the item count hasn't changed since (a genuine
+ * dedupe-empty page). A cursor that later corresponds to more items — e.g. after
+ * the accumulated window is restored on revisit — passes, so pagination never
+ * gets permanently stuck on a stale cursor.
+ *
+ * In-flight concurrency is handled by the caller (the infinite-scroll sentinel
+ * is gated on `loadingMore`, i.e. Apollo's own `networkStatus === fetchMore`),
+ * so we deliberately don't keep an `inFlight` ref here — a ref that failed to
+ * clear would silently freeze pagination forever, which is exactly the failure
+ * we're fixing.
  */
-function usePaginationGuard() {
-  const inFlight = useRef(false);
+export function usePaginationGuard(currentCount: number) {
+  // The cursor of the last request and the item count at that time.
   const lastCursor = useRef<string | null>(null);
+  const lastCount = useRef<number>(-1);
+  const maxCountSeen = useRef(currentCount);
 
-  const run = useCallback((cursor: string, fetch: () => Promise<unknown>) => {
-    if (inFlight.current) return;
-    if (lastCursor.current === cursor) return;
-    inFlight.current = true;
-    lastCursor.current = cursor;
-    void fetch().finally(() => {
-      inFlight.current = false;
-    });
-  }, []);
+  useEffect(() => {
+    if (currentCount < maxCountSeen.current) {
+      lastCursor.current = null;
+      lastCount.current = -1;
+    }
+    maxCountSeen.current = Math.max(maxCountSeen.current, currentCount);
+  }, [currentCount]);
+
+  const run = useCallback(
+    (cursor: string, currentCount: number, fetch: () => Promise<unknown>) => {
+      if (lastCursor.current === cursor && lastCount.current === currentCount) {
+        return;
+      }
+      lastCursor.current = cursor;
+      lastCount.current = currentCount;
+      void fetch();
+    },
+    [],
+  );
 
   return run;
 }
@@ -47,16 +63,15 @@ export function useForYouFeed() {
     ForYouFeedDocument,
     {
       variables: { limit: PAGE_SIZE },
-      // cache-and-network: on revisit (tab away → back) the full accumulated
-      // window renders INSTANTLY from cache, then a single background page-1
-      // refetch runs to pull in newly-published posts / fresh fields. This is
-      // only safe because mergeFeedPage() now splices page-1 over the head of
-      // the existing window instead of replacing it — so the background refresh
-      // can't collapse the accumulated pages or snap scroll to the top.
-      // nextFetchPolicy keeps later re-renders on cache-first so fetchMore
-      // pagination doesn't re-trigger a page-1 network read.
-      fetchPolicy: "cache-and-network",
-      nextFetchPolicy: "cache-first",
+      // Preserve the accumulated window on bottom-tab navigation. Freshly
+      // published content invalidates this field explicitly (see feedCache.ts);
+      // otherwise revisiting Home should show the same 30+ cached items, not a
+      // page-1 background refresh.
+      fetchPolicy: "cache-first",
+      // Apollo's default refetch write mode is "overwrite", which can replace
+      // an exhausted 33-item window with the refreshed first page while leaving
+      // pageInfo stale. We need the field policy merge to receive `existing`.
+      refetchWritePolicy: "merge",
       notifyOnNetworkStatusChange: true,
     },
   );
@@ -64,15 +79,16 @@ export function useForYouFeed() {
   const items = data?.forYouFeed?.items ?? [];
   const pageInfo = data?.forYouFeed?.pageInfo;
 
-  const guard = usePaginationGuard();
+  const itemCount = items.length;
+  const guard = usePaginationGuard(itemCount);
   const loadMore = useCallback(() => {
     if (!pageInfo?.hasNextPage || !pageInfo.endCursor) return;
     const cursor = pageInfo.endCursor;
     // The cache `merge` policy appends the page — no updateQuery needed.
-    guard(cursor, () =>
+    guard(cursor, itemCount, () =>
       fetchMore({ variables: { limit: PAGE_SIZE, after: cursor } }),
     );
-  }, [fetchMore, pageInfo, guard]);
+  }, [fetchMore, pageInfo, guard, itemCount]);
 
   return {
     items,
@@ -92,10 +108,10 @@ export function useFollowingFeed() {
     FollowingFeedDocument,
     {
       variables: { limit: PAGE_SIZE },
-      // See useForYouFeed: cache-and-network restores instantly + refreshes in
-      // the background; mergeFeedPage keeps the accumulated window stable.
-      fetchPolicy: "cache-and-network",
-      nextFetchPolicy: "cache-first",
+      // See useForYouFeed: bottom-tab navigation should restore the cached
+      // accumulated window without a page-1 background refresh.
+      fetchPolicy: "cache-first",
+      refetchWritePolicy: "merge",
       notifyOnNetworkStatusChange: true,
     },
   );
@@ -103,14 +119,15 @@ export function useFollowingFeed() {
   const items = data?.followingFeed?.items ?? [];
   const pageInfo = data?.followingFeed?.pageInfo;
 
-  const guard = usePaginationGuard();
+  const itemCount = items.length;
+  const guard = usePaginationGuard(itemCount);
   const loadMore = useCallback(() => {
     if (!pageInfo?.hasNextPage || !pageInfo.endCursor) return;
     const cursor = pageInfo.endCursor;
-    guard(cursor, () =>
+    guard(cursor, itemCount, () =>
       fetchMore({ variables: { limit: PAGE_SIZE, after: cursor } }),
     );
-  }, [fetchMore, pageInfo, guard]);
+  }, [fetchMore, pageInfo, guard, itemCount]);
 
   return {
     items,
@@ -141,10 +158,10 @@ export function useNearbyFeed(
         limit: PAGE_SIZE,
       },
       skip: !coordinates,
-      // See useForYouFeed: cache-and-network restores instantly + refreshes in
-      // the background; mergeFeedPage keeps the accumulated window stable.
-      fetchPolicy: "cache-and-network",
-      nextFetchPolicy: "cache-first",
+      // See useForYouFeed: bottom-tab navigation should restore the cached
+      // accumulated window without a page-1 background refresh.
+      fetchPolicy: "cache-first",
+      refetchWritePolicy: "merge",
       notifyOnNetworkStatusChange: true,
     },
   );
@@ -152,12 +169,13 @@ export function useNearbyFeed(
   const items = data?.localFeed?.items ?? [];
   const pageInfo = data?.localFeed?.pageInfo;
 
-  const guard = usePaginationGuard();
+  const itemCount = items.length;
+  const guard = usePaginationGuard(itemCount);
   const loadMore = useCallback(() => {
     if (!coordinates) return;
     if (!pageInfo?.hasNextPage || !pageInfo.endCursor) return;
     const cursor = pageInfo.endCursor;
-    guard(cursor, () =>
+    guard(cursor, itemCount, () =>
       fetchMore({
         variables: {
           latitude: coordinates.latitude,
@@ -168,7 +186,7 @@ export function useNearbyFeed(
         },
       }),
     );
-  }, [fetchMore, pageInfo, coordinates, radiusKm, guard]);
+  }, [fetchMore, pageInfo, coordinates, radiusKm, guard, itemCount]);
 
   return {
     items,

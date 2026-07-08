@@ -9,12 +9,10 @@ export function LegalNav({ lang }: { lang: string }) {
 
   return (
     <header
-      className="sticky top-0 z-40 w-full border-b border-border backdrop-blur-md"
-      style={{ backgroundColor: "rgb(var(--color-bg) / 0.92)" }}
+      className="sticky top-0 z-40 w-full border-b border-border bg-[rgb(var(--color-bg)/0.92)] backdrop-blur-md"
     >
       <div
-        className="flex items-center justify-between px-4 h-14"
-        style={{ maxWidth: 860, margin: "0 auto" }}
+        className="mx-auto flex h-14 max-w-215 items-center justify-between px-4"
       >
         {/* Back button */}
         <button

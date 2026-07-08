@@ -1462,6 +1462,10 @@ export function ContentDetail({
               lang={lang}
               contentId={chatOpen ? id : null}
               onClose={closeChat}
+              // The post's creator row beside this column already shows the
+              // seller's name + avatar, so hide them in the chat header to
+              // avoid repeating the same identity right next to it.
+              hideParticipantHeader
               className="flex flex-col border-l border-default bg-app overflow-hidden h-full w-[400px] shrink-0"
             />
           )}

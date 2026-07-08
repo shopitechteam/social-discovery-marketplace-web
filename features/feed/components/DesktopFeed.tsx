@@ -15,7 +15,8 @@
  *   └──────────┴──────────────────────┴──────────────┘
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useForYouFeed, useFollowingFeed } from "../hooks/useFeed";
@@ -45,7 +46,7 @@ function ColumnSkeleton() {
       {[...Array(3)].map((_, i) => (
         <div
           key={i}
-          className="overflow-hidden rounded-3xl border border-default bg-elevated"
+          className="overflow-hidden rounded-2xl border border-default bg-elevated"
         >
           <PostCardSkeleton />
         </div>
@@ -66,7 +67,7 @@ function EmptyState({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-4 rounded-3xl border border-default bg-elevated px-6 py-20 text-center">
+    <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-default bg-elevated px-6 py-20 text-center">
       <div className="text-5xl">{emoji}</div>
       <div>
         <h3 className="mb-1 text-lg font-bold text-default">{title}</h3>
@@ -90,7 +91,7 @@ function DesktopPostCard({
   priority?: boolean;
 }) {
   return (
-    <div className="overflow-hidden rounded-3xl border border-default bg-elevated shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-default bg-elevated shadow-sm shadow-black/5 dark:shadow-black/25">
       <PostCard post={post} lang={lang} priority={priority} />
     </div>
   );
@@ -106,7 +107,6 @@ function ForYouColumn({ lang }: { lang: string }) {
     // otherwise it re-fires repeatedly and pagination spins without loading.
     loading: loading || loadingMore,
     onLoadMore: loadMore,
-    rootMargin: "1400px",
   });
 
   if (loading && items.length === 0) return <ColumnSkeleton />;
@@ -128,7 +128,7 @@ function ForYouColumn({ lang }: { lang: string }) {
       ))}
       <div ref={sentinelRef} className="h-1" />
       {loadingMore && (
-        <div className="overflow-hidden rounded-3xl border border-default bg-elevated">
+        <div className="overflow-hidden rounded-2xl border border-default bg-elevated">
           <PostCardSkeleton />
         </div>
       )}
@@ -150,7 +150,6 @@ function FollowingColumn({ lang }: { lang: string }) {
     hasMore,
     loading: loading || loadingMore,
     onLoadMore: loadMore,
-    rootMargin: "1400px",
   });
 
   if (!isAuthenticated) {
@@ -207,7 +206,7 @@ function FollowingColumn({ lang }: { lang: string }) {
       ))}
       <div ref={sentinelRef} className="h-1" />
       {loadingMore && (
-        <div className="overflow-hidden rounded-3xl border border-default bg-elevated">
+        <div className="overflow-hidden rounded-2xl border border-default bg-elevated">
           <PostCardSkeleton />
         </div>
       )}
@@ -222,8 +221,100 @@ function FollowingColumn({ lang }: { lang: string }) {
 
 // ── Main DesktopFeed ─────────────────────────────────────────────────────────
 
-export default function DesktopFeed({ lang = "en" }: { lang?: string }) {
-  const [tab, setTab] = useState<Tab>("for-you");
+const isTab = (v: string | null): v is Tab =>
+  v === "for-you" || v === "following" || v === "nearby";
+
+/** True when the desktop (md+) layout is the visible one. The mobile FeedPage
+ *  shares the document with us; only the visible layout may drive scroll. */
+const isDesktopViewport = () =>
+  typeof window !== "undefined" &&
+  window.matchMedia("(min-width: 768px)").matches;
+
+export default function DesktopFeed({
+  lang = "en",
+  visible = true,
+}: {
+  lang?: string;
+  /** False while the persistent-mounted feed is hidden behind another route. */
+  visible?: boolean;
+}) {
+  const searchParams = useSearchParams();
+  const initialTab: Tab = (() => {
+    const t = searchParams.get("tab");
+    return isTab(t) ? t : "for-you";
+  })();
+  const [tab, setTab] = useState<Tab>(initialTab);
+  // Tabs stay mounted once opened (Following/Nearby mount lazily — Nearby
+  // requests geolocation on mount). Unmounting on switch would drop the Apollo
+  // observer and the scroll position; hiding keeps both intact and makes
+  // switching back instant.
+  const [openedTabs, setOpenedTabs] = useState<Set<Tab>>(
+    () => new Set([initialTab]),
+  );
+  // The whole page scrolls on `window`, so hiding a tab collapses the document
+  // and loses the position. Remember each tab's offset and restore on return.
+  const scrollByTab = useRef<Record<Tab, number>>({
+    "for-you": 0,
+    following: 0,
+    nearby: 0,
+  });
+  const prevTab = useRef<Tab>(initialTab);
+
+  // Restore the incoming tab's scroll after the show/hide classes apply but
+  // before paint — the restored column has its full height back by then.
+  useLayoutEffect(() => {
+    if (prevTab.current !== tab) {
+      if (isDesktopViewport()) {
+        window.scrollTo(0, scrollByTab.current[tab] ?? 0);
+      }
+      prevTab.current = tab;
+    }
+  }, [tab]);
+
+  const selectTab = useCallback((next: Tab) => {
+    // prevTab tracks the currently *displayed* tab (set post-commit in the
+    // layout effect), so the save happens outside the state updater — state
+    // updaters must stay pure.
+    const current = prevTab.current;
+    if (next === current) return;
+    if (isDesktopViewport()) {
+      scrollByTab.current[current] = window.scrollY;
+    }
+    setTab(next);
+    setOpenedTabs((prev) => (prev.has(next) ? prev : new Set(prev).add(next)));
+    // Keep the tab in the URL (replace, not push) so back-navigation and
+    // reloads return to the same tab without adding history entries.
+    const params = new URLSearchParams(window.location.search);
+    if (next === "for-you") params.delete("tab");
+    else params.set("tab", next);
+    const qs = params.toString();
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${window.location.pathname}${qs ? `?${qs}` : ""}`,
+    );
+  }, []);
+
+  // Follow external URL changes (e.g. returning from auth with ?tab=following).
+  // After selectTab's own replaceState round-trips through useSearchParams,
+  // next === prevTab.current and this is a no-op.
+  //
+  // The feed stays mounted while other routes are shown (MainShell), and those
+  // routes use ?tab= for their own sub-tabs (/notifications?tab=notifications),
+  // so: only sync while the feed route is visible, and only for values that
+  // are real feed tabs — a missing/foreign param keeps the current tab.
+  useEffect(() => {
+    if (!visible) return;
+    const t = searchParams.get("tab");
+    if (!isTab(t)) return;
+    const current = prevTab.current;
+    if (t === current) return;
+    if (isDesktopViewport()) {
+      scrollByTab.current[current] = window.scrollY;
+    }
+    setTab(t);
+    setOpenedTabs((prev) => (prev.has(t) ? prev : new Set(prev).add(t)));
+  }, [searchParams, visible]);
   // When set, the right rail shows the inline chat for this post instead of the
   // trending rail, and widens to give the conversation more room.
   const [chatContentId, setChatContentId] = useState<string | null>(null);
@@ -281,27 +372,18 @@ export default function DesktopFeed({ lang = "en" }: { lang?: string }) {
                 <TrendingStrip lang={lang} />
               </div>
 
-              {/* Tabs — sticky so they stay reachable while scrolling */}
-              <div className="sticky top-0 z-20 -mx-1 mb-4 bg-app/85 px-1 pb-2 pt-1 backdrop-blur-md">
-                <div className="flex items-center gap-1 rounded-full border border-default bg-elevated p-1 shadow-sm">
+              <div className="sticky top-0 z-20 -mx-1 mb-4 bg-app/90 px-1 pb-3 pt-1 backdrop-blur-md">
+                <div className="flex min-w-0 items-center gap-6">
                   {TABS.map((t) => (
                     <button
                       key={t.id}
-                      onClick={() => {
-                        setTab(t.id);
-                        window.scrollTo({ top: 0, behavior: "instant" });
-                      }}
+                      onClick={() => selectTab(t.id)}
                       className={[
-                        "flex-1 rounded-full px-4 py-2.5 text-sm font-semibold transition-colors",
+                        "relative py-1 text-sm font-bold transition-colors",
                         tab === t.id
-                          ? "bg-primary text-white"
+                          ? "text-default after:absolute after:-bottom-1.5 after:left-0 after:h-0.5 after:w-full after:rounded-full after:bg-primary"
                           : "text-muted-foreground hover:text-default",
                       ].join(" ")}
-                      style={
-                        tab === t.id
-                          ? { backgroundColor: "rgb(var(--brand-primary))" }
-                          : undefined
-                      }
                     >
                       {t.label}
                     </button>
@@ -309,18 +391,31 @@ export default function DesktopFeed({ lang = "en" }: { lang?: string }) {
                 </div>
               </div>
 
-              {tab === "for-you" && <ForYouColumn lang={lang} />}
-              {tab === "following" && <FollowingColumn lang={lang} />}
-              {tab === "nearby" && <DesktopNearbyColumn lang={lang} />}
+              {/* Keep opened tabs mounted and just toggle visibility — see
+                  openedTabs above. A hidden column's sentinel reports no
+                  intersection, so it never paginates while off-screen. */}
+              <div className={tab === "for-you" ? undefined : "hidden"}>
+                <ForYouColumn lang={lang} />
+              </div>
+              {openedTabs.has("following") ? (
+                <div className={tab === "following" ? undefined : "hidden"}>
+                  <FollowingColumn lang={lang} />
+                </div>
+              ) : null}
+              {openedTabs.has("nearby") ? (
+                <div className={tab === "nearby" ? undefined : "hidden"}>
+                  <DesktopNearbyColumn lang={lang} />
+                </div>
+              ) : null}
             </div>
 
             {/* ── Right rail: trending, or the inline chat panel ────────── */}
-            <aside className="hidden xl:block sticky top-6 h-[calc(100svh-3rem)] self-start overflow-hidden">
+            <aside className="sticky top-5 hidden h-[calc(100svh-2.5rem)] self-start overflow-hidden xl:block">
               {/* Trending fades out under the chat panel when one is open. */}
               <motion.div
                 animate={{ opacity: chatOpen ? 0 : 1 }}
                 transition={{ duration: 0.2, ease: "easeOut" }}
-                className="h-full"
+                className="h-full overflow-y-auto no-scroll-indicator"
                 aria-hidden={chatOpen}
               >
                 <DesktopTrendingRail lang={lang} />
@@ -330,7 +425,11 @@ export default function DesktopFeed({ lang = "en" }: { lang?: string }) {
                 lang={lang}
                 contentId={chatContentId}
                 onClose={closeChat}
-                className="absolute inset-0 h-full overflow-hidden rounded-3xl border border-default bg-elevated shadow-sm"
+                // The originating post card in the feed already shows the
+                // seller's name + avatar, so hide them in this chat header to
+                // avoid repeating the same identity right beside it.
+                hideParticipantHeader
+                className="absolute inset-0 h-full overflow-hidden rounded-2xl border border-default bg-elevated shadow-sm"
               />
             </aside>
           </div>

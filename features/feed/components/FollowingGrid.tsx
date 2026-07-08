@@ -9,6 +9,7 @@ import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
 
 interface Props {
   lang: string;
+  active?: boolean;
 }
 
 function LoginWall({ lang }: { lang: string }) {
@@ -72,16 +73,16 @@ function LoginWall({ lang }: { lang: string }) {
   );
 }
 
-export function FollowingGrid({ lang }: Props) {
+export function FollowingGrid({ lang, active = true }: Props) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated());
 
   const { items, loading, loadingMore, hasMore, loadMore } = useFollowingFeed();
 
   const { sentinelRef } = useInfiniteScroll({
+    enabled: active,
     hasMore,
     loading: loading || loadingMore,
     onLoadMore: loadMore,
-    rootMargin: "1400px",
   });
 
   if (!isAuthenticated) return <LoginWall lang={lang} />;

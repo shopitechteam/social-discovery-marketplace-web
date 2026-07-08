@@ -1,0 +1,427 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useMutation } from "@apollo/client/react";
+import { ArrowLeft, Check, Home, Images, Clapperboard } from "lucide-react";
+import { useCreateStore } from "@/stores/create";
+import { CreateDraftDocument } from "@/types/__generated__/graphql";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { TikTokIcon } from "@/components/ui/TikTokIcon";
+import { CreateFlow } from "./CreateFlow";
+import { CreatePreviewPanel } from "./CreatePreviewPanel";
+
+const STEPS = [
+  { n: 1, label: "Choose type" },
+  { n: 2, label: "Details" },
+  { n: 3, label: "Publish" },
+] as const;
+
+/**
+ * Desktop upload & sell experience — a single shadcn Dialog hosting the whole
+ * create flow as a stepper (Choose type → Details → Publish), with a live post
+ * preview on the right and a designed banner behind the dialog so the /upload
+ * page never reads as a blank screen.
+ *
+ * Replaces the old parallel intercepting-route picker + the pseudo-dialog that
+ * CreateFlow rendered at /upload/create. The entire flow stays on /upload: the
+ * step lives in the create store (session-persisted), so a refresh resumes
+ * where the user left off.
+ */
+export function DesktopCreateFlow({ lang }: { lang: string }) {
+  const router = useRouter();
+  const [creating, setCreating] = useState(false);
+  // Wait for the persisted store before trusting `step` — otherwise a refresh
+  // mid-draft flashes the picker before jumping to the details step.
+  const [hydrated, setHydrated] = useState(false);
+
+  const { step, setDraftId, setContentType, setStep, setError } =
+    useCreateStore();
+  const [createDraft] = useMutation(CreateDraftDocument);
+
+  useEffect(() => {
+    if (useCreateStore.persist.hasHydrated()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot hydration latch, same pattern as CreateFlow
+      setHydrated(true);
+      return;
+    }
+    return useCreateStore.persist.onFinishHydration(() => setHydrated(true));
+  }, []);
+
+  const current = !hydrated || step === "pick" ? 1 : step === "options" ? 3 : 2;
+
+  async function handlePickType(kind: "image" | "video") {
+    if (creating) return;
+    setError(null);
+    setCreating(true);
+    try {
+      const { data, error } = await createDraft({
+        variables: { input: { type: kind === "video" ? "VIDEO" : "IMAGE" } },
+      });
+      if (error || !data?.createDraft)
+        throw new Error(error?.message ?? "Failed to create draft");
+      setDraftId(data.createDraft.id);
+      setContentType(kind);
+      setStep("edit");
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  function goHome() {
+    // Keep the draft — it's autosaved and session-persisted, so coming back to
+    // /upload resumes exactly where the user left off.
+    router.push(`/${lang}/feed`);
+  }
+
+  function closeDialog() {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+      return;
+    }
+    router.push(`/${lang}/feed`);
+  }
+
+  function handleBack() {
+    if (current === 3) {
+      setStep("edit");
+      return;
+    }
+    if (current === 2) {
+      // Same semantics as the mobile flow's Back: discard the in-progress
+      // draft state so the picker doesn't immediately bounce forward again.
+      useCreateStore.getState().reset();
+      return;
+    }
+    closeDialog();
+  }
+
+  /** Stepper clicks only navigate backwards, mirroring handleBack semantics. */
+  function handleStepClick(n: number) {
+    if (n >= current) return;
+    if (n === 2) setStep("edit");
+    if (n === 1) useCreateStore.getState().reset();
+  }
+
+  const pickOptions = [
+    {
+      label: "Video",
+      description: "Share a short clip of what you're selling",
+      icon: <Clapperboard size={26} />,
+      onClick: () => handlePickType("video"),
+    },
+    {
+      label: "Photos",
+      description: "Up to 10 images of your item",
+      icon: <Images size={26} />,
+      onClick: () => handlePickType("image"),
+    },
+    {
+      label: "TikTok Import",
+      description: "Bring a video from your TikTok",
+      icon: <TikTokIcon size={26} className="" />,
+      onClick: () => router.push(`/${lang}/upload/tiktok`),
+    },
+  ];
+
+  return (
+    <>
+      <CreateBanner />
+
+      <Dialog
+        open
+        onOpenChange={(open) => {
+          if (!open) closeDialog();
+        }}
+      >
+        <DialogContent className="flex h-[min(92vh,800px)] w-[min(96vw,1120px)] max-w-none flex-col gap-0 overflow-hidden rounded-3xl border border-default bg-app p-0">
+          <DialogTitle className="sr-only">Upload & sell</DialogTitle>
+          <DialogDescription className="sr-only">
+            Create a new post in three steps: choose a type, add details, then
+            publish.
+          </DialogDescription>
+
+          {/* ── Header: back · stepper · home ── */}
+          <div
+            className="flex shrink-0 items-center gap-3 border-b px-5"
+            style={{
+              height: 60,
+              borderColor: "rgb(var(--color-border))",
+            }}
+          >
+            <button
+              onClick={handleBack}
+              className="flex items-center gap-1.5 rounded-full px-3 py-1.5 font-medium transition-colors hover:bg-surface"
+              style={{
+                fontSize: "var(--text-sm)",
+                color: "rgb(var(--color-text-muted))",
+              }}
+            >
+              <ArrowLeft size={16} />
+              Back
+            </button>
+
+            {/* Stepper */}
+            <div className="flex flex-1 items-center justify-center gap-2">
+              {STEPS.map((s, i) => {
+                const done = s.n < current;
+                const active = s.n === current;
+                return (
+                  <div key={s.n} className="flex items-center gap-2">
+                    {i > 0 && (
+                      <span
+                        className="hidden h-px w-8 lg:block"
+                        style={{
+                          backgroundColor: done
+                            ? "rgb(var(--brand-primary))"
+                            : "rgb(var(--color-border))",
+                        }}
+                      />
+                    )}
+                    <button
+                      onClick={() => handleStepClick(s.n)}
+                      disabled={s.n >= current}
+                      className="flex items-center gap-2 disabled:cursor-default"
+                      aria-current={active ? "step" : undefined}
+                    >
+                      <span
+                        className="flex h-6 w-6 items-center justify-center rounded-full font-bold transition-colors"
+                        style={{
+                          fontSize: "var(--text-xs)",
+                          backgroundColor:
+                            active || done
+                              ? "rgb(var(--brand-primary))"
+                              : "rgb(var(--color-bg-subtle))",
+                          border:
+                            active || done
+                              ? "none"
+                              : "1px solid rgb(var(--color-border))",
+                          color:
+                            active || done
+                              ? "white"
+                              : "rgb(var(--color-text-muted))",
+                        }}
+                      >
+                        {done ? <Check size={13} /> : s.n}
+                      </span>
+                      <span
+                        className="hidden font-semibold md:block"
+                        style={{
+                          fontSize: "var(--text-sm)",
+                          color: active
+                            ? "rgb(var(--color-text))"
+                            : "rgb(var(--color-text-muted))",
+                        }}
+                      >
+                        {s.label}
+                      </span>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* mr-9 clears the dialog's built-in ✕ close button */}
+            <button
+              onClick={goHome}
+              className="mr-9 flex items-center gap-1.5 rounded-full px-3 py-1.5 font-medium transition-colors hover:bg-surface"
+              style={{
+                fontSize: "var(--text-sm)",
+                color: "rgb(var(--color-text-muted))",
+              }}
+            >
+              <Home size={16} />
+              Home
+            </button>
+          </div>
+
+          {/* ── Body: step content + live preview ── */}
+          <div className="flex min-h-0 flex-1">
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+              {!hydrated ? (
+                <div className="flex flex-1 items-center justify-center">
+                  <div
+                    className="h-8 w-8 animate-spin rounded-full border-2 border-current border-t-transparent"
+                    style={{ color: "rgb(var(--color-text-muted))" }}
+                  />
+                </div>
+              ) : step === "pick" ? (
+                <div className="flex flex-1 flex-col justify-center gap-6 overflow-y-auto px-10 py-8">
+                  <div>
+                    <h2
+                      className="font-bold"
+                      style={{
+                        fontSize: "var(--text-xl)",
+                        color: "rgb(var(--color-text))",
+                      }}
+                    >
+                      What are you posting today?
+                    </h2>
+                    <p
+                      className="mt-1"
+                      style={{
+                        fontSize: "var(--text-sm)",
+                        color: "rgb(var(--color-text-muted))",
+                      }}
+                    >
+                      Pick a format — our AI helps write the title, description
+                      and price from your media.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    {pickOptions.map((opt) => (
+                      <button
+                        key={opt.label}
+                        onClick={opt.onClick}
+                        disabled={creating}
+                        className="group flex flex-col items-center gap-3 rounded-2xl px-4 py-8 text-center transition-all hover:-translate-y-0.5 disabled:opacity-50"
+                        style={{
+                          backgroundColor: "rgb(var(--color-bg-elevated))",
+                          border: "1px solid rgb(var(--color-border))",
+                        }}
+                      >
+                        <span
+                          className="flex h-14 w-14 items-center justify-center rounded-2xl transition-transform group-hover:scale-105"
+                          style={{
+                            backgroundColor: "rgb(var(--brand-primary) / 0.1)",
+                            color: "rgb(var(--brand-primary))",
+                          }}
+                        >
+                          {opt.icon}
+                        </span>
+                        <span
+                          className="font-semibold"
+                          style={{
+                            fontSize: "var(--text-base)",
+                            color: "rgb(var(--color-text))",
+                          }}
+                        >
+                          {opt.label}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: "var(--text-sm)",
+                            color: "rgb(var(--color-text-muted))",
+                          }}
+                        >
+                          {opt.description}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {creating && (
+                    <p
+                      className="flex items-center gap-2"
+                      style={{
+                        fontSize: "var(--text-sm)",
+                        color: "rgb(var(--color-text-muted))",
+                      }}
+                    >
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                      Setting up your draft…
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <CreateFlow lang={lang} embedded />
+              )}
+            </div>
+
+            {/* Live preview rail */}
+            <aside
+              className="hidden w-85 shrink-0 items-start justify-center overflow-y-auto border-l px-6 py-8 lg:flex"
+              style={{
+                borderColor: "rgb(var(--color-border))",
+                backgroundColor: "rgb(var(--color-bg-subtle))",
+              }}
+            >
+              <CreatePreviewPanel />
+            </aside>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+/**
+ * Decorative banner behind the create dialog. Visible around the dialog edges
+ * (through the dimmed overlay) and for the moment before the dialog paints —
+ * gives /upload a branded feel instead of a blank page.
+ */
+function CreateBanner() {
+  return (
+    <div
+      className="relative hidden min-h-svh overflow-hidden md:block"
+      aria-hidden
+      style={{
+        background:
+          "linear-gradient(160deg, rgb(var(--brand-primary) / 0.10) 0%, rgb(var(--color-bg)) 42%, rgb(var(--brand-primary) / 0.14) 100%)",
+      }}
+    >
+      {/* Glow blobs */}
+      <div
+        className="absolute -left-32 -top-32 h-105 w-105 rounded-full blur-3xl"
+        style={{ backgroundColor: "rgb(var(--brand-primary) / 0.22)" }}
+      />
+      <div
+        className="absolute -bottom-40 -right-24 h-120 w-120 rounded-full blur-3xl"
+        style={{ backgroundColor: "rgb(var(--brand-primary) / 0.18)" }}
+      />
+      <div
+        className="absolute right-[18%] top-[12%] h-40 w-40 rounded-full blur-2xl"
+        style={{ backgroundColor: "rgb(56 168 255 / 0.18)" }}
+      />
+
+      {/* Headline strip (peeks above the dialog) */}
+      <div className="absolute inset-x-0 top-6 flex flex-col items-center gap-1 text-center">
+        <p
+          className="font-black tracking-tight"
+          style={{
+            fontSize: "var(--text-xl)",
+            color: "rgb(var(--color-text))",
+          }}
+        >
+          Turn your stuff into sales
+        </p>
+        <p
+          style={{
+            fontSize: "var(--text-sm)",
+            color: "rgb(var(--color-text-muted))",
+          }}
+        >
+          Snap it · Describe it · Post it — buyers nearby are watching
+        </p>
+      </div>
+
+      {/* Bottom tip strip (peeks below the dialog) */}
+      <div className="absolute inset-x-0 bottom-5 flex items-center justify-center gap-6">
+        {["AI writes your listing", "Reach nearby buyers", "Post to TikTok too"].map(
+          (tip) => (
+            <span
+              key={tip}
+              className="rounded-full px-3 py-1 font-medium"
+              style={{
+                fontSize: "var(--text-xs)",
+                backgroundColor: "rgb(var(--color-bg-elevated) / 0.7)",
+                border: "1px solid rgb(var(--color-border))",
+                color: "rgb(var(--color-text-muted))",
+              }}
+            >
+              {tip}
+            </span>
+          ),
+        )}
+      </div>
+    </div>
+  );
+}

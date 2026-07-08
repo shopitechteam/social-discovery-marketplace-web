@@ -70,19 +70,16 @@ export default async function WelcomePage({
     <AuthDesktopShell lang={lang}>
       {/* ── Mobile layout ─────────────────────────────────────── */}
       <div
-        className="relative flex flex-col h-svh overflow-hidden bg-app lg:hidden"
-        style={{ maxWidth: 430, margin: "0 auto" }}
+        className="relative mx-auto flex h-svh max-w-107.5 flex-col overflow-hidden bg-app lg:hidden"
       >
         {/* Subtle brand glow top-right */}
         <div
           aria-hidden
-          className="pointer-events-none absolute -top-24 -right-24 w-72 h-72 rounded-full blur-3xl"
-          style={{ background: "rgb(var(--brand-primary) / 0.08)" }}
+          className="pointer-events-none absolute -top-24 -right-24 w-72 h-72 rounded-full blur-3xl bg-[rgb(var(--brand-primary)/0.08)]"
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute top-40 -left-20 w-56 h-56 rounded-full blur-3xl"
-          style={{ background: "rgb(var(--brand-accent) / 0.06)" }}
+          className="pointer-events-none absolute top-40 -left-20 w-56 h-56 rounded-full blur-3xl bg-[rgb(var(--brand-accent)/0.06)]"
         />
 
         {/* Hero — grows to fill space above CTAs */}
@@ -91,12 +88,7 @@ export default async function WelcomePage({
           <div className="relative w-80 h-52 mb-4">
             {/* Left card */}
             <div
-              className="absolute left-0 top-4 w-36 rounded-2xl rotate-[-10deg] shadow-lg overflow-hidden"
-              style={{
-                height: 148,
-                background:
-                  "linear-gradient(145deg, rgb(var(--brand-primary)), rgb(var(--brand-primary) / 0.55))",
-              }}
+              className="absolute left-0 top-4 h-37 w-36 rounded-2xl rotate-[-10deg] shadow-lg overflow-hidden bg-[linear-gradient(145deg,rgb(var(--brand-primary)),rgb(var(--brand-primary)/0.55))]"
             >
               <div className="absolute inset-0 bg-linear-to-b from-white/10 to-transparent" />
               <div className="absolute top-3 left-3">
@@ -113,12 +105,7 @@ export default async function WelcomePage({
             </div>
             {/* Right card */}
             <div
-              className="absolute right-0 top-2 w-32 rounded-2xl rotate-[9deg] shadow-lg overflow-hidden"
-              style={{
-                height: 128,
-                background:
-                  "linear-gradient(145deg, rgb(var(--brand-accent)), rgb(var(--brand-accent) / 0.55))",
-              }}
+              className="absolute right-0 top-2 h-32 w-32 rounded-2xl rotate-[9deg] shadow-lg overflow-hidden bg-[linear-gradient(145deg,rgb(var(--brand-accent)),rgb(var(--brand-accent)/0.55))]"
             >
               <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent" />
               <div className="absolute top-2.5 right-2.5 bg-white/20 backdrop-blur-sm rounded-full px-2 py-0.5">
@@ -135,12 +122,7 @@ export default async function WelcomePage({
             </div>
             {/* Center card — largest, on top */}
             <div
-              className="absolute left-1/2 -translate-x-1/2 top-2 w-44 rounded-2xl shadow-xl overflow-hidden"
-              style={{
-                height: 160,
-                background:
-                  "linear-gradient(145deg, rgb(var(--brand-secondary)), rgb(var(--brand-secondary) / 0.65))",
-              }}
+              className="absolute left-1/2 -translate-x-1/2 top-2 h-40 w-44 rounded-2xl shadow-xl overflow-hidden bg-[linear-gradient(145deg,rgb(var(--brand-secondary)),rgb(var(--brand-secondary)/0.65))]"
             >
               <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent" />
               <div className="absolute top-3 left-3 bg-black/20 backdrop-blur-sm rounded-full px-2.5 py-1">

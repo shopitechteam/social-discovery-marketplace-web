@@ -45,6 +45,14 @@ interface Props {
    * inbox, and the mobile back arrow is shown so the affordance is always there.
    */
   embedded?: boolean;
+  /**
+   * Hide the participant's avatar + name/status in the header. Used by the
+   * desktop feed right rail, where the originating post card already shows the
+   * seller's name and image right next to the chat — repeating them here is
+   * redundant. The PDP content sheet leaves this off, so its chat keeps the
+   * usual header.
+   */
+  hideParticipantHeader?: boolean;
   onComposerChange: (value: string) => void;
   onSend: () => void;
   onQuickReply: (text: string) => void;
@@ -88,6 +96,7 @@ export function ChatDetail({
   requireAuth,
   onBack,
   embedded = false,
+  hideParticipantHeader = false,
   onComposerChange,
   onSend,
   onQuickReply,
@@ -208,8 +217,10 @@ export function ChatDetail({
               )}
 
               {/* While resolving from a content id the participant isn't known
-                  yet — show a subtle skeleton instead of a fake "Shopi user". */}
-              {pending && !otherParticipant ? (
+                  yet — show a subtle skeleton instead of a fake "Shopi user".
+                  Skipped entirely when the host already shows the seller
+                  (desktop feed right rail) to avoid repeating name + avatar. */}
+              {hideParticipantHeader ? null : pending && !otherParticipant ? (
                 <div className="h-10 w-10 animate-pulse rounded-full bg-black/10 dark:bg-white/10" />
               ) : otherParticipant?.profile?.avatar ? (
                 <div
@@ -240,7 +251,7 @@ export function ChatDetail({
               )}
 
               <div className="min-w-0 flex-1">
-                {pending && !otherParticipant ? (
+                {hideParticipantHeader ? null : pending && !otherParticipant ? (
                   <>
                     <div className="h-3.5 w-28 animate-pulse rounded bg-black/10 dark:bg-white/10" />
                     <div className="mt-1.5 h-2.5 w-16 animate-pulse rounded bg-black/10 dark:bg-white/10" />

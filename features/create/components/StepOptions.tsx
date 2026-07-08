@@ -16,6 +16,7 @@ import {
 import type { VisibilityMode } from "@/types/__generated__/graphql";
 import { getMediaPreviewSrc } from "@/features/create/utils/mediaPreview";
 import { Celebration, SuccessBadge } from "./Celebration";
+import celebrationStyles from "./Celebration.module.css";
 import { TikTokCreatePreview } from "./TikTokCreatePreview";
 
 const POST_TO_TIKTOK = gql`
@@ -26,6 +27,9 @@ const POST_TO_TIKTOK = gql`
 
 interface StepOptionsProps {
   lang: string;
+  /** Inside the desktop create dialog: it owns the header (back/stepper) and
+   *  the live preview panel, so this step renders only the settings column. */
+  embedded?: boolean;
 }
 
 type Visibility = "public" | "friends_only" | "private";
@@ -53,7 +57,7 @@ function toVisibilityMode(mode: Visibility): VisibilityMode {
   }
 }
 
-export function StepOptions({ lang }: StepOptionsProps) {
+export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
   const {
     draftId,
     price,
@@ -259,22 +263,16 @@ export function StepOptions({ lang }: StepOptionsProps) {
   // ── Published success ──────────────────────────────────────────────────────
   if (published) {
     return (
-      <div
-        className="fixed inset-0 z-[60] flex items-center justify-center"
-        style={{ backgroundColor: "rgb(var(--color-bg))" }}
-      >
+      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-background">
         <Celebration>
           <div className="flex flex-col items-center justify-center gap-5 px-6 text-center max-w-sm mx-auto">
             <SuccessBadge />
 
-            <div className="celebrate-text">
-              <h2
-                className="font-extrabold mb-1.5"
-                style={{ fontSize: "var(--text-2xl)", color: "rgb(var(--color-text))" }}
-              >
+            <div className={celebrationStyles.celebrateText}>
+              <h2 className="mb-1.5 text-2xl font-extrabold text-foreground">
                 Posted! 🎉
               </h2>
-              <p style={{ fontSize: "var(--text-base)", color: "rgb(var(--color-text-muted))" }}>
+              <p className="text-base text-muted">
                 It’s been submitted and is going through a quick automated review
                 to make sure it meets our guidelines. It’ll show up on the feed as
                 soon as it’s approved.
@@ -287,13 +285,7 @@ export function StepOptions({ lang }: StepOptionsProps) {
                   reset();
                   router.push(`/${lang}/feed`);
                 }}
-                className="celebrate-cta mt-1 h-11 rounded-full px-6 font-semibold active:scale-[0.97] transition-transform"
-                style={{
-                  backgroundColor: "rgb(var(--brand-primary))",
-                  color: "white",
-                  fontSize: "var(--text-base)",
-                  boxShadow: "0 8px 24px rgb(var(--brand-primary) / 0.4)",
-                }}
+                className={`${celebrationStyles.celebrateCta} mt-1 h-11 rounded-full bg-primary px-6 text-base font-semibold text-white shadow-[0_8px_24px_rgb(var(--brand-primary)/0.4)] transition-transform active:scale-[0.97]`}
               >
                 Go to feed
               </button>
@@ -301,17 +293,12 @@ export function StepOptions({ lang }: StepOptionsProps) {
 
             {tiktokReconnectNeeded && (
               <div
-                className="celebrate-text w-full max-w-xs rounded-2xl px-4 py-4 text-center"
-                style={{
-                  backgroundColor: "rgb(var(--color-bg-elevated))",
-                  border: "1px solid rgb(var(--color-border))",
-                  boxShadow: "var(--shadow-sm)",
-                }}
+                className={`${celebrationStyles.celebrateText} w-full max-w-xs rounded-2xl border border-border bg-elevated px-4 py-4 text-center shadow-(--shadow-sm)`}
               >
-                <p className="font-semibold mb-1" style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text))" }}>
+                <p className="mb-1 text-sm font-semibold text-foreground">
                   TikTok cross-post needs reconnect
                 </p>
-                <p className="mb-3" style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}>
+                <p className="mb-3 text-xs text-muted">
                   Your TikTok connection needs the posting permission. Reconnect once and it will work automatically next time.
                 </p>
                 <button
@@ -324,8 +311,7 @@ export function StepOptions({ lang }: StepOptionsProps) {
                       /* ignore */
                     }
                   }}
-                  className="font-semibold px-4 py-2 rounded-full"
-                  style={{ fontSize: "var(--text-xs)", backgroundColor: "rgb(var(--brand-primary))", color: "white" }}
+                  className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-white"
                 >
                   Reconnect TikTok
                 </button>
@@ -334,8 +320,7 @@ export function StepOptions({ lang }: StepOptionsProps) {
                     reset();
                     router.push(`/${lang}/feed`);
                   }}
-                  className="block mx-auto mt-2 font-medium"
-                  style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}
+                  className="mx-auto mt-2 block text-xs font-medium text-muted"
                 >
                   Go to feed
                 </button>
@@ -343,26 +328,6 @@ export function StepOptions({ lang }: StepOptionsProps) {
             )}
           </div>
 
-          <style jsx>{`
-            .celebrate-text,
-            .celebrate-cta {
-              opacity: 0;
-              animation: celebrate-rise 0.5s ease-out 0.5s forwards;
-            }
-            .celebrate-cta {
-              animation-delay: 0.7s;
-            }
-            @keyframes celebrate-rise {
-              from {
-                opacity: 0;
-                transform: translateY(10px);
-              }
-              to {
-                opacity: 1;
-                transform: translateY(0);
-              }
-            }
-          `}</style>
         </Celebration>
       </div>
     );
@@ -377,26 +342,18 @@ export function StepOptions({ lang }: StepOptionsProps) {
           <button
             key={opt.value}
             onClick={() => setVisibilityMode(opt.value)}
-            className="flex items-center gap-3 rounded-xl px-3 py-3 transition-all"
-            style={{
-              backgroundColor:
-                visibilityMode === opt.value
-                  ? "rgb(var(--brand-primary) / 0.08)"
-                  : "rgb(var(--color-bg-subtle))",
-              border:
-                visibilityMode === opt.value
-                  ? "1.5px solid rgb(var(--brand-primary) / 0.4)"
-                  : "1.5px solid transparent",
-            }}
+            className={`flex items-center gap-3 rounded-xl border-[1.5px] px-3 py-3 transition-all ${
+              visibilityMode === opt.value
+                ? "border-[rgb(var(--brand-primary)/0.4)] bg-[rgb(var(--brand-primary)/0.08)]"
+                : "border-transparent bg-surface"
+            }`}
           >
-            <span style={{ fontSize: 20 }}>{opt.icon}</span>
+            <span className="text-[20px]">{opt.icon}</span>
             <div className="flex-1 text-left">
-              <p style={{ fontSize: "var(--text-base)", fontWeight: 500, color: "rgb(var(--color-text))" }}>
+              <p className="text-base font-medium text-foreground">
                 {opt.label}
               </p>
-              <p style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}>
-                {opt.desc}
-              </p>
+              <p className="text-xs text-muted">{opt.desc}</p>
             </div>
             <RadioDot active={visibilityMode === opt.value} />
           </button>
@@ -414,7 +371,7 @@ export function StepOptions({ lang }: StepOptionsProps) {
           value={allowDownload}
           onChange={setAllowDownload}
         />
-        <div style={{ height: 1, backgroundColor: "rgb(var(--color-border))", margin: "2px 0" }} />
+        <div className="my-[2px] h-px bg-border" />
         <ToggleRow
           label="HD quality"
           description="Upload and serve in high definition"
@@ -441,7 +398,7 @@ export function StepOptions({ lang }: StepOptionsProps) {
           onChange={handleTiktokToggle}
           disabled={connectingTiktok}
           icon={
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{ color: postOnTiktok ? "rgb(var(--brand-primary))" : "rgb(var(--color-text-muted))" }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className={postOnTiktok ? "text-primary" : "text-muted"}>
               <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.75a8.27 8.27 0 0 0 4.84 1.55V6.85a4.85 4.85 0 0 1-1.07-.16z"/>
             </svg>
           }
@@ -460,32 +417,17 @@ export function StepOptions({ lang }: StepOptionsProps) {
           interaction-blocking overlay with a centered loader for the duration. */}
       {publishing && <PublishingOverlay />}
 
-      {/* ── Desktop left — summary card ── */}
-      <div
-        className="hidden md:flex md:flex-col md:justify-center md:items-center md:gap-5 md:p-8"
-        style={{
-          width: 320,
-          flexShrink: 0,
-          borderRight: "1px solid rgb(var(--color-border))",
-          backgroundColor: "rgb(var(--color-bg-subtle))",
-        }}
-      >
+      {/* ── Desktop left — summary card (standalone page only; the dialog
+             shows the live preview panel instead) ── */}
+      {!embedded && (
+      <div className="hidden w-80 shrink-0 border-r border-border bg-surface md:flex md:flex-col md:justify-center md:items-center md:gap-5 md:p-8">
         {/* Cover thumbnail */}
         {cover && (
-          <div
-            className="rounded-2xl overflow-hidden relative"
-            style={{
-              width: 160,
-              height: 213,
-              backgroundColor: "rgb(var(--color-bg))",
-              border: "1px solid rgb(var(--color-border))",
-            }}
-          >
+          <div className="relative h-[213px] w-40 overflow-hidden rounded-2xl border border-border bg-background">
             {tiktokEmbed ? (
               <TikTokCreatePreview
                 embed={tiktokEmbed}
                 className="absolute inset-0 h-full w-full"
-                style={{ aspectRatio: "auto" }}
                 sizes="160px"
               />
             ) : cover.type === "video" && cover.localUri ? (
@@ -504,7 +446,7 @@ export function StepOptions({ lang }: StepOptionsProps) {
                 className="absolute inset-0 w-full h-full object-contain"
               />
             ) : (
-              <div className="absolute inset-0" style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }} />
+              <div className="absolute inset-0 bg-surface" />
             )}
           </div>
         )}
@@ -522,46 +464,37 @@ export function StepOptions({ lang }: StepOptionsProps) {
           />
         </div>
       </div>
+      )}
 
       {/* ── Right / mobile — settings form ── */}
       <div className="flex flex-col flex-1 h-full min-h-0">
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 pt-4 pb-3 shrink-0">
-          <button
-            onClick={() => setStep("edit")}
-            className="flex items-center gap-1"
-            style={{ color: "rgb(var(--color-text-muted))", fontSize: "var(--text-sm)" }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            Back
-          </button>
-          <h2
-            className="font-semibold"
-            style={{ fontSize: "var(--text-lg)", color: "rgb(var(--color-text))" }}
-          >
-            Settings
-          </h2>
-          {/* Spacer to keep the title centered (Post/Draft live in the bottom bar) */}
-          <div style={{ width: 50 }} />
-        </div>
+        {/* Header — hidden when embedded: the dialog header owns back + stepper */}
+        {!embedded && (
+          <div className="flex items-center justify-between px-4 pt-4 pb-3 shrink-0">
+            <button
+              onClick={() => setStep("edit")}
+              className="flex items-center gap-1 text-sm text-muted"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Back
+            </button>
+            <h2 className="text-lg font-semibold text-foreground">Settings</h2>
+            {/* Spacer to keep the title centered (Post/Draft live in the bottom bar) */}
+            <div className="w-12.5" />
+          </div>
+        )}
 
-        <div className="flex-1 overflow-y-auto px-4 pb-8 flex flex-col gap-5">
+        <div
+          className={`flex-1 overflow-y-auto pb-8 flex flex-col gap-5 ${embedded ? "px-8 pt-6" : "px-4"}`}
+        >
           {visibilitySection}
           {togglesSection}
           {tiktokSection}
 
           {error && (
-            <div
-              className="rounded-xl px-4 py-3"
-              style={{
-                backgroundColor: "rgb(var(--color-error) / 0.08)",
-                border: "1px solid rgb(var(--color-error) / 0.2)",
-                color: "rgb(var(--color-error))",
-                fontSize: "var(--text-sm)",
-              }}
-            >
+            <div className="rounded-xl border border-[rgb(var(--color-error)/0.2)] bg-[rgb(var(--color-error)/0.08)] px-4 py-3 text-sm text-error">
               {error}
             </div>
           )}
@@ -569,37 +502,25 @@ export function StepOptions({ lang }: StepOptionsProps) {
 
         {/* ── Fixed bottom action bar: Draft (outline) + Post (primary) ── */}
         <div
-          className="flex gap-3 px-4 pt-3 shrink-0"
-          style={{
-            borderTop: "1px solid rgb(var(--color-border))",
-            paddingBottom: "calc(env(safe-area-inset-bottom) + 16px)",
-          }}
+          className={`flex shrink-0 gap-3 border-t border-border pt-3 pb-[calc(env(safe-area-inset-bottom)+16px)] ${embedded ? "px-8" : "px-4"}`}
         >
           <button
             onClick={handleSaveDraft}
             disabled={advancing || publishing}
-            className="flex-1 h-12 rounded-2xl font-semibold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
-            style={{
-              backgroundColor: "transparent",
-              border: "1.5px solid rgb(var(--color-border-strong))",
-              color: "rgb(var(--color-text))",
-              fontSize: "var(--text-base)",
-              opacity: advancing || publishing ? 0.6 : 1,
-            }}
+            className={`flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl border-[1.5px] border-[rgb(var(--color-border-strong))] bg-transparent text-base font-semibold text-foreground transition-transform active:scale-[0.98] ${
+              advancing || publishing ? "opacity-60" : ""
+            }`}
           >
             {advancing ? <MiniSpinnerDark /> : "Draft"}
           </button>
           <button
             onClick={handlePost}
             disabled={publishing || advancing}
-            className="flex-1 h-12 rounded-2xl font-semibold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
-            style={{
-              backgroundColor: "rgb(var(--brand-primary))",
-              color: "white",
-              fontSize: "var(--text-base)",
-              boxShadow: publishing ? "none" : "0 6px 20px rgb(var(--brand-primary) / 0.4)",
-              opacity: publishing ? 0.8 : 1,
-            }}
+            className={`flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-primary text-base font-semibold text-white transition-transform active:scale-[0.98] ${
+              publishing
+                ? "opacity-80"
+                : "shadow-[0_6px_20px_rgb(var(--brand-primary)/0.4)]"
+            }`}
           >
             {publishing ? <MiniSpinner /> : "Post"}
           </button>
@@ -620,8 +541,7 @@ export function StepOptions({ lang }: StepOptionsProps) {
 function PublishingOverlay() {
   return (
     <div
-      className="fixed inset-0 z-60 flex flex-col items-center justify-center gap-4 bg-black/60 backdrop-blur-[2px]"
-      style={{ touchAction: "none" }}
+      className="fixed inset-0 z-60 flex touch-none flex-col items-center justify-center gap-4 bg-black/60 backdrop-blur-[2px]"
       role="status"
       aria-live="polite"
       aria-label="Publishing your post"
@@ -674,10 +594,7 @@ function MiniSpinnerDark() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <p
-        className="mb-2 font-semibold uppercase tracking-wide"
-        style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}
-      >
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
         {title}
       </p>
       {children}
@@ -687,12 +604,9 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
-    <div
-      className="flex items-center justify-between rounded-xl px-3 py-2.5"
-      style={{ backgroundColor: "rgb(var(--color-bg-elevated))", border: "1px solid rgb(var(--color-border))" }}
-    >
-      <span style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}>{label}</span>
-      <span style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "rgb(var(--color-text))" }} className="line-clamp-1 max-w-[140px] text-right">{value}</span>
+    <div className="flex items-center justify-between rounded-xl border border-border bg-elevated px-3 py-2.5">
+      <span className="text-xs text-muted">{label}</span>
+      <span className="line-clamp-1 max-w-35 text-right text-xs font-semibold text-foreground">{value}</span>
     </div>
   );
 }
@@ -700,16 +614,11 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 function RadioDot({ active }: { active: boolean }) {
   return (
     <div
-      className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
-      style={{
-        border: active
-          ? "2px solid rgb(var(--brand-primary))"
-          : "2px solid rgb(var(--color-border-strong))",
-      }}
+      className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 ${
+        active ? "border-primary" : "border-[rgb(var(--color-border-strong))]"
+      }`}
     >
-      {active && (
-        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "rgb(var(--brand-primary))" }} />
-      )}
+      {active && <div className="h-2.5 w-2.5 rounded-full bg-primary" />}
     </div>
   );
 }
@@ -730,36 +639,25 @@ function ToggleRow({
   icon?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-3 py-3" style={{ opacity: disabled ? 0.6 : 1 }}>
+    <div className={`flex items-center gap-3 py-3 ${disabled ? "opacity-60" : ""}`}>
       {icon && <span className="flex-shrink-0">{icon}</span>}
       <div className="flex-1 min-w-0">
-        <p style={{ fontSize: "var(--text-base)", fontWeight: 500, color: "rgb(var(--color-text))" }}>
-          {label}
-        </p>
-        <p style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}>
-          {description}
-        </p>
+        <p className="text-base font-medium text-foreground">{label}</p>
+        <p className="text-xs text-muted">{description}</p>
       </div>
       <button
         role="switch"
         aria-checked={value}
         onClick={() => !disabled && onChange(!value)}
         disabled={disabled}
-        className="relative flex-shrink-0 rounded-full transition-colors"
-        style={{
-          width: 44,
-          height: 26,
-          backgroundColor: value ? "rgb(var(--brand-primary))" : "rgb(var(--color-border-strong))",
-        }}
+        className={`relative h-[26px] w-11 flex-shrink-0 rounded-full transition-colors ${
+          value ? "bg-primary" : "bg-[rgb(var(--color-border-strong))]"
+        }`}
       >
         <span
-          className="absolute top-0.5 rounded-full bg-white transition-transform shadow-sm"
-          style={{
-            width: 22,
-            height: 22,
-            left: 2,
-            transform: value ? "translateX(18px)" : "translateX(0px)",
-          }}
+          className={`absolute top-0.5 left-0.5 h-5.5 w-5.5 rounded-full bg-white shadow-sm transition-transform ${
+            value ? "translate-x-[18px]" : "translate-x-0"
+          }`}
         />
       </button>
     </div>

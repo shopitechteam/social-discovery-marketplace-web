@@ -71,20 +71,10 @@ export function BottomNav({ lang = "en" }: { lang: string }) {
 
   return (
     <nav
-      className="bottom-nav fixed bottom-0 left-1/2 -translate-x-1/2 w-full z-50 md:hidden"
-      style={{
-        paddingBottom: "var(--safe-bottom)",
-        backgroundColor: "rgb(var(--color-bg-elevated) / 0.92)",
-        backdropFilter: "blur(16px) saturate(180%)",
-        WebkitBackdropFilter: "blur(16px) saturate(180%)",
-      }}
+      className="bottom-nav fixed bottom-0 left-1/2 -translate-x-1/2 w-full z-50 md:hidden pb-(--safe-bottom) bg-[rgb(var(--color-bg-elevated)/0.92)] backdrop-blur-[16px] backdrop-saturate-[1.8]"
     >
       <div
-        className="relative flex items-center justify-between"
-        style={{
-          height: "var(--nav-height)",
-          borderTop: "1px solid rgb(var(--color-border))",
-        }}
+        className="relative flex h-(--nav-height) items-center justify-between border-t border-border"
       >
         {tabs.map((tab) => {
           const href = `/${lang}/${tab.path}`;
@@ -96,13 +86,7 @@ export function BottomNav({ lang = "en" }: { lang: string }) {
               <Link
                 key={tab.key}
                 href={href}
-                className="flex items-center justify-center rounded-2xl"
-                style={{
-                  width: 52,
-                  height: 36,
-                  background: `linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-primary)) 60%, rgb(var(--brand-secondary)))`,
-                  boxShadow: "0 4px 16px rgb(var(--brand-primary) / 0.4)",
-                }}
+                className="flex h-9 w-13 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,rgb(var(--brand-primary)),rgb(var(--brand-primary))_60%,rgb(var(--brand-secondary)))] shadow-[0_4px_16px_rgb(var(--brand-primary)/0.4)]"
                 aria-label="Create post"
               >
                 <Icon size={22} strokeWidth={2.8} color="white" />
@@ -123,15 +107,9 @@ export function BottomNav({ lang = "en" }: { lang: string }) {
               key={tab.key}
               href={href}
               scroll={false}
-              className="flex flex-col items-center justify-center gap-0.5 flex-1 py-1 select-none"
-              style={{
-                color: isActive
-                  ? `rgb(var(--brand-primary))`
-                  : `rgb(var(--color-text-muted))`,
-                transition: "color 0.15s ease",
-                WebkitTapHighlightColor: "transparent",
-                minHeight: 44,
-              }}
+              className={`flex min-h-11 flex-1 select-none flex-col items-center justify-center gap-0.5 py-1 transition-colors duration-150 [-webkit-tap-highlight-color:transparent] ${
+                isActive ? "text-primary" : "text-muted"
+              }`}
               aria-current={isActive ? "page" : undefined}
             >
               <span className="relative">
@@ -143,14 +121,7 @@ export function BottomNav({ lang = "en" }: { lang: string }) {
                 />
                 {tab.key === "notifications" && unreadCount > 0 ? (
                   <span
-                    className="absolute -right-2 -top-1.5 flex h-4.5 min-w-4.5 items-center justify-center rounded-full px-1 font-bold text-white"
-                    style={{
-                      fontSize: "10px",
-                      lineHeight: 1,
-                      backgroundColor: "rgb(var(--brand-primary))",
-                      border: "1.5px solid rgb(var(--color-bg-elevated))",
-                      boxShadow: "0 1px 3px rgba(0,0,0,0.25)",
-                    }}
+                    className="absolute -right-2 -top-1.5 flex h-4.5 min-w-4.5 items-center justify-center rounded-full border-[1.5px] border-elevated bg-primary px-1 text-[10px] leading-none font-bold text-white shadow-[0_1px_3px_rgba(0,0,0,0.25)]"
                     aria-label={`${unreadCount} unread`}
                   >
                     {unreadCount > 99 ? "99+" : unreadCount}
@@ -158,12 +129,11 @@ export function BottomNav({ lang = "en" }: { lang: string }) {
                 ) : null}
               </span>
               <p
-                className="text-xs leading-6"
-                style={{
-                  fontWeight: isActive ? 600 : 400,
-                  letterSpacing: isActive ? "0.01em" : "normal",
-                  lineHeight: 1,
-                }}
+                className={`text-xs leading-none ${
+                  isActive
+                    ? "font-semibold tracking-[0.01em]"
+                    : "font-normal tracking-normal"
+                }`}
               >
                 {tab.label}
               </p>

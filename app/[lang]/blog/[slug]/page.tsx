@@ -115,81 +115,52 @@ export default async function BlogPostPage({ params }: Props) {
 
       <LegalNav lang={lang} />
 
-      <main className="blog-post-main">
-        <div className="blog-post-layout">
+      <main className="mx-auto max-w-[1100px] px-4 pt-16 pb-12 sm:px-5 sm:pt-20 sm:pb-16">
+        <div className="grid grid-cols-1 items-start gap-8 min-[900px]:grid-cols-[1fr_300px] min-[900px]:gap-12">
 
           {/* ── Article body ─────────────────────────────────────── */}
           <article>
             {/* Breadcrumb */}
-            <nav style={{ marginBottom: "2rem", fontSize: "0.8rem", color: "rgb(var(--color-text-muted))" }}>
-              <Link href="/" style={{ color: "rgb(var(--color-text-muted))", textDecoration: "none" }}>Home</Link>
-              <span style={{ margin: "0 0.5rem" }}>›</span>
-              <Link href="/blog" style={{ color: "rgb(var(--color-text-muted))", textDecoration: "none" }}>Blog</Link>
-              <span style={{ margin: "0 0.5rem" }}>›</span>
-              <span style={{ color: "rgb(var(--color-text))" }}>{post.category}</span>
+            <nav className="mb-8 text-[0.8rem] text-muted">
+              <Link href="/" className="text-muted no-underline">Home</Link>
+              <span className="mx-2">›</span>
+              <Link href="/blog" className="text-muted no-underline">Blog</Link>
+              <span className="mx-2">›</span>
+              <span className="text-foreground">{post.category}</span>
             </nav>
 
             {/* Category + meta */}
-            <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: "1.25rem" }}>
+            <div className="mb-5 flex flex-wrap items-center gap-2.5">
               <span
-                style={{
-                  fontSize: "0.7rem",
-                  fontWeight: 700,
-                  padding: "3px 12px",
-                  borderRadius: 9999,
-                  background: `${catColor}22`,
-                  color: catColor,
-                  letterSpacing: "0.05em",
-                  textTransform: "uppercase",
-                }}
+                className="rounded-full px-3 py-[3px] text-[0.7rem] font-bold tracking-[0.05em] uppercase"
+                style={{ background: `${catColor}22`, color: catColor }}
               >
                 {post.category}
               </span>
-              <span style={{ fontSize: "0.8rem", color: "rgb(var(--color-text-muted))" }}>{post.readTime}</span>
-              <span style={{ fontSize: "0.8rem", color: "rgb(var(--color-text-muted))" }}>
+              <span className="text-[0.8rem] text-muted">{post.readTime}</span>
+              <span className="text-[0.8rem] text-muted">
                 {new Date(post.publishedAt).toLocaleDateString("en-KE", { day: "numeric", month: "long", year: "numeric" })}
               </span>
             </div>
 
             {/* Title */}
-            <h1
-              style={{
-                fontFamily: "var(--font-display)",
-                fontSize: "clamp(1.75rem, 3.5vw, 2.75rem)",
-                fontWeight: 700,
-                letterSpacing: "-0.03em",
-                lineHeight: 1.1,
-                color: "rgb(var(--color-text))",
-                marginBottom: "1.25rem",
-              }}
-            >
+            <h1 className="mb-5 font-display text-[clamp(1.75rem,3.5vw,2.75rem)] font-bold tracking-[-0.03em] leading-[1.1] text-foreground">
               {post.title}
             </h1>
 
             {/* Author */}
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: "2.5rem", paddingBottom: "2rem", borderBottom: "1px solid rgb(var(--color-border))" }}>
+            <div className="mb-10 flex items-center gap-3 border-b border-border pb-8">
               <div
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: "50%",
-                  background: post.author.color,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "0.85rem",
-                  fontWeight: 700,
-                  color: "#fff",
-                  flexShrink: 0,
-                }}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[0.85rem] font-bold text-white"
+                style={{ background: post.author.color }}
               >
                 {post.author.initials}
               </div>
               <div>
-                <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "rgb(var(--color-text))" }}>
+                <div className="text-[0.9rem] font-bold text-foreground">
                   {post.author.name}
                 </div>
-                <div style={{ fontSize: "0.78rem", color: "rgb(var(--color-text-muted))" }}>
+                <div className="text-[0.78rem] text-muted">
                   {post.author.role} · Shopi
                 </div>
               </div>
@@ -197,75 +168,33 @@ export default async function BlogPostPage({ params }: Props) {
 
             {/* Lead / excerpt */}
             <p
-              className="blog-lead-excerpt"
-              style={{
-                lineHeight: 1.7,
-                color: "rgb(var(--color-text-muted))",
-                fontStyle: "italic",
-                marginBottom: "2.5rem",
-                paddingLeft: "1rem",
-                borderLeft: `3px solid ${catColor}`,
-              }}
+              className="mb-10 border-l-[3px] pl-4 text-[0.95rem] leading-[1.7] text-muted italic sm:text-[1.1rem]"
+              style={{ borderLeftColor: catColor }}
             >
               {post.excerpt}
             </p>
 
             {/* Body sections */}
             {post.sections.map((section, i) => (
-              <section key={i} style={{ marginBottom: "2.5rem" }}>
-                <h2
-                  style={{
-                    fontFamily: "var(--font-display)",
-                    fontSize: "clamp(1.1rem, 2vw, 1.45rem)",
-                    fontWeight: 700,
-                    letterSpacing: "-0.02em",
-                    color: "rgb(var(--color-text))",
-                    marginBottom: "0.875rem",
-                    lineHeight: 1.25,
-                  }}
-                >
+              <section key={i} className="mb-10">
+                <h2 className="mb-3.5 font-display text-[clamp(1.1rem,2vw,1.45rem)] font-bold tracking-[-0.02em] leading-[1.25] text-foreground">
                   {section.heading}
                 </h2>
                 {section.body.split("\n\n").map((para, j) => (
-                  <p
-                    key={j}
-                    style={{
-                      fontSize: "1rem",
-                      lineHeight: 1.8,
-                      color: "rgb(var(--color-text-muted))",
-                      marginBottom: "1rem",
-                    }}
-                  >
+                  <p key={j} className="mb-4 text-[1rem] leading-[1.8] text-muted">
                     {para}
                   </p>
                 ))}
                 {section.list && (
-                  <ul style={{ margin: "1rem 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: "0.625rem" }}>
+                  <ul className="mt-4 mb-0 flex list-none flex-col gap-2.5 p-0">
                     {section.list.map((item, k) => (
                       <li
                         key={k}
-                        style={{
-                          display: "flex",
-                          gap: "0.75rem",
-                          alignItems: "flex-start",
-                          fontSize: "0.95rem",
-                          lineHeight: 1.65,
-                          color: "rgb(var(--color-text-muted))",
-                        }}
+                        className="flex items-start gap-3 text-[0.95rem] leading-[1.65] text-muted"
                       >
                         <span
-                          style={{
-                            width: 20,
-                            height: 20,
-                            borderRadius: "50%",
-                            background: `${catColor}22`,
-                            color: catColor,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            flexShrink: 0,
-                            marginTop: 3,
-                          }}
+                          className="mt-[3px] flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
+                          style={{ background: `${catColor}22`, color: catColor }}
                         >
                           <svg
                             width="11"
@@ -289,20 +218,13 @@ export default async function BlogPostPage({ params }: Props) {
             ))}
 
             {/* Keywords / tags */}
-            <div style={{ marginBottom: "3rem", paddingTop: "1.5rem", borderTop: "1px solid rgb(var(--color-border))" }}>
-              <div style={{ fontSize: "0.75rem", fontWeight: 600, color: "rgb(var(--color-text-muted))", marginBottom: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Topics</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+            <div className="mb-12 border-t border-border pt-6">
+              <div className="mb-3 text-[0.75rem] font-semibold tracking-[0.05em] uppercase text-muted">Topics</div>
+              <div className="flex flex-wrap gap-2">
                 {post.keywords.map((kw) => (
                   <span
                     key={kw}
-                    style={{
-                      fontSize: "0.75rem",
-                      padding: "4px 12px",
-                      borderRadius: 9999,
-                      border: "1px solid rgb(var(--color-border))",
-                      background: "rgb(var(--color-bg-subtle))",
-                      color: "rgb(var(--color-text-muted))",
-                    }}
+                    className="rounded-full border border-border bg-surface px-3 py-1 text-[0.75rem] text-muted"
                   >
                     {kw}
                   </span>
@@ -312,44 +234,28 @@ export default async function BlogPostPage({ params }: Props) {
 
             {/* Further reading — outbound links to Jiji / TikTok where relevant */}
             {post.relatedLinks && post.relatedLinks.length > 0 && (
-              <div style={{ marginBottom: "3rem", paddingTop: "1.5rem", borderTop: "1px solid rgb(var(--color-border))" }}>
-                <div style={{ fontSize: "0.75rem", fontWeight: 600, color: "rgb(var(--color-text-muted))", marginBottom: "1rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              <div className="mb-12 border-t border-border pt-6">
+                <div className="mb-4 text-[0.75rem] font-semibold tracking-[0.05em] uppercase text-muted">
                   Further reading
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                <div className="flex flex-col gap-3">
                   {post.relatedLinks.map(({ label, url, description: desc }) => (
                     <a
                       key={url}
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      style={{
-                        display: "flex",
-                        gap: "1rem",
-                        alignItems: "flex-start",
-                        padding: "0.875rem 1rem",
-                        borderRadius: 10,
-                        border: "1px solid rgb(var(--color-border))",
-                        background: "rgb(var(--color-bg-subtle))",
-                        textDecoration: "none",
-                        transition: "border-color 0.15s ease",
-                      }}
+                      className="flex items-start gap-4 rounded-[10px] border border-border bg-surface px-4 py-3.5 no-underline transition-colors duration-150"
                     >
                       <span
-                        style={{
-                          width: 8,
-                          height: 8,
-                          borderRadius: "50%",
-                          background: catColor,
-                          flexShrink: 0,
-                          marginTop: 7,
-                        }}
+                        className="mt-[7px] h-2 w-2 shrink-0 rounded-full"
+                        style={{ background: catColor }}
                       />
                       <div>
-                        <div style={{ fontSize: "0.875rem", fontWeight: 600, color: "rgb(var(--color-text))", marginBottom: "0.25rem" }}>
+                        <div className="mb-1 text-[0.875rem] font-semibold text-foreground">
                           {label} ↗
                         </div>
-                        <div style={{ fontSize: "0.8rem", color: "rgb(var(--color-text-muted))", lineHeight: 1.5 }}>
+                        <div className="text-[0.8rem] leading-[1.5] text-muted">
                           {desc}
                         </div>
                       </div>
@@ -360,58 +266,26 @@ export default async function BlogPostPage({ params }: Props) {
             )}
 
             {/* FAQ — AEO structured section */}
-            <section aria-label="Frequently asked questions" style={{ marginBottom: "3rem" }}>
-              <h2
-                style={{
-                  fontFamily: "var(--font-display)",
-                  fontSize: "1.4rem",
-                  fontWeight: 700,
-                  letterSpacing: "-0.02em",
-                  color: "rgb(var(--color-text))",
-                  marginBottom: "1.25rem",
-                }}
-              >
+            <section aria-label="Frequently asked questions" className="mb-12">
+              <h2 className="mb-5 font-display text-[1.4rem] font-bold tracking-[-0.02em] text-foreground">
                 Frequently asked questions
               </h2>
-              <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <div className="flex flex-col gap-4">
                 {post.faq.map(({ q, a }, i) => (
                   <details
                     key={i}
-                    style={{
-                      border: "1px solid rgb(var(--color-border))",
-                      borderRadius: 12,
-                      background: "rgb(var(--color-bg-elevated))",
-                      overflow: "hidden",
-                    }}
+                    className="overflow-hidden rounded-md border border-border bg-elevated"
                   >
-                    <summary
-                      style={{
-                        padding: "1rem 1.25rem",
-                        cursor: "pointer",
-                        fontWeight: 600,
-                        fontSize: "0.95rem",
-                        color: "rgb(var(--color-text))",
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        listStyle: "none",
-                        userSelect: "none",
-                      }}
-                    >
+                    <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-4 text-[0.95rem] font-semibold text-foreground select-none">
                       {q}
-                      <span style={{ color: catColor, fontSize: "1.1rem", flexShrink: 0, marginLeft: 12 }}>+</span>
+                      <span
+                        className="ml-3 shrink-0 text-[1.1rem]"
+                        style={{ color: catColor }}
+                      >
+                        +
+                      </span>
                     </summary>
-                    <div
-                      style={{
-                        padding: "0 1.25rem 1rem",
-                        fontSize: "0.9rem",
-                        lineHeight: 1.7,
-                        color: "rgb(var(--color-text-muted))",
-                        borderTop: "1px solid rgb(var(--color-border))",
-                        paddingTop: "0.875rem",
-                        marginTop: 0,
-                      }}
-                    >
+                    <div className="border-t border-border px-5 pt-3.5 pb-4 text-[0.9rem] leading-[1.7] text-muted">
                       {a}
                     </div>
                   </details>
@@ -420,43 +294,16 @@ export default async function BlogPostPage({ params }: Props) {
             </section>
 
             {/* CTA */}
-            <div
-              style={{
-                borderRadius: 16,
-                background: "rgb(var(--color-bg-subtle))",
-                border: "1px solid rgb(var(--color-border))",
-                padding: "2rem",
-                textAlign: "center",
-              }}
-            >
-              <h3
-                style={{
-                  fontFamily: "var(--font-display)",
-                  fontSize: "1.2rem",
-                  fontWeight: 700,
-                  color: "rgb(var(--color-text))",
-                  marginBottom: "0.5rem",
-                }}
-              >
+            <div className="rounded-2xl border border-border bg-surface p-8 text-center">
+              <h3 className="mb-2 font-display text-[1.2rem] font-bold text-foreground">
                 Ready to buy and sell locally?
               </h3>
-              <p style={{ fontSize: "0.875rem", color: "rgb(var(--color-text-muted))", marginBottom: "1.25rem" }}>
+              <p className="mb-5 text-[0.875rem] text-muted">
                 Open the feed, discover what is selling near you, and message the seller directly. Free to use.
               </p>
               <Link
                 href="/feed"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                  padding: "0.75rem 1.75rem",
-                  borderRadius: 9999,
-                  background: "rgb(var(--brand-primary))",
-                  color: "#fff",
-                  fontWeight: 700,
-                  fontSize: "0.9rem",
-                  textDecoration: "none",
-                }}
+                className="inline-flex items-center gap-2 rounded-full bg-primary px-7 py-3 text-[0.9rem] font-bold text-white no-underline"
               >
                 Open the feed →
               </Link>
@@ -464,42 +311,26 @@ export default async function BlogPostPage({ params }: Props) {
           </article>
 
           {/* ── Sidebar ───────────────────────────────────────────── */}
-          <aside className="blog-post-sidebar">
+          <aside className="static min-[900px]:sticky min-[900px]:top-24">
             {/* Table of contents */}
-            <div
-              style={{
-                borderRadius: 14,
-                border: "1px solid rgb(var(--color-border))",
-                background: "rgb(var(--color-bg-elevated))",
-                padding: "1.25rem",
-                marginBottom: "1.5rem",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "0.7rem",
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
-                  color: "rgb(var(--color-text-muted))",
-                  marginBottom: "0.875rem",
-                }}
-              >
+            <div className="mb-6 rounded-[14px] border border-border bg-elevated p-5">
+              <div className="mb-3.5 text-[0.7rem] font-bold tracking-[0.05em] uppercase text-muted">
                 In this article
               </div>
               <nav>
                 {post.sections.map((s, i) => (
                   <div
                     key={i}
-                    style={{
-                      padding: "0.45rem 0",
-                      borderBottom: i < post.sections.length - 1 ? "1px solid rgb(var(--color-border))" : "none",
-                      fontSize: "0.8rem",
-                      lineHeight: 1.4,
-                      color: "rgb(var(--color-text-muted))",
-                    }}
+                    className={`py-[0.45rem] text-[0.8rem] leading-[1.4] text-muted ${
+                      i < post.sections.length - 1 ? "border-b border-border" : ""
+                    }`}
                   >
-                    <span style={{ color: catColor, marginRight: 6, fontSize: "0.7rem" }}>{i + 1}.</span>
+                    <span
+                      className="mr-1.5 text-[0.7rem]"
+                      style={{ color: catColor }}
+                    >
+                      {i + 1}.
+                    </span>
                     {s.heading}
                   </div>
                 ))}
@@ -507,66 +338,27 @@ export default async function BlogPostPage({ params }: Props) {
             </div>
 
             {/* Related posts */}
-            <div
-              style={{
-                borderRadius: 14,
-                border: "1px solid rgb(var(--color-border))",
-                background: "rgb(var(--color-bg-elevated))",
-                padding: "1.25rem",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "0.7rem",
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
-                  color: "rgb(var(--color-text-muted))",
-                  marginBottom: "0.875rem",
-                }}
-              >
+            <div className="rounded-[14px] border border-border bg-elevated p-5">
+              <div className="mb-3.5 text-[0.7rem] font-bold tracking-[0.05em] uppercase text-muted">
                 More from Shopi
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <div className="flex flex-col gap-4">
                 {related.map((r) => (
-                  <Link key={r.slug} href={`/blog/${r.slug}`} style={{ textDecoration: "none" }}>
-                    <div
-                      style={{
-                        padding: "0.75rem",
-                        borderRadius: 10,
-                        border: "1px solid rgb(var(--color-border))",
-                        background: "rgb(var(--color-bg-subtle))",
-                        transition: "border-color 0.15s ease",
-                      }}
-                    >
+                  <Link key={r.slug} href={`/blog/${r.slug}`} className="no-underline">
+                    <div className="rounded-[10px] border border-border bg-surface p-3 transition-colors duration-150">
                       <span
+                        className="mb-2 inline-block rounded-full px-[7px] py-[2px] text-[0.65rem] font-bold tracking-[0.04em] uppercase"
                         style={{
-                          fontSize: "0.65rem",
-                          fontWeight: 700,
-                          padding: "2px 7px",
-                          borderRadius: 9999,
                           background: `${categoryColors[r.category] ?? catColor}22`,
                           color: categoryColors[r.category] ?? catColor,
-                          letterSpacing: "0.04em",
-                          textTransform: "uppercase",
-                          display: "inline-block",
-                          marginBottom: "0.5rem",
                         }}
                       >
                         {r.category}
                       </span>
-                      <div
-                        style={{
-                          fontSize: "0.82rem",
-                          fontWeight: 600,
-                          color: "rgb(var(--color-text))",
-                          lineHeight: 1.35,
-                          marginBottom: "0.4rem",
-                        }}
-                      >
+                      <div className="mb-[0.4rem] text-[0.82rem] font-semibold leading-[1.35] text-foreground">
                         {r.title}
                       </div>
-                      <div style={{ fontSize: "0.72rem", color: "rgb(var(--color-text-muted))" }}>
+                      <div className="text-[0.72rem] text-muted">
                         {r.readTime}
                       </div>
                     </div>
@@ -577,34 +369,6 @@ export default async function BlogPostPage({ params }: Props) {
           </aside>
 
         </div>
-
-        <style>{`
-          .blog-post-main {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 4rem 1rem 3rem;
-          }
-          @media (min-width: 640px) {
-            .blog-post-main { padding: 5rem 1.25rem 4rem; }
-          }
-          .blog-lead-excerpt { font-size: 0.95rem; }
-          @media (min-width: 640px) {
-            .blog-lead-excerpt { font-size: 1.1rem; }
-          }
-          .blog-post-layout {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 2rem;
-            align-items: start;
-          }
-          .blog-post-sidebar {
-            position: static;
-          }
-          @media (min-width: 900px) {
-            .blog-post-layout { grid-template-columns: 1fr 300px; gap: 3rem; }
-            .blog-post-sidebar { position: sticky; top: 6rem; }
-          }
-        `}</style>
       </main>
 
       <LandingFooter />

@@ -4,101 +4,31 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { siteConfig } from "@/config/site";
 import type { Dictionary } from "@/i18n/getDictionary";
+import { ShopiLogo } from "@/features/auth/components/AuthIcons";
 
 export function LandingFooter({ dict }: { dict?: Dictionary }) {
   const pathname = usePathname();
   const lang = pathname.split("/")[1] || "en";
   return (
-    <footer
-      style={{
-        borderTop: "1px solid rgb(var(--color-border))",
-        padding: "3rem 1.25rem 2rem",
-        background: "rgb(var(--color-bg-subtle))",
-      }}
-    >
-      <div className="footer-grid">
+    <footer className="mb-8 rounded-md border-t border-border bg-surface px-(--landing-page-x) pt-12 pb-8">
+      <div className="mx-auto mb-12 grid max-w-(--landing-page-max) grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr] lg:gap-12">
         {/* Brand */}
         <div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              marginBottom: "1rem",
-            }}
-          >
-            <div
-              style={{
-                width: 30,
-                height: 30,
-                borderRadius: "var(--radius-sm)",
-                background:
-                  "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-accent)))",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#fff",
-                fontWeight: 800,
-                fontSize: "0.875rem",
-                fontFamily: "var(--font-display)",
-              }}
-            >
-              S
+          <div className="mb-4 flex items-center gap-2">
+            <div className="h-7.5 w-7.5 font-display text-[0.875rem]">
+              <ShopiLogo height={32} />
             </div>
-            <span
-              style={{
-                fontFamily: "var(--font-display)",
-                fontWeight: 700,
-                fontSize: "var(--text-lg)",
-                color: "rgb(var(--color-text))",
-              }}
-            >
-              {siteConfig.name}
-            </span>
           </div>
-          <p
-            style={{
-              fontSize: "var(--text-sm)",
-              color: "rgb(var(--color-text-muted))",
-              lineHeight: "var(--leading-normal)",
-              maxWidth: "260px",
-            }}
-          >
+          <p className="max-w-65 text-sm leading-normal text-muted">
             {dict?.footer.tagline ??
               "Kenya's social marketplace. Discover it, message the seller, done."}
           </p>
-          <div
-            style={{ display: "flex", gap: "0.75rem", marginTop: "1.25rem" }}
-          >
+          <div className="mt-5 flex gap-3">
             {["𝕏", "ig", "tk", "yt"].map((s) => (
               <a
                 key={s}
                 href="#"
-                style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: "var(--radius-full)",
-                  border: "1px solid rgb(var(--color-border))",
-                  background: "rgb(var(--color-bg-elevated))",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "var(--text-xs)",
-                  color: "rgb(var(--color-text-muted))",
-                  textDecoration: "none",
-                  fontWeight: 700,
-                  transition: "border-color 0.15s ease, color 0.15s ease",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = "rgb(var(--color-text))";
-                  e.currentTarget.style.borderColor =
-                    "rgb(var(--color-border-strong))";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = "rgb(var(--color-text-muted))";
-                  e.currentTarget.style.borderColor =
-                    "rgb(var(--color-border))";
-                }}
+                className="flex h-8.5 w-8.5 items-center justify-center rounded-full border border-border bg-elevated text-xs font-bold text-muted no-underline transition-colors duration-150 hover:border-[rgb(var(--color-border-strong))] hover:text-foreground"
               >
                 {s}
               </a>
@@ -136,44 +66,15 @@ export function LandingFooter({ dict }: { dict?: Dictionary }) {
           },
         ].map(({ heading, links }) => (
           <div key={heading}>
-            <h4
-              style={{
-                fontSize: "var(--text-sm)",
-                fontWeight: 700,
-                color: "rgb(var(--color-text))",
-                marginBottom: "1rem",
-                letterSpacing: "0.02em",
-              }}
-            >
+            <h4 className="mb-4 text-sm font-bold tracking-[0.02em] text-foreground">
               {heading}
             </h4>
-            <ul
-              style={{
-                listStyle: "none",
-                padding: 0,
-                margin: 0,
-                display: "flex",
-                flexDirection: "column",
-                gap: "0.625rem",
-              }}
-            >
+            <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
               {links.map(({ label, href }) => (
                 <li key={label}>
                   <Link
                     href={href}
-                    style={{
-                      fontSize: "var(--text-sm)",
-                      color: "rgb(var(--color-text-muted))",
-                      textDecoration: "none",
-                      transition: "color 0.15s ease",
-                    }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.color = "rgb(var(--color-text))")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.color =
-                        "rgb(var(--color-text-muted))")
-                    }
+                    className="text-sm text-muted no-underline transition-colors duration-150 hover:text-foreground"
                   >
                     {label}
                   </Link>
@@ -185,19 +86,7 @@ export function LandingFooter({ dict }: { dict?: Dictionary }) {
       </div>
 
       {/* Bottom bar */}
-      <div
-        style={{
-          maxWidth: "1200px",
-          margin: "0 auto",
-          paddingTop: "1.5rem",
-          borderTop: "1px solid rgb(var(--color-border))",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          fontSize: "var(--text-xs)",
-          color: "rgb(var(--color-text-muted))",
-        }}
-      >
+      <div className="mx-auto flex max-w-(--landing-page-max) items-center justify-between border-t border-border pt-6 text-xs text-muted">
         <span>
           {dict?.footer.copyright.replace(
             "{year}",
@@ -207,22 +96,6 @@ export function LandingFooter({ dict }: { dict?: Dictionary }) {
         </span>
         <span>Made in Kenya</span>
       </div>
-
-      <style>{`
-        .footer-grid {
-          max-width: 1200px;
-          margin: 0 auto 3rem;
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 2rem;
-        }
-        @media (min-width: 640px) {
-          .footer-grid { grid-template-columns: 1fr 1fr; gap: 2rem; }
-        }
-        @media (min-width: 1024px) {
-          .footer-grid { grid-template-columns: 2fr 1fr 1fr 1fr; gap: 3rem; }
-        }
-      `}</style>
     </footer>
   );
 }

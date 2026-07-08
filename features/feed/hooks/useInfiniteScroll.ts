@@ -1,16 +1,17 @@
 "use client";
 
-import { useEffect, useRef, RefObject } from "react";
+import { useCallback, useEffect, useRef, useState, type RefCallback } from "react";
 
 interface UseInfiniteScrollOptions {
   hasMore: boolean;
   loading: boolean;
   onLoadMore: () => void;
   rootMargin?: string;
+  enabled?: boolean;
 }
 
 interface UseInfiniteScrollResult {
-  sentinelRef: RefObject<HTMLDivElement | null>;
+  sentinelRef: RefCallback<HTMLDivElement>;
 }
 
 /**
@@ -26,25 +27,82 @@ export function useInfiniteScroll({
   loading,
   onLoadMore,
   rootMargin = "400px",
+  enabled = true,
 }: UseInfiniteScrollOptions): UseInfiniteScrollResult {
-  const sentinelRef = useRef<HTMLDivElement>(null);
+  const [sentinelEl, setSentinelEl] = useState<HTMLDivElement | null>(null);
+  const latest = useRef({ hasMore, loading, onLoadMore });
+  const wasEnabled = useRef(enabled);
 
   useEffect(() => {
-    const el = sentinelRef.current;
+    latest.current = { hasMore, loading, onLoadMore };
+  }, [hasMore, loading, onLoadMore]);
+
+  const sentinelRef = useCallback<RefCallback<HTMLDivElement>>((node) => {
+    setSentinelEl(node);
+  }, []);
+
+  useEffect(() => {
+    const el = sentinelEl;
+    const recheckOnEnable = enabled && !wasEnabled.current;
+    wasEnabled.current = enabled;
+
     if (!el) return;
+    if (!enabled) return;
+
+    const maybeLoadMore = () => {
+      const state = latest.current;
+      if (state.hasMore && !state.loading) state.onLoadMore();
+    };
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loading) {
-          onLoadMore();
-        }
+        if (entries[0].isIntersecting) maybeLoadMore();
       },
       { rootMargin },
     );
 
     observer.observe(el);
-    return () => observer.disconnect();
-  }, [hasMore, loading, onLoadMore, rootMargin]);
+
+    let frame = 0;
+    if (recheckOnEnable) {
+      // When a feed returns from display:none, re-check once. The page-append
+      // recheck lives in its own effect below.
+      frame = requestAnimationFrame(() => {
+        if (sentinelWithinMargin(el, rootMargin)) maybeLoadMore();
+      });
+    }
+
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [enabled, rootMargin, sentinelEl]);
+
+  // IntersectionObserver only fires on intersection CHANGES. If an appended
+  // page is shorter than rootMargin (e.g. a grid of small tiles), the sentinel
+  // never leaves the margin, no new event fires, and pagination silently
+  // stalls with hasMore still true. So when a load finishes, re-check once:
+  // still within the margin → request the next page. This chain-fills only
+  // until the sentinel clears the margin, and hasMore/loading gate it.
+  const wasLoading = useRef(loading);
+  useEffect(() => {
+    const justFinished = wasLoading.current && !loading;
+    wasLoading.current = loading;
+    if (!justFinished || !enabled || !sentinelEl) return;
+
+    const frame = requestAnimationFrame(() => {
+      const state = latest.current;
+      if (!state.hasMore || state.loading) return;
+      if (sentinelWithinMargin(sentinelEl, rootMargin)) state.onLoadMore();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [loading, enabled, rootMargin, sentinelEl]);
 
   return { sentinelRef };
+}
+
+function sentinelWithinMargin(el: HTMLElement, rootMargin: string) {
+  const rect = el.getBoundingClientRect();
+  const margin = Number.parseFloat(rootMargin) || 0;
+  return rect.top <= window.innerHeight + margin && rect.bottom >= -margin;
 }

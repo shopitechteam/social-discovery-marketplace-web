@@ -7,7 +7,14 @@ const PREFIX = "shopi-scroll:";
 const MAX_RESTORE_FRAMES = 45;
 
 function scrollKey(pathname: string, search: string) {
-  return `${PREFIX}${pathname}${search ? `?${search}` : ""}`;
+  // `tab` switches an in-page view whose scroll the page itself remembers
+  // per-tab (FeedPage / DesktopFeed). Keying on it would make this component
+  // fight that logic: the scroll-to-top of a tab switch gets saved under the
+  // previous tab's URL and then stomps the page's own restore.
+  const params = new URLSearchParams(search);
+  params.delete("tab");
+  const s = params.toString();
+  return `${PREFIX}${pathname}${s ? `?${s}` : ""}`;
 }
 
 function readSavedY(key: string) {

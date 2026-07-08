@@ -4,14 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@apollo/client/react";
 import { useCreateStore } from "@/stores/create";
+import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { CreateDraftDocument } from "@/types/__generated__/graphql";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { DesktopCreateFlow } from "./DesktopCreateFlow";
 
 const ICON_VIDEO = (
   <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
@@ -67,30 +62,36 @@ const ICON_TIKTOK = (
   </svg>
 );
 
+/**
+ * /upload — the "Upload & sell" entry point.
+ *
+ * Desktop (≥ md): the whole create flow lives here in a shadcn Dialog with a
+ * stepper and a live post preview (DesktopCreateFlow); no route hops.
+ *
+ * Mobile: this page is the type picker; picking a type creates the draft and
+ * navigates to /upload/create (full-page flow).
+ */
 export function UploadPickerPage({ lang }: { lang: string }) {
   const router = useRouter();
+  const isDesktop = useIsDesktop();
   const [creating, setCreating] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(false);
 
   const { setDraftId, setContentType, setStep, setError, draftId, step } =
     useCreateStore();
   const [createDraft] = useMutation(CreateDraftDocument);
 
+  // Mobile only: if a draft is already in progress, skip the picker and resume
+  // it on the full-page flow. Desktop resumes inside the dialog instead.
   useEffect(() => {
-    const query = window.matchMedia("(min-width: 768px)");
-    const update = () => setIsDesktop(query.matches);
-
-    update();
-    query.addEventListener("change", update);
-    return () => query.removeEventListener("change", update);
-  }, []);
-
-  // If a draft is already in progress, skip the picker and resume it
-  useEffect(() => {
-    if (draftId && step !== "pick") {
+    if (isDesktop === false && draftId && step !== "pick") {
       router.replace(`/${lang}/upload/create`);
     }
-  }, [draftId, step, lang, router]);
+  }, [isDesktop, draftId, step, lang, router]);
+
+  // Avoid a layout flash before the breakpoint is known.
+  if (isDesktop === null) return null;
+
+  if (isDesktop) return <DesktopCreateFlow lang={lang} />;
 
   // Pick a media type → create the draft and jump straight to the details step.
   // No native file picker here; the user chooses files on the details step via
@@ -141,108 +142,11 @@ export function UploadPickerPage({ lang }: { lang: string }) {
       description: "Bring your TikTok content",
       icon: ICON_TIKTOK,
       onClick: () => {
-        router.replace(`/${lang}/upload/tiktok`);
+        // push (not replace) so Back returns to this picker.
+        router.push(`/${lang}/upload/tiktok`);
       },
     },
   ];
-
-  const optionCards = (
-    <div className="flex flex-col gap-3 px-4 pt-6 pb-8 md:grid md:grid-cols-3 md:gap-4 md:px-8 md:pt-2 md:pb-2">
-      {options.map((opt) => (
-        <button
-          key={opt.label}
-          onClick={opt.onClick}
-          disabled={creating}
-          className="flex w-full items-center gap-4 rounded-2xl text-left transition-transform active:scale-[0.98] disabled:opacity-50 md:flex-col md:items-center md:gap-3 md:px-4 md:py-8 md:text-center"
-          style={{
-            padding: "18px 20px",
-            backgroundColor: "rgb(var(--color-bg-elevated))",
-            border: "1px solid rgb(var(--color-border))",
-            color: "rgb(var(--color-text))",
-          }}
-        >
-          <span
-            className="md:flex md:h-14 md:w-14 md:items-center md:justify-center md:rounded-2xl"
-            style={{
-              color: "rgb(var(--brand-primary))",
-              backgroundColor: "transparent",
-            }}
-          >
-            <span
-              className="hidden h-14 w-14 items-center justify-center rounded-2xl md:flex"
-              style={{ backgroundColor: "rgb(var(--brand-primary) / 0.1)" }}
-            >
-              {opt.icon}
-            </span>
-            <span className="md:hidden">{opt.icon}</span>
-          </span>
-
-          <div className="flex flex-1 flex-col gap-0.5 md:flex-none md:items-center">
-            <span
-              className="font-semibold"
-              style={{ fontSize: "var(--text-base)" }}
-            >
-              {opt.label}
-            </span>
-            <span
-              style={{
-                fontSize: "var(--text-sm)",
-                color: "rgb(var(--color-text-muted))",
-              }}
-            >
-              {opt.description}
-            </span>
-          </div>
-
-          <svg
-            className="ml-auto shrink-0 md:hidden"
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            style={{ color: "rgb(var(--color-text-muted))" }}
-          >
-            <path
-              d="M9 6l6 6-6 6"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
-      ))}
-    </div>
-  );
-
-  if (isDesktop) {
-    return (
-      <Dialog
-        open
-        onOpenChange={(open) => {
-          if (!open) closePicker();
-        }}
-      >
-        <DialogContent className="w-[min(92vw,820px)]  max-w-none overflow-hidden rounded-3xl border border-[rgb(229_231_235)] bg-app p-0">
-          <DialogHeader className="border-b border-[rgb(229_231_235)] px-8 py-5 text-left">
-            <DialogTitle
-              style={{
-                fontSize: "var(--text-xl)",
-                color: "rgb(var(--color-text))",
-              }}
-            >
-              Create
-            </DialogTitle>
-            <DialogDescription className="sr-only">
-              Choose how you want to create a new post.
-            </DialogDescription>
-          </DialogHeader>
-          {optionCards}
-          <div className="mt-12" />
-        </DialogContent>
-      </Dialog>
-    );
-  }
 
   return (
     <div className="create-flow-card flex flex-col bg-app">
@@ -280,7 +184,60 @@ export function UploadPickerPage({ lang }: { lang: string }) {
         </h1>
       </div>
 
-      {optionCards}
+      <div className="flex flex-col gap-3 px-4 pt-6 pb-8">
+        {options.map((opt) => (
+          <button
+            key={opt.label}
+            onClick={opt.onClick}
+            disabled={creating}
+            className="flex w-full items-center gap-4 rounded-2xl text-left transition-transform active:scale-[0.98] disabled:opacity-50"
+            style={{
+              padding: "18px 20px",
+              backgroundColor: "rgb(var(--color-bg-elevated))",
+              border: "1px solid rgb(var(--color-border))",
+              color: "rgb(var(--color-text))",
+            }}
+          >
+            <span style={{ color: "rgb(var(--brand-primary))" }}>
+              {opt.icon}
+            </span>
+
+            <div className="flex flex-1 flex-col gap-0.5">
+              <span
+                className="font-semibold"
+                style={{ fontSize: "var(--text-base)" }}
+              >
+                {opt.label}
+              </span>
+              <span
+                style={{
+                  fontSize: "var(--text-sm)",
+                  color: "rgb(var(--color-text-muted))",
+                }}
+              >
+                {opt.description}
+              </span>
+            </div>
+
+            <svg
+              className="ml-auto shrink-0"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              style={{ color: "rgb(var(--color-text-muted))" }}
+            >
+              <path
+                d="M9 6l6 6-6 6"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

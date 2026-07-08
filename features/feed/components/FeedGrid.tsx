@@ -10,16 +10,17 @@ import { memo } from "react";
 
 interface Props {
   lang: string;
+  active?: boolean;
 }
 
-function FeedGrid({ lang }: Props) {
+function FeedGrid({ lang, active = true }: Props) {
   const { items, loading, loadingMore, hasMore, loadMore } = useForYouFeed();
 
   const { sentinelRef } = useInfiniteScroll({
+    enabled: active,
     hasMore,
     loading: loading || loadingMore,
     onLoadMore: loadMore,
-    rootMargin: "1400px",
   });
 
   if (loading && items.length === 0) return <FeedSkeleton />;

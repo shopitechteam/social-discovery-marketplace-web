@@ -11,6 +11,11 @@ interface Props {
   contentId: string;
   /** Collapse the chat column (does not navigate). */
   onClose: () => void;
+  /**
+   * Hide the participant's name + avatar in the chat header. Set by the desktop
+   * feed right rail, where the originating post card already shows the seller.
+   */
+  hideParticipantHeader?: boolean;
 }
 
 /**
@@ -39,7 +44,12 @@ export function EmbeddedChatPanel(props: Props) {
   );
 }
 
-function EmbeddedChatPanelBody({ lang, contentId, onClose }: Props) {
+function EmbeddedChatPanelBody({
+  lang,
+  contentId,
+  onClose,
+  hideParticipantHeader,
+}: Props) {
   const inbox = useInbox(lang);
 
   // Ensure the conversation for this post in place. `skipUrlSync` keeps the
@@ -74,6 +84,7 @@ function EmbeddedChatPanelBody({ lang, contentId, onClose }: Props) {
         isConversationActionPending={inbox.isConversationActionPending}
         requireAuth={inbox.requireAuth}
         embedded
+        hideParticipantHeader={hideParticipantHeader}
         onBack={onClose}
         onComposerChange={inbox.handleComposerChange}
         onSend={inbox.handleSend}

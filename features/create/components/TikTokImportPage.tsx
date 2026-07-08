@@ -305,6 +305,13 @@ function PageShell({
   const isDesktop = useIsDesktop({ ssrDefault: false });
 
   function goBackToPicker() {
+    // The picker pushed us here, so plain Back reopens it (as the intercepted
+    // modal) over whatever page it was opened from. Fall back to a direct
+    // navigation when this page was the entry point (hard load / shared link).
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+      return;
+    }
     router.replace(`/${lang}/upload`);
   }
 
@@ -356,7 +363,7 @@ function PageShell({
           if (!open) goBackToPicker();
         }}
       >
-        <DialogContent className="w-[min(94vw,900px)] max-w-none overflow-hidden rounded-3xl border border-[rgb(229_231_235)] bg-app p-0">
+        <DialogContent className="w-[min(94vw,900px)] max-w-none overflow-hidden rounded-3xl border border-default bg-app p-0">
           <DialogHeader className="sr-only">
             <DialogTitle>Add from TikTok</DialogTitle>
             <DialogDescription>

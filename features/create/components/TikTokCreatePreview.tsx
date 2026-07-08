@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type CSSProperties } from "react";
+import { useEffect } from "react";
 import Image from "next/image";
 import type { TiktokEmbed } from "@/stores/create";
 
@@ -16,13 +16,12 @@ function ensureTikTokVideoElement(): Promise<unknown> {
 
 export function TikTokCreatePreview({
   embed,
-  className,
-  style,
+  className = "aspect-[9/16]",
   sizes = "240px",
 }: {
   embed: TiktokEmbed;
+  /** Sizing/aspect classes — default is a 9:16 portrait box. */
   className?: string;
-  style?: CSSProperties;
   sizes?: string;
 }) {
   useEffect(() => {
@@ -30,10 +29,7 @@ export function TikTokCreatePreview({
   }, []);
 
   return (
-    <div
-      className={`relative overflow-hidden bg-black ${className ?? ""}`}
-      style={{ aspectRatio: "9 / 16", ...style }}
-    >
+    <div className={`relative overflow-hidden bg-black ${className}`}>
       {embed.coverImageUrl && (
         <Image
           src={embed.coverImageUrl}
@@ -49,7 +45,6 @@ export function TikTokCreatePreview({
         muted
         loop
         className="absolute inset-0 h-full w-full"
-        style={{ width: "100%", height: "100%" }}
       />
     </div>
   );

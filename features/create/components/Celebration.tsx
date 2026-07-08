@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import styles from "./Celebration.module.css";
 
 /**
  * Full-bleed celebration overlay: theme-colored confetti "rain" falling from the
@@ -52,13 +53,13 @@ export function Celebration({ children }: { children: React.ReactNode }) {
   const pieces = useMemo(() => buildPieces(), []);
 
   return (
-    <div className="celebration-root">
+    <div className={styles.root}>
       {/* Confetti rain */}
-      <div className="confetti-layer" aria-hidden>
+      <div className={styles.confettiLayer} aria-hidden>
         {pieces.map((p, i) => (
           <span
             key={i}
-            className="confetti-piece"
+            className={styles.confettiPiece}
             style={
               {
                 left: `${p.left}%`,
@@ -77,52 +78,7 @@ export function Celebration({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Centered content */}
-      <div className="celebration-content">{children}</div>
-
-      <style jsx>{`
-        .celebration-root {
-          position: relative;
-          width: 100%;
-          height: 100%;
-          overflow: hidden;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .confetti-layer {
-          position: absolute;
-          inset: 0;
-          pointer-events: none;
-          z-index: 0;
-        }
-        .confetti-piece {
-          position: absolute;
-          top: -24px;
-          opacity: 0;
-          will-change: transform, opacity;
-          animation-name: confetti-fall;
-          animation-timing-function: cubic-bezier(0.45, 0.05, 0.55, 0.95);
-          animation-iteration-count: infinite;
-        }
-        @keyframes confetti-fall {
-          0% {
-            transform: translate3d(0, -10vh, 0) rotate(0deg);
-            opacity: 0;
-          }
-          10% {
-            opacity: 1;
-          }
-          100% {
-            transform: translate3d(var(--drift), 105vh, 0) rotate(var(--rotate));
-            opacity: 1;
-          }
-        }
-        .celebration-content {
-          position: relative;
-          z-index: 1;
-          width: 100%;
-        }
-      `}</style>
+      <div className={styles.content}>{children}</div>
     </div>
   );
 }
@@ -130,9 +86,9 @@ export function Celebration({ children }: { children: React.ReactNode }) {
 /** The animated success badge — burst ring + pop-in checkmark. */
 export function SuccessBadge() {
   return (
-    <div className="badge-wrap">
-      <span className="burst-ring" aria-hidden />
-      <div className="badge">
+    <div className={styles.badgeWrap}>
+      <span className={styles.burstRing} aria-hidden />
+      <div className={styles.badge}>
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
           <path
             d="M5 13l4 4L19 7"
@@ -140,79 +96,10 @@ export function SuccessBadge() {
             strokeWidth="2.6"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="check-path"
+            className={styles.checkPath}
           />
         </svg>
       </div>
-
-      <style jsx>{`
-        .badge-wrap {
-          position: relative;
-          width: 88px;
-          height: 88px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .badge {
-          width: 80px;
-          height: 80px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: linear-gradient(
-            135deg,
-            rgb(var(--brand-primary)),
-            rgb(var(--brand-secondary))
-          );
-          box-shadow: 0 10px 36px rgb(var(--brand-primary) / 0.45);
-          transform: scale(0);
-          animation: badge-pop 0.55s cubic-bezier(0.17, 0.89, 0.32, 1.28)
-            forwards;
-        }
-        .burst-ring {
-          position: absolute;
-          width: 80px;
-          height: 80px;
-          border-radius: 50%;
-          border: 3px solid rgb(var(--brand-primary) / 0.5);
-          transform: scale(0.7);
-          opacity: 0.8;
-          animation: burst 0.8s ease-out 0.2s forwards;
-        }
-        .check-path {
-          stroke-dasharray: 30;
-          stroke-dashoffset: 30;
-          animation: check-draw 0.4s ease-out 0.45s forwards;
-        }
-        @keyframes badge-pop {
-          0% {
-            transform: scale(0);
-          }
-          70% {
-            transform: scale(1.08);
-          }
-          100% {
-            transform: scale(1);
-          }
-        }
-        @keyframes burst {
-          0% {
-            transform: scale(0.7);
-            opacity: 0.8;
-          }
-          100% {
-            transform: scale(1.9);
-            opacity: 0;
-          }
-        }
-        @keyframes check-draw {
-          to {
-            stroke-dashoffset: 0;
-          }
-        }
-      `}</style>
     </div>
   );
 }

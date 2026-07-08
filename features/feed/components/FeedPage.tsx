@@ -10,13 +10,24 @@ import DesktopFeed from "./DesktopFeed";
 
 interface Props {
   lang: string;
+  visible?: boolean;
 }
 
 type Tab = "for-you" | "following" | "nearby";
 
-export function FeedPage({ lang }: Props) {
+const isTab = (v: string | null): v is Tab =>
+  v === "for-you" || v === "following" || v === "nearby";
+
+/** The mobile card feed is hidden on md+ (DesktopFeed owns the window scroll
+ *  there), so its save/restore must not fire on desktop viewports. */
+const isMobileViewport = () =>
+  typeof window !== "undefined" &&
+  !window.matchMedia("(min-width: 768px)").matches;
+
+export function FeedPage({ lang, visible = true }: Props) {
   const searchParams = useSearchParams();
-  const initialTab = (searchParams.get("tab") as Tab | null) ?? "for-you";
+  const initialParam = searchParams.get("tab");
+  const initialTab: Tab = isTab(initialParam) ? initialParam : "for-you";
   const [tab, setTab] = useState<Tab>(initialTab);
   // Track which tabs have ever been opened. Nearby mounts lazily (it requests
   // geolocation on mount, which we must not do until the user opens it); once
@@ -40,28 +51,35 @@ export function FeedPage({ lang }: Props) {
   // post-DOM-mutation, by which point the restored feed has its full height back.
   useLayoutEffect(() => {
     if (prevTab.current !== tab) {
-      window.scrollTo(0, scrollByTab.current[tab] ?? 0);
+      if (isMobileViewport()) {
+        window.scrollTo(0, scrollByTab.current[tab] ?? 0);
+      }
       prevTab.current = tab;
     }
   }, [tab]);
 
-  // If the user returns from auth with ?tab=following, honour it
+  // If the user returns from auth with ?tab=following, honour it. The feed
+  // stays mounted while OTHER routes are shown (MainShell), and those routes
+  // use ?tab= for their own sub-tabs (e.g. /notifications?tab=notifications) —
+  // so only sync when the feed route is actually visible, and only for values
+  // that are real feed tabs.
   useEffect(() => {
-    const t = searchParams.get("tab") as Tab | null;
-    if (t && t !== tab) {
-      scrollByTab.current[tab] = window.scrollY;
+    if (!visible) return;
+    const t = searchParams.get("tab");
+    if (isTab(t) && t !== tab) {
+      if (isMobileViewport()) scrollByTab.current[tab] = window.scrollY;
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setTab(t);
       setOpenedTabs((prev) => (prev.has(t) ? prev : new Set(prev).add(t)));
     }
     // only re-run when the search params change, not when tab changes internally
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  }, [searchParams, visible]);
 
   function handleTabChange(next: Tab) {
     if (next === tab) return;
     // Remember where we are on the tab we're leaving, before it gets hidden.
-    scrollByTab.current[tab] = window.scrollY;
+    if (isMobileViewport()) scrollByTab.current[tab] = window.scrollY;
     setTab(next);
     setOpenedTabs((prev) => (prev.has(next) ? prev : new Set(prev).add(next)));
   }
@@ -70,7 +88,7 @@ export function FeedPage({ lang }: Props) {
     <div>
       {/* ── Desktop: fullscreen TikTok-style feed — no header/tabs needed ── */}
       <div className="hidden md:block">
-        <DesktopFeed lang={lang} />
+        <DesktopFeed lang={lang} visible={visible} />
       </div>
 
       {/* ── Mobile: existing card feed with tabs ── */}
@@ -87,14 +105,17 @@ export function FeedPage({ lang }: Props) {
             active-video election. */}
         <div className="relative bg-surface">
           <div className={tab === "for-you" ? undefined : "hidden"}>
-            <FeedGrid lang={lang} />
+            <FeedGrid lang={lang} active={visible && tab === "for-you"} />
           </div>
 
           {/* Following mounts lazily too, to avoid firing its feed query on
               page load when the user may never leave For-You. */}
           {openedTabs.has("following") ? (
             <div className={tab === "following" ? undefined : "hidden"}>
-              <FollowingGrid lang={lang} />
+              <FollowingGrid
+                lang={lang}
+                active={visible && tab === "following"}
+              />
             </div>
           ) : null}
 
@@ -102,7 +123,7 @@ export function FeedPage({ lang }: Props) {
               mount), then stays mounted like the others. */}
           {openedTabs.has("nearby") ? (
             <div className={tab === "nearby" ? undefined : "hidden"}>
-              <NearbyGrid lang={lang} />
+              <NearbyGrid lang={lang} active={visible && tab === "nearby"} />
             </div>
           ) : null}
         </div>
