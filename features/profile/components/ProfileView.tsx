@@ -433,18 +433,22 @@ function SettingsPanel({ lang }: { lang: string }) {
             <ThemeToggle />
           </SettingsRow>
 
-          <div
-            style={{ height: 1, backgroundColor: "rgb(var(--color-border))" }}
-          />
+          {/* Desktop signs out from the SideNav user card; keep this row for
+              mobile only. */}
+          <div className="md:hidden">
+            <div
+              style={{ height: 1, backgroundColor: "rgb(var(--color-border))" }}
+            />
 
-          <SettingsRow
-            icon={LogOut}
-            label="Sign out"
-            description="End this session"
-            tone="--color-error"
-          >
-            <LogoutButton lang={lang} />
-          </SettingsRow>
+            <SettingsRow
+              icon={LogOut}
+              label="Sign out"
+              description="End this session"
+              tone="--color-error"
+            >
+              <LogoutButton lang={lang} />
+            </SettingsRow>
+          </div>
         </div>
       </div>
     </section>

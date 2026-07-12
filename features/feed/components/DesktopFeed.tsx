@@ -357,7 +357,11 @@ export default function DesktopFeed({
   return (
     <FeedChatProvider value={openChat}>
       <div className="min-h-svh bg-app">
-        <div className="mx-auto w-full max-w-[1680px] px-4 py-4 md:px-6 md:py-6 xl:px-8">
+        {/* No bottom padding here: the sticky right rail can only stay pinned
+            while the grid (its containing block) still overlaps the viewport,
+            so the grid must run to the very end of the document. The feed
+            column carries the bottom breathing room instead. */}
+        <div className="mx-auto w-full max-w-[1680px] px-4 pt-4 md:px-6 md:pt-6 xl:px-8">
           <div
             className={[
               "grid grid-cols-1 gap-6 xl:items-start transition-[grid-template-columns] duration-300 ease-out",
@@ -367,21 +371,26 @@ export default function DesktopFeed({
             ].join(" ")}
           >
             {/* ── Feed column ───────────────────────────────────────────── */}
-            <div className="min-w-0 w-full max-w-[780px] mx-auto xl:max-w-none xl:mx-0">
+            <div className="min-w-0 w-full max-w-[780px] mx-auto pb-4 md:pb-6 xl:max-w-none xl:mx-0">
               <div className="xl:hidden mb-4">
                 <TrendingStrip lang={lang} />
               </div>
 
-              <div className="sticky top-0 z-20 -mx-1 mb-4 bg-app/90 px-1 pb-3 pt-1 backdrop-blur-md">
-                <div className="flex min-w-0 items-center gap-6">
+              <div className="sticky top-0 z-20 -mx-1 mb-4 bg-app/90 px-1 pb-2 pt-2 backdrop-blur-md">
+                <div
+                  aria-label="Feed"
+                  className="flex min-w-0 items-center gap-8"
+                >
                   {TABS.map((t) => (
                     <button
                       key={t.id}
                       onClick={() => selectTab(t.id)}
+                      aria-current={tab === t.id ? "true" : undefined}
                       className={[
-                        "relative py-1 text-sm font-bold transition-colors",
+                        "relative rounded-md px-1 py-2 text-sm font-bold transition-colors",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                         tab === t.id
-                          ? "text-default after:absolute after:-bottom-1.5 after:left-0 after:h-0.5 after:w-full after:rounded-full after:bg-primary"
+                          ? "text-default after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-full after:rounded-full after:bg-primary"
                           : "text-muted-foreground hover:text-default",
                       ].join(" ")}
                     >

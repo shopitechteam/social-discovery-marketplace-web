@@ -58,14 +58,18 @@ export function MainShell({
         className={[
           "flex min-h-svh flex-col bg-app",
           "mx-auto max-w-107.5",
-          "md:mx-0 md:ml-[var(--side-nav-width,220px)] md:max-w-none",
+          "md:mx-0 md:ml-(--side-nav-width,220px) md:max-w-none",
         ].join(" ")}
       >
+        {/* The bottom padding clears the fixed BottomNav, which is md:hidden —
+            so drop it on md+ too. Leaving it creates dead scroll space below
+            the page content, and scrolling into that space pushes desktop
+            sticky elements (feed tabs, right rail) up out of the viewport. */}
         <main
           className={`flex-1 ${
             hideBottomNav
               ? ""
-              : "pb-[calc(var(--nav-height,0px)+var(--safe-bottom,0px))]"
+              : "pb-[calc(var(--nav-height,0)+var(--safe-bottom,0))] md:pb-0"
           }`}
         >
           {/* Persistent Home feed — hidden (not unmounted) when off /feed.

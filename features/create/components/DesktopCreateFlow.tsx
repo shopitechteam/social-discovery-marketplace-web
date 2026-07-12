@@ -15,6 +15,11 @@ import {
 import { TikTokIcon } from "@/components/ui/TikTokIcon";
 import { CreateFlow } from "./CreateFlow";
 import { CreatePreviewPanel } from "./CreatePreviewPanel";
+import { TikTokPicker } from "./TikTokPicker";
+import {
+  CreateErrorDialog,
+  createErrorMessage,
+} from "./CreateErrorDialog";
 
 const STEPS = [
   { n: 1, label: "Choose type" },
@@ -36,6 +41,12 @@ const STEPS = [
 export function DesktopCreateFlow({ lang }: { lang: string }) {
   const router = useRouter();
   const [creating, setCreating] = useState(false);
+  // TikTok import renders inline in this dialog (same surface as the other
+  // types — no route hop). Local state: a refresh simply returns to the picker.
+  const [tiktokOpen, setTiktokOpen] = useState(false);
+  // Draft-creation failures (e.g. "Maximum active drafts reached") shown in a
+  // dialog over this one.
+  const [createError, setCreateError] = useState<string | null>(null);
   // Wait for the persisted store before trusting `step` — otherwise a refresh
   // mid-draft flashes the picker before jumping to the details step.
   const [hydrated, setHydrated] = useState(false);
@@ -69,7 +80,7 @@ export function DesktopCreateFlow({ lang }: { lang: string }) {
       setContentType(kind);
       setStep("edit");
     } catch (err) {
-      setError(String(err));
+      setCreateError(createErrorMessage(err));
     } finally {
       setCreating(false);
     }
@@ -100,6 +111,10 @@ export function DesktopCreateFlow({ lang }: { lang: string }) {
       useCreateStore.getState().reset();
       return;
     }
+    if (tiktokOpen) {
+      setTiktokOpen(false);
+      return;
+    }
     closeDialog();
   }
 
@@ -127,13 +142,19 @@ export function DesktopCreateFlow({ lang }: { lang: string }) {
       label: "TikTok Import",
       description: "Bring a video from your TikTok",
       icon: <TikTokIcon size={26} className="" />,
-      onClick: () => router.push(`/${lang}/upload/tiktok`),
+      // Inline in this dialog, like the other types — no route hop.
+      onClick: () => setTiktokOpen(true),
     },
   ];
 
   return (
     <>
       <CreateBanner />
+
+      <CreateErrorDialog
+        message={createError}
+        onClose={() => setCreateError(null)}
+      />
 
       <Dialog
         open
@@ -250,6 +271,36 @@ export function DesktopCreateFlow({ lang }: { lang: string }) {
                   <div
                     className="h-8 w-8 animate-spin rounded-full border-2 border-current border-t-transparent"
                     style={{ color: "rgb(var(--color-text-muted))" }}
+                  />
+                </div>
+              ) : step === "pick" && tiktokOpen ? (
+                <div className="flex min-h-0 flex-1 flex-col">
+                  <div className="shrink-0 px-6 pt-5 pb-1">
+                    <h2
+                      className="font-bold"
+                      style={{
+                        fontSize: "var(--text-lg)",
+                        color: "rgb(var(--color-text))",
+                      }}
+                    >
+                      Add from TikTok
+                    </h2>
+                    <p
+                      className="mt-0.5"
+                      style={{
+                        fontSize: "var(--text-sm)",
+                        color: "rgb(var(--color-text-muted))",
+                      }}
+                    >
+                      Pick one of your TikTok videos — it streams from TikTok
+                      and links back to your profile.
+                    </p>
+                  </div>
+                  <TikTokPicker
+                    lang={lang}
+                    // The store is already on the edit step; just close the
+                    // inline picker so the dialog shows the details form.
+                    onUsed={() => setTiktokOpen(false)}
                   />
                 </div>
               ) : step === "pick" ? (
