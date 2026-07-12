@@ -5,6 +5,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { Bookmark, Eye, MapPin, Play } from "lucide-react";
 import { SHIMMER_PORTRAIT } from "@/lib/shimmer";
+import {
+  HoverVideoPreview,
+  useHoverPreview,
+} from "@/features/video/components/HoverVideoPreview";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 
 /**
@@ -14,8 +18,9 @@ import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
  * two-column grid stays uniform (no staggered/masonry heights).
  */
 
-// Uniform cover ratio for every tile — keeps the grid rows aligned.
-const COVER_RATIO = 3 / 4;
+// Uniform cover ratio for every tile — keeps the grid rows aligned. Portrait
+// 3:4 on mobile; a shorter 4:5 on md+ where the denser grid suits flatter
+// tiles.
 
 function formatCompact(value: number) {
   if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
@@ -83,6 +88,9 @@ function DiscoverGridCardImpl({
 }) {
   const thumb = getThumb(post);
   const isVideo = post.type === "VIDEO";
+  const playbackId =
+    post.media?.find((m) => m.muxMeta?.playbackId)?.muxMeta?.playbackId ?? null;
+  const { previewing, bind } = useHoverPreview(isVideo && !!playbackId);
   const priceText =
     !post.price || post.price.amount <= 0
       ? "Custom"
@@ -103,12 +111,10 @@ function DiscoverGridCardImpl({
         backgroundColor: "rgb(var(--color-bg-elevated))",
       }}
       aria-label={post.title}
+      {...bind}
     >
       {/* Cover */}
-      <div
-        className="relative w-full bg-surface"
-        style={{ aspectRatio: String(COVER_RATIO) }}
-      >
+      <div className="relative aspect-3/4 w-full bg-surface md:aspect-4/5">
         {thumb ? (
           <Image
             src={
@@ -120,7 +126,7 @@ function DiscoverGridCardImpl({
             alt={post.title}
             fill
             className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
             priority={priority}
             loading={priority ? "eager" : "lazy"}
             placeholder="blur"
@@ -132,7 +138,13 @@ function DiscoverGridCardImpl({
           </div>
         )}
 
-        {isVideo && thumb && (
+        {/* Hover preview sits over the thumbnail, which stays mounted behind
+            it so there's no flash while the stream spins up. */}
+        {previewing && playbackId && (
+          <HoverVideoPreview playbackId={playbackId} />
+        )}
+
+        {isVideo && thumb && !previewing && (
           <span className="absolute inset-0 flex items-center justify-center">
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white">
               <Play

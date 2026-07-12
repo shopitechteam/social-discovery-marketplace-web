@@ -7,6 +7,7 @@ import { useCreateStore } from "@/stores/create";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { CreateDraftDocument } from "@/types/__generated__/graphql";
 import { DesktopCreateFlow } from "./DesktopCreateFlow";
+import { TikTokPicker } from "./TikTokPicker";
 
 const ICON_VIDEO = (
   <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
@@ -75,6 +76,9 @@ export function UploadPickerPage({ lang }: { lang: string }) {
   const router = useRouter();
   const isDesktop = useIsDesktop();
   const [creating, setCreating] = useState(false);
+  // TikTok import renders in place on this page (same surface as the other
+  // types — no route hop), then continues to /upload/create like they do.
+  const [view, setView] = useState<"pick" | "tiktok">("pick");
 
   const { setDraftId, setContentType, setStep, setError, draftId, step } =
     useCreateStore();
@@ -82,11 +86,13 @@ export function UploadPickerPage({ lang }: { lang: string }) {
 
   // Mobile only: if a draft is already in progress, skip the picker and resume
   // it on the full-page flow. Desktop resumes inside the dialog instead.
+  // Paused while the TikTok picker is up — its "Use This Video" handler
+  // navigates explicitly once the draft is ready.
   useEffect(() => {
-    if (isDesktop === false && draftId && step !== "pick") {
+    if (isDesktop === false && view === "pick" && draftId && step !== "pick") {
       router.replace(`/${lang}/upload/create`);
     }
-  }, [isDesktop, draftId, step, lang, router]);
+  }, [isDesktop, view, draftId, step, lang, router]);
 
   // Avoid a layout flash before the breakpoint is known.
   if (isDesktop === null) return null;
@@ -141,12 +147,54 @@ export function UploadPickerPage({ lang }: { lang: string }) {
       label: "TikTok Import",
       description: "Bring your TikTok content",
       icon: ICON_TIKTOK,
-      onClick: () => {
-        // push (not replace) so Back returns to this picker.
-        router.push(`/${lang}/upload/tiktok`);
-      },
+      // In place on this page, like the other types — no route hop.
+      onClick: () => setView("tiktok"),
     },
   ];
+
+  if (view === "tiktok") {
+    return (
+      <div className="fixed inset-0 z-60 flex flex-col overflow-hidden bg-app">
+        <div
+          className="flex shrink-0 items-center gap-3 px-4 pt-4 pb-4"
+          style={{ borderBottom: "1px solid rgb(var(--color-border))" }}
+        >
+          <button
+            onClick={() => setView("pick")}
+            className="flex h-9 w-9 items-center justify-center rounded-full"
+            style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
+            aria-label="Back"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
+          <h1
+            className="font-semibold"
+            style={{
+              fontSize: "var(--text-xl)",
+              color: "rgb(var(--color-text))",
+            }}
+          >
+            Add from TikTok
+          </h1>
+        </div>
+        <TikTokPicker
+          lang={lang}
+          onUsed={() => router.push(`/${lang}/upload/create`)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="create-flow-card flex flex-col bg-app">

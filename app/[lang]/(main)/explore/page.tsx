@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { siteConfig } from "@/config/site";
 import { locales, isValidLocale } from "@/i18n/config";
@@ -29,5 +30,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ExplorePage({ params }: Props) {
   const { lang } = await params;
-  return <DiscoverPage lang={lang} />;
+  // Suspense boundary: DiscoverPage reads useSearchParams() (?category= deep
+  // links), which requires one during prerender.
+  return (
+    <Suspense fallback={null}>
+      <DiscoverPage lang={lang} />
+    </Suspense>
+  );
 }

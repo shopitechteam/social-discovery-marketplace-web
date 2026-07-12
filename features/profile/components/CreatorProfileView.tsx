@@ -24,6 +24,10 @@ import {
   type ProfilePostFieldsFragment,
 } from "@/types/__generated__/graphql";
 import { useFollow } from "@/features/feed/hooks/useFollow";
+import {
+  HoverVideoPreview,
+  useHoverPreview,
+} from "@/features/video/components/HoverVideoPreview";
 import { useAuthStore } from "@/stores/auth";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -126,6 +130,8 @@ function PostTile({
 }) {
   const thumb = getThumb(post);
   const isVideo = post.type === "VIDEO";
+  const playbackId = post.media?.[0]?.muxMeta?.playbackId ?? null;
+  const { previewing, bind } = useHoverPreview(isVideo && !!playbackId);
   const [menuOpen, setMenuOpen] = useState(false);
   const priceText =
     post.price.amount <= 0
@@ -136,7 +142,7 @@ function PostTile({
   return (
     <div className="group overflow-hidden rounded-xl border border-[rgb(229_231_235)] bg-[rgb(var(--color-bg-elevated))]">
       {/* Thumbnail */}
-      <div className="relative aspect-9/10">
+      <div className="relative aspect-9/10" {...bind}>
         {/* Whole thumbnail navigates to content detail */}
         <Link
           href={`/${lang}/content/${post.id}`}
@@ -174,8 +180,14 @@ function PostTile({
           </div>
         )}
 
+        {/* Hover preview — under the z-10 Link overlay so clicks still
+            navigate; the thumbnail stays mounted behind it. */}
+        {previewing && playbackId && (
+          <HoverVideoPreview playbackId={playbackId} />
+        )}
+
         {/* Play affordance for video posts */}
-        {isVideo && thumb && (
+        {isVideo && thumb && !previewing && (
           <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
             <span className="flex h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white">
               <Play
@@ -696,7 +708,7 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
         </div>
 
         {postsLoading && posts.length === 0 ? (
-          <div className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:gap-3 xl:grid-cols-5">
+          <div className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:gap-3 xl:grid-cols-5 min-[90rem]:grid-cols-6">
             {Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={i} className="aspect-9/10 rounded-xl" />
             ))}
@@ -728,7 +740,7 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:gap-3 xl:grid-cols-5">
+            <div className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:gap-3 xl:grid-cols-5 min-[90rem]:grid-cols-6">
               {posts.map((post) => (
                 <PostTile
                   key={post.id}
@@ -745,7 +757,7 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
 
             {/* Skeleton tiles while fetching the next page */}
             {postsLoading && posts.length > 0 && (
-              <div className="mt-2 grid grid-cols-2 gap-2 md:grid-cols-3 lg:gap-3 xl:grid-cols-5">
+              <div className="mt-2 grid grid-cols-2 gap-2 md:grid-cols-3 lg:gap-3 xl:grid-cols-5 min-[90rem]:grid-cols-6">
                 {Array.from({ length: 4 }).map((_, i) => (
                   <Skeleton key={i} className="aspect-9/10 rounded-xl" />
                 ))}

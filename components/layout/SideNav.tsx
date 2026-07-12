@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import {
   Bell,
   Home,
+  LogOut,
   Moon,
   Plus,
   Search,
@@ -13,9 +14,14 @@ import {
   User,
   type LucideIcon,
 } from "lucide-react";
+import { useQuery } from "@apollo/client/react";
 import { useInboxUnreadCount } from "@/features/messaging/hooks/useUnreadCount";
+import { useLogout } from "@/features/auth/hooks/useLogout";
+import { DISCOVERY_CATEGORIES } from "@/features/discover/categories";
 import { useAuthStore } from "@/stores/auth";
+import { useThemeStore } from "@/stores/theme";
 import { Logo } from "@/components/ui/Logo";
+import { Switch } from "@/components/ui/switch";
 
 type Tab = {
   key: string;
@@ -32,12 +38,10 @@ const tabs: Tab[] = [
   { key: "profile", path: "profile", label: "Profile", icon: User },
 ];
 
-const browse = [
-  { label: "Beauty & Skincare", dot: "bg-primary" },
-  { label: "Electronics", dot: "bg-[#38A8FF]" },
-  { label: "Automotive", dot: "bg-secondary" },
-  { label: "Food & Fresh", dot: "bg-success" },
-];
+// Bullet colors cycled across the Browse categories, in this order.
+const browseDots = ["bg-primary", "bg-[#38A8FF]", "bg-secondary", "bg-success"];
+
+const MAX_BROWSE_CATEGORIES = 6;
 
 export function SideNav({ lang = "en" }: { lang: string }) {
   const pathname = usePathname();
@@ -114,34 +118,23 @@ export function SideNav({ lang = "en" }: { lang: string }) {
         })}
       </nav>
 
-      <div className="mt-5 px-5">
-        <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted">
-          Browse
-        </p>
-        <div className="mt-3 flex flex-col gap-3">
-          {browse.map((item) => (
-            <div
-              key={item.label}
-              className="flex items-center gap-2 text-xs font-medium text-muted"
-            >
-              <span className={`h-1.5 w-1.5 rounded-full ${item.dot}`} />
-              {item.label}
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* Explore has its own full category UI, so Browse is redundant there. */}
+      {pathname.startsWith(`/${lang}/explore`) ? null : (
+        <BrowseCategories lang={lang} />
+      )}
 
       <div className="mt-auto flex shrink-0 flex-col gap-3 p-3">
         <div className="flex items-center gap-3 rounded-xl border border-default bg-surface px-3 py-2.5">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-elevated text-xs font-black text-default">
             {initials}
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-bold leading-tight text-default">
               {displayName}
             </p>
             <p className="truncate text-xs leading-tight text-muted">{handle}</p>
           </div>
+          {user ? <LogoutIconButton lang={lang} /> : null}
         </div>
         <ThemeToggle />
       </div>
@@ -149,58 +142,87 @@ export function SideNav({ lang = "en" }: { lang: string }) {
   );
 }
 
-function ThemeToggle() {
-  const isDark = useSyncExternalStore(
-    (cb) => {
-      const observer = new MutationObserver(cb);
-      observer.observe(document.documentElement, {
-        attributes: true,
-        attributeFilter: ["class"],
-      });
-      return () => observer.disconnect();
-    },
-    () => document.documentElement.classList.contains("dark"),
-    () => null,
+/** Real explore categories (only those with items) — clicking one opens the
+ *  explore page with that category preselected via ?category=<slug>. Shares
+ *  the DISCOVERY_CATEGORIES cache entry with the explore page. */
+function BrowseCategories({ lang }: { lang: string }) {
+  const { data } = useQuery(DISCOVERY_CATEGORIES, {
+    fetchPolicy: "cache-first",
+    nextFetchPolicy: "cache-first",
+  });
+
+  const categories = (data?.discoveryFacets.categories ?? [])
+    .filter((category) => category.count > 0)
+    .slice(0, MAX_BROWSE_CATEGORIES);
+
+  if (categories.length === 0) return null;
+
+  return (
+    <div className="mt-5 px-5">
+      <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted">
+        Browse
+      </p>
+      <div className="mt-3 flex flex-col gap-3">
+        {categories.map((category, i) => (
+          <Link
+            key={category.id}
+            href={`/${lang}/explore?category=${encodeURIComponent(category.slug)}`}
+            scroll={false}
+            className="flex items-center gap-2 text-xs font-medium text-muted transition-colors hover:text-default"
+          >
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${browseDots[i % browseDots.length]}`}
+            />
+            <span className="truncate">{category.name}</span>
+          </Link>
+        ))}
+      </div>
+    </div>
   );
+}
 
-  function toggle() {
-    const html = document.documentElement;
-    const next = !html.classList.contains("dark");
-    html.classList.toggle("dark", next);
-    try {
-      localStorage.setItem("theme", next ? "dark" : "light");
-    } catch {}
-  }
-
-  if (isDark === null) {
-    return (
-      <button
-        disabled
-        className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 opacity-0"
-        aria-hidden="true"
-      />
-    );
-  }
-
-  const Icon = isDark ? Sun : Moon;
+function LogoutIconButton({ lang }: { lang: string }) {
+  const { logout, loading } = useLogout(lang);
 
   return (
     <button
-      onClick={toggle}
-      className="flex w-full items-center justify-between rounded-xl px-2 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface hover:text-default"
-      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      onClick={logout}
+      disabled={loading}
+      title="Sign out"
+      aria-label="Sign out"
+      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:bg-elevated hover:text-error disabled:opacity-50"
     >
+      <LogOut className="h-4 w-4" />
+    </button>
+  );
+}
+
+function ThemeToggle() {
+  const { resolvedTheme, setTheme } = useThemeStore();
+  // Render the switch only after mount — the persisted store value isn't
+  // available during SSR, so this avoids a hydration mismatch.
+  const [mounted, setMounted] = useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) {
+    return <div aria-hidden className="h-10 w-full" />;
+  }
+
+  const isDark = resolvedTheme === "dark";
+  const Icon = isDark ? Sun : Moon;
+
+  return (
+    <div className="flex w-full items-center justify-between rounded-xl px-2 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface hover:text-default">
       <span className="flex items-center gap-2">
         <Icon className="h-4 w-4" />
         {isDark ? "Light mode" : "Dark mode"}
       </span>
-      <span
-        className={[
-          "relative h-5 w-9 rounded-full border border-default bg-surface",
-          "after:absolute after:top-0.5 after:h-3.5 after:w-3.5 after:rounded-full after:bg-primary after:transition-transform",
-          isDark ? "after:translate-x-4" : "after:translate-x-0.5",
-        ].join(" ")}
+      <Switch
+        checked={isDark}
+        onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+        aria-label="Toggle dark mode"
       />
-    </button>
+    </div>
   );
 }

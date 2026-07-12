@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { siteConfig } from "@/config/site";
+//import { siteConfig } from "@/config/site";
 import type { Dictionary } from "@/i18n/getDictionary";
 import { ShopiLogo } from "@/features/auth/components/AuthIcons";
 

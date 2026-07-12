@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useSearchParams } from "next/navigation";
 import { gql, NetworkStatus, type TypedDocumentNode } from "@apollo/client";
 import { useQuery } from "@apollo/client/react";
 import {
@@ -46,6 +47,10 @@ import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { DiscoverGridCard } from "./DiscoverGridCard";
 import { useInfiniteScroll } from "@/features/feed/hooks/useInfiniteScroll";
 import { usePaginationGuard } from "@/features/feed/hooks/useFeed";
+import {
+  DISCOVERY_CATEGORIES,
+  type CategoryFacet,
+} from "../categories";
 
 type DiscoverySort =
   | "RELEVANCE"
@@ -54,14 +59,6 @@ type DiscoverySort =
   | "PRICE_HIGH_TO_LOW";
 
 type LocationSheetStep = "county" | "subcounty" | "ward";
-
-type CategoryFacet = {
-  id: string;
-  name: string;
-  slug: string;
-  icon?: string | null;
-  count: number;
-};
 
 type LocationFacet = {
   id: string;
@@ -200,29 +197,6 @@ const DISCOVERY_FEED: TypedDocumentNode<DiscoveryFeedData, DiscoveryFeedVars> =
       }
     }
   `;
-
-// Category list — fetched once with NO filter variables so the category bar
-// stays stable. Changing category/sort/location/search must never reload it.
-type DiscoveryCategoriesData = {
-  discoveryFacets: { categories: CategoryFacet[] };
-};
-
-const DISCOVERY_CATEGORIES: TypedDocumentNode<
-  DiscoveryCategoriesData,
-  Record<string, never>
-> = gql`
-  query DiscoveryCategories {
-    discoveryFacets {
-      categories {
-        id
-        name
-        slug
-        icon
-        count
-      }
-    }
-  }
-`;
 
 // Location facets — these DO depend on the active filters because the post
 // counts shown in the location drawer reflect the current query/category.
@@ -364,14 +338,14 @@ function CategorySkeletonRow() {
 
 function DiscoverFeedSkeleton() {
   return (
-    <div className="px-4 pb-8 pt-3 md:px-0">
-      <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3 lg:grid-cols-4">
+    <div className="px-4 pb-8 pt-3 lg:px-0">
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3 xl:grid-cols-4 min-[90rem]:grid-cols-5">
         {Array.from({ length: 6 }).map((_, i) => (
           <div
             key={i}
             className="overflow-hidden rounded-2xl border border-default bg-app"
           >
-            <Skeleton className="aspect-3/4 w-full rounded-none" />
+            <Skeleton className="aspect-3/4 w-full rounded-none md:aspect-4/5" />
             <div className="space-y-2 p-2.5">
               <Skeleton className="h-3.5 w-4/5" />
               <Skeleton className="h-3 w-1/2" />
@@ -870,7 +844,58 @@ export function DiscoverPage({ lang }: { lang: string }) {
     ? `Choose a ward inside ${selectedSubCounty.name}.`
     : "Choose the most precise place for these results.";
 
-  const categories = categoriesData?.discoveryFacets.categories ?? [];
+  const categories = useMemo(
+    () => categoriesData?.discoveryFacets.categories ?? [],
+    [categoriesData?.discoveryFacets.categories],
+  );
+
+  // Deep-link support: /explore?category=<slug> (e.g. from the SideNav Browse
+  // list) preselects that category. Applied once per param value — the ref
+  // stops it re-asserting after the user clears or switches categories in-page.
+  const searchParams = useSearchParams();
+  const categoryParam = searchParams.get("category");
+  const appliedCategoryParam = useRef<string | null>(null);
+  useEffect(() => {
+    if (!categoryParam) {
+      appliedCategoryParam.current = null;
+      return;
+    }
+    if (appliedCategoryParam.current === categoryParam) return;
+    const match = categories.find(
+      (c) => c.slug === categoryParam || c.id === categoryParam,
+    );
+    // Categories may still be loading — leave the param pending until they
+    // arrive; an unknown slug simply never matches and is ignored.
+    if (!match) return;
+    appliedCategoryParam.current = categoryParam;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSelectedCategory(match);
+    // A deep link means "show me this category" — a leftover search query
+    // would hide the category bar and scope results, so clear it.
+    setSearchDraft("");
+    setQuery("");
+  }, [categoryParam, categories]);
+
+  // Mirror in-page category changes back into the URL (replace, not push) so
+  // the deep link stays truthful — clearing or switching in-page must not
+  // leave a stale ?category= that would re-assert itself on reload.
+  useEffect(() => {
+    // A param still waiting to be applied above (categories loading) must not
+    // be wiped by the initial null selection.
+    if (categoryParam && appliedCategoryParam.current !== categoryParam) return;
+    const params = new URLSearchParams(window.location.search);
+    const next = selectedCategory?.slug ?? null;
+    if ((params.get("category") ?? null) === next) return;
+    if (next) params.set("category", next);
+    else params.delete("category");
+    appliedCategoryParam.current = next;
+    const qs = params.toString();
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${window.location.pathname}${qs ? `?${qs}` : ""}`,
+    );
+  }, [selectedCategory, categoryParam]);
   const counties = useMemo(
     () => locationFacets?.counties ?? [],
     [locationFacets?.counties],
@@ -895,8 +920,8 @@ export function DiscoverPage({ lang }: { lang: string }) {
 
   return (
     <div className="min-h-svh bg-app pb-24 md:pb-8">
-      <div className="mx-auto w-full  md:grid md:grid-cols-[320px_minmax(0,1fr)] md:gap-6 md:px-6 md:pt-6">
-        <aside className="hidden md:block">
+      <div className="mx-auto w-full  lg:grid lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-6 lg:px-6 lg:pt-6">
+        <aside className="hidden lg:block">
           <div className="sticky top-6 space-y-4 rounded-3xl border border-default bg-app p-4">
             <div>
               <p className="text-lg font-semibold text-default">Discover</p>
@@ -999,8 +1024,8 @@ export function DiscoverPage({ lang }: { lang: string }) {
         </aside>
 
         <main className="min-w-0">
-          <div className="sticky top-0 z-30 border-b border-default bg-app/92 backdrop-blur-md md:static md:border-b-0 md:bg-transparent md:backdrop-blur-none">
-            <div className="flex items-center gap-2 px-4 pb-3 pt-3 md:px-0 md:pt-0">
+          <div className="sticky top-0 z-30 border-b border-default bg-app/92 backdrop-blur-md lg:static lg:border-b-0 lg:bg-transparent lg:backdrop-blur-none">
+            <div className="flex items-center gap-2 px-4 pb-3 pt-3 lg:px-0 lg:pt-0">
               <div className="flex border border-gray-300 min-w-0 flex-1 items-center gap-2.5 rounded-full bg-surface px-4 py-2.5">
                 <Search
                   size={16}
@@ -1030,7 +1055,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
                 type="button"
                 onClick={openSortSheet}
                 className={cn(
-                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors md:hidden",
+                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors lg:hidden",
                   sort !== "RELEVANCE"
                     ? "bg-primary/10 text-primary"
                     : "bg-surface text-default",
@@ -1043,7 +1068,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
                 type="button"
                 onClick={openFilterSheet}
                 className={cn(
-                  "relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors md:hidden",
+                  "relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors lg:hidden",
                   activeFilterCount > 0
                     ? "bg-primary/10 text-primary"
                     : "bg-surface text-default",
@@ -1063,7 +1088,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
               categoriesLoading && categories.length === 0 ? (
                 <CategorySkeletonRow />
               ) : (
-                <div className="scrollbar-none flex items-center gap-6 overflow-x-auto px-4 pb-3 md:hidden">
+                <div className="scrollbar-none flex items-center gap-6 overflow-x-auto px-4 pb-3 lg:hidden">
                   <CategoryTab
                     label="All"
                     active={selectedCategory === null}
@@ -1083,7 +1108,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
           </div>
 
           {error && items.length === 0 ? (
-            <div className="px-4 py-12 md:px-0">
+            <div className="px-4 py-12 lg:px-0">
               <div className="rounded-[22px] border border-default bg-app p-6 text-center">
                 <p className="text-base font-semibold text-default">
                   Couldn&apos;t load Discover
@@ -1115,7 +1140,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
           ) : null}
 
           {!isReloading && items.length > 0 ? (
-            <div className="px-4 pb-6 pt-3 md:px-0">
+            <div className="px-4 pb-6 pt-3 lg:px-0">
               <div className="mb-3 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-semibold text-default">
@@ -1132,7 +1157,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3 lg:grid-cols-4">
+              <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3 xl:grid-cols-4 min-[90rem]:grid-cols-5">
                 {items.map((post, index) => (
                   <DiscoverGridCard
                     key={post.id}
@@ -1146,9 +1171,9 @@ export function DiscoverPage({ lang }: { lang: string }) {
               <div ref={sentinelRef} className="h-2" />
 
               {isFetchingMore ? (
-                <div className="grid grid-cols-2 gap-2 pt-3 md:grid-cols-3 md:gap-3 lg:grid-cols-4">
+                <div className="grid grid-cols-2 gap-2 pt-3 md:grid-cols-3 md:gap-3 xl:grid-cols-4 min-[90rem]:grid-cols-5">
                   {Array.from({ length: 4 }).map((_, i) => (
-                    <Skeleton key={i} className="aspect-3/4 rounded-2xl" />
+                    <Skeleton key={i} className="aspect-3/4 rounded-2xl md:aspect-4/5" />
                   ))}
                 </div>
               ) : null}
