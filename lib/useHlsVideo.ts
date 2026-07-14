@@ -160,10 +160,17 @@ export function useHlsVideo(
         hls = new Hls({
           startLevel: 0,           // lowest quality first → first frame fastest
           capLevelToPlayerSize: true,
-          maxBufferLength: 10,
+          // ── Time-to-first-frame tuning (fast start, full quality) ──
+          // Start playing after a SMALL initial buffer instead of filling the
+          // full window first. Quality is untouched: ABR still climbs to the
+          // highest level the connection/box supports after playback begins.
+          maxBufferLength: 4,          // was 10 — play sooner, then keep filling
           maxMaxBufferLength: 30,
           maxBufferSize: 20 * 1024 * 1024,
           backBufferLength: 4,
+          startFragPrefetch: true,     // fetch the first fragment ASAP
+          testBandwidth: false,        // skip the startup bandwidth probe that
+                                       // delays the first frame; ABR adapts after
           abrEwmaFastLive: 3,
           abrEwmaSlowLive: 9,
           abrBandWidthFactor: 0.8,
