@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery, useSuspenseQuery } from "@apollo/client/react";
+import { useQuery } from "@apollo/client/react";
 import { NetworkStatus } from "@apollo/client";
 import { useCallback, useEffect, useRef } from "react";
 import {
@@ -9,9 +9,8 @@ import {
   TrendingContentDocument,
   LocalFeedDocument,
 } from "@/types/__generated__/graphql";
-import { FEED_PAGE_SIZE } from "@/features/feed/constants";
 
-const PAGE_SIZE = FEED_PAGE_SIZE;
+const PAGE_SIZE = 10;
 
 /**
  * Guards cursor-based pagination against a page that returns only duplicates
@@ -60,7 +59,7 @@ export function usePaginationGuard(currentCount: number) {
 }
 
 export function useForYouFeed() {
-  const { data, error, fetchMore, networkStatus } = useSuspenseQuery(
+  const { data, loading, error, fetchMore, networkStatus } = useQuery(
     ForYouFeedDocument,
     {
       variables: { limit: PAGE_SIZE },
@@ -83,20 +82,9 @@ export function useForYouFeed() {
   const itemCount = items.length;
   const guard = usePaginationGuard(itemCount);
   const loadMore = useCallback(() => {
-    console.log("[FEED loadMore]", {
-      hasNextPage: pageInfo?.hasNextPage,
-      endCursor: pageInfo?.endCursor?.slice(-8),
-      itemCount,
-      networkStatus,
-    });
     if (!pageInfo?.hasNextPage || !pageInfo.endCursor) return;
     const cursor = pageInfo.endCursor;
     // The cache `merge` policy appends the page — no updateQuery needed.
-    // Call fetchMore directly (NOT inside startTransition): useSuspenseQuery's
-    // fetchMore merges the next page in place without re-suspending, but wrapping
-    // it in a transition makes React surface the nearest Suspense fallback
-    // (FeedSkeleton) while the page is in flight — that unmounts the whole list
-    // and snaps window scroll back to the top on every pagination.
     guard(cursor, itemCount, () =>
       fetchMore({ variables: { limit: PAGE_SIZE, after: cursor } }),
     );
@@ -104,8 +92,8 @@ export function useForYouFeed() {
 
   return {
     items,
-    // The initial request is represented by the nearest Suspense fallback.
-    loading: false,
+    // Only an initial, dataless load should drive the full-screen skeleton.
+    loading: loading,
     // True only while a fetchMore page is in flight — drives the pagination
     // spinner WITHOUT firing during the silent cache-and-network refresh.
     loadingMore: networkStatus === NetworkStatus.fetchMore,
