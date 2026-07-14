@@ -13,6 +13,7 @@ import {
   Flag,
   MessageCircle,
   Phone,
+  Maximize2,
 } from "lucide-react";
 import { gql } from "@apollo/client";
 import { toast } from "sonner";
@@ -25,6 +26,7 @@ import {
 import { useFollow } from "../hooks/useFollow";
 import { useQuery, useMutation, useApolloClient } from "@apollo/client/react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import { SHIMMER, SHIMMER_AVATAR, SHIMMER_PORTRAIT } from "@/lib/shimmer";
 import {
@@ -50,6 +52,10 @@ import { VideoProgressBar } from "./VideoProgressBar";
 import { usePageFocused } from "../hooks/usePageFocused";
 import { shouldFire } from "@/lib/interactionDedup";
 import { timeAgoLong as timeAgo } from "@/lib/time";
+
+const MediaCarouselDialog = dynamic(() =>
+  import("./MediaCarouselDialog").then((mod) => mod.MediaCarouselDialog),
+);
 
 type DetailPost = ContentCardFieldsFragment & {
   categoryId?: string | null;
@@ -276,6 +282,10 @@ function ContentVideo({
   fill = false,
   showMuteButton = false,
   showSpinner = false,
+  fullscreenOpen = false,
+  resumeTime = 0,
+  fullscreenSide = "right",
+  onFullscreen,
   onVideoCompleted,
   onVideoReplayed,
 }: {
@@ -286,13 +296,17 @@ function ContentVideo({
   fill?: boolean;
   showMuteButton?: boolean;
   showSpinner?: boolean;
+  fullscreenOpen?: boolean;
+  resumeTime?: number;
+  fullscreenSide?: "left" | "right";
+  onFullscreen?: (time: number) => void;
   onVideoCompleted?: (completionRate: number, watchDuration: number) => void;
   onVideoReplayed?: () => void;
 }) {
   const pageFocused = usePageFocused();
   const [manualPaused, setManualPaused] = useState(false);
   const [videoEnded, setVideoEnded] = useState(false);
-  const shouldPlay = pageFocused && !manualPaused;
+  const shouldPlay = pageFocused && !manualPaused && !fullscreenOpen;
   // Reconcile mute state when the browser forces the element muted to satisfy
   // autoplay policy, so the speaker icon matches the video's real audio state.
   const onMutedChange = useCallback(
@@ -302,7 +316,7 @@ function ContentVideo({
   const { videoRef, buffering } = useHlsVideo(
     hlsUrl,
     true,
-    videoEnded || manualPaused || !pageFocused,
+    videoEnded || manualPaused || !pageFocused || fullscreenOpen,
     onMutedChange,
   );
 
@@ -318,6 +332,12 @@ function ContentVideo({
   }, [muted, videoRef, setMuted]);
   const [playing, setPlaying] = useState(false);
   const endedCountRef = useRef(0);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || fullscreenOpen || resumeTime <= 0) return;
+    video.currentTime = resumeTime;
+  }, [fullscreenOpen, resumeTime, videoRef]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -490,6 +510,23 @@ function ContentVideo({
           )}
         </button>
       )}
+
+      {onFullscreen && (
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onFullscreen(videoRef.current?.currentTime ?? 0);
+          }}
+          aria-label="Open video fullscreen"
+          className={[
+            "absolute top-4 z-50 flex h-11 w-11 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm transition-transform active:scale-95",
+            fullscreenSide === "left" ? "left-4" : "right-4",
+          ].join(" ")}
+        >
+          <Maximize2 className="h-5 w-5" strokeWidth={2.2} />
+        </button>
+      )}
     </div>
   );
 }
@@ -584,6 +621,8 @@ export function ContentDetail({
   const post = data?.content;
   const [menuOpen, setMenuOpen] = useState(false);
   const [imgIdx, setImgIdx] = useState(0);
+  const [showMediaDialog, setShowMediaDialog] = useState(false);
+  const [fullscreenVideoTime, setFullscreenVideoTime] = useState(0);
   const muted = useFeedPreferencesStore((s) => s.videoMuted);
   const setVideoMuted = useFeedPreferencesStore((s) => s.setVideoMuted);
   const isDesktop = useIsDesktop();
@@ -1316,6 +1355,12 @@ export function ContentDetail({
                 muted={muted}
                 setMuted={setVideoMuted}
                 showMuteButton
+                fullscreenOpen={showMediaDialog}
+                resumeTime={fullscreenVideoTime}
+                onFullscreen={(time) => {
+                  setFullscreenVideoTime(time);
+                  setShowMediaDialog(true);
+                }}
                 onVideoCompleted={handleVideoCompleted}
                 onVideoReplayed={handleVideoReplayed}
               />
@@ -1399,6 +1444,16 @@ export function ContentDetail({
                       ))}
                     </div>
                   </>
+                )}
+                {media.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowMediaDialog(true)}
+                    aria-label="Open image fullscreen"
+                    className="absolute right-4 top-4 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm transition-transform active:scale-95"
+                  >
+                    <Maximize2 className="h-5 w-5" strokeWidth={2.2} />
+                  </button>
                 )}
               </div>
             )}
@@ -1530,6 +1585,13 @@ export function ContentDetail({
                 setMuted={setVideoMuted}
                 fill
                 showSpinner
+                fullscreenOpen={showMediaDialog}
+                resumeTime={fullscreenVideoTime}
+                fullscreenSide="left"
+                onFullscreen={(time) => {
+                  setFullscreenVideoTime(time);
+                  setShowMediaDialog(true);
+                }}
                 onVideoCompleted={handleVideoCompleted}
                 onVideoReplayed={handleVideoReplayed}
               />
@@ -1594,6 +1656,17 @@ export function ContentDetail({
                   />
                 ))}
               </div>
+            )}
+
+            {!isVideo && media.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowMediaDialog(true)}
+                aria-label="Open image fullscreen"
+                className="absolute left-4 top-4 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm transition-transform active:scale-95"
+              >
+                <Maximize2 className="h-5 w-5" strokeWidth={2.2} />
+              </button>
             )}
           </section>
 
@@ -1801,6 +1874,18 @@ export function ContentDetail({
             </div>
           </div>
         </div>
+      )}
+
+      {showMediaDialog && media.length > 0 && (
+        <MediaCarouselDialog
+          open
+          onOpenChange={setShowMediaDialog}
+          media={media}
+          title={post.title}
+          startIndex={imgIdx}
+          videoStartTime={fullscreenVideoTime}
+          onVideoTimeChange={setFullscreenVideoTime}
+        />
       )}
     </div>
   );
