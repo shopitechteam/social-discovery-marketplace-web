@@ -138,6 +138,12 @@ const nextConfig: NextConfig = {
   },
 
   images: {
+    // Serve AVIF first (≈20-30% smaller than WebP) then fall back to WebP.
+    // Addresses Lighthouse "Improve image delivery" on the hero listing images.
+    formats: ["image/avif", "image/webp"],
+    // Restrict the quality values the optimizer will honor; 75 is the default
+    // used across the app, so keep it available alongside a lighter option.
+    qualities: [75, 82],
     remotePatterns: [
       {
         protocol: "https",
