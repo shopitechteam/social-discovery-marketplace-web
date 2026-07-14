@@ -114,7 +114,10 @@ export function useHlsVideo(
     });
 
     async function init() {
-      const Hls = (await import("hls.js")).default;
+      // Mux feed videos use straightforward VOD HLS. The light build retains
+      // playback/ABR while omitting subtitle, alternate-audio, EME and other
+      // controllers this player never uses.
+      const Hls = (await import("hls.js/light")).default;
       if (destroyed) return;
 
       if (Hls.isSupported()) {

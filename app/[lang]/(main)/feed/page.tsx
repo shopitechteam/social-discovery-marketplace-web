@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
+import { cookies } from "next/headers";
 import { siteConfig } from "@/config/site";
 import { locales, isValidLocale } from "@/i18n/config";
+import { PreloadQuery } from "@/lib/apollo/ApolloClient";
+import { ForYouFeedDocument } from "@/types/__generated__/graphql";
+import { FeedPage } from "@/features/feed/components/FeedPage";
+import { FeedSkeleton } from "@/features/feed/components/FeedSkeleton";
+import { AuthenticatedFeedPage } from "@/features/feed/components/AuthenticatedFeedPage";
 
 // The app serves every page under /[lang]; a canonical without the locale
 // would point at a redirect. Self-referencing canonical + hreflang alternates
@@ -29,10 +36,29 @@ export async function generateMetadata({
   };
 }
 
-// The Home feed itself is mounted once in MainShell so it persists across
-// bottom-nav navigation (Home ⇄ Explore …) without remounting/refetching. This
-// route only exists for its URL + metadata; MainShell renders the live feed and
-// suppresses this page's body on /feed to avoid a double mount.
-export default function FeedPageRoute() {
-  return null;
+export default async function FeedPageRoute({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}) {
+  const [{ lang }, cookieStore] = await Promise.all([params, cookies()]);
+  const feed = (
+    <Suspense fallback={<FeedSkeleton />}>
+      <FeedPage lang={lang} />
+    </Suspense>
+  );
+
+  // The server cannot safely preload a personalized query because auth tokens
+  // live in the client store. The existing hint cookie lets authenticated users
+  // keep their private cache path, while anonymous users (including search and
+  // performance crawlers) receive the first feed response during SSR.
+  if (cookieStore.has("shopi-auth-hint")) {
+    return <AuthenticatedFeedPage lang={lang} />;
+  }
+
+  return (
+    <PreloadQuery query={ForYouFeedDocument} variables={{ limit: 10 }}>
+      {feed}
+    </PreloadQuery>
+  );
 }
