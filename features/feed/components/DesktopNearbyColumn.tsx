@@ -353,7 +353,7 @@ export function DesktopNearbyColumn({ lang }: { lang: string }) {
       )}
 
       {items.map((post, i) => (
-        <DesktopPostCard key={post.id} post={post} lang={lang} priority={i < 2} />
+        <DesktopPostCard key={post.id} post={post} lang={lang} priority={i === 0} />
       ))}
 
       <div ref={sentinelRef} className="h-1" />

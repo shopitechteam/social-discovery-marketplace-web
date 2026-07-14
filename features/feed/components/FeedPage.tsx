@@ -1,12 +1,18 @@
 "use client";
 
 import { useState, useEffect, useLayoutEffect, useRef } from "react";
+import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { FeedHeader } from "./FeedHeader";
 import FeedGrid from "./FeedGrid";
-import { FollowingGrid } from "./FollowingGrid";
-import { NearbyGrid } from "./NearbyGrid";
-import DesktopFeed from "./DesktopFeed";
+
+const FollowingGrid = dynamic(() =>
+  import("./FollowingGrid").then((mod) => mod.FollowingGrid),
+);
+const NearbyGrid = dynamic(() =>
+  import("./NearbyGrid").then((mod) => mod.NearbyGrid),
+);
+const DesktopFeed = dynamic(() => import("./DesktopFeed"));
 
 interface Props {
   lang: string;
@@ -26,13 +32,31 @@ const isMobileViewport = () =>
 
 export function FeedPage({ lang, visible = true }: Props) {
   const searchParams = useSearchParams();
+  // Only mount the feed tree that can actually be displayed. CSS-hidden client
+  // components still execute, query, observe layout, and download all of their
+  // dependencies; mounting both variants made mobile load the desktop Mux/HLS
+  // and chat bundles as well as a duplicate set of PostCards.
+  //
+  // The server snapshot stays mobile-first so the PageSpeed/Lighthouse viewport
+  // receives useful HTML immediately. Desktop swaps to its dedicated tree just
+  // after hydration and gets a lightweight reserved-height fallback meanwhile.
+  const [desktop, setDesktop] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 768px)");
+    const syncViewport = () => setDesktop(media.matches);
+    syncViewport();
+    media.addEventListener("change", syncViewport);
+    return () => media.removeEventListener("change", syncViewport);
+  }, []);
+
   const initialParam = searchParams.get("tab");
   const initialTab: Tab = isTab(initialParam) ? initialParam : "for-you";
   const [tab, setTab] = useState<Tab>(initialTab);
   // Track which tabs have ever been opened. Nearby mounts lazily (it requests
   // geolocation on mount, which we must not do until the user opens it); once
   // opened it stays mounted so switching away/back never refetches or loses
-  // scroll. For-You and Following are side-effect-free, so we mount them eagerly.
+  // scroll. Only the initial tab mounts eagerly; the others load on first use.
   const [openedTabs, setOpenedTabs] = useState<Set<Tab>>(
     () => new Set([initialTab]),
   );
@@ -86,16 +110,23 @@ export function FeedPage({ lang, visible = true }: Props) {
 
   return (
     <div>
-      {/* ── Desktop: fullscreen TikTok-style feed — no header/tabs needed ── */}
-      <div className="hidden md:block">
+      {/* ── Desktop: loaded only on a desktop viewport ── */}
+      {desktop ? (
         <DesktopFeed lang={lang} visible={visible} />
-      </div>
+      ) : (
+        <div className="hidden min-h-svh md:block" aria-hidden />
+      )}
 
       {/* ── Mobile: existing card feed with tabs ── */}
-      <div className="md:hidden min-h-svh">
-        <FeedHeader lang={lang} activeTab={tab} onTabChange={handleTabChange} />
+      {!desktop ? (
+        <div className="md:hidden min-h-svh">
+          <FeedHeader
+            lang={lang}
+            activeTab={tab}
+            onTabChange={handleTabChange}
+          />
 
-        {/* Once a feed has been opened it stays mounted; we only toggle
+          {/* Once a feed has been opened it stays mounted; we only toggle
             visibility. Conditionally rendering on `tab ===` would unmount the
             inactive feed and, on switch-back, remount a fresh Apollo observer —
             re-running the page-1 fetch and discarding both the accumulated
@@ -103,31 +134,32 @@ export function FeedPage({ lang, visible = true }: Props) {
             pagination and makes tab switches instant. A display:none feed
             reports intersection ratio 0, so its PostCard videos never win the
             active-video election. */}
-        <div className="relative bg-surface">
-          <div className={tab === "for-you" ? undefined : "hidden"}>
-            <FeedGrid lang={lang} active={visible && tab === "for-you"} />
-          </div>
+          <div className="relative bg-surface">
+            <div className={tab === "for-you" ? undefined : "hidden"}>
+              <FeedGrid lang={lang} active={visible && tab === "for-you"} />
+            </div>
 
-          {/* Following mounts lazily too, to avoid firing its feed query on
+            {/* Following mounts lazily too, to avoid firing its feed query on
               page load when the user may never leave For-You. */}
-          {openedTabs.has("following") ? (
-            <div className={tab === "following" ? undefined : "hidden"}>
-              <FollowingGrid
-                lang={lang}
-                active={visible && tab === "following"}
-              />
-            </div>
-          ) : null}
+            {openedTabs.has("following") ? (
+              <div className={tab === "following" ? undefined : "hidden"}>
+                <FollowingGrid
+                  lang={lang}
+                  active={visible && tab === "following"}
+                />
+              </div>
+            ) : null}
 
-          {/* Nearby mounts only after first open (it requests geolocation on
+            {/* Nearby mounts only after first open (it requests geolocation on
               mount), then stays mounted like the others. */}
-          {openedTabs.has("nearby") ? (
-            <div className={tab === "nearby" ? undefined : "hidden"}>
-              <NearbyGrid lang={lang} active={visible && tab === "nearby"} />
-            </div>
-          ) : null}
+            {openedTabs.has("nearby") ? (
+              <div className={tab === "nearby" ? undefined : "hidden"}>
+                <NearbyGrid lang={lang} active={visible && tab === "nearby"} />
+              </div>
+            ) : null}
+          </div>
         </div>
-      </div>
+      ) : null}
     </div>
   );
 }

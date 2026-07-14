@@ -19,6 +19,7 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import { ChatShellSkeleton } from "@/features/messaging/components/ChatShellSkeleton";
@@ -42,9 +43,6 @@ import { useInteractions } from "../hooks/useInteractions";
 import { useAuthGuard } from "../hooks/useAuthGuard";
 import { useFollow } from "../hooks/useFollow";
 import { BufferSpinner } from "./BufferSpinner";
-import { CommentsDrawer } from "./CommentsDrawer";
-import { MediaCarouselDialog } from "./MediaCarouselDialog";
-import { TikTokEmbedMedia } from "./TikTokEmbedMedia";
 import { TikTokIcon } from "@/components/ui/TikTokIcon";
 import { usePageFocused } from "../hooks/usePageFocused";
 import toBase64 from "@/lib/utils";
@@ -56,6 +54,16 @@ import {
 } from "@/components/ui/popover";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+
+const CommentsDrawer = dynamic(() =>
+  import("./CommentsDrawer").then((mod) => mod.CommentsDrawer),
+);
+const MediaCarouselDialog = dynamic(() =>
+  import("./MediaCarouselDialog").then((mod) => mod.MediaCarouselDialog),
+);
+const TikTokEmbedMedia = dynamic(() =>
+  import("./TikTokEmbedMedia").then((mod) => mod.TikTokEmbedMedia),
+);
 
 interface Props {
   post: ContentCardFieldsFragment;
@@ -243,9 +251,13 @@ function VideoMedia({
     (forcedMuted: boolean) => setVideoMuted(forcedMuted),
     [setVideoMuted],
   );
-  const { videoRef, buffering } = useHlsVideo(
+  // Do not download/parse hls.js or the video manifest while the poster (the
+  // LCP candidate on a video-first feed) is still loading. This keeps playback
+  // work from competing with the critical image request.
+  const posterReady = !thumbnail || thumbLoaded;
+  const { videoRef, buffering, playing } = useHlsVideo(
     hlsUrl,
-    shouldPlay,
+    shouldPlay && posterReady,
     ended || userPaused,
     onMutedChange,
   );
@@ -456,9 +468,9 @@ function VideoMedia({
           alt={post.title}
           sizes="100vw"
           className={`object-contain transition-opacity duration-500 ${
-            hlsUrl && shouldPlay && !buffering
+            hlsUrl && shouldPlay && playing && !buffering
               ? "opacity-0"
-              : thumbLoaded
+              : priority || thumbLoaded
                 ? "opacity-100"
                 : "opacity-0"
           }`}
@@ -631,7 +643,7 @@ function FeedImageInner({
       fill
       sizes={sizes}
       className={className}
-      priority={priority}
+      fetchPriority={priority ? "high" : undefined}
       loading={loadingProp}
       placeholder={blurDataURL ? "blur" : "empty"}
       blurDataURL={blurDataURL}
@@ -640,8 +652,8 @@ function FeedImageInner({
       // Fade the decoded bitmap in over the blur placeholder. Inline transition
       // so the global `transition: none` on <img> doesn't suppress it.
       style={{
-        opacity: loaded ? 1 : 0,
-        transition: "opacity 0.3s ease",
+        opacity: priority || loaded ? 1 : 0,
+        transition: priority ? undefined : "opacity 0.3s ease",
       }}
     />
   );
@@ -1159,7 +1171,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
               "flex items-center lg:cursor-pointer gap-1 text-[13px] font-semibold px-3 py-1.5 rounded-full transition-all active:scale-95",
               following
                 ? "text-muted-foreground bg-surface"
-                : "text-primary bg-primary/10 hover:bg-primary/20",
+                : "text-primary-strong dark:text-primary bg-primary-soft hover:bg-primary/20",
             ].join(" ")}
           >
             {following ? (
@@ -1476,7 +1488,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
               // so we never flash the inbox list.
               router.push(`/${lang}/notifications/${post.id}?source=content`);
             }}
-            className="flex-1 lg:flex-0 bg-primary/90 lg:w-fit lg:px-8 lg:cursor-pointer flex items-center justify-center gap-1.5 py-2.5 rounded-full text-xs font-semibold text-[#f1f1f1] transition-all active:scale-95"
+            className="flex-1 lg:flex-0 bg-primary lg:w-fit lg:px-8 lg:cursor-pointer flex items-center justify-center gap-1.5 py-2.5 rounded-full text-xs font-semibold text-white transition-all hover:bg-primary/90 active:scale-95"
           >
             <svg
               className="w-4 h-4"
@@ -1507,9 +1519,9 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
 
       {/* ── Image dialog (replaces PDP navigation) — single image opens as a
           full-screen lightbox; multiple images as a swipeable carousel. ── */}
-      {mediaCount >= 1 && post.type !== "VIDEO" && (
+      {showCarousel && mediaCount >= 1 && post.type !== "VIDEO" && (
         <MediaCarouselDialog
-          open={showCarousel}
+          open
           onOpenChange={setShowCarousel}
           media={[...(post.media ?? [])].sort(
             (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),

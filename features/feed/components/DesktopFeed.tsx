@@ -18,7 +18,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import dynamic from "next/dynamic";
 import { useForYouFeed, useFollowingFeed } from "../hooks/useFeed";
 import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
 import { useAuthStore } from "@/stores/auth";
@@ -28,7 +28,12 @@ import { DesktopTrendingRail } from "./DesktopTrendingRail";
 import { TrendingStrip } from "./TrendingStrip";
 import { DesktopNearbyColumn } from "./DesktopNearbyColumn";
 import { FeedChatProvider } from "./FeedChatContext";
-import { InlineChatPanel } from "@/features/messaging/components/InlineChatPanel";
+
+const InlineChatPanel = dynamic(() =>
+  import("@/features/messaging/components/InlineChatPanel").then(
+    (mod) => mod.InlineChatPanel,
+  ),
+);
 
 type Tab = "for-you" | "following" | "nearby";
 
@@ -124,7 +129,12 @@ function ForYouColumn({ lang }: { lang: string }) {
   return (
     <div className="flex flex-col gap-4">
       {items.map((post, i) => (
-        <DesktopPostCard key={post.id} post={post} lang={lang} priority={i < 2} />
+        <DesktopPostCard
+          key={post.id}
+          post={post}
+          lang={lang}
+          priority={i === 0}
+        />
       ))}
       <div ref={sentinelRef} className="h-1" />
       {loadingMore && (
@@ -202,7 +212,12 @@ function FollowingColumn({ lang }: { lang: string }) {
   return (
     <div className="flex flex-col gap-4">
       {items.map((post, i) => (
-        <DesktopPostCard key={post.id} post={post} lang={lang} priority={i < 2} />
+        <DesktopPostCard
+          key={post.id}
+          post={post}
+          lang={lang}
+          priority={i === 0}
+        />
       ))}
       <div ref={sentinelRef} className="h-1" />
       {loadingMore && (
@@ -421,25 +436,27 @@ export default function DesktopFeed({
             {/* ── Right rail: trending, or the inline chat panel ────────── */}
             <aside className="sticky top-5 hidden h-[calc(100svh-2.5rem)] self-start overflow-hidden xl:block">
               {/* Trending fades out under the chat panel when one is open. */}
-              <motion.div
-                animate={{ opacity: chatOpen ? 0 : 1 }}
-                transition={{ duration: 0.2, ease: "easeOut" }}
-                className="h-full overflow-y-auto no-scroll-indicator"
+              <div
+                className={`h-full overflow-y-auto no-scroll-indicator transition-opacity duration-200 ${
+                  chatOpen ? "opacity-0" : "opacity-100"
+                }`}
                 aria-hidden={chatOpen}
               >
                 <DesktopTrendingRail lang={lang} />
-              </motion.div>
+              </div>
 
-              <InlineChatPanel
-                lang={lang}
-                contentId={chatContentId}
-                onClose={closeChat}
-                // The originating post card in the feed already shows the
-                // seller's name + avatar, so hide them in this chat header to
-                // avoid repeating the same identity right beside it.
-                hideParticipantHeader
-                className="absolute inset-0 h-full overflow-hidden rounded-2xl border border-default bg-elevated shadow-sm"
-              />
+              {chatOpen ? (
+                <InlineChatPanel
+                  lang={lang}
+                  contentId={chatContentId}
+                  onClose={closeChat}
+                  // The originating post card in the feed already shows the
+                  // seller's name + avatar, so hide them in this chat header to
+                  // avoid repeating the same identity right beside it.
+                  hideParticipantHeader
+                  className="absolute inset-0 h-full overflow-hidden rounded-2xl border border-default bg-elevated shadow-sm"
+                />
+              ) : null}
             </aside>
           </div>
         </div>

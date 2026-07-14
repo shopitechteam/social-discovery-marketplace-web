@@ -3,13 +3,13 @@
 /**
  * TrendingStrip — horizontal scrolling strip of 5-6 trending posts.
  * Shown at the top of the feed. Hot items get a fire badge.
- * Videos autoplay muted via adaptive HLS (useHlsVideo) when scrolled into view.
+ * Video listings use their lightweight poster plus a play indicator here; the
+ * full player loads only after opening the listing.
  */
 
-import { useRef, useState, useEffect } from "react";
+import { useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { useHlsVideo } from "@/lib/useHlsVideo";
 import { useTrending } from "../hooks/useFeed";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 
@@ -28,18 +28,9 @@ function TrendingItem({
   rank: number;
 }) {
   const router = useRouter();
-  const containerRef = useRef<HTMLButtonElement>(null);
-  const [inView, setInView] = useState(false);
-
   const media = post.media?.[0];
   const playbackId = media?.muxMeta?.playbackId ?? null;
   const isVideo = !!playbackId;
-  const hlsUrl = playbackId ? `https://stream.mux.com/${playbackId}.m3u8` : null;
-
-  // Adaptive HLS streaming (hls.js) — same engine as the rest of the feed.
-  // Buffers only a few seconds ahead and plays solely while in view, so it
-  // streams in chunks (never fully downloads) to save data, like TikTok.
-  const { videoRef } = useHlsVideo(hlsUrl, inView);
 
   const thumb =
     media?.thumbnailUrl ??
@@ -49,22 +40,8 @@ function TrendingItem({
 
   const isHot = (post.ranking?.trendingScore ?? 0) > 5;
 
-  // Observe when the card enters / leaves the viewport
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el || !isVideo) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => setInView(entry.isIntersecting),
-      { threshold: 0.5 },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [isVideo]);
-
   return (
     <button
-      ref={containerRef}
       onClick={() => router.push(`/${lang}/content/${post.id}`, { scroll: false })}
       className="relative flex-none w-28 bg-gray-200 rounded-xl overflow-hidden group"
       style={{ aspectRatio: "9/14" }}
@@ -84,21 +61,6 @@ function TrendingItem({
         <div className="absolute inset-0 bg-surface" />
       )}
 
-      {/* ── Video: adaptive HLS via useHlsVideo, plays only while in view.
-            Source is attached by the hook (no src=); sits above the thumbnail. */}
-      {isVideo && (
-        <video
-          ref={videoRef}
-          muted
-          loop
-          playsInline
-          preload="none"
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
-            inView ? "opacity-100" : "opacity-0"
-          }`}
-        />
-      )}
-
       {/* Gradient overlay — always on top */}
       <div className="absolute inset-0 bg-linear-to-t from-black/75 via-black/10 to-transparent pointer-events-none" />
 
@@ -115,7 +77,7 @@ function TrendingItem({
       )}
 
       {/* Video indicator */}
-      {isVideo && !inView && (
+      {isVideo && (
         <div className="absolute top-1.5 right-1.5 pointer-events-none">
           <svg
             width="14"

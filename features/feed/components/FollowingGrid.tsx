@@ -113,7 +113,7 @@ export function FollowingGrid({ lang, active = true }: Props) {
     <div className="pb-safe-area-inset-bottom pb-6">
       <div className="flex flex-col">
         {items.map((post, i) => (
-          <PostCard key={post.id} post={post} lang={lang} priority={i < 3} />
+          <PostCard key={post.id} post={post} lang={lang} priority={i === 0} />
         ))}
       </div>
 
