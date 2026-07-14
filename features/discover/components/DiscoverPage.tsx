@@ -85,6 +85,9 @@ type DiscoveryFeedVars = {
   countyId?: string;
   subCountyId?: string;
   wardId?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  negotiableOnly?: boolean;
   sort?: DiscoverySort;
   limit?: number;
   after?: string;
@@ -96,6 +99,13 @@ type DiscoveryFacetsVars = {
   countyId?: string;
   subCountyId?: string;
   wardId?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  negotiableOnly?: boolean;
+};
+
+type DiscoveryResultCountData = {
+  discoveryResultCount: number;
 };
 
 const PAGE_SIZE = 10;
@@ -109,6 +119,9 @@ const DISCOVERY_FEED: TypedDocumentNode<DiscoveryFeedData, DiscoveryFeedVars> =
       $countyId: String
       $subCountyId: String
       $wardId: String
+      $minPrice: Float
+      $maxPrice: Float
+      $negotiableOnly: Boolean
       $sort: DiscoverySort
       $limit: Int
       $after: String
@@ -119,6 +132,9 @@ const DISCOVERY_FEED: TypedDocumentNode<DiscoveryFeedData, DiscoveryFeedVars> =
         countyId: $countyId
         subCountyId: $subCountyId
         wardId: $wardId
+        minPrice: $minPrice
+        maxPrice: $maxPrice
+        negotiableOnly: $negotiableOnly
         sort: $sort
         limit: $limit
         after: $after
@@ -218,6 +234,9 @@ const DISCOVERY_LOCATION_FACETS: TypedDocumentNode<
     $countyId: String
     $subCountyId: String
     $wardId: String
+    $minPrice: Float
+    $maxPrice: Float
+    $negotiableOnly: Boolean
   ) {
     discoveryFacets(
       query: $query
@@ -225,6 +244,9 @@ const DISCOVERY_LOCATION_FACETS: TypedDocumentNode<
       countyId: $countyId
       subCountyId: $subCountyId
       wardId: $wardId
+      minPrice: $minPrice
+      maxPrice: $maxPrice
+      negotiableOnly: $negotiableOnly
     ) {
       counties {
         id
@@ -250,6 +272,46 @@ const DISCOVERY_LOCATION_FACETS: TypedDocumentNode<
     }
   }
 `;
+
+const DISCOVERY_RESULT_COUNT: TypedDocumentNode<
+  DiscoveryResultCountData,
+  DiscoveryFacetsVars
+> = gql`
+  query DiscoveryResultCount(
+    $query: String
+    $categoryId: String
+    $countyId: String
+    $subCountyId: String
+    $wardId: String
+    $minPrice: Float
+    $maxPrice: Float
+    $negotiableOnly: Boolean
+  ) {
+    discoveryResultCount(
+      query: $query
+      categoryId: $categoryId
+      countyId: $countyId
+      subCountyId: $subCountyId
+      wardId: $wardId
+      minPrice: $minPrice
+      maxPrice: $maxPrice
+      negotiableOnly: $negotiableOnly
+    )
+  }
+`;
+
+function parsePriceFilter(value: string): number | undefined {
+  if (!value.trim()) return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
+}
+
+function formatResultCount(count: number): string {
+  return new Intl.NumberFormat("en-KE", {
+    notation: count >= 1_000 ? "compact" : "standard",
+    maximumFractionDigits: 1,
+  }).format(count);
+}
 
 const SORT_OPTIONS: Array<{
   value: DiscoverySort;
@@ -505,8 +567,8 @@ export function DiscoverPage({ lang }: { lang: string }) {
     useState<LocationFacet | null>(null);
   const [selectedWard, setSelectedWard] = useState<LocationFacet | null>(null);
   const [sort, setSort] = useState<DiscoverySort>("RELEVANCE");
-  // Price + negotiable filters — UI/state only for now; not yet sent to the API
-  // (backend support pending). minPrice/maxPrice are raw input strings.
+  // Keep raw strings for friendly number inputs; parsed values are sent to the
+  // feed, facets and result-count queries below.
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [negotiableOnly, setNegotiableOnly] = useState(false);
@@ -518,6 +580,9 @@ export function DiscoverPage({ lang }: { lang: string }) {
   // mobile, so it needs its own open state.
   const [sortPopoverOpen, setSortPopoverOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
+
+  const parsedMinPrice = parsePriceFilter(minPrice);
+  const parsedMaxPrice = parsePriceFilter(maxPrice);
 
   useEffect(() => {
     const handle = window.setTimeout(() => {
@@ -538,6 +603,9 @@ export function DiscoverPage({ lang }: { lang: string }) {
       countyId: selectedCounty?.id,
       subCountyId: selectedSubCounty?.id,
       wardId: selectedWard?.id,
+      minPrice: parsedMinPrice,
+      maxPrice: parsedMaxPrice,
+      negotiableOnly: negotiableOnly || undefined,
       sort,
       limit: PAGE_SIZE,
     }),
@@ -547,6 +615,9 @@ export function DiscoverPage({ lang }: { lang: string }) {
       selectedCounty?.id,
       selectedSubCounty?.id,
       selectedWard?.id,
+      parsedMinPrice,
+      parsedMaxPrice,
+      negotiableOnly,
       sort,
     ],
   );
@@ -558,6 +629,9 @@ export function DiscoverPage({ lang }: { lang: string }) {
       countyId: selectedCounty?.id,
       subCountyId: selectedSubCounty?.id,
       wardId: selectedWard?.id,
+      minPrice: parsedMinPrice,
+      maxPrice: parsedMaxPrice,
+      negotiableOnly: negotiableOnly || undefined,
     }),
     [
       query,
@@ -565,6 +639,9 @@ export function DiscoverPage({ lang }: { lang: string }) {
       selectedCounty?.id,
       selectedSubCounty?.id,
       selectedWard?.id,
+      parsedMinPrice,
+      parsedMaxPrice,
+      negotiableOnly,
     ],
   );
 
@@ -599,6 +676,16 @@ export function DiscoverPage({ lang }: { lang: string }) {
     fetchPolicy: "cache-and-network",
     nextFetchPolicy: "cache-first",
   });
+
+  const { data: resultCountData, loading: resultCountLoading } = useQuery(
+    DISCOVERY_RESULT_COUNT,
+    {
+      variables: facetVariables,
+      skip: !filterOpen,
+      fetchPolicy: "cache-and-network",
+      nextFetchPolicy: "cache-first",
+    },
+  );
 
   const items = data?.discoveryFeed.items ?? [];
   const pageInfo = data?.discoveryFeed.pageInfo;
@@ -655,6 +742,24 @@ export function DiscoverPage({ lang }: { lang: string }) {
     (hasLocation ? 1 : 0) +
     (minPrice.trim() || maxPrice.trim() ? 1 : 0) +
     (negotiableOnly ? 1 : 0);
+  const hasPriceFilter = Boolean(minPrice.trim() || maxPrice.trim());
+  const formatPriceAmount = (value: number) =>
+    new Intl.NumberFormat("en-KE", { maximumFractionDigits: 0 }).format(value);
+  const priceFilterLabel =
+    parsedMinPrice != null && parsedMaxPrice != null
+      ? `KSh ${formatPriceAmount(parsedMinPrice)}–${formatPriceAmount(parsedMaxPrice)}`
+      : parsedMinPrice != null
+        ? `From KSh ${formatPriceAmount(parsedMinPrice)}`
+        : parsedMaxPrice != null
+          ? `Up to KSh ${formatPriceAmount(parsedMaxPrice)}`
+          : "Price";
+  const matchingResultCount = resultCountData?.discoveryResultCount;
+  const resultButtonLabel =
+    resultCountLoading && matchingResultCount == null
+      ? "Show … results"
+      : `Show ${formatResultCount(matchingResultCount ?? 0)} ${
+          matchingResultCount === 1 ? "result" : "results"
+        }`;
 
   const overlayDepthRef = useRef(overlayDepth);
   const lastPushedOverlayDepthRef = useRef(overlayDepth);
@@ -676,6 +781,11 @@ export function DiscoverPage({ lang }: { lang: string }) {
     setMaxPrice("");
     setNegotiableOnly(false);
   }, [clearLocation]);
+
+  const clearPrice = useCallback(() => {
+    setMinPrice("");
+    setMaxPrice("");
+  }, []);
 
   const clearSearch = useCallback(() => {
     setSearchDraft("");
@@ -1205,9 +1315,66 @@ export function DiscoverPage({ lang }: { lang: string }) {
           side="right"
           className="flex w-full max-w-none flex-col gap-0 bg-app p-0 sm:max-w-none"
         >
-          <SheetHeader className="border-b border-default px-5 py-4 text-left">
-            <SheetTitle className="text-base">Filters</SheetTitle>
+          <SheetHeader className="flex-row items-center justify-between border-b border-default px-5 py-4 text-left">
+            <div>
+              <SheetTitle className="text-base">Filters</SheetTitle>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {activeFilterCount > 0
+                  ? `${activeFilterCount} active ${activeFilterCount === 1 ? "filter" : "filters"}`
+                  : "Narrow down what you want"}
+              </p>
+            </div>
+            {activeFilterCount > 0 ? (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="rounded-full px-3 py-2 text-sm font-semibold text-primary transition-colors active:bg-primary/10"
+              >
+                Clear all
+              </button>
+            ) : null}
           </SheetHeader>
+
+          {activeFilterCount > 0 ? (
+            <div
+              className="flex shrink-0 gap-2 overflow-x-auto border-b border-default px-5 py-3 no-scrollbar"
+              aria-label="Active filters"
+            >
+              {hasLocation ? (
+                <button
+                  type="button"
+                  onClick={clearLocation}
+                  className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-primary/10 px-3 text-xs font-semibold text-primary"
+                  aria-label={`Remove location filter ${locationLabel}`}
+                >
+                  <span className="max-w-36 truncate">{locationLabel}</span>
+                  <X size={14} aria-hidden />
+                </button>
+              ) : null}
+              {hasPriceFilter ? (
+                <button
+                  type="button"
+                  onClick={clearPrice}
+                  className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-primary/10 px-3 text-xs font-semibold text-primary"
+                  aria-label={`Remove price filter ${priceFilterLabel}`}
+                >
+                  {priceFilterLabel}
+                  <X size={14} aria-hidden />
+                </button>
+              ) : null}
+              {negotiableOnly ? (
+                <button
+                  type="button"
+                  onClick={() => setNegotiableOnly(false)}
+                  className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-primary/10 px-3 text-xs font-semibold text-primary"
+                  aria-label="Remove negotiable-only filter"
+                >
+                  Negotiable
+                  <X size={14} aria-hidden />
+                </button>
+              ) : null}
+            </div>
+          ) : null}
 
           <div className="flex-1 space-y-7 overflow-y-auto px-5 py-5">
             {/* Location */}
@@ -1234,9 +1401,20 @@ export function DiscoverPage({ lang }: { lang: string }) {
 
             {/* Price range */}
             <section>
-              <p className="mb-3 text-sm font-semibold text-default">
-                Price range
-              </p>
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-sm font-semibold text-default">
+                  Price range
+                </p>
+                {hasPriceFilter ? (
+                  <button
+                    type="button"
+                    onClick={clearPrice}
+                    className="text-xs font-semibold text-primary"
+                  >
+                    Clear
+                  </button>
+                ) : null}
+              </div>
               <div className="flex items-center gap-3">
                 <div className="flex-1">
                   <span className="mb-1 block text-xs text-muted-foreground">
@@ -1300,16 +1478,16 @@ export function DiscoverPage({ lang }: { lang: string }) {
               type="button"
               onClick={clearFilters}
               disabled={activeFilterCount === 0}
-              className="h-11 flex-1 rounded-full border border-default text-sm font-semibold text-default disabled:opacity-40"
+              className="h-11 shrink-0 rounded-full border border-default px-5 text-sm font-semibold text-default disabled:opacity-40"
             >
-              Clear all
+              Reset
             </button>
             <button
               type="button"
               onClick={closeFilterSheet}
               className="h-11 flex-1 rounded-full bg-primary text-sm font-semibold text-white"
             >
-              Show results
+              {resultButtonLabel}
             </button>
           </SheetFooter>
         </SheetContent>

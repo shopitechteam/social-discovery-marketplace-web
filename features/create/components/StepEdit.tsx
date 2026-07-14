@@ -16,6 +16,7 @@ import { MediaPicker } from "./MediaPicker";
 import { CategoryPickerDrawer } from "./CategoryPickerDrawer";
 import { useVideoFrameExtract } from "@/features/create/hooks/useVideoFrameExtract";
 import { takeCachedVideoFrames } from "@/features/create/utils/captureVideoFrames";
+import { Switch } from "@/components/ui/switch";
 
 interface EditFormValues {
   caption: string;
@@ -72,6 +73,7 @@ export function StepEdit({
     price,
     currency,
     isFree,
+    negotiable,
     specs,
     isExtracting,
     hasExtracted,
@@ -84,6 +86,7 @@ export function StepEdit({
     setHashtags,
     setCategory,
     setPrice,
+    setNegotiable,
     setSpecs,
     setIsExtracting,
     setHasExtracted,
@@ -450,7 +453,7 @@ export function StepEdit({
             specs: specs
               .filter((s) => s.key.trim() && s.value.trim())
               .map((s) => ({ key: s.key.trim(), value: s.value.trim() })),
-            price: { amount: parsedPrice, currency, negotiable: false },
+            price: { amount: parsedPrice, currency, negotiable },
             location: location
               ? {
                   placeName: location.placeName,
@@ -690,6 +693,19 @@ export function StepEdit({
       <p className="mt-1.5 text-xs text-muted">
         Set a price in {currency} or leave at 0 for custom
       </p>
+      <div className="mt-3 flex items-center justify-between rounded-xl border border-border bg-surface px-3 py-3">
+        <div className="min-w-0 pr-4">
+          <p className="text-sm font-medium text-foreground">Negotiable</p>
+          <p className="text-xs text-muted">
+            Buyers can discuss the price with you
+          </p>
+        </div>
+        <Switch
+          checked={negotiable}
+          onCheckedChange={setNegotiable}
+          aria-label="Mark price as negotiable"
+        />
+      </div>
     </div>
   );
 

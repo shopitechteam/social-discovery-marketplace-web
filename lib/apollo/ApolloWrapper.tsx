@@ -251,7 +251,16 @@ function createClient() {
               // separate queries share this field with disjoint selections
               // (categories vs counties/subCounties/wards) — merge:true unions
               // them instead of letting one wipe the other's cached fields.
-              keyArgs: ["query", "categoryId", "countyId", "subCountyId", "wardId"],
+              keyArgs: [
+                "query",
+                "categoryId",
+                "countyId",
+                "subCountyId",
+                "wardId",
+                "minPrice",
+                "maxPrice",
+                "negotiableOnly",
+              ],
               merge: true,
             },
             discoveryFeed: {
@@ -265,6 +274,9 @@ function createClient() {
                 "countyId",
                 "subCountyId",
                 "wardId",
+                "minPrice",
+                "maxPrice",
+                "negotiableOnly",
                 "sort",
               ],
               merge: mergeFeedPage,

@@ -177,31 +177,8 @@ export const MY_UNREAD_CONVERSATION_COUNT = gql`
 
 export const ENSURE_DIRECT_CONVERSATION = gql`
   mutation EnsureDirectConversationInbox($input: EnsureDirectConversationInput!) {
-    ensureDirectConversation(input: $input) {
-      id
-      contentId
-      messageCount
-      myUnreadCount
-      blockedByMe
-      blockedByOther
-      canSendMessages
-      otherParticipant {
-        id
-        username
-        profile {
-          firstName
-          lastName
-          avatar
-        }
-      }
-      otherParticipantOnline
-      otherParticipantLastSeenAt
-      content {
-        ...ConversationContentFields
-      }
-    }
+    ensureDirectConversationId(input: $input)
   }
-  ${CONVERSATION_CONTENT_FIELDS}
 `;
 
 export const SEND_DIRECT_MESSAGE = gql`

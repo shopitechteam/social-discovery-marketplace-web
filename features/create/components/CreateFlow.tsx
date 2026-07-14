@@ -78,6 +78,7 @@ export function CreateFlow({ lang, embedded = false }: CreateFlowProps) {
     setCategory,
     setContentType,
     setPrice,
+    setNegotiable,
     setSpecs,
     setVisibilityMode,
     setAllowDownload,
@@ -204,7 +205,10 @@ export function CreateFlow({ lang, embedded = false }: CreateFlowProps) {
         );
         setAllowDownload(d.allowDownload ?? false);
         setHdEnabled(d.hdEnabled ?? false);
-        if (d.price) setPrice(d.price.amount, d.price.amount === 0);
+        if (d.price) {
+          setPrice(d.price.amount, d.price.amount === 0);
+          setNegotiable(d.price.negotiable);
+        }
 
         // ── Embed-backed draft (TikTok) ──────────────────────────────────────
         // No MediaAssets — the video streams from TikTok. Restore the embed ref
