@@ -95,10 +95,22 @@ export function useHlsVideo(
     let hls: import("hls.js").default | null = null;
     let destroyed = false;
 
-    // Reset video element state fully before attaching new source
+    // Does this browser play HLS natively (iOS/macOS Safari)? If so we must NOT
+    // do the "empty source + load()" reset below: on iOS, calling load() on a
+    // src-less element and THEN reassigning src wedges the native media loader
+    // at networkState=2/readyState=0 — it starts loading and never commits to
+    // the new source (the video spins forever, no error). We also skip the
+    // hls.js dynamic import entirely on that path (it's unsupported there), so
+    // playback isn't delayed behind a chunk download that can't help.
+    const canNativeHls = v.canPlayType("application/vnd.apple.mpegurl") !== "";
+
+    // Reset video element state fully before attaching new source. Native HLS
+    // gets a direct, single src assignment instead (see below).
     v.pause();
-    v.removeAttribute("src");
-    v.load();
+    if (!canNativeHls) {
+      v.removeAttribute("src");
+      v.load();
+    }
 
     const onWaiting = () => { if (!destroyed) setBuffering(true); };
     const onPlaying = () => {
@@ -117,7 +129,23 @@ export function useHlsVideo(
       if (!destroyed) setPlaying(false);
     });
 
+    // ── iOS/macOS Safari: attach native HLS synchronously ────────────────────
+    // Handle the native path FIRST, before (and without) the async hls.js
+    // import. A single, direct src assignment + one load() is all iOS needs and
+    // all it tolerates — see canNativeHls note above.
+    if (canNativeHls) {
+      v.src = url;
+      v.load();
+      readyRef.current = true;
+      if (activeRef.current && !pausedRef.current) {
+        playWithUnmuteFallback(v, onMutedChangeRef.current);
+      }
+    }
+
     async function init() {
+      // Native HLS was already wired up synchronously above; nothing to do here.
+      if (canNativeHls) return;
+
       // Mux commonly publishes audio as a separate EXT-X-MEDIA rendition.
       // The hls.js light build omits AudioStreamController, so it can display
       // those videos but cannot produce sound when the user unmutes them.
@@ -187,15 +215,8 @@ export function useHlsVideo(
           hls?.destroy();
           setBuffering(false);
         });
-      } else if (v.canPlayType("application/vnd.apple.mpegurl")) {
-        // Safari native HLS (iOS/macOS).
-        v.src = url;
-        v.load();
-        readyRef.current = true;
-        if (activeRef.current && !pausedRef.current) {
-          playWithUnmuteFallback(v, onMutedChangeRef.current);
-        }
       }
+      // Native HLS is handled synchronously before this async init (see above).
     }
 
     init();
