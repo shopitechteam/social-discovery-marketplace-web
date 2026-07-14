@@ -53,6 +53,10 @@ export function useHlsVideo(
   const videoRef = useRef<HTMLVideoElement>(null);
   const [buffering, setBuffering] = useState(false);
   const [playing, setPlaying] = useState(false);
+  // TEMP DIAGNOSTIC: a live snapshot of the <video> element's own state, so we
+  // can read WHY playback is stuck directly off a physical device (no Web
+  // Inspector needed). Remove once the iOS buffering cause is found.
+  const [debug, setDebug] = useState("init");
   const activeRef = useRef(active);
   const pausedRef = useRef(paused);
   // Keep the latest callback in a ref so passing an inline fn doesn't re-run the
@@ -262,5 +266,26 @@ export function useHlsVideo(
     };
   }, []);
 
-  return { videoRef, buffering, playing };
+  // TEMP DIAGNOSTIC: poll the <video>'s own state so we can see, on a physical
+  // phone, exactly where playback is stuck. Remove once diagnosed.
+  //   net:  networkState — 2 = LOADING, 3 = NO_SOURCE (nothing to play)
+  //   rdy:  readyState   — 0 = nothing, 1 = metadata, 2 = current frame,
+  //                        3 = enough to play a bit, 4 = enough to end
+  //   err:  MediaError.code — 2 = NETWORK, 3 = DECODE, 4 = SRC_NOT_SUPPORTED
+  useEffect(() => {
+    const tick = () => {
+      const v = videoRef.current;
+      if (!v) return;
+      setDebug(
+        `net:${v.networkState} rdy:${v.readyState} err:${
+          v.error ? v.error.code : "-"
+        } paused:${v.paused ? 1 : 0} t:${v.currentTime.toFixed(1)}`,
+      );
+    };
+    const iv = setInterval(tick, 500);
+    tick();
+    return () => clearInterval(iv);
+  }, []);
+
+  return { videoRef, buffering, playing, debug };
 }
