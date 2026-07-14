@@ -1,16 +1,17 @@
 "use client";
 
-import { useQuery } from "@apollo/client/react";
+import { useQuery, useSuspenseQuery } from "@apollo/client/react";
 import { NetworkStatus } from "@apollo/client";
-import { useCallback, useEffect, useRef } from "react";
+import { startTransition, useCallback, useEffect, useRef } from "react";
 import {
   ForYouFeedDocument,
   FollowingFeedDocument,
   TrendingContentDocument,
   LocalFeedDocument,
 } from "@/types/__generated__/graphql";
+import { FEED_PAGE_SIZE } from "@/features/feed/constants";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = FEED_PAGE_SIZE;
 
 /**
  * Guards cursor-based pagination against a page that returns only duplicates
@@ -59,7 +60,7 @@ export function usePaginationGuard(currentCount: number) {
 }
 
 export function useForYouFeed() {
-  const { data, loading, error, fetchMore, networkStatus } = useQuery(
+  const { data, error, fetchMore, networkStatus } = useSuspenseQuery(
     ForYouFeedDocument,
     {
       variables: { limit: PAGE_SIZE },
@@ -85,15 +86,19 @@ export function useForYouFeed() {
     if (!pageInfo?.hasNextPage || !pageInfo.endCursor) return;
     const cursor = pageInfo.endCursor;
     // The cache `merge` policy appends the page — no updateQuery needed.
-    guard(cursor, itemCount, () =>
-      fetchMore({ variables: { limit: PAGE_SIZE, after: cursor } }),
-    );
+    guard(cursor, itemCount, () => {
+      let request!: Promise<unknown>;
+      startTransition(() => {
+        request = fetchMore({ variables: { limit: PAGE_SIZE, after: cursor } });
+      });
+      return request;
+    });
   }, [fetchMore, pageInfo, guard, itemCount]);
 
   return {
     items,
-    // Only an initial, dataless load should drive the full-screen skeleton.
-    loading: loading,
+    // The initial request is represented by the nearest Suspense fallback.
+    loading: false,
     // True only while a fetchMore page is in flight — drives the pagination
     // spinner WITHOUT firing during the silent cache-and-network refresh.
     loadingMore: networkStatus === NetworkStatus.fetchMore,

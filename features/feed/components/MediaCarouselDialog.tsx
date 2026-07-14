@@ -54,26 +54,12 @@ export function MediaCarouselDialog({
 }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [idx, setIdx] = useState(startIndex);
-  const savedScrollRef = useRef(0);
 
   const onOpenChangeRef = useRef(onOpenChange);
 
   useEffect(() => {
     onOpenChangeRef.current = onOpenChange;
   }, [onOpenChange]);
-
-  // Save/restore scroll position when dialog opens/closes to prevent scroll loss
-  useEffect(() => {
-    if (open) {
-      savedScrollRef.current = window.scrollY;
-    } else {
-      // Restore scroll position after dialog closes
-      const t = setTimeout(() => {
-        window.scrollTo(0, savedScrollRef.current);
-      }, 0);
-      return () => clearTimeout(t);
-    }
-  }, [open]);
 
   const closeRef = useRef<() => void>(() => onOpenChangeRef.current(false));
 
