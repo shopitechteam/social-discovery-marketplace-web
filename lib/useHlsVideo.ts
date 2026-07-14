@@ -114,10 +114,10 @@ export function useHlsVideo(
     });
 
     async function init() {
-      // Mux feed videos use straightforward VOD HLS. The light build retains
-      // playback/ABR while omitting subtitle, alternate-audio, EME and other
-      // controllers this player never uses.
-      const Hls = (await import("hls.js/light")).default;
+      // Mux commonly publishes audio as a separate EXT-X-MEDIA rendition.
+      // The hls.js light build omits AudioStreamController, so it can display
+      // those videos but cannot produce sound when the user unmutes them.
+      const Hls = (await import("hls.js")).default;
       if (destroyed) return;
 
       if (Hls.isSupported()) {
