@@ -14,7 +14,7 @@ export const landingPhotos = {
   sofa:
     "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1000&q=82",
   phone:
-    "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=1000&q=82",
+    "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&crop=center&w=1000&h=140&q=70",
   produce:
     "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1000&q=82",
   fashion:
@@ -27,19 +27,17 @@ function PhotoTile({
   src,
   alt,
   className = "",
-  priority = false,
 }: {
   src: string;
   alt: string;
   className?: string;
-  priority?: boolean;
 }) {
   return (
     <Image
       src={src}
       alt={alt}
       fill
-      priority={priority}
+      quality={55}
       sizes="(max-width: 768px) 84vw, 360px"
       className={`object-cover ${className}`}
     />

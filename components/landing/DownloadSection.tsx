@@ -1,9 +1,13 @@
-"use client";
-
 import Link from "next/link";
 import type { Dictionary } from "@/i18n/getDictionary";
 
-export function DownloadSection({ dict }: { dict: Dictionary }) {
+export function DownloadSection({
+  dict,
+  lang,
+}: {
+  dict: Dictionary;
+  lang: string;
+}) {
   return (
     <section
       id="download"
@@ -22,10 +26,11 @@ export function DownloadSection({ dict }: { dict: Dictionary }) {
           </p>
 
           <Link
-            href="/feed"
+            href={`/${lang}/feed`}
             className="btn-primary inline-flex items-center gap-2 px-9 py-4 text-md font-semibold no-underline"
           >
-            {dict.download.webCta}
+            {dict.download.webCta.replace(/\s*→\s*$/, "")}
+            <span aria-hidden> →</span>
           </Link>
 
           <p className="mt-5 text-sm text-muted">

@@ -3,7 +3,6 @@
 
 import { useThemeStore } from "@/stores/theme";
 import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 //import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import type { Dictionary } from "@/i18n/getDictionary";
@@ -13,7 +12,13 @@ import { Menu, Moon, Sun, X } from "lucide-react";
 
 const NAV_HREFS = ["#features", "#how-it-works", "#creators"] as const;
 
-export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
+export function LandingNav({
+  dict,
+  lang = "en",
+}: {
+  dict?: Dictionary;
+  lang?: Locale;
+}) {
   const NAV_LINKS = [
     { label: dict?.nav.features ?? "Features", href: "#features" },
     { label: dict?.nav.howItWorks ?? "How It Works", href: "#how-it-works" },
@@ -24,12 +29,7 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeHash, setActiveHash] = useState("");
   const [hydrated, setHydrated] = useState(false);
-  const pathname = usePathname();
-  const router = useRouter();
-
-  // Base path of the landing page for the current locale (e.g. "/en").
-  const localeSeg = pathname.split("/").filter(Boolean)[0] ?? "";
-  const homeBase = ["en", "sw"].includes(localeSeg) ? `/${localeSeg}` : "";
+  const homeBase = `/${lang}`;
   const sectionHref = (hash: string) => `${homeBase}/${hash}`;
 
   useEffect(() => {
@@ -75,7 +75,6 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
     e: React.MouseEvent<HTMLAnchorElement>,
     hash: string,
   ) {
-    e.preventDefault();
     setMenuOpen(false);
     const id = hash.replace("#", "");
 
@@ -83,13 +82,11 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
     // (The landing page lives at /[lang], e.g. "/en", so a "/" check fails.)
     const el = document.getElementById(id);
     if (el) {
+      e.preventDefault();
       const top = el.getBoundingClientRect().top + window.scrollY - 72;
       window.scrollTo({ top, behavior: "smooth" });
       return;
     }
-
-    // Otherwise go to the landing page (root of the current locale) with the hash.
-    router.push(sectionHref(hash));
   }
 
   return (
@@ -206,7 +203,8 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
               onClick={() => setMenuOpen(false)}
               className="flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-[0.85rem] text-[0.9rem] font-bold text-white no-underline"
             >
-              {dict?.common.openFeed ?? "Open the feed"} →
+              {dict?.common.openFeed ?? "Open the feed"}
+              <span aria-hidden>→</span>
             </Link>
             <p className="text-center text-[0.78rem] text-muted">
               Free to use · No account needed to start looking
