@@ -53,10 +53,6 @@ export function useHlsVideo(
   const videoRef = useRef<HTMLVideoElement>(null);
   const [buffering, setBuffering] = useState(false);
   const [playing, setPlaying] = useState(false);
-  // TEMP DIAGNOSTIC: a live snapshot of the <video> element's own state, so we
-  // can read WHY playback is stuck directly off a physical device (no Web
-  // Inspector needed). Remove once the iOS buffering cause is found.
-  const [debug, setDebug] = useState("init");
   const activeRef = useRef(active);
   const pausedRef = useRef(paused);
   // Keep the latest callback in a ref so passing an inline fn doesn't re-run the
@@ -134,7 +130,15 @@ export function useHlsVideo(
     // import. A single, direct src assignment + one load() is all iOS needs and
     // all it tolerates — see canNativeHls note above.
     if (canNativeHls) {
-      v.src = url;
+      // Cap the rendition so iOS starts on a SMALL segment → fast first frame.
+      // Unlike the hls.js path (startLevel:0 + capLevelToPlayerSize), the native
+      // player has no such control and will otherwise pick a high rendition and
+      // buffer a large chunk before playing. 540p is plenty in the small feed
+      // box and keeps startup snappy. Mux serves this via ?max_resolution.
+      const nativeUrl = url.includes("?")
+        ? `${url}&max_resolution=540p`
+        : `${url}?max_resolution=540p`;
+      v.src = nativeUrl;
       v.load();
       readyRef.current = true;
       if (activeRef.current && !pausedRef.current) {
@@ -156,10 +160,17 @@ export function useHlsVideo(
         hls = new Hls({
           startLevel: 0,           // lowest quality first → first frame fastest
           capLevelToPlayerSize: true,
-          maxBufferLength: 10,
+          // ── Time-to-first-frame tuning (fast start, full quality) ──
+          // Start playing after a SMALL initial buffer instead of filling the
+          // full window first. Quality is untouched: ABR still climbs to the
+          // highest level the connection/box supports after playback begins.
+          maxBufferLength: 4,          // was 10 — play sooner, then keep filling
           maxMaxBufferLength: 30,
           maxBufferSize: 20 * 1024 * 1024,
           backBufferLength: 4,
+          startFragPrefetch: true,     // fetch the first fragment ASAP
+          testBandwidth: false,        // skip the startup bandwidth probe that
+                                       // delays the first frame; ABR adapts after
           abrEwmaFastLive: 3,
           abrEwmaSlowLive: 9,
           abrBandWidthFactor: 0.8,
@@ -287,26 +298,5 @@ export function useHlsVideo(
     };
   }, []);
 
-  // TEMP DIAGNOSTIC: poll the <video>'s own state so we can see, on a physical
-  // phone, exactly where playback is stuck. Remove once diagnosed.
-  //   net:  networkState — 2 = LOADING, 3 = NO_SOURCE (nothing to play)
-  //   rdy:  readyState   — 0 = nothing, 1 = metadata, 2 = current frame,
-  //                        3 = enough to play a bit, 4 = enough to end
-  //   err:  MediaError.code — 2 = NETWORK, 3 = DECODE, 4 = SRC_NOT_SUPPORTED
-  useEffect(() => {
-    const tick = () => {
-      const v = videoRef.current;
-      if (!v) return;
-      setDebug(
-        `net:${v.networkState} rdy:${v.readyState} err:${
-          v.error ? v.error.code : "-"
-        } paused:${v.paused ? 1 : 0} t:${v.currentTime.toFixed(1)}`,
-      );
-    };
-    const iv = setInterval(tick, 500);
-    tick();
-    return () => clearInterval(iv);
-  }, []);
-
-  return { videoRef, buffering, playing, debug };
+  return { videoRef, buffering, playing };
 }

@@ -258,11 +258,13 @@ function VideoMedia({
     (forcedMuted: boolean) => setVideoMuted(forcedMuted),
     [setVideoMuted],
   );
-  // Do not download/parse hls.js or the video manifest while the poster (the
-  // LCP candidate on a video-first feed) is still loading. This keeps playback
-  // work from competing with the critical image request.
-  const posterReady = !thumbnail || thumbLoaded;
-  const { videoRef, buffering, playing, debug } = useHlsVideo(
+  // Only the PRIORITY (first / LCP) card waits for its poster before starting
+  // playback work — there the poster is the LCP candidate and we don't want the
+  // video manifest/hls.js competing with that critical image. Every other card
+  // is scrolled to (its poster isn't the LCP), so gating it just adds latency to
+  // first frame; those start HLS immediately, in parallel with the poster.
+  const posterReady = !priority || !thumbnail || thumbLoaded;
+  const { videoRef, buffering, playing } = useHlsVideo(
     hlsUrl,
     active && posterReady,
     ended || userPaused || !pageFocused || fullscreenOpen,
@@ -539,13 +541,6 @@ function VideoMedia({
       {active && buffering && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <BufferSpinner />
-        </div>
-      )}
-      {/* TEMP DIAGNOSTIC: live <video> state, visible on the physical phone so we
-          can see why playback is stuck. Remove once the iOS issue is diagnosed. */}
-      {active && (
-        <div className="absolute left-2 top-2 z-60 rounded bg-black/80 px-2 py-1 font-mono text-[10px] leading-tight text-lime-300 pointer-events-none">
-          {debug}
         </div>
       )}
       {/* Duration badge */}
