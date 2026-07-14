@@ -52,6 +52,7 @@ export function useHlsVideo(
 ) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [buffering, setBuffering] = useState(false);
+  const [playing, setPlaying] = useState(false);
   const activeRef = useRef(active);
   const pausedRef = useRef(paused);
   // Keep the latest callback in a ref so passing an inline fn doesn't re-run the
@@ -96,11 +97,21 @@ export function useHlsVideo(
     v.load();
 
     const onWaiting = () => { if (!destroyed) setBuffering(true); };
-    const onPlaying = () => { if (!destroyed) setBuffering(false); };
+    const onPlaying = () => {
+      if (!destroyed) {
+        setPlaying(true);
+        setBuffering(false);
+      }
+    };
+    const onPause = () => { if (!destroyed) setPlaying(false); };
     const onCanPlay = () => { if (!destroyed) setBuffering(false); };
     v.addEventListener("waiting", onWaiting);
     v.addEventListener("playing", onPlaying);
+    v.addEventListener("pause", onPause);
     v.addEventListener("canplay", onCanPlay);
+    queueMicrotask(() => {
+      if (!destroyed) setPlaying(false);
+    });
 
     async function init() {
       const Hls = (await import("hls.js")).default;
@@ -164,6 +175,7 @@ export function useHlsVideo(
       readyRef.current = false;
       v.removeEventListener("waiting", onWaiting);
       v.removeEventListener("playing", onPlaying);
+      v.removeEventListener("pause", onPause);
       v.removeEventListener("canplay", onCanPlay);
       v.pause();
       v.removeAttribute("src");
@@ -188,9 +200,16 @@ export function useHlsVideo(
       if (!readyRef.current) return;
       playWithUnmuteFallback(vid, onMutedChangeRef.current);
     } else {
+      if (!active) {
+        if (readyRef.current) vid.pause();
+        Promise.resolve().then(() => {
+          setBuffering(false);
+          setPlaying(false);
+        });
+        return;
+      }
       if (!readyRef.current) return;
       vid.pause();
-      if (!active) Promise.resolve().then(() => setBuffering(false));
     }
   }, [active, paused]);
 
@@ -217,5 +236,5 @@ export function useHlsVideo(
     };
   }, []);
 
-  return { videoRef, buffering };
+  return { videoRef, buffering, playing };
 }

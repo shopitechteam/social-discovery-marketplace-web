@@ -6,12 +6,10 @@
  * items out as a tappable vertical list better suited to a sidebar.
  */
 
-import { useRef, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import MuxPlayer from "@mux/mux-player-react";
-import type { MuxCSSProperties } from "@mux/mux-player-react";
 import { gql, type TypedDocumentNode } from "@apollo/client";
 import { useQuery } from "@apollo/client/react";
 import { ArrowUpRight, Flame, Store } from "lucide-react";
@@ -81,12 +79,9 @@ function TrendingRow({
   rank: number;
 }) {
   const router = useRouter();
-  const containerRef = useRef<HTMLButtonElement>(null);
-  const [inView, setInView] = useState(false);
 
   const media = post.media?.[0];
   const playbackId = media?.muxMeta?.playbackId ?? null;
-  const isVideo = !!playbackId;
 
   const thumb =
     media?.thumbnailUrl ??
@@ -99,20 +94,8 @@ function TrendingRow({
 
   const isHot = (post.ranking?.trendingScore ?? 0) > 5;
 
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el || !isVideo) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setInView(entry.isIntersecting),
-      { threshold: 0.5 },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [isVideo]);
-
   return (
     <button
-      ref={containerRef}
       onClick={() => router.push(`/${lang}/content/${post.id}`, { scroll: false })}
       className="group flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors hover:bg-surface"
     >
@@ -126,28 +109,7 @@ function TrendingRow({
         className="relative shrink-0 overflow-hidden rounded-xl bg-surface"
         style={{ width: 36, height: 36 }}
       >
-        {isVideo && inView ? (
-          <MuxPlayer
-            playbackId={playbackId!}
-            autoPlay="muted"
-            muted
-            loop
-            playsInline
-            preload="metadata"
-            thumbnailTime={0}
-            style={
-              {
-                position: "absolute",
-                inset: 0,
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                "--controls": "none",
-                "--media-object-fit": "cover",
-              } as MuxCSSProperties
-            }
-          />
-        ) : thumb ? (
+        {thumb ? (
           <Image
             src={thumb}
             alt={post.title}

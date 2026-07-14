@@ -322,7 +322,7 @@ export function NearbyGrid({ lang, active = true }: Props) {
 
       <div className="flex flex-col gap-2 pt-2">
         {items.map((post, i) => (
-          <PostCard key={post.id} post={post} lang={lang} priority={i < 3} />
+          <PostCard key={post.id} post={post} lang={lang} priority={i === 0} />
         ))}
       </div>
 

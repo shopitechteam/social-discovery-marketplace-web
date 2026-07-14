@@ -52,7 +52,7 @@ function FeedGrid({ lang, active = true }: Props) {
       {/* ── Post cards ───────────────────────────────────────────────── */}
       <div className="flex flex-col gap-2">
         {items.map((post, i) => (
-          <PostCard key={post.id} post={post} lang={lang} priority={i < 3} />
+          <PostCard key={post.id} post={post} lang={lang} priority={i === 0} />
         ))}
       </div>
 
