@@ -18,9 +18,16 @@ import { useAuthStore } from "@/stores/auth";
 type SocketClientModule = typeof import("@/lib/socket/socket-client");
 
 let socketClientPromise: Promise<SocketClientModule> | null = null;
+// Once the dynamic import resolves we keep the module synchronously so later
+// subscriptions can attach in the same tick. The async path (below) is only
+// hit on the very first cold call before the chunk has loaded.
+let socketClientModule: SocketClientModule | null = null;
 
 function loadSocketClient() {
-  socketClientPromise ??= import("@/lib/socket/socket-client");
+  socketClientPromise ??= import("@/lib/socket/socket-client").then((mod) => {
+    socketClientModule = mod;
+    return mod;
+  });
   return socketClientPromise;
 }
 
@@ -65,11 +72,21 @@ export function useSocket() {
       let active = true;
       let subscribedSocket: Socket | null = null;
 
-      void loadSocketClient().then(({ getSocket }) => {
+      const attach = (mod: SocketClientModule) => {
         if (!active) return;
-        subscribedSocket = getSocket();
+        subscribedSocket = mod.getSocket();
         subscribedSocket.on(event, handler);
-      });
+      };
+
+      // Attach synchronously when the client chunk is already loaded so we never
+      // miss an event fired between render and a microtask (typing/presence are
+      // edge-triggered — a missed one is a missed indicator). Fall back to the
+      // async import only on the first cold subscription.
+      if (socketClientModule) {
+        attach(socketClientModule);
+      } else {
+        void loadSocketClient().then(attach);
+      }
 
       return () => {
         active = false;

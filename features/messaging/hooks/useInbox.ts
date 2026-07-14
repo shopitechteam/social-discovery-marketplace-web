@@ -186,6 +186,20 @@ export function useInbox(lang: string) {
     MARK_DIRECT_CONVERSATION_DEAL,
   );
 
+  // Apollo returns fresh `refetch` references as query state changes. Keeping
+  // them in refs lets the socket-subscription effects below depend only on the
+  // stable `on` — otherwise those effects tear down and re-subscribe on every
+  // refetch-identity change, and because subscribing is async that churn opens
+  // windows where no listener is attached and typing/presence events are lost.
+  const refetchConversationsRef = useRef(refetchConversations);
+  const refetchUnreadCountRef = useRef(refetchUnreadCount);
+  const refetchMessagesRef = useRef(refetchMessages);
+  useEffect(() => {
+    refetchConversationsRef.current = refetchConversations;
+    refetchUnreadCountRef.current = refetchUnreadCount;
+    refetchMessagesRef.current = refetchMessages;
+  }, [refetchConversations, refetchUnreadCount, refetchMessages]);
+
   useEffect(() => {
     if (!isAuthenticated) {
       setConversations([]);
@@ -354,12 +368,24 @@ export function useInbox(lang: string) {
     if (!selectedConversationId || !isAuthenticated) return;
 
     const socket = getSocket();
-    socket.emit(WS_CLIENT_EVENTS.JOIN_CONVERSATION, selectedConversationId);
+    const join = () =>
+      socket.emit(WS_CLIENT_EVENTS.JOIN_CONVERSATION, selectedConversationId);
+    join();
+
+    // Server room membership is dropped when the socket disconnects (network
+    // blip or ping timeout), and Socket.IO does NOT replay JOIN on reconnect —
+    // so re-join on every `connect`, otherwise typing/message events sent to the
+    // conversation room stop arriving until the thread is re-opened.
+    const offConnect = on("connect", join);
 
     // Important: even when the network tab shows messages returned, Apollo/local
     // state can miss the first paint because of cache-and-network + route changes.
     // This explicit refetch makes the selected thread authoritative after join.
-    void refetchMessages?.({
+    // Read refetch through a ref so this effect keys ONLY on the conversation id
+    // and auth — a changing refetch identity must not tear this down, or the
+    // cleanup would LEAVE the conversation room and re-JOIN, and typing/message
+    // events emitted to the room during that gap would be missed.
+    void refetchMessagesRef.current?.({
       input: {
         conversationId: selectedConversationId,
         limit: PAGE_SIZE,
@@ -367,9 +393,10 @@ export function useInbox(lang: string) {
     });
 
     return () => {
+      offConnect();
       socket.emit(WS_CLIENT_EVENTS.LEAVE_CONVERSATION, selectedConversationId);
     };
-  }, [isAuthenticated, refetchMessages, selectedConversationId]);
+  }, [isAuthenticated, on, selectedConversationId]);
 
   useEffect(
     () =>
@@ -382,11 +409,11 @@ export function useInbox(lang: string) {
           setMessages((prev) =>
             upsertMessage(prev, fromSocketMessage(payload, currentUser?.id)),
           );
-          void refetchConversations();
-          void refetchUnreadCount();
+          void refetchConversationsRef.current();
+          void refetchUnreadCountRef.current();
         },
       ),
-    [currentUser?.id, on, refetchConversations, refetchUnreadCount],
+    [currentUser?.id, on],
   );
 
   useEffect(
@@ -427,11 +454,11 @@ export function useInbox(lang: string) {
             );
           }
 
-          void refetchConversations();
-          void refetchUnreadCount();
+          void refetchConversationsRef.current();
+          void refetchUnreadCountRef.current();
         },
       ),
-    [on, refetchConversations, refetchUnreadCount],
+    [on],
   );
 
   useEffect(
@@ -449,10 +476,10 @@ export function useInbox(lang: string) {
             setTypingUserId(null);
             router.push(`/${lang}/notifications`);
           }
-          void refetchUnreadCount();
+          void refetchUnreadCountRef.current();
         },
       ),
-    [lang, on, refetchUnreadCount, router],
+    [lang, on, router],
   );
 
   useEffect(
