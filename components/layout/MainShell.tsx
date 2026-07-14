@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
 import { BottomNav, shouldHideBottomNav } from "@/components/layout/BottomNav";
 import { RouteScrollRestoration } from "@/components/layout/RouteScrollRestoration";
+import { usePreloadInbox } from "@/features/notifications/hooks/usePreloadInbox";
 
 export function MainShell({
   children,
@@ -14,6 +15,7 @@ export function MainShell({
 }) {
   const pathname = usePathname();
   const hideBottomNav = shouldHideBottomNav(pathname);
+  usePreloadInbox();
 
   return (
     <>
