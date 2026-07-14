@@ -353,3 +353,11 @@ textarea.no-scroll-indicator::-webkit-scrollbar {
 }
 
 /* trigger rebuild */
+
+@media screen and (max-device-width: 600px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
