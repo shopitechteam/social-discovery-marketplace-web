@@ -643,8 +643,9 @@ function FeedImageInner({
       fill
       sizes={sizes}
       className={className}
-      fetchPriority={priority ? "high" : undefined}
-      loading={loadingProp}
+      preload={priority}
+      loading={priority ? undefined : loadingProp}
+      quality={priority ? 75 : 55}
       placeholder={blurDataURL ? "blur" : "empty"}
       blurDataURL={blurDataURL}
       onLoad={handleLoad}

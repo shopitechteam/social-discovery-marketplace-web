@@ -114,6 +114,9 @@ export function useHlsVideo(
     });
 
     async function init() {
+      // Mux commonly publishes audio as a separate EXT-X-MEDIA rendition.
+      // The hls.js light build omits AudioStreamController, so it can display
+      // those videos but cannot produce sound when the user unmutes them.
       const Hls = (await import("hls.js")).default;
       if (destroyed) return;
 
