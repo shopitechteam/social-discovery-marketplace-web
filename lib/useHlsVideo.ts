@@ -184,18 +184,8 @@ export function useHlsVideo(
           setBuffering(false);
         });
       } else if (v.canPlayType("application/vnd.apple.mpegurl")) {
-        // Safari native HLS (iOS/macOS). Unlike the hls.js path, the native
-        // player has no `capLevelToPlayerSize` — left alone it happily pulls a
-        // 1080p Mux rendition into a thumbnail-sized feed box, which buffers
-        // constantly on cellular. Mux lets us cap the master playlist via
-        // `?max_resolution`; 720p stays sharp in the small box at a fraction of
-        // the bytes. `preload=metadata` also stops iOS from eagerly buffering
-        // ahead before the card is the one actually being watched.
-        const nativeUrl = url.includes("?")
-          ? `${url}&max_resolution=720p`
-          : `${url}?max_resolution=720p`;
-        v.preload = "metadata";
-        v.src = nativeUrl;
+        // Safari native HLS (iOS/macOS).
+        v.src = url;
         v.load();
         readyRef.current = true;
         if (activeRef.current && !pausedRef.current) {
