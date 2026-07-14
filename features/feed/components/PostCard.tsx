@@ -1558,9 +1558,9 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
 
       {/* ── Full-screen media viewer — images swipe as a carousel and Mux
           videos retain the same dialog/back-button behaviour. ── */}
-      {mediaCount >= 1 && (
+      {showCarousel && mediaCount >= 1 && (
         <MediaCarouselDialog
-          open={showCarousel}
+          open
           onOpenChange={setShowCarousel}
           media={[...(post.media ?? [])].sort(
             (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),

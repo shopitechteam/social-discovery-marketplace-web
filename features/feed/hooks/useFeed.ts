@@ -2,7 +2,7 @@
 
 import { useQuery, useSuspenseQuery } from "@apollo/client/react";
 import { NetworkStatus } from "@apollo/client";
-import { useCallback, useEffect, useRef } from "react";
+import { startTransition, useCallback, useEffect, useRef } from "react";
 import {
   ForYouFeedDocument,
   FollowingFeedDocument,
@@ -83,23 +83,16 @@ export function useForYouFeed() {
   const itemCount = items.length;
   const guard = usePaginationGuard(itemCount);
   const loadMore = useCallback(() => {
-    console.log("[FEED loadMore]", {
-      hasNextPage: pageInfo?.hasNextPage,
-      endCursor: pageInfo?.endCursor?.slice(-8),
-      itemCount,
-      networkStatus,
-    });
     if (!pageInfo?.hasNextPage || !pageInfo.endCursor) return;
     const cursor = pageInfo.endCursor;
     // The cache `merge` policy appends the page — no updateQuery needed.
-    // Call fetchMore directly (NOT inside startTransition): useSuspenseQuery's
-    // fetchMore merges the next page in place without re-suspending, but wrapping
-    // it in a transition makes React surface the nearest Suspense fallback
-    // (FeedSkeleton) while the page is in flight — that unmounts the whole list
-    // and snaps window scroll back to the top on every pagination.
-    guard(cursor, itemCount, () =>
-      fetchMore({ variables: { limit: PAGE_SIZE, after: cursor } }),
-    );
+    guard(cursor, itemCount, () => {
+      let request!: Promise<unknown>;
+      startTransition(() => {
+        request = fetchMore({ variables: { limit: PAGE_SIZE, after: cursor } });
+      });
+      return request;
+    });
   }, [fetchMore, pageInfo, guard, itemCount]);
 
   return {
