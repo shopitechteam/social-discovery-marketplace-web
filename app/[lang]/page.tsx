@@ -134,8 +134,8 @@ export default async function Rootpage({ params }: PageProps<"/[lang]">) {
       {/* <BlogSection dict={dict} /> */}
       {/* Visible FAQ — strong AEO signal and matches the FAQ structured data */}
       <HomeFaq />
-      <DownloadSection dict={dict} />
-      <LandingFooter dict={dict} />
+      <DownloadSection dict={dict} lang={lang} />
+      <LandingFooter dict={dict} lang={lang} />
       {/* <SupportChat dict={dict} /> */}
     </div>
   );

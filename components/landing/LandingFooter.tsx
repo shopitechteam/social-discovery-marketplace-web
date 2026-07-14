@@ -1,14 +1,15 @@
-"use client";
-
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 //import { siteConfig } from "@/config/site";
 import type { Dictionary } from "@/i18n/getDictionary";
 import { ShopiLogo } from "@/features/auth/components/AuthIcons";
 
-export function LandingFooter({ dict }: { dict?: Dictionary }) {
-  const pathname = usePathname();
-  const lang = pathname.split("/")[1] || "en";
+export function LandingFooter({
+  dict,
+  lang = "en",
+}: {
+  dict?: Dictionary;
+  lang?: string;
+}) {
   return (
     <footer className="mb-8 rounded-md border-t border-border bg-surface px-(--landing-page-x) pt-12 pb-8">
       <div className="mx-auto mb-12 grid max-w-(--landing-page-max) grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr] lg:gap-12">

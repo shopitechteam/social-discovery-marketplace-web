@@ -142,8 +142,8 @@ const nextConfig: NextConfig = {
     // Addresses Lighthouse "Improve image delivery" on the hero listing images.
     formats: ["image/avif", "image/webp"],
     // Restrict the quality values the optimizer will honor; 75 is the default
-    // used across the app, so keep it available alongside a lighter option.
-    qualities: [75, 82],
+    // used across the app. 55 is reserved for small decorative/mockup imagery.
+    qualities: [55, 75, 82],
     remotePatterns: [
       {
         protocol: "https",

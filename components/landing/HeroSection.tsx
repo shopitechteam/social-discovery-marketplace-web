@@ -19,7 +19,7 @@ export function HeroSection({
       className="relative overflow-hidden px-[var(--landing-page-x)] pb-12 pt-28 md:pb-20 md:pt-36"
     >
       <div className="mx-auto grid max-w-[var(--landing-page-max)] items-center gap-10 lg:grid-cols-[1fr_0.78fr]">
-        <div className="landing-reveal">
+        <div>
           <h1 className="max-w-4xl text-balance font-display text-[clamp(2.45rem,5.2vw,4.85rem)] font-semibold leading-[1.02] tracking-normal text-default">
             {t.headline}
           </h1>
@@ -66,7 +66,7 @@ export function HeroSection({
           </p>
         </div>
 
-        <div className="landing-reveal landing-reveal-delay-1">
+        <div>
           <FocusedListing />
         </div>
       </div>
@@ -82,7 +82,7 @@ function FocusedListing() {
           src={landingPhotos.sofa}
           alt="Sofa listing in a living room"
           fill
-          priority
+          preload
           sizes="(max-width: 768px) 92vw, 420px"
           className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
         />

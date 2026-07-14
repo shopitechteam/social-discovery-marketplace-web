@@ -1,13 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Manrope, Bricolage_Grotesque, JetBrains_Mono } from "next/font/google";
-import { ThemeProvider } from "@/providers/ThemeProvider";
+import { RouteProviders } from "@/components/providers/RouteProviders";
 import { siteConfig } from "@/config/site";
 import { defaultLocale, isValidLocale } from "@/i18n/config";
 import { cookies } from "next/headers";
 import Script from "next/script";
 import "./globals.css";
-import { ApolloWrapper } from "@/lib/apollo/ApolloWrapper";
-import { Toaster } from "@/components/ui/sonner";
 
 // ── Fonts ────────────────────────────────────────────────────────
 const manrope = Manrope({
@@ -130,17 +128,6 @@ const themeScript = `
 })();
 `;
 
-function originOf(value: string | undefined) {
-  if (!value) return null;
-  try {
-    return new URL(value).origin;
-  } catch {
-    return null;
-  }
-}
-
-const apiOrigin = originOf(process.env.NEXT_PUBLIC_API_URL);
-
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -154,24 +141,13 @@ export default async function RootLayout({
       suppressHydrationWarning
       className={`${manrope.variable} ${bricolage.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
-      {apiOrigin ? (
-        <head>
-          <link rel="dns-prefetch" href={apiOrigin} />
-          <link rel="preconnect" href={apiOrigin} crossOrigin="anonymous" />
-        </head>
-      ) : null}
       <body className="min-h-full flex flex-col bg-app text-default">
         <Script
           id="theme-script"
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{ __html: themeScript }}
         />
-        <ThemeProvider>
-          <ApolloWrapper>
-            <main>{children}</main>
-          </ApolloWrapper>
-          <Toaster position="bottom-center" richColors />
-        </ThemeProvider>
+        <RouteProviders>{children}</RouteProviders>
       </body>
     </html>
   );
