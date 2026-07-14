@@ -27,6 +27,7 @@ import { useCreateStore } from "@/stores/create";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
 import { TikTokIcon } from "@/components/ui/TikTokIcon";
+import { createErrorMessage } from "./CreateErrorDialog";
 import {
   MeDocument,
   MyTiktokVideosDocument,
@@ -38,10 +39,19 @@ import {
 export function TikTokPicker({
   lang,
   onUsed,
+  onError,
 }: {
   lang: string;
   /** Called after the embed draft is created and the store enters "edit". */
   onUsed: () => void;
+  /**
+   * Called instead of showing the inline error banner when the draft fails to
+   * create (e.g. "Maximum active drafts reached") — lets hosts that have a
+   * dialog surface (like DesktopCreateFlow) route it through CreateErrorDialog
+   * for consistency with the other create-flow entry points. Hosts without a
+   * dialog surface can omit this and keep the inline banner.
+   */
+  onError?: (message: string) => void;
 }) {
   const {
     setContentType,
@@ -122,7 +132,7 @@ export function TikTokPicker({
     setUsing(true);
     setError(null);
     try {
-      const { data } = await createDraftFromTiktokEmbed({
+      const { data, error } = await createDraftFromTiktokEmbed({
         variables: {
           input: {
             videoId: video.id,
@@ -134,9 +144,10 @@ export function TikTokPicker({
         },
       });
       const draft = data?.createDraftFromTiktokEmbed;
-      if (!draft) {
-        setError("Could not create draft — please try again.");
-        return;
+      if (error || !draft) {
+        throw new Error(
+          error?.message ?? "Could not create draft — please try again.",
+        );
       }
 
       reset();
@@ -163,7 +174,9 @@ export function TikTokPicker({
       setStep("edit");
       onUsed();
     } catch (e) {
-      setError(String(e));
+      const message = createErrorMessage(e);
+      if (onError) onError(message);
+      else setError(message);
     } finally {
       setUsing(false);
     }

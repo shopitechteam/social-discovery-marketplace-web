@@ -301,6 +301,10 @@ export function DesktopCreateFlow({ lang }: { lang: string }) {
                     // The store is already on the edit step; just close the
                     // inline picker so the dialog shows the details form.
                     onUsed={() => setTiktokOpen(false)}
+                    // Route draft-creation failures (e.g. "Maximum active
+                    // drafts reached") through the same dialog as the other
+                    // create-flow entry points, instead of an inline banner.
+                    onError={(message) => setCreateError(message)}
                   />
                 </div>
               ) : step === "pick" ? (

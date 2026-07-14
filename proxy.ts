@@ -62,15 +62,43 @@ export function proxy(request: NextRequest) {
   }
 
   // ── Logged-in guard ───────────────────────────────────────────────────────
-  // A signed-in user shouldn't land on the marketing page or the auth flows —
-  // send them straight to the feed.
+  // A signed-in user shouldn't land on the marketing page or the auth flows.
+  // Send them back to wherever they came from — the auth route itself may
+  // carry a "from" param (e.g. an old login link), otherwise fall back to the
+  // same-origin Referer, otherwise the feed.
   if (hasSession && isGuestOnly(pathname)) {
     const locale = pathnameLocale ?? defaultLocale;
 
-    const feedUrl = request.nextUrl.clone();
-    feedUrl.pathname = `/${locale}/feed`;
-    feedUrl.search = "";
-    return NextResponse.redirect(feedUrl);
+    const from = request.nextUrl.searchParams.get("from");
+    const referer = request.headers.get("referer");
+
+    let backTo: string | null = null;
+    if (from?.startsWith("/")) {
+      backTo = from;
+    } else if (referer) {
+      try {
+        const refererUrl = new URL(referer);
+        if (
+          refererUrl.origin === request.nextUrl.origin &&
+          !isGuestOnly(refererUrl.pathname)
+        ) {
+          backTo = `${refererUrl.pathname}${refererUrl.search}`;
+        }
+      } catch {
+        // malformed referer — ignore
+      }
+    }
+
+    const redirectUrl = request.nextUrl.clone();
+    if (backTo) {
+      const target = new URL(backTo, request.nextUrl.origin);
+      redirectUrl.pathname = target.pathname;
+      redirectUrl.search = target.search;
+    } else {
+      redirectUrl.pathname = `/${locale}/feed`;
+      redirectUrl.search = "";
+    }
+    return NextResponse.redirect(redirectUrl);
   }
 
   // ── Locale prefix ─────────────────────────────────────────────────────────

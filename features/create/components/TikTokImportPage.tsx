@@ -9,6 +9,7 @@
  * returnUrl, hosting the same shared picker in its own shell.
  */
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import {
@@ -19,6 +20,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { TikTokPicker } from "./TikTokPicker";
+import { CreateErrorDialog } from "./CreateErrorDialog";
 
 interface Props {
   lang: string;
@@ -27,6 +29,9 @@ interface Props {
 export function TikTokImportPage({ lang }: Props) {
   const router = useRouter();
   const isDesktop = useIsDesktop({ ssrDefault: false });
+  // Draft-creation failures (e.g. "Maximum active drafts reached") shown in a
+  // dialog, same as the other create-flow entry points.
+  const [createError, setCreateError] = useState<string | null>(null);
 
   // After "Use This Video" the store is already on the edit step. Desktop
   // resumes inside the /upload dialog; mobile continues on the full-page flow.
@@ -40,7 +45,15 @@ export function TikTokImportPage({ lang }: Props) {
 
   return (
     <PageShell lang={lang}>
-      <TikTokPicker lang={lang} onUsed={handleUsed} />
+      <CreateErrorDialog
+        message={createError}
+        onClose={() => setCreateError(null)}
+      />
+      <TikTokPicker
+        lang={lang}
+        onUsed={handleUsed}
+        onError={(message) => setCreateError(message)}
+      />
     </PageShell>
   );
 }

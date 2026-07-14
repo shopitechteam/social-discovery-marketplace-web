@@ -8,6 +8,7 @@ import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { CreateDraftDocument } from "@/types/__generated__/graphql";
 import { DesktopCreateFlow } from "./DesktopCreateFlow";
 import { TikTokPicker } from "./TikTokPicker";
+import { CreateErrorDialog, createErrorMessage } from "./CreateErrorDialog";
 
 const ICON_VIDEO = (
   <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
@@ -79,6 +80,10 @@ export function UploadPickerPage({ lang }: { lang: string }) {
   // TikTok import renders in place on this page (same surface as the other
   // types — no route hop), then continues to /upload/create like they do.
   const [view, setView] = useState<"pick" | "tiktok">("pick");
+  // Draft-creation failures (e.g. "Maximum active drafts reached") shown in a
+  // dialog, same as the desktop create flow — for all three entry points
+  // (Video, Photos, TikTok import).
+  const [createError, setCreateError] = useState<string | null>(null);
 
   const { setDraftId, setContentType, setStep, setError, draftId, step } =
     useCreateStore();
@@ -117,7 +122,7 @@ export function UploadPickerPage({ lang }: { lang: string }) {
       setStep("edit");
       router.push(`/${lang}/upload/create`);
     } catch (err) {
-      setError(String(err));
+      setCreateError(createErrorMessage(err));
       setCreating(false);
     }
   }
@@ -155,6 +160,10 @@ export function UploadPickerPage({ lang }: { lang: string }) {
   if (view === "tiktok") {
     return (
       <div className="fixed inset-0 z-60 flex flex-col overflow-hidden bg-app">
+        <CreateErrorDialog
+          message={createError}
+          onClose={() => setCreateError(null)}
+        />
         <div
           className="flex shrink-0 items-center gap-3 px-4 pt-4 pb-4"
           style={{ borderBottom: "1px solid rgb(var(--color-border))" }}
@@ -191,6 +200,7 @@ export function UploadPickerPage({ lang }: { lang: string }) {
         <TikTokPicker
           lang={lang}
           onUsed={() => router.push(`/${lang}/upload/create`)}
+          onError={(message) => setCreateError(message)}
         />
       </div>
     );
@@ -198,6 +208,10 @@ export function UploadPickerPage({ lang }: { lang: string }) {
 
   return (
     <div className="create-flow-card flex flex-col bg-app">
+      <CreateErrorDialog
+        message={createError}
+        onClose={() => setCreateError(null)}
+      />
       <div
         className="flex shrink-0 items-center gap-3 px-4"
         style={{

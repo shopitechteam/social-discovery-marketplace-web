@@ -38,6 +38,10 @@ const tabs: Tab[] = [
   { key: "profile", path: "profile", label: "Profile", icon: User },
 ];
 
+// Own-profile subroutes — anything else under /profile/* is someone else's
+// public profile ([username]) and shouldn't light up the sidenav tab.
+const OWN_PROFILE_SUBPATHS = ["edit", "followers", "visitors"];
+
 // Bullet colors cycled across the Browse categories, in this order.
 const browseDots = ["bg-primary", "bg-[#38A8FF]", "bg-secondary", "bg-success"];
 
@@ -85,7 +89,12 @@ export function SideNav({ lang = "en" }: { lang: string }) {
           const isActive =
             tab.key === "feed"
               ? pathname === `/${lang}` || pathname.startsWith(`/${lang}/feed`)
-              : pathname.startsWith(`/${lang}/${tab.path}`);
+              : tab.key === "profile"
+                ? pathname === `/${lang}/profile` ||
+                  OWN_PROFILE_SUBPATHS.some((p) =>
+                    pathname.startsWith(`/${lang}/profile/${p}`),
+                  )
+                : pathname.startsWith(`/${lang}/${tab.path}`);
           const Icon = tab.icon;
 
           return (
