@@ -9,8 +9,9 @@ import {
   TrendingContentDocument,
   LocalFeedDocument,
 } from "@/types/__generated__/graphql";
+import { FEED_PAGE_SIZE } from "@/features/feed/constants";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = FEED_PAGE_SIZE;
 
 /**
  * Guards cursor-based pagination against a page that returns only duplicates

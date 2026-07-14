@@ -102,15 +102,7 @@ export function proxy(request: NextRequest) {
   }
 
   // ── Locale prefix ─────────────────────────────────────────────────────────
-  if (pathnameLocale) {
-    const response = NextResponse.next();
-    response.cookies.set("shopi_locale", pathnameLocale, {
-      path: "/",
-      maxAge: 60 * 60 * 24 * 365,
-      sameSite: "lax",
-    });
-    return response;
-  }
+  if (pathnameLocale) return NextResponse.next();
 
   // No locale in path — redirect to the default English prefix.
   const locale = defaultLocale;
@@ -118,13 +110,7 @@ export function proxy(request: NextRequest) {
   const bare = pathname === "/" ? "" : pathname;
   newUrl.pathname = `/${locale}${bare}`;
 
-  const response = NextResponse.redirect(newUrl);
-  response.cookies.set("shopi_locale", locale, {
-    path: "/",
-    maxAge: 60 * 60 * 24 * 365,
-    sameSite: "lax",
-  });
-  return response;
+  return NextResponse.redirect(newUrl);
 }
 
 export const config = {

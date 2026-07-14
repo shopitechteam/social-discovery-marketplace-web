@@ -1,11 +1,16 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalNav } from "@/components/legal/LegalNav";
+import { publicPageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
-  title: "Prohibited Items Policy — Shopi",
-  description: "What cannot be listed, sold, or promoted on Shopi.",
-};
+export async function generateMetadata({ params }: Props) {
+  const { lang } = await params;
+  return publicPageMetadata({
+    lang,
+    path: "/prohibited-items",
+    title: "Prohibited Items Policy",
+    description: "What cannot be listed, sold, or promoted on Shopi.",
+  });
+}
 
 const LAST_UPDATED = "14 July 2026";
 

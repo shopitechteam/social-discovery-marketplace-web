@@ -17,13 +17,12 @@ export function useUnreadNotificationCount(): number {
     fetchPolicy: "cache-first",
   });
 
-  useEffect(
-    () =>
-      on<NotificationSocketPayload>(WS_EVENTS.NOTIFICATION, () => {
-        void refetch();
-      }),
-    [on, refetch],
-  );
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    return on<NotificationSocketPayload>(WS_EVENTS.NOTIFICATION, () => {
+      void refetch();
+    });
+  }, [isAuthenticated, on, refetch]);
 
   if (!isAuthenticated) return 0;
   return (

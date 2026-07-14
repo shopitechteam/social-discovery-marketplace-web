@@ -7,7 +7,7 @@ import { SocialButtons } from "@/features/auth/components/SocialButtons";
 import { AuthDesktopShell } from "@/features/auth/components/AuthDesktopShell";
 import { ChevronLeftIcon } from "lucide-react";
 
-export const metadata = { title: "Create account · Shopi" };
+export const metadata = { title: "Create account" };
 
 export default async function RegisterPage({
   params,

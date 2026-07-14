@@ -1,9 +1,79 @@
-import { locales } from "@/i18n/config";
+import type { Metadata, Viewport } from "next";
+import { notFound } from "next/navigation";
+import { AppDocument } from "@/components/layout/AppDocument";
+import { siteConfig } from "@/config/site";
+import { isValidLocale, locales } from "@/i18n/config";
+import "../globals.css";
+
+export const metadata: Metadata = {
+  metadataBase: new URL(siteConfig.url),
+  title: {
+    default: `${siteConfig.name} — ${siteConfig.tagline}`,
+    template: `%s | ${siteConfig.name}`,
+  },
+  description: siteConfig.description,
+  keywords: [...siteConfig.keywords],
+  authors: [{ name: siteConfig.name, url: siteConfig.url }],
+  creator: siteConfig.name,
+  publisher: siteConfig.name,
+  openGraph: {
+    type: "website",
+    locale: "en_KE",
+    url: siteConfig.url,
+    siteName: siteConfig.name,
+    title: `${siteConfig.name} — ${siteConfig.tagline}`,
+    description: siteConfig.description,
+    images: [
+      {
+        url: siteConfig.ogImage,
+        width: 1200,
+        height: 630,
+        alt: `${siteConfig.name} — ${siteConfig.tagline}`,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    site: siteConfig.twitterHandle,
+    creator: siteConfig.twitterHandle,
+    title: `${siteConfig.name} — ${siteConfig.tagline}`,
+    description: siteConfig.description,
+    images: [siteConfig.ogImage],
+  },
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: siteConfig.name,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true },
+  },
+  alternates: { canonical: siteConfig.url },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0e" },
+  ],
+};
 
 export async function generateStaticParams() {
   return locales.map((lang) => ({ lang }));
 }
 
-export default async function LangLayout({ children }: LayoutProps<"/[lang]">) {
-  return <>{children}</>;
+export default async function LangLayout({
+  children,
+  params,
+}: LayoutProps<"/[lang]">) {
+  const { lang } = await params;
+  if (!isValidLocale(lang)) notFound();
+
+  return <AppDocument lang={lang}>{children}</AppDocument>;
 }

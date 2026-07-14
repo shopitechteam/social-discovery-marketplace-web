@@ -1,11 +1,17 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalNav } from "@/components/legal/LegalNav";
+import { publicPageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
-  title: "Terms of Service — Shopi",
-  description: "The rules and agreements that govern your use of the Shopi platform.",
-};
+export async function generateMetadata({ params }: Props) {
+  const { lang } = await params;
+  return publicPageMetadata({
+    lang,
+    path: "/terms",
+    title: "Terms of Service",
+    description:
+      "The rules and agreements that govern your use of the Shopi platform.",
+  });
+}
 
 const LAST_UPDATED = "14 July 2026";
 

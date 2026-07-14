@@ -33,13 +33,12 @@ export function useNotifications() {
     MARK_ALL_NOTIFICATIONS_READ,
   );
 
-  useEffect(
-    () =>
-      on<NotificationSocketPayload>(WS_EVENTS.NOTIFICATION, () => {
-        void refetch();
-      }),
-    [on, refetch],
-  );
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    return on<NotificationSocketPayload>(WS_EVENTS.NOTIFICATION, () => {
+      void refetch();
+    });
+  }, [isAuthenticated, on, refetch]);
 
   const page = (
     data as { myNotifications?: NotificationPage } | undefined

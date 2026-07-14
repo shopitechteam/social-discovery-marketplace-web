@@ -37,7 +37,7 @@ function PhotoTile({
       src={src}
       alt={alt}
       fill
-      quality={55}
+      quality={45}
       sizes="(max-width: 768px) 84vw, 360px"
       className={`object-cover ${className}`}
     />

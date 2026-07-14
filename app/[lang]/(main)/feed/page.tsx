@@ -8,6 +8,7 @@ import { ForYouFeedDocument } from "@/types/__generated__/graphql";
 import { FeedPage } from "@/features/feed/components/FeedPage";
 import { FeedSkeleton } from "@/features/feed/components/FeedSkeleton";
 import { AuthenticatedFeedPage } from "@/features/feed/components/AuthenticatedFeedPage";
+import { FEED_PAGE_SIZE } from "@/features/feed/constants";
 
 // The app serves every page under /[lang]; a canonical without the locale
 // would point at a redirect. Self-referencing canonical + hreflang alternates
@@ -20,18 +21,44 @@ export async function generateMetadata({
   const { lang } = await params;
   const safeLang = isValidLocale(lang) ? lang : "en";
   const path = siteConfig.routes.feed.path;
+  const canonical = `${siteConfig.url}/${safeLang}${path}`;
+  const title = `${siteConfig.routes.feed.title} | ${siteConfig.name}`;
+  const description = siteConfig.routes.feed.description;
 
   return {
     title: siteConfig.routes.feed.title,
-    description: siteConfig.routes.feed.description,
+    description,
     alternates: {
-      canonical: `${siteConfig.url}/${safeLang}${path}`,
+      canonical,
       languages: {
         ...Object.fromEntries(
           locales.map((l) => [l, `${siteConfig.url}/${l}${path}`]),
         ),
         "x-default": `${siteConfig.url}/en${path}`,
       },
+    },
+    openGraph: {
+      type: "website",
+      url: canonical,
+      siteName: siteConfig.name,
+      title,
+      description,
+      locale: safeLang === "sw" ? "sw_KE" : "en_KE",
+      images: [
+        {
+          url: siteConfig.ogImage,
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      site: siteConfig.twitterHandle,
+      title,
+      description,
+      images: [siteConfig.ogImage],
     },
   };
 }
@@ -57,7 +84,10 @@ export default async function FeedPageRoute({
   }
 
   return (
-    <PreloadQuery query={ForYouFeedDocument} variables={{ limit: 10 }}>
+    <PreloadQuery
+      query={ForYouFeedDocument}
+      variables={{ limit: FEED_PAGE_SIZE }}
+    >
       {feed}
     </PreloadQuery>
   );

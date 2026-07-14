@@ -1,17 +1,13 @@
 "use client";
 
-import Link from "next/link";
-import { Search } from "lucide-react";
-
 type Tab = "for-you" | "following" | "nearby";
 
 interface Props {
-  lang: string;
   activeTab: Tab;
   onTabChange: (tab: Tab) => void;
 }
 
-export function FeedHeader({ lang, activeTab, onTabChange }: Props) {
+export function FeedHeader({ activeTab, onTabChange }: Props) {
   const tabs: { id: Tab; label: string }[] = [
     { id: "for-you", label: "For You" },
     { id: "following", label: "Following" },
@@ -20,20 +16,9 @@ export function FeedHeader({ lang, activeTab, onTabChange }: Props) {
   ];
 
   return (
-    <header className="sticky top-0 z-30 bg-app/80 backdrop-blur-md border-b border-default">
-      <div className="flex items-center justify-end px-4 h-4">
-        {/* Search */}
-        <Link
-          href={`/${lang}/search`}
-          className="w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:bg-surface transition-colors active:scale-95"
-          aria-label="Search"
-        >
-          <Search className="w-5 h-5" strokeWidth={2} />
-        </Link>
-      </div>
-
+    <header className="sticky top-0 py-4 z-30 bg-app/80 backdrop-blur-md border-b border-default">
       {/* Tabs */}
-      <div className="flex gap-0 px-4 -mb-px">
+      <div className="flex gap-0 px-4 -mb-4">
         {tabs.map((tab) => (
           <button
             key={tab.id}

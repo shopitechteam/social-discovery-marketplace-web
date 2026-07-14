@@ -59,7 +59,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!profile) {
     return {
-      title: `@${username} · ${siteConfig.name}`,
+      title: `@${username}`,
       description: siteConfig.description,
       alternates: { canonical },
       robots: { index: false, follow: true },
@@ -68,7 +68,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const name = displayName(profile);
   const handle = profile.username ? `@${profile.username}` : "";
-  const title = `${name}${handle ? ` (${handle})` : ""} | ${siteConfig.name}`;
+  const title = `${name}${handle ? ` (${handle})` : ""}`;
+  const shareTitle = `${title} | ${siteConfig.name}`;
   const description = buildDescription(profile);
   const ogImage = `${canonical}/opengraph-image`;
 
@@ -87,7 +88,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       type: "profile",
       url: canonical,
       siteName: siteConfig.name,
-      title,
+      title: shareTitle,
       description,
       locale: "en_KE",
       images: [{ url: ogImage, width: 1200, height: 630, alt: name }],
@@ -95,7 +96,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     twitter: {
       card: "summary_large_image",
       site: siteConfig.twitterHandle,
-      title,
+      title: shareTitle,
       description,
       images: [ogImage],
     },

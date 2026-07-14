@@ -13,7 +13,6 @@ export function LanguageSwitcher({ current }: { current: Locale }) {
     const segments = pathname.split("/");
     segments[1] = next; // segments[0] is "" (before leading slash)
     const newPath = segments.join("/") || "/";
-    document.cookie = `shopi_locale=${next};path=/;max-age=${60 * 60 * 24 * 365};samesite=lax`;
     router.push(newPath);
   }
 

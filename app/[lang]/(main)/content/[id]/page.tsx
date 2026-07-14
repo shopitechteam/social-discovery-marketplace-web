@@ -91,7 +91,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!post) {
     return {
-      title: `Post — ${siteConfig.name}`,
+      title: "Post",
       description: siteConfig.description,
       alternates: { canonical },
       robots: { index: false, follow: true },
@@ -101,7 +101,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const price = priceLabel(post);
   const loc = locationName(post);
   const titleParts = [post.title, price, loc].filter(Boolean);
-  const title = `${titleParts.join(" · ")} | ${siteConfig.name}`;
+  const title = titleParts.join(" · ");
+  const shareTitle = `${title} | ${siteConfig.name}`;
   const description = buildDescription(post);
   // Per-listing OG image (rendered by the sibling opengraph-image route).
   const ogImage = `${canonical}/opengraph-image`;
@@ -123,7 +124,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       type: "website",
       url: canonical,
       siteName: siteConfig.name,
-      title,
+      title: shareTitle,
       description,
       locale: "en_KE",
       images: [{ url: ogImage, width: 1200, height: 630, alt: post.title }],
@@ -131,7 +132,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     twitter: {
       card: "summary_large_image",
       site: siteConfig.twitterHandle,
-      title,
+      title: shareTitle,
       description,
       images: [ogImage],
     },

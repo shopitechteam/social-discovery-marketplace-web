@@ -121,7 +121,6 @@ export function FeedPage({ lang, visible = true }: Props) {
       {!desktop ? (
         <div className="md:hidden min-h-svh">
           <FeedHeader
-            lang={lang}
             activeTab={tab}
             onTabChange={handleTabChange}
           />

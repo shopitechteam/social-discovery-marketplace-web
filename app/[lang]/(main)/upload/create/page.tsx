@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { CreateFlow } from "@/features/create/components/CreateFlow";
 
 export const metadata: Metadata = {
-  title: "New Post — Shopi",
+  title: "New Post",
 };
 
 type Props = { params: Promise<{ lang: string }> };
