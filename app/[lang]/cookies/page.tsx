@@ -4,41 +4,41 @@ import { LegalNav } from "@/components/legal/LegalNav";
 
 export const metadata: Metadata = {
   title: "Cookie Policy — Shopi",
-  description: "How Shopi uses cookies and similar tracking technologies.",
+  description: "How Shopi uses cookies and similar browser storage technologies.",
 };
 
-const LAST_UPDATED = "23 May 2025";
+const LAST_UPDATED = "14 July 2026";
 
-const cookies = [
+const storageItems = [
   {
-    name: "shopi_session",
-    type: "Strictly necessary",
-    purpose: "Maintains your login session so you stay signed in as you navigate the app.",
-    expiry: "Session",
+    name: "shopi-auth-hint",
+    type: "Cookie — essential",
+    purpose: "A flag indicating you're signed in, used to decide whether to show signed-in or signed-out pages. Does not contain your password or session token.",
+    expiry: "1 year or until sign out",
   },
   {
-    name: "shopi_csrf",
-    type: "Strictly necessary",
-    purpose: "Protects against cross-site request forgery attacks.",
-    expiry: "Session",
+    name: "shopi-auth (local storage)",
+    type: "Local storage — essential",
+    purpose: "Keeps you signed in across visits so you don't have to log in every time.",
+    expiry: "Until sign out or cleared",
   },
   {
-    name: "shopi_prefs",
-    type: "Functional",
-    purpose: "Remembers your preferences such as language and theme.",
-    expiry: "1 year",
+    name: "shopi-theme (local storage)",
+    type: "Local storage — preference",
+    purpose: "Remembers whether you're using light or dark mode.",
+    expiry: "Until cleared",
   },
   {
-    name: "_ga, _gid",
-    type: "Analytics",
-    purpose: "Google Analytics — measures how users interact with the Service in aggregate.",
-    expiry: "2 years / 24 hrs",
+    name: "Auth-intent redirect (session storage)",
+    type: "Session storage — essential",
+    purpose: "Temporarily remembers where to send you after signing in (e.g. back to a seller's chat).",
+    expiry: "Until tab is closed",
   },
   {
-    name: "mp_*",
-    type: "Analytics",
-    purpose: "Mixpanel — tracks in-app events to help us understand feature usage.",
-    expiry: "1 year",
+    name: "Scroll position (session storage)",
+    type: "Session storage — functional",
+    purpose: "Restores your scroll position when navigating back to a feed.",
+    expiry: "Until tab is closed",
   },
 ];
 
@@ -50,69 +50,61 @@ export default async function CookiesPage({ params }: Props) {
   return (
     <>
       <LegalNav lang={lang} />
-      <main className="mx-auto max-w-195 px-5 pt-20 pb-24">
+      <main className="mx-auto max-w-215 px-5 pt-20 pb-24">
         <div className="mb-10">
-          <p className="mb-3 text-[0.75rem] font-semibold tracking-[0.08em] uppercase text-primary">
+          <p className="mb-3 text-[0.8rem] md:text-[0.875rem] font-semibold tracking-[0.08em] uppercase text-primary">
             Legal
           </p>
           <h1 className="mb-3 font-display text-[clamp(1.75rem,4vw,2.75rem)] font-extrabold tracking-[-0.03em] text-foreground">
             Cookie Policy
           </h1>
-          <p className="text-[0.875rem] text-muted">
+          <p className="text-[0.875rem] md:text-[1rem] text-muted">
             Last updated: {LAST_UPDATED}
           </p>
         </div>
 
         <LegalSection>
           <p>
-            This Cookie Policy explains what cookies and similar technologies Shopi uses, why we use them, and the choices available to you. It should be read alongside our <Link href={`${base}/privacy`}>Privacy Policy</Link>.
+            This policy explains how Shopi uses cookies and similar technologies (like local storage and session storage) in your browser.
+          </p>
+          <p>
+            Shopi keeps this simple: we only use what&apos;s needed to make the app work. We don&apos;t run advertising or analytics tracking scripts.
           </p>
         </LegalSection>
 
-        <LegalSection title="1. What Are Cookies?">
+        <LegalSection title="1. What We Use, and Why">
+          <h3>Essential cookies</h3>
           <p>
-            Cookies are small text files placed on your device by a website or app you visit. They are widely used to make websites work efficiently and to provide information to website owners.
+            <code className="font-mono text-[0.85rem]">shopi-auth-hint</code> — a small cookie we set when you&apos;re signed in. It doesn&apos;t contain your password or session token — it&apos;s a flag our system uses to decide whether to show you signed-in or signed-out pages. It lasts up to one year or until you sign out.
           </p>
-          <p>
-            We also use similar technologies such as <strong>local storage</strong>, <strong>session storage</strong>, and <strong>pixels</strong> (tiny invisible images) that serve similar purposes to cookies. When we say &quot;cookies&quot; in this policy we mean all of these technologies.
-          </p>
+          <h3>Local storage</h3>
+          <p>We use your browser&apos;s local storage (not a cookie, but a similar browser technology) to:</p>
+          <ul>
+            <li><strong>Keep you signed in</strong> — we store your session information locally so you don&apos;t have to log in every time you open Shopi</li>
+            <li><strong>Remember your theme preference</strong> — whether you&apos;re using light or dark mode</li>
+          </ul>
+          <h3>Session storage</h3>
+          <p>We use session storage, which clears automatically when you close your browser tab, to:</p>
+          <ul>
+            <li>Restore your scroll position when you navigate back to a feed</li>
+            <li>Temporarily remember where to send you after you sign in (for example, if you tried to message a seller before logging in)</li>
+            <li>Remember if you&apos;ve dismissed certain in-app prompts during your visit</li>
+          </ul>
         </LegalSection>
 
-        <LegalSection title="2. Types of Cookies We Use">
-          <h3>Strictly Necessary</h3>
-          <p>
-            These cookies are essential for the Service to function. They enable core features like authentication and security. You cannot opt out of these without stopping use of the Service.
-          </p>
-
-          <h3>Functional</h3>
-          <p>
-            These cookies remember choices you make (like your preferred theme) to personalise your experience. Disabling them may reduce convenience but will not prevent you from using the Service.
-          </p>
-
-          <h3>Analytics</h3>
-          <p>
-            These cookies help us understand how users interact with Shopi — which features are popular, where users drop off, and how to improve the product. Data is aggregated and cannot identify you individually. You may opt out (see Section 4).
-          </p>
-
-          <h3>Marketing / Advertising</h3>
-          <p>
-            We currently do not serve third-party advertising on Shopi and do not place advertising cookies. If this changes we will update this policy and seek your consent where required.
-          </p>
-        </LegalSection>
-
-        <LegalSection title="3. Cookie Details">
+        <LegalSection title="2. Storage Details">
           <div className="mt-2 overflow-x-auto">
             <table className="w-full border-collapse text-[0.825rem]">
               <thead>
                 <tr className="border-b-2 border-border text-left">
-                  <Th>Cookie name</Th>
+                  <Th>Name</Th>
                   <Th>Type</Th>
                   <Th>Purpose</Th>
                   <Th>Expiry</Th>
                 </tr>
               </thead>
               <tbody>
-                {cookies.map((c, i) => (
+                {storageItems.map((c, i) => (
                   <tr key={c.name} className={`border-b border-border ${i % 2 === 0 ? "bg-transparent" : "bg-surface"}`}>
                     <Td><code className="font-mono text-[0.8rem]">{c.name}</code></Td>
                     <Td>{c.type}</Td>
@@ -125,56 +117,45 @@ export default async function CookiesPage({ params }: Props) {
           </div>
         </LegalSection>
 
-        <LegalSection title="4. Your Choices">
-          <h3>Browser settings</h3>
-          <p>
-            Most browsers allow you to view, manage, delete, and block cookies through their settings. Blocking all cookies will affect the functionality of many websites, including Shopi. For guidance on managing cookies in common browsers:
-          </p>
+        <LegalSection title="3. What We Don't Use">
+          <p>As of this policy&apos;s last update, Shopi does not use:</p>
           <ul>
-            <li><strong>Chrome:</strong> Settings &rarr; Privacy and security &rarr; Cookies and other site data</li>
-            <li><strong>Safari:</strong> Settings &rarr; Safari &rarr; Privacy &amp; Security</li>
-            <li><strong>Firefox:</strong> Settings &rarr; Privacy &amp; Security</li>
+            <li>Advertising cookies or ad-tracking pixels</li>
+            <li>Third-party analytics cookies (like Google Analytics)</li>
+            <li>Cross-site tracking technologies</li>
           </ul>
-
-          <h3>Opting out of analytics</h3>
           <p>
-            You can opt out of Google Analytics across all sites by installing the <a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noopener noreferrer">Google Analytics Opt-out Browser Add-on</a>.
-          </p>
-          <p>
-            To opt out of Mixpanel tracking, email us at <a href="mailto:privacy@shopi.app">privacy@shopi.app</a> with the subject &quot;Opt out of analytics&quot;.
-          </p>
-
-          <h3>In-app settings</h3>
-          <p>
-            We are building an in-app cookie preferences panel. Until it is available, the browser settings and opt-out links above are the primary controls.
+            If this changes in the future, we&apos;ll update this policy and, where required, ask for your consent first.
           </p>
         </LegalSection>
 
-        <LegalSection title="5. Third-Party Cookies">
+        <LegalSection title="4. Push Notifications">
           <p>
-            Some cookies on Shopi are set by third-party services we use:
+            If you opt in to push notifications, your browser stores a subscription on your device that lets us send you alerts (like new messages). This isn&apos;t a cookie, but it&apos;s a similar browser-level permission. You can turn this off any time in your browser or device notification settings.
           </p>
-          <ul>
-            <li><strong>Google Analytics</strong> — <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Google Privacy Policy</a></li>
-            <li><strong>Mixpanel</strong> — <a href="https://mixpanel.com/legal/privacy-policy/" target="_blank" rel="noopener noreferrer">Mixpanel Privacy Policy</a></li>
-          </ul>
+        </LegalSection>
+
+        <LegalSection title="5. Managing Local Storage and Cookies">
           <p>
-            These third parties have their own privacy and cookie policies, which we encourage you to review. We do not control how these third parties use the data they collect.
+            You can clear cookies and local storage through your browser settings at any time. Note that doing so will sign you out of Shopi and reset your saved preferences.
+          </p>
+          <p>
+            Because we don&apos;t use tracking cookies, you generally don&apos;t need to take any action for privacy reasons — the technologies above exist to make Shopi function properly, not to track you across the web.
           </p>
         </LegalSection>
 
         <LegalSection title="6. Changes to This Policy">
           <p>
-            We may update this Cookie Policy when we add or remove cookies or change how we use them. The &quot;Last updated&quot; date at the top of this page reflects the most recent version. Material changes will be notified via the Service.
+            If the cookies and storage technologies we use change, we&apos;ll update this page and, where the law requires it, ask for your consent.
           </p>
         </LegalSection>
 
         <LegalSection title="7. Contact">
-          <p>Questions about our use of cookies?</p>
+          <p>Questions about this policy?</p>
           <address className="not-italic leading-[1.8]">
             <strong>Shopi Limited</strong><br />
             Nairobi, Kenya<br />
-            Email: <a href="mailto:privacy@shopi.app">privacy@shopi.app</a>
+            Email: <a href="mailto:privacy@shopi.co.ke">privacy@shopi.co.ke</a>
           </address>
         </LegalSection>
 
@@ -207,11 +188,11 @@ function LegalSection({ title, children }: { title?: string; children: React.Rea
   return (
     <section className="mb-9">
       {title && (
-        <h2 className="mb-3.5 border-b border-border pb-2 font-display text-[1.15rem] font-bold text-foreground">
+        <h2 className="mb-3.5 border-b border-border pb-2 font-display text-[1.15rem] md:text-[1.4rem] font-bold text-foreground">
           {title}
         </h2>
       )}
-      <div className="flex flex-col gap-3 text-[0.9rem] leading-[1.8] text-muted [&_a]:text-primary [&_a]:underline [&_h3]:mt-4 [&_h3]:mb-[0.4rem] [&_h3]:text-[0.875rem] [&_h3]:font-bold [&_h3]:text-foreground [&_ul]:m-0 [&_ul]:flex [&_ul]:flex-col [&_ul]:gap-[0.4rem] [&_ul]:pl-5">
+      <div className="flex flex-col gap-3 text-[0.9rem] md:text-[1.0625rem] leading-[1.8] md:leading-[1.85] text-muted [&_a]:text-primary [&_a]:underline [&_h3]:mt-4 [&_h3]:mb-[0.4rem] [&_h3]:text-[0.875rem] md:[&_h3]:text-[1.05rem] [&_h3]:font-bold [&_h3]:text-foreground [&_ul]:m-0 [&_ul]:flex [&_ul]:flex-col [&_ul]:gap-[0.4rem] [&_ul]:pl-5">
         {children}
       </div>
     </section>

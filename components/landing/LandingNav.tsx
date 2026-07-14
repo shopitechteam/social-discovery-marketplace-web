@@ -156,7 +156,7 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
               {dict?.auth.login.submit ?? "Sign in"}
             </Link>
 
-            {/* Desktop CTA pair — outline + solid, Tolstoy-style */}
+            {/* Desktop CTA pair — outline + solid primary, Tolstoy-style */}
             <Link
               href={`${homeBase}/feed`}
               className="hidden items-center rounded-full border border-border bg-elevated px-[1.1rem] py-2 text-sm font-semibold whitespace-nowrap text-foreground no-underline md:inline-flex"
@@ -165,7 +165,7 @@ export function LandingNav({ dict }: { dict?: Dictionary; lang?: Locale }) {
             </Link>
             <Link
               href={`${homeBase}/upload`}
-              className="hidden items-center rounded-full bg-foreground px-[1.1rem] py-2 text-sm font-semibold whitespace-nowrap text-background no-underline md:inline-flex"
+              className="hidden items-center rounded-full bg-primary px-[1.1rem] py-2 text-sm font-semibold whitespace-nowrap text-white no-underline md:inline-flex"
             >
               {dict?.landing.hero.ctaSecondary ?? "Start selling"}
             </Link>
