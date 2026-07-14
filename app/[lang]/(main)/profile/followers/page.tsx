@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { ProfileFollowersView } from "@/features/profile/components/ProfileFollowersView";
 import { isValidLocale } from "@/i18n/config";
@@ -10,5 +11,9 @@ export default async function ProfileFollowersPage({
   const { lang } = await params;
   if (!isValidLocale(lang)) notFound();
 
-  return <ProfileFollowersView lang={lang} />;
+  return (
+    <Suspense fallback={<div className="min-h-svh bg-app" />}>
+      <ProfileFollowersView lang={lang} />
+    </Suspense>
+  );
 }

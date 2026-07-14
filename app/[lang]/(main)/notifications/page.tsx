@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { siteConfig } from "@/config/site";
 import { NotificationsScreen } from "@/features/notifications/components/NotificationsScreen";
 
@@ -15,5 +16,9 @@ export default async function NotificationsPage({
   params: Promise<{ lang: string }>;
 }) {
   const { lang } = await params;
-  return <NotificationsScreen lang={lang} />;
+  return (
+    <Suspense fallback={<div className="min-h-svh bg-app" />}>
+      <NotificationsScreen lang={lang} />
+    </Suspense>
+  );
 }

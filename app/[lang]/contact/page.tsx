@@ -1,11 +1,17 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalNav } from "@/components/legal/LegalNav";
+import { publicPageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
-  title: "Contact Us — Shopi",
-  description: "How to reach Shopi for support, business, legal, privacy, and abuse-report enquiries.",
-};
+export async function generateMetadata({ params }: Props) {
+  const { lang } = await params;
+  return publicPageMetadata({
+    lang,
+    path: "/contact",
+    title: "Contact Us",
+    description:
+      "How to reach Shopi for support, business, legal, privacy, and abuse-report enquiries.",
+  });
+}
 
 const LAST_UPDATED = "14 July 2026";
 

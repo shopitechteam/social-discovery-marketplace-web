@@ -11,7 +11,7 @@ import {
   DirectMessageCreatedPayload,
   WS_EVENTS,
 } from "@/lib/socket/socket-events";
-import { MY_UNREAD_CONVERSATION_COUNT } from "../graphql/operations";
+import { MY_UNREAD_CONVERSATION_COUNT } from "../graphql/unread";
 
 /**
  * Total unread direct-conversation count for the bottom-nav badge. Backed by the
@@ -34,27 +34,31 @@ export function useUnreadConversationCount(): number {
 
   // A new incoming message (not from me) or a conversation-updated event can
   // change the unread total — refetch the authoritative count.
-  useEffect(
-    () =>
-      on<DirectMessageCreatedPayload>(WS_EVENTS.DM_MESSAGE_CREATED, (payload) => {
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    return on<DirectMessageCreatedPayload>(
+      WS_EVENTS.DM_MESSAGE_CREATED,
+      (payload) => {
         if (payload.senderId !== currentUserId) void refetch();
-      }),
-    [currentUserId, on, refetch],
-  );
+      },
+    );
+  }, [currentUserId, isAuthenticated, on, refetch]);
 
-  useEffect(
-    () => on<DirectConversationUpdatedPayload>(WS_EVENTS.DM_CONVERSATION_UPDATED, () => void refetch()),
-    [on, refetch],
-  );
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    return on<DirectConversationUpdatedPayload>(
+      WS_EVENTS.DM_CONVERSATION_UPDATED,
+      () => void refetch(),
+    );
+  }, [isAuthenticated, on, refetch]);
 
-  useEffect(
-    () =>
-      on<DirectConversationRemovedPayload>(
-        WS_EVENTS.DM_CONVERSATION_REMOVED,
-        () => void refetch(),
-      ),
-    [on, refetch],
-  );
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    return on<DirectConversationRemovedPayload>(
+      WS_EVENTS.DM_CONVERSATION_REMOVED,
+      () => void refetch(),
+    );
+  }, [isAuthenticated, on, refetch]);
 
   if (!isAuthenticated) return 0;
   return (

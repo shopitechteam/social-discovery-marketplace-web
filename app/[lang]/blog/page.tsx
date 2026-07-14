@@ -5,26 +5,45 @@ import { siteConfig } from "@/config/site";
 import { LegalNav } from "@/components/legal/LegalNav";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 
-export const metadata: Metadata = {
-  title: "Blog — Social Commerce Insights for Kenya",
-  description:
-    "Guides, trends, and success stories for Kenyan sellers and buyers. Learn how social discovery and video commerce are reshaping retail across East Africa.",
-  keywords: [
-    "Shopi blog",
-    "Kenya e-commerce blog",
-    "social commerce tips",
-    "sell online Kenya guide",
-    "video commerce Africa",
-  ],
-  alternates: { canonical: `${siteConfig.url}/blog` },
-  openGraph: {
-    title: "Shopi Blog — Social Commerce Insights for Kenya",
-    description:
-      "Guides, trends, and success stories for Kenyan sellers and buyers discovering the power of social commerce.",
-    url: `${siteConfig.url}/blog`,
-    type: "website",
-  },
-};
+type Props = { params: Promise<{ lang: string }> };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { lang } = await params;
+  const canonical = `${siteConfig.url}/${lang}/blog`;
+  const title = "Blog — Social Commerce Insights for Kenya";
+  const description =
+    "Guides, trends, and success stories for Kenyan sellers and buyers. Learn how social discovery and video commerce are reshaping retail across East Africa.";
+
+  return {
+    title,
+    description,
+    keywords: [
+      "Shopi blog",
+      "Kenya e-commerce blog",
+      "social commerce tips",
+      "sell online Kenya guide",
+      "video commerce Africa",
+    ],
+    alternates: { canonical },
+    openGraph: {
+      title: `Shopi ${title}`,
+      description,
+      url: canonical,
+      siteName: siteConfig.name,
+      type: "website",
+      images: [
+        { url: siteConfig.ogImage, width: 1200, height: 630, alt: title },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      site: siteConfig.twitterHandle,
+      title: `Shopi ${title}`,
+      description,
+      images: [siteConfig.ogImage],
+    },
+  };
+}
 
 const categoryColors: Record<string, string> = {
   Trends: "rgb(var(--brand-primary))",
@@ -36,9 +55,9 @@ const categoryColors: Record<string, string> = {
 const cardHover =
   "transition-[box-shadow,transform] duration-200 hover:-translate-y-[3px] hover:shadow-(--shadow-lg)";
 
-export default function BlogIndexPage() {
+export default async function BlogIndexPage({ params }: Props) {
   const [featured, ...rest] = blogPosts;
-  const lang = "en"; // static fallback — blog has no dynamic lang param here
+  const { lang } = await params;
 
   return (
     <>
@@ -59,7 +78,7 @@ export default function BlogIndexPage() {
         </div>
 
         {/* Featured post */}
-        <Link href={`/blog/${featured.slug}`} className="mb-8 block no-underline">
+        <Link href={`/${lang}/blog/${featured.slug}`} className="mb-8 block no-underline">
           <article
             className={`grid grid-cols-1 overflow-hidden rounded-lg border border-border bg-elevated min-[900px]:grid-cols-2 ${cardHover}`}
           >
@@ -126,7 +145,7 @@ export default function BlogIndexPage() {
         {/* Grid of remaining posts */}
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 min-[900px]:grid-cols-3">
           {rest.map((post) => (
-            <Link key={post.slug} href={`/blog/${post.slug}`} className="no-underline">
+            <Link key={post.slug} href={`/${lang}/blog/${post.slug}`} className="no-underline">
               <article
                 className={`flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-elevated ${cardHover}`}
               >

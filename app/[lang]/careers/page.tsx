@@ -1,11 +1,16 @@
-import type { Metadata } from "next";
 import { LegalNav } from "@/components/legal/LegalNav";
 import { LandingFooter } from "@/components/landing/LandingFooter";
+import { publicPageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
-  title: "Careers — Shopi",
-  description: "Join the team building Kenya's social commerce platform.",
-};
+export async function generateMetadata({ params }: Props) {
+  const { lang } = await params;
+  return publicPageMetadata({
+    lang,
+    path: "/careers",
+    title: "Careers",
+    description: "Join the team building Kenya's social commerce platform.",
+  });
+}
 
 type Props = { params: Promise<{ lang: string }> };
 

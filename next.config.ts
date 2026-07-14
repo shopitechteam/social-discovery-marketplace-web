@@ -8,7 +8,7 @@ const isDev = process.env.NODE_ENV === "development";
 // security scanners and materially reducing XSS/clickjacking surface.
 //
 // `'unsafe-inline'` is retained for scripts and styles because the app relies on
-// an inline theme-flash script (app/layout.tsx), the Mux player (injects inline
+// an inline theme-flash script (components/layout/AppDocument.tsx), the Mux player (injects inline
 // styles), and the Google/Apple OAuth widgets. Moving to a nonce-based policy
 // would require forcing every page dynamic and threading a nonce through all of
 // these — a separate, larger change.
@@ -101,6 +101,13 @@ const nextConfig: NextConfig = {
   /* config options here */
   devIndicators: false,
 
+  // Shopi is Tailwind-based and mobile-first. Inlining the ~23 KB compressed
+  // stylesheet removes two render-blocking request round trips for first-time
+  // visitors, directly addressing the Lighthouse CSS opportunity.
+  experimental: {
+    inlineCss: true,
+  },
+
   // Send hardening headers on every route. Next prefixes each source with the
   // configured locales automatically, and "/(.*)" covers everything else.
   async headers() {
@@ -142,8 +149,8 @@ const nextConfig: NextConfig = {
     // Addresses Lighthouse "Improve image delivery" on the hero listing images.
     formats: ["image/avif", "image/webp"],
     // Restrict the quality values the optimizer will honor; 75 is the default
-    // used across the app. 55 is reserved for small decorative/mockup imagery.
-    qualities: [55, 75, 82],
+    // used across the app. 45/55 are reserved for small decorative imagery.
+    qualities: [45, 55, 75, 82],
     remotePatterns: [
       {
         protocol: "https",

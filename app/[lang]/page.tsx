@@ -11,7 +11,7 @@ import { LandingNav } from "@/components/landing/LandingNav";
 //import { SupportChat } from "@/components/landing/SupportChat";
 import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
 import { getDictionary } from "@/i18n/getDictionary";
-import { isValidLocale, locales } from "@/i18n/config";
+import { isValidLocale, locales, type Locale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import { siteConfig } from "@/config/site";
 import {
@@ -22,7 +22,9 @@ import {
   jsonLd,
 } from "@/lib/structured-data";
 
-const HOME_FAQ = [
+type FaqItem = { q: string; a: string };
+
+const HOME_FAQ_EN: FaqItem[] = [
   {
     q: "What is Shopi?",
     a: "Shopi is a social discovery classifieds marketplace for Kenya. Sellers post what they are selling, buyers discover items in a nearby feed, and both sides message each other directly to agree on price, pickup, delivery and payment.",
@@ -49,6 +51,53 @@ const HOME_FAQ = [
   },
 ];
 
+const HOME_FAQ: Record<Locale, FaqItem[]> = {
+  en: HOME_FAQ_EN,
+  sw: [
+    {
+      q: "Shopi ni nini?",
+      a: "Shopi ni soko la matangazo ya bidhaa la kijamii nchini Kenya. Wauzaji huweka bidhaa zao, wanunuzi huzigundua kwenye feed ya karibu, kisha pande zote mbili huwasiliana moja kwa moja kukubaliana bei, mahali pa kuchukua, usafirishaji na malipo.",
+    },
+    {
+      q: "Je, Shopi inashughulikia malipo au usafirishaji?",
+      a: "Hapana. Shopi haichakati wala kushikilia malipo, haipangi usafirishaji, na haichukui commission. Inawasaidia wanunuzi na wauzaji kupatana; wao hukamilisha makubaliano moja kwa moja.",
+    },
+    {
+      q: "Shopi ni tofauti vipi na tovuti za kawaida za matangazo?",
+      a: "Tovuti nyingi za matangazo huanza na vichujio vya utafutaji. Shopi huanza na ugunduzi: post fupi za wauzaji wa karibu huonekana kwenye feed, kwa hivyo unaweza kupata kitu muhimu hata kama hukujua neno kamili la kutafuta.",
+    },
+    {
+      q: "Shopi hupangaje feed yangu?",
+      a: "Shopi hujifunza kutokana na vitu unavyofungua, kupenda, kuhifadhi na kutuma ujumbe kuvihusu. Ukivutiwa zaidi na magari, feed inaweza kuonyesha magari zaidi; ukihamia fashion, samani, simu au mazao, nayo hubadilika.",
+    },
+    {
+      q: "Ninaweza kununua na kuuza nini kwenye Shopi?",
+      a: "Shopi imejengwa kwa biashara za kila siku nchini Kenya: magari, simu, vifaa vya elektroniki, fashion, samani, bidhaa za nyumbani, mazao, mifugo na bidhaa nyingine halali.",
+    },
+    {
+      q: "Je, Shopi inafanya kazi kote Kenya?",
+      a: "Ndiyo. Shopi imejengwa kwa ugunduzi wa karibu kote Kenya, ikiwemo Nairobi, Mombasa, Kisumu, Nakuru, Meru na miji midogo. Post za karibu hupewa kipaumbele, lakini wanunuzi na wauzaji wanaweza kuwasiliana kutoka maeneo tofauti.",
+    },
+  ],
+};
+
+const HOME_META: Record<
+  Locale,
+  { title: string; description: string; ogLocale: string }
+> = {
+  en: {
+    title: `${siteConfig.name} | Kenya Local Marketplace & Classified Ads Feed`,
+    description: siteConfig.description,
+    ogLocale: "en_KE",
+  },
+  sw: {
+    title: `${siteConfig.name} | Soko la Karibu Kenya na Matangazo ya Bidhaa`,
+    description:
+      "Shopi ni soko la kijamii la Kenya kwa wanunuzi na wauzaji. Gundua magari, simu, fashion, samani, mazao na bidhaa nyingine karibu nawe, kisha mtumie muuzaji ujumbe moja kwa moja. Shopi haishiki malipo wala haichukui commission.",
+    ogLocale: "sw_KE",
+  },
+};
+
 export async function generateMetadata({
   params,
 }: PageProps<"/[lang]">): Promise<Metadata> {
@@ -56,8 +105,7 @@ export async function generateMetadata({
   const safeLang = isValidLocale(lang) ? lang : "en";
   const canonical = `${siteConfig.url}/${safeLang}`;
 
-  const title = `${siteConfig.name} | Kenya Local Marketplace & Classified Ads Feed`;
-  const description = siteConfig.description;
+  const { title, description, ogLocale } = HOME_META[safeLang];
 
   return {
     title: {
@@ -80,7 +128,7 @@ export async function generateMetadata({
       siteName: siteConfig.name,
       title,
       description,
-      locale: siteConfig.locale,
+      locale: ogLocale,
       images: [
         {
           url: siteConfig.ogImage,
@@ -105,6 +153,7 @@ export default async function Rootpage({ params }: PageProps<"/[lang]">) {
   if (!isValidLocale(lang)) notFound();
 
   const dict = await getDictionary(lang);
+  const faq = HOME_FAQ[lang];
 
   return (
     <div
@@ -119,7 +168,7 @@ export default async function Rootpage({ params }: PageProps<"/[lang]">) {
             organizationSchema,
             websiteSchema,
             marketplaceSchema,
-            faqSchema(HOME_FAQ),
+            faqSchema(faq),
           ),
         }}
       />
@@ -133,7 +182,7 @@ export default async function Rootpage({ params }: PageProps<"/[lang]">) {
       <TestimonialsSection dict={dict} />
       {/* <BlogSection dict={dict} /> */}
       {/* Visible FAQ — strong AEO signal and matches the FAQ structured data */}
-      <HomeFaq />
+      <HomeFaq items={faq} lang={lang} />
       <DownloadSection dict={dict} lang={lang} />
       <LandingFooter dict={dict} lang={lang} />
       {/* <SupportChat dict={dict} /> */}
@@ -141,7 +190,7 @@ export default async function Rootpage({ params }: PageProps<"/[lang]">) {
   );
 }
 
-function HomeFaq() {
+function HomeFaq({ items, lang }: { items: FaqItem[]; lang: Locale }) {
   return (
     <section
       id="faq"
@@ -149,15 +198,17 @@ function HomeFaq() {
     >
       <div className="mb-10">
         <p className="mb-3 text-sm font-bold tracking-widest uppercase text-muted">
-          Questions
+          {lang === "sw" ? "Maswali" : "Questions"}
         </p>
         <h2 className="font-display text-[clamp(1.6rem,3.2vw,2.5rem)] font-bold tracking-normal leading-tight text-foreground">
-          Everything you might be wondering.
+          {lang === "sw"
+            ? "Majibu ya mambo unayoweza kujiuliza."
+            : "Everything you might be wondering."}
         </h2>
       </div>
 
       <div className="flex flex-col gap-3">
-        {HOME_FAQ.map(({ q, a }) => (
+        {items.map(({ q, a }) => (
           <details
             key={q}
             className="overflow-hidden rounded-[14px] border border-border bg-elevated"

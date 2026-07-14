@@ -3,11 +3,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useApolloClient } from "@apollo/client/react";
 import { useAuthStore } from "@/stores/auth";
-import {
-  MY_DIRECT_CONVERSATIONS,
-  MY_WEB_PUSH_STATUS,
-} from "@/features/messaging/graphql/operations";
-import { MY_NOTIFICATIONS } from "../graphql/operations";
 
 const CONVERSATION_PAGE_SIZE = 40;
 const NOTIFICATION_PAGE_SIZE = 30;
@@ -22,29 +17,39 @@ export function usePreloadInbox() {
   const accessToken = useAuthStore((state) => state.accessToken);
   const preloadedTokenRef = useRef<string | null>(null);
 
-  const preload = useCallback(() => {
+  const preload = useCallback(async () => {
     if (!accessToken || preloadedTokenRef.current === accessToken) return;
     preloadedTokenRef.current = accessToken;
 
-    void Promise.allSettled([
-      client.query({
-        query: MY_DIRECT_CONVERSATIONS,
-        variables: { limit: CONVERSATION_PAGE_SIZE },
-        // Private data must be populated for this exact token. The app's Apollo
-        // cache survives logout today, so cache-first could expose a previous
-        // session's inbox briefly before the route refreshes.
-        fetchPolicy: "network-only",
-      }),
-      client.query({
-        query: MY_NOTIFICATIONS,
-        variables: { limit: NOTIFICATION_PAGE_SIZE },
-        fetchPolicy: "network-only",
-      }),
-      client.query({
-        query: MY_WEB_PUSH_STATUS,
-        fetchPolicy: "network-only",
-      }),
-    ]);
+    try {
+      const [messaging, notifications] = await Promise.all([
+        import("@/features/messaging/graphql/operations"),
+        import("../graphql/operations"),
+      ]);
+
+      await Promise.allSettled([
+        client.query({
+          query: messaging.MY_DIRECT_CONVERSATIONS,
+          variables: { limit: CONVERSATION_PAGE_SIZE },
+          // Private data must be populated for this exact token. The app's Apollo
+          // cache survives logout today, so cache-first could expose a previous
+          // session's inbox briefly before the route refreshes.
+          fetchPolicy: "network-only",
+        }),
+        client.query({
+          query: notifications.MY_NOTIFICATIONS,
+          variables: { limit: NOTIFICATION_PAGE_SIZE },
+          fetchPolicy: "network-only",
+        }),
+        client.query({
+          query: messaging.MY_WEB_PUSH_STATUS,
+          fetchPolicy: "network-only",
+        }),
+      ]);
+    } catch {
+      // Permit a retry if a transient chunk load failed.
+      preloadedTokenRef.current = null;
+    }
   }, [accessToken, client]);
 
   useEffect(() => {
@@ -54,11 +59,13 @@ export function usePreloadInbox() {
     }
 
     if ("requestIdleCallback" in window) {
-      const idleId = window.requestIdleCallback(preload, { timeout: 1500 });
+      const idleId = window.requestIdleCallback(() => void preload(), {
+        timeout: 1500,
+      });
       return () => window.cancelIdleCallback(idleId);
     }
 
-    const timeoutId = setTimeout(preload, 250);
+    const timeoutId = setTimeout(() => void preload(), 250);
     return () => clearTimeout(timeoutId);
   }, [accessToken, preload]);
 }

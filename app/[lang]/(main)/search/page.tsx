@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { siteConfig } from "@/config/site";
 import { locales, isValidLocale } from "@/i18n/config";
 import { DiscoverPage } from "@/features/discover/components/DiscoverPage";
+import { publicPageMetadata } from "@/lib/metadata";
 
 type Props = {
   params: Promise<{ lang: string }>;
@@ -20,14 +21,21 @@ export async function generateMetadata({
   const safeLang = isValidLocale(lang) ? lang : "en";
   const path = siteConfig.routes.search.path;
   const term = q?.trim();
+  const title = term
+    ? `${term} — ${siteConfig.routes.search.title}`
+    : siteConfig.routes.search.title;
+  const description = term
+    ? `Search results for "${term}" on ${siteConfig.name}. ${siteConfig.routes.search.description}`
+    : siteConfig.routes.search.description;
+  const base = publicPageMetadata({
+    lang: safeLang,
+    path,
+    title,
+    description,
+  });
 
   return {
-    title: term
-      ? `${term} — ${siteConfig.routes.search.title}`
-      : siteConfig.routes.search.title,
-    description: term
-      ? `Search results for "${term}" on ${siteConfig.name}. ${siteConfig.routes.search.description}`
-      : siteConfig.routes.search.description,
+    ...base,
     alternates: {
       canonical: `${siteConfig.url}/${safeLang}${path}`,
       languages: {

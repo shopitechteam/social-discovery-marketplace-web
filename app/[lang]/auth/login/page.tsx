@@ -8,7 +8,7 @@ import { AuthDesktopShell } from "@/features/auth/components/AuthDesktopShell";
 import { ChevronLeftIcon } from "lucide-react";
 import { Divider, ShopiLogo } from "@/features/auth/components/AuthIcons";
 
-export const metadata = { title: "Sign in · Shopi" };
+export const metadata = { title: "Sign in" };
 
 export default async function LoginPage({
   params,

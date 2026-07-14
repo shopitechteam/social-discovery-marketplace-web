@@ -1,0 +1,27 @@
+# Shopi
+
+> Shopi is Kenya's social discovery classifieds marketplace. Buyers browse real items in a local feed and message sellers directly. Shopi does not process payments, hold money, arrange delivery, or charge commission.
+
+## Primary pages
+
+- [Home](https://shopi.co.ke/en): What Shopi is, how it works, and answers to common questions.
+- [Marketplace feed](https://shopi.co.ke/en/feed): Current product and classified listings.
+- [Explore](https://shopi.co.ke/en/explore): Browse listings by category and discovery filters.
+- [Search](https://shopi.co.ke/en/search): Search cars, phones, fashion, furniture, farm produce, livestock, and other local listings.
+- [About Shopi](https://shopi.co.ke/en/about): Company mission and marketplace model.
+- [Safety Centre](https://shopi.co.ke/en/safety-centre): Guidance for safe local buying and selling.
+- [Prohibited Items](https://shopi.co.ke/en/prohibited-items): Items that may not be listed.
+- [Community Guidelines](https://shopi.co.ke/en/community-guidelines): Marketplace participation rules.
+- [Blog](https://shopi.co.ke/en/blog): Guides and insights for Kenyan buyers and sellers.
+
+## Key facts
+
+- Market: Kenya, including all 47 counties.
+- Model: discovery-first local classifieds with photo and video posts.
+- Transactions: buyers and sellers agree directly on price, payment, collection, or delivery.
+- Fees: free to browse and post; Shopi takes no commission.
+- Languages: English and Kiswahili routes are available under `/en` and `/sw`.
+
+## Contact
+
+- [Contact Shopi](https://shopi.co.ke/en/contact)

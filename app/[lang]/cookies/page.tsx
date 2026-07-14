@@ -1,11 +1,17 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalNav } from "@/components/legal/LegalNav";
+import { publicPageMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
-  title: "Cookie Policy — Shopi",
-  description: "How Shopi uses cookies and similar browser storage technologies.",
-};
+export async function generateMetadata({ params }: Props) {
+  const { lang } = await params;
+  return publicPageMetadata({
+    lang,
+    path: "/cookies",
+    title: "Cookie Policy",
+    description:
+      "How Shopi uses cookies and similar browser storage technologies.",
+  });
+}
 
 const LAST_UPDATED = "14 July 2026";
 

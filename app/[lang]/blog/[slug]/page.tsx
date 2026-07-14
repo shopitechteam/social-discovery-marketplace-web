@@ -15,11 +15,11 @@ export function generateStaticParams() {
 
 /* ── Per-page metadata ───────────────────────────────────────────── */
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params; // lang unused in metadata
+  const { lang, slug } = await params;
   const post = getBlogPost(slug);
   if (!post) return {};
 
-  const url = `${siteConfig.url}/blog/${post.slug}`;
+  const url = `${siteConfig.url}/${lang}/blog/${post.slug}`;
 
   return {
     title: post.title,
@@ -50,6 +50,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: post.title,
       description: post.description,
       site: siteConfig.twitterHandle,
+      images: [siteConfig.ogImage],
     },
   };
 }
@@ -80,7 +81,10 @@ export default async function BlogPostPage({ params }: Props) {
       name: siteConfig.name,
       url: siteConfig.url,
     },
-    mainEntityOfPage: { "@type": "WebPage", "@id": `${siteConfig.url}/blog/${post.slug}` },
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": `${siteConfig.url}/${lang}/blog/${post.slug}`,
+    },
   };
 
   const faqJsonLd = {
@@ -122,9 +126,9 @@ export default async function BlogPostPage({ params }: Props) {
           <article>
             {/* Breadcrumb */}
             <nav className="mb-8 text-[0.8rem] text-muted">
-              <Link href="/" className="text-muted no-underline">Home</Link>
+              <Link href={`/${lang}`} className="text-muted no-underline">Home</Link>
               <span className="mx-2">›</span>
-              <Link href="/blog" className="text-muted no-underline">Blog</Link>
+              <Link href={`/${lang}/blog`} className="text-muted no-underline">Blog</Link>
               <span className="mx-2">›</span>
               <span className="text-foreground">{post.category}</span>
             </nav>
@@ -302,7 +306,7 @@ export default async function BlogPostPage({ params }: Props) {
                 Open the feed, discover what is selling near you, and message the seller directly. Free to use.
               </p>
               <Link
-                href="/feed"
+                href={`/${lang}/feed`}
                 className="inline-flex items-center gap-2 rounded-full bg-primary px-7 py-3 text-[0.9rem] font-bold text-white no-underline"
               >
                 Open the feed →
@@ -344,7 +348,7 @@ export default async function BlogPostPage({ params }: Props) {
               </div>
               <div className="flex flex-col gap-4">
                 {related.map((r) => (
-                  <Link key={r.slug} href={`/blog/${r.slug}`} className="no-underline">
+                  <Link key={r.slug} href={`/${lang}/blog/${r.slug}`} className="no-underline">
                     <div className="rounded-[10px] border border-border bg-surface p-3 transition-colors duration-150">
                       <span
                         className="mb-2 inline-block rounded-full px-[7px] py-[2px] text-[0.65rem] font-bold tracking-[0.04em] uppercase"

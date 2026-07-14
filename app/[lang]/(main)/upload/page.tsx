@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { UploadPickerPage } from "@/features/create/components/UploadPickerPage";
 
 export const metadata: Metadata = {
-  title: "Create — Shopi",
+  title: "Create",
 };
 
 export default async function UploadPage({

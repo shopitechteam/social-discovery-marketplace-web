@@ -16,9 +16,9 @@ export function FeedHeader({ activeTab, onTabChange }: Props) {
   ];
 
   return (
-    <header className="sticky top-0 z-30 bg-app/80 backdrop-blur-md border-b border-default">
+    <header className="sticky top-0 py-4 z-30 bg-app/80 backdrop-blur-md border-b border-default">
       {/* Tabs */}
-      <div className="flex gap-0 px-4 -mb-px">
+      <div className="flex gap-0 px-4 -mb-4">
         {tabs.map((tab) => (
           <button
             key={tab.id}

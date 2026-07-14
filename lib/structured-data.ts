@@ -5,9 +5,8 @@ import { siteConfig } from "@/config/site";
  *
  * These power rich results in Google and answer/generative engines (AEO/GEO):
  * - Organization: who Shopi is (knowledge panel, brand entity).
- * - WebSite + SearchAction: enables the sitelinks search box and tells engines
- *   how to search the site.
- * - FAQPage: surfaces Q&A directly in search and AI answers.
+ * - WebSite + SearchAction: describes Shopi's own search entry point.
+ * - FAQPage: makes visible Q&A machine-readable for search and answer engines.
  */
 
 const { url, name } = siteConfig;
@@ -45,7 +44,7 @@ export const websiteSchema = {
     "@type": "SearchAction",
     target: {
       "@type": "EntryPoint",
-      urlTemplate: `${url}/search?q={search_term_string}`,
+      urlTemplate: `${url}/en/search?q={search_term_string}`,
     },
     "query-input": "required name=search_term_string",
   },
@@ -62,7 +61,7 @@ export const marketplaceSchema = {
   name,
   url,
   applicationCategory: "ShoppingApplication",
-  operatingSystem: "Web, iOS, Android",
+  operatingSystem: "Any",
   description: siteConfig.description,
   offers: {
     "@type": "Offer",
@@ -102,7 +101,9 @@ export function breadcrumbSchema(items: { name: string; url: string }[]) {
  * A single marketplace listing as a schema.org Product with an Offer. This is
  * what powers rich product results in Google and lets answer/generative engines
  * (AEO/GEO) understand the item — what it is, its price, where it's sold, and by
- * whom. `price` of 0 is treated as "contact for price" (no Offer price emitted).
+ * whom. Listings without a real numeric price omit `Offer` rather than claiming
+ * the item is free; accurate partial data is preferable to invented rich-result
+ * fields.
  */
 export function productSchema(input: {
   id: string;
@@ -120,38 +121,36 @@ export function productSchema(input: {
 }) {
   const hasPrice = typeof input.price === "number" && input.price > 0;
 
-  const offer: Record<string, unknown> = {
-    "@type": "Offer",
-    url: input.url,
-    priceCurrency: input.currency || "KES",
-    availability: "https://schema.org/InStock",
-    itemCondition: "https://schema.org/UsedCondition",
-    ...(hasPrice
-      ? { price: String(input.price) }
-      : { price: "0", description: "Contact seller for price" }),
-    ...(input.sellerName
-      ? {
-          seller: { "@type": "Person", name: input.sellerName },
-        }
-      : {}),
-    ...(input.locationName
-      ? {
-          areaServed: { "@type": "Place", name: input.locationName },
-        }
-      : {}),
-  };
+  const offer: Record<string, unknown> | null = hasPrice
+    ? {
+        "@type": "Offer",
+        url: input.url,
+        priceCurrency: input.currency || "KES",
+        price: String(input.price),
+        availability: "https://schema.org/InStock",
+        ...(input.sellerName
+          ? {
+              seller: { "@type": "Person", name: input.sellerName },
+            }
+          : {}),
+        ...(input.locationName
+          ? {
+              areaServed: { "@type": "Place", name: input.locationName },
+            }
+          : {}),
+      }
+    : null;
 
   return {
     "@context": "https://schema.org",
     "@type": "Product",
     "@id": `${input.url}#product`,
     name: input.title,
+    sku: input.id,
     ...(input.description ? { description: input.description } : {}),
     ...(input.images.length ? { image: input.images } : {}),
     ...(input.category ? { category: input.category } : {}),
-    ...(input.createdAt ? { releaseDate: input.createdAt } : {}),
-    brand: { "@type": "Brand", name },
-    offers: offer,
+    ...(offer ? { offers: offer } : {}),
     isRelatedTo: { "@id": `${url}/#app` },
   };
 }

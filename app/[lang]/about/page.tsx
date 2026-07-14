@@ -8,6 +8,7 @@ import {
   breadcrumbSchema,
   jsonLd,
 } from "@/lib/structured-data";
+import { publicPageMetadata } from "@/lib/metadata";
 
 export async function generateMetadata({
   params,
@@ -15,22 +16,10 @@ export async function generateMetadata({
   params: Promise<{ lang: string }>;
 }): Promise<Metadata> {
   const { lang } = await params;
-  const canonical = `${siteConfig.url}/${lang}/about`;
   const title = "About Shopi";
   const description =
     "Shopi is Kenya's social discovery marketplace, built in Nairobi to connect local buyers and sellers directly — no commission, no middleman.";
-  return {
-    title,
-    description,
-    alternates: { canonical },
-    openGraph: {
-      type: "website",
-      url: canonical,
-      title: `${title} — ${siteConfig.name}`,
-      description,
-      images: [{ url: siteConfig.ogImage, width: 1200, height: 630, alt: title }],
-    },
-  };
+  return publicPageMetadata({ lang, path: "/about", title, description });
 }
 
 type Props = { params: Promise<{ lang: string }> };

@@ -3,12 +3,9 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Divider } from "@/features/auth/components/AuthIcons";
 import { SocialButtons } from "@/features/auth/components/SocialButtons";
-import {
-  AuthDesktopShell,
-  CardStack,
-} from "@/features/auth/components/AuthDesktopShell";
+import { AuthDesktopShell } from "@/features/auth/components/AuthDesktopShell";
 
-export const metadata = { title: "Welcome to Shopi" };
+export const metadata = { title: "Welcome" };
 
 export default async function WelcomePage({
   params,

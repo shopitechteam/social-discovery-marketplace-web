@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { siteConfig } from "@/config/site";
 import { locales, isValidLocale } from "@/i18n/config";
 import { DiscoverPage } from "@/features/discover/components/DiscoverPage";
+import { publicPageMetadata } from "@/lib/metadata";
 
 type Props = { params: Promise<{ lang: string }> };
 
@@ -12,10 +13,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { lang } = await params;
   const safeLang = isValidLocale(lang) ? lang : "en";
   const path = siteConfig.routes.explore.path;
-
-  return {
+  const base = publicPageMetadata({
+    lang: safeLang,
+    path,
     title: siteConfig.routes.explore.title,
     description: siteConfig.routes.explore.description,
+  });
+
+  return {
+    ...base,
     alternates: {
       canonical: `${siteConfig.url}/${safeLang}${path}`,
       languages: {

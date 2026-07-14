@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { TikTokImportPage } from "@/features/create/components/TikTokImportPage";
 
 export const metadata: Metadata = {
-  title: "TikTok Import — Shopi",
+  title: "TikTok Import",
   description: "Import your TikTok videos to Shopi",
 };
 
