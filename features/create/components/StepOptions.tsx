@@ -64,6 +64,7 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
     currency,
     title,
     isFree,
+    negotiable,
     mediaItems,
     contentType,
     tiktokEmbed,
@@ -166,7 +167,7 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
         variables: {
           id: draftId,
           input: {
-            price: { amount: parsedPrice, currency, negotiable: false },
+            price: { amount: parsedPrice, currency, negotiable },
             visibilityMode: toVisibilityMode(visibilityMode),
             allowDownload,
             hdEnabled,
@@ -242,7 +243,7 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
           variables: {
             id: draftId,
             input: {
-              price: { amount: price ?? 0, currency, negotiable: false },
+              price: { amount: price ?? 0, currency, negotiable },
               visibilityMode: toVisibilityMode(visibilityMode),
               allowDownload,
               hdEnabled,
@@ -456,7 +457,9 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
           <SummaryRow label="Title" value={title || "—"} />
           <SummaryRow
             label="Price"
-            value={isFree || !price ? "Free" : `${currency} ${price}`}
+            value={`${isFree || !price ? "Custom" : `${currency} ${price}`}${
+              negotiable ? " · Negotiable" : ""
+            }`}
           />
           <SummaryRow
             label="Files"

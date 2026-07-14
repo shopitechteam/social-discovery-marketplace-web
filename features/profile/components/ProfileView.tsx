@@ -9,8 +9,10 @@ import {
   LayoutGrid,
   LogOut,
   Palette,
+  PenLine,
   Plus,
   Settings,
+  UserRound,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -35,6 +37,7 @@ import { TiktokImportPanel } from "./TiktokImportPanel";
 import { LogoutButton } from "@/features/auth/components/LogoutButton";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { cn } from "@/lib/utils";
+import type { ProfileUserFieldsFragment } from "@/types/__generated__/graphql";
 
 type Tab = "posts" | "drafts" | "saved" | "analytics" | "tiktok" | "settings";
 
@@ -386,15 +389,22 @@ export function ProfileView({ lang }: Props) {
 
       {tab === "tiktok" && <TiktokImportPanel lang={lang} />}
 
-      {tab === "settings" && <SettingsPanel lang={lang} />}
+      {tab === "settings" && <SettingsPanel lang={lang} user={user} />}
     </div>
   );
 }
 
-function SettingsPanel({ lang }: { lang: string }) {
+function SettingsPanel({
+  lang,
+  user,
+}: {
+  lang: string;
+  user: ProfileUserFieldsFragment;
+}) {
   return (
-    <section className="px-4 py-5 w-full  sm:px-6 lg:px-8">
-      <div className="mx-auto">
+    <section className="w-full px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
+      {/* ── Mobile / tablet — single stacked list, unchanged ── */}
+      <div className="mx-auto lg:hidden">
         <div className="mb-4">
           <h2
             className="font-bold leading-tight"
@@ -433,25 +443,98 @@ function SettingsPanel({ lang }: { lang: string }) {
             <ThemeToggle />
           </SettingsRow>
 
-          {/* Desktop signs out from the SideNav user card; keep this row for
-              mobile only. */}
-          <div className="md:hidden">
-            <div
-              style={{ height: 1, backgroundColor: "rgb(var(--color-border))" }}
-            />
+          {/* Desktop signs out from the SideNav user card; this row only
+              renders in the mobile/tablet block above (lg:hidden). */}
+          <div
+            style={{ height: 1, backgroundColor: "rgb(var(--color-border))" }}
+          />
 
-            <SettingsRow
-              icon={LogOut}
-              label="Sign out"
-              description="End this session"
-              tone="--color-error"
-            >
-              <LogoutButton lang={lang} />
-            </SettingsRow>
+          <SettingsRow
+            icon={LogOut}
+            label="Sign out"
+            description="End this session"
+            tone="--color-error"
+          >
+            <LogoutButton lang={lang} />
+          </SettingsRow>
+        </div>
+      </div>
+
+      {/* ── Desktop — grouped cards with an account summary rail ── */}
+      <div className="hidden lg:block">
+        <div className="grid grid-cols-[minmax(0,320px)_minmax(0,1fr)] gap-6">
+          {/* Account summary card */}
+
+          {/* Settings groups */}
+          <div className="flex flex-col gap-5">
+            <SettingsGroup label="Appearance">
+              <SettingsRow
+                icon={Palette}
+                label="Theme"
+                description="Switch between light and dark mode"
+                tone="--brand-accent"
+              >
+                <ThemeToggle />
+              </SettingsRow>
+            </SettingsGroup>
+
+            <SettingsGroup label="Account">
+              <SettingsRow
+                icon={UserRound}
+                label="Profile details"
+                description="Name, bio, avatar, and links"
+                tone="--brand-primary"
+              >
+                <Link
+                  href={`/${lang}/profile/edit`}
+                  className="inline-flex h-9 items-center justify-center rounded-lg border px-3.5 font-semibold transition-colors hover:bg-surface"
+                  style={{
+                    fontSize: "var(--text-sm)",
+                    borderColor: "rgb(var(--color-border))",
+                    color: "rgb(var(--color-text))",
+                  }}
+                >
+                  Edit
+                </Link>
+              </SettingsRow>
+            </SettingsGroup>
           </div>
         </div>
       </div>
     </section>
+  );
+}
+
+function SettingsGroup({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div>
+      <p
+        className="mb-2.5 px-1 font-semibold tracking-wide uppercase"
+        style={{
+          fontSize: "var(--text-xs)",
+          color: "rgb(var(--color-text-muted))",
+          letterSpacing: "0.06em",
+        }}
+      >
+        {label}
+      </p>
+      <div
+        className="overflow-hidden rounded-2xl border"
+        style={{
+          backgroundColor: "rgb(var(--color-bg-elevated))",
+          borderColor: "rgb(var(--color-border))",
+          boxShadow: "var(--shadow-sm)",
+        }}
+      >
+        {children}
+      </div>
+    </div>
   );
 }
 

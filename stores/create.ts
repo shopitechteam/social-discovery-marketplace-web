@@ -66,6 +66,7 @@ export type CreateFlowState = {
   price: number | null;
   currency: string;
   isFree: boolean;
+  negotiable: boolean;
   specs: Spec[];
   /** True while AI auto-fill is running after media processes. */
   isExtracting: boolean;
@@ -106,6 +107,7 @@ type CreateFlowActions = {
   setContentType: (type: "image" | "video" | null) => void;
   setTiktokEmbed: (embed: TiktokEmbed | null) => void;
   setPrice: (price: number | null, isFree: boolean) => void;
+  setNegotiable: (negotiable: boolean) => void;
   setSpecs: (specs: Spec[]) => void;
   setIsExtracting: (v: boolean) => void;
   setHasExtracted: (v: boolean) => void;
@@ -137,6 +139,7 @@ const DEFAULT_STATE: CreateFlowState = {
   price: null,
   currency: "KES",
   isFree: true,
+  negotiable: false,
   specs: [],
   isExtracting: false,
   hasExtracted: false,
@@ -197,6 +200,7 @@ export const useCreateStore = create<CreateFlowState & CreateFlowActions>()(
       setContentType: (contentType) => set({ contentType }),
       setTiktokEmbed: (tiktokEmbed) => set({ tiktokEmbed }),
       setPrice: (price, isFree) => set({ price, isFree }),
+      setNegotiable: (negotiable) => set({ negotiable }),
       setSpecs: (specs) => set({ specs }),
       setIsExtracting: (isExtracting) => set({ isExtracting }),
       setHasExtracted: (hasExtracted) => set({ hasExtracted }),
@@ -236,6 +240,7 @@ export const useCreateStore = create<CreateFlowState & CreateFlowActions>()(
         price: s.price,
         currency: s.currency,
         isFree: s.isFree,
+        negotiable: s.negotiable,
         specs: s.specs,
         // NOTE: hasExtracted/isExtracting are intentionally NOT persisted.
         // Persisting hasExtracted made the AI auto-fill run only once per

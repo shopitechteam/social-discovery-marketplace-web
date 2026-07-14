@@ -59,7 +59,8 @@ function EmbeddedChatPanelBody({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contentId]);
 
-  const resolving = !inbox.selectedConversationId;
+  const resolving =
+    !inbox.selectedConversationId || !inbox.selectedConversation;
 
   // Keep ChatDetail mounted across resolution so the panel doesn't flip between
   // a spinner and the thread (which caused a flicker). `pending` renders the

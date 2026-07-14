@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { Loader2 } from "lucide-react";
 import { useInbox } from "../hooks/useInbox";
 import { usePushNotifications } from "../hooks/usePushNotifications";
 import { ChatDetail } from "./ChatDetail";
@@ -41,21 +40,11 @@ export function ChatDetailScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId, mode]);
 
-  // While ensuring a conversation from a content id, the conversation isn't
-  // selected yet — show a chat-style loading screen (never the inbox list).
+  // Keep the chat shell pending until the full conversation snapshot arrives;
+  // resolving the id alone must not flash a half-populated header.
   const resolvingFromContent =
-    mode === "content" && !inbox.selectedConversationId;
-
-  if (resolvingFromContent) {
-    return (
-      <div className="fixed inset-0 flex flex-col items-center justify-center gap-3 bg-app">
-        <Loader2 size={28} className="animate-spin text-primary opacity-70" />
-        <p className="text-muted" style={{ fontSize: "var(--text-sm)" }}>
-          Opening chat…
-        </p>
-      </div>
-    );
-  }
+    mode === "content" &&
+    (!inbox.selectedConversationId || !inbox.selectedConversation);
 
   return (
     <div className="fixed inset-0 flex flex-col bg-app">
@@ -63,6 +52,7 @@ export function ChatDetailScreen({
         lang={lang}
         selectedConversationId={inbox.selectedConversationId}
         selectedConversation={inbox.selectedConversation}
+        pending={resolvingFromContent}
         messages={inbox.messages}
         currentUserId={inbox.currentUser?.id}
         typingUserId={inbox.typingUserId}

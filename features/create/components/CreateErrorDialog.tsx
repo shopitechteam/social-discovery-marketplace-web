@@ -61,7 +61,13 @@ export function CreateErrorDialog({
         if (!open) onClose();
       }}
     >
-      <DialogContent className="w-[min(92vw,420px)] rounded-3xl border border-default bg-app p-6">
+      <DialogContent
+        // Must win over full-screen hosts that sit above the default Dialog
+        // z-50 (e.g. the mobile TikTok picker view at z-60) — this dialog is
+        // a blocking confirmation and should always render on top.
+        className="z-90 w-[min(92vw,420px)] rounded-3xl border border-default bg-app p-6"
+        overlayClassName="z-90"
+      >
         <DialogHeader className="items-center text-center sm:text-center">
           <span
             className="mb-1 flex h-12 w-12 items-center justify-center rounded-full"

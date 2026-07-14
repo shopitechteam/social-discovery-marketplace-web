@@ -61,7 +61,10 @@ export function LandingFooter({ dict }: { dict?: Dictionary }) {
               { label: "Privacy Policy", href: `/${lang}/privacy` },
               { label: "Terms of Service", href: `/${lang}/terms` },
               { label: "Cookie Policy", href: `/${lang}/cookies` },
-              { label: "Contact", href: "mailto:hello@shopi.co.ke" },
+              { label: "Community Guidelines", href: `/${lang}/community-guidelines` },
+              { label: "Prohibited Items", href: `/${lang}/prohibited-items` },
+              { label: "Safety Centre", href: `/${lang}/safety-centre` },
+              { label: "Contact", href: `/${lang}/contact` },
             ],
           },
         ].map(({ heading, links }) => (

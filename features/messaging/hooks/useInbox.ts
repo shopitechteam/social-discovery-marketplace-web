@@ -325,20 +325,19 @@ export function useInbox(lang: string) {
     ensureKeyRef.current = contentIdParam;
     ensureConversation({ variables: { input: { contentId: contentIdParam } } })
       .then((result) => {
-        const conversation = (
-          result.data as { ensureDirectConversation?: Conversation } | undefined
-        )?.ensureDirectConversation;
-        if (!conversation) return;
+        const conversationId = (
+          result.data as
+            | { ensureDirectConversationId?: string }
+            | undefined
+        )?.ensureDirectConversationId;
+        if (!conversationId) return;
 
-        setSelectedConversationId(conversation.id);
-        setActiveConversation(conversation);
-        setConversations((prev) => {
-          const withoutCurrent = prev.filter(
-            (item) => item.id !== conversation.id,
-          );
-          return [conversation, ...withoutCurrent];
-        });
-        router.replace(`/${lang}/notifications/${conversation.id}`);
+        setSelectedConversationId(conversationId);
+        // The ensure mutation deliberately returns only the stable identity.
+        // DIRECT_CONVERSATION hydrates the header, listing and safety state as
+        // soon as this id is selected; don't publish a half-shaped chat into
+        // local/Apollo state while that query is in flight.
+        router.replace(`/${lang}/notifications/${conversationId}`);
         void refetchConversations();
       })
       .catch((error) => {
@@ -616,20 +615,24 @@ export function useInbox(lang: string) {
         const result = await ensureConversation({
           variables: { input: { contentId } },
         });
-        const conversation = (
-          result.data as { ensureDirectConversation?: Conversation } | undefined
-        )?.ensureDirectConversation;
-        if (!conversation) return;
+        const conversationId = (
+          result.data as
+            | { ensureDirectConversationId?: string }
+            | undefined
+        )?.ensureDirectConversationId;
+        if (!conversationId) return;
 
-        setSelectedConversationId(conversation.id);
-        setActiveConversation(conversation);
+        setSelectedConversationId(conversationId);
+        // Selecting the id immediately starts the authoritative conversation
+        // and message queries. Keep the pending shell visible until that full
+        // snapshot arrives instead of rendering a partial conversation.
         // Replace the URL without a navigation so we stay on the same chat
         // screen. Skipped when embedded so the post route stays in the URL.
         if (!options?.skipUrlSync && typeof window !== "undefined") {
           window.history.replaceState(
             window.history.state,
             "",
-            `/${lang}/notifications/${conversation.id}`,
+            `/${lang}/notifications/${conversationId}`,
           );
         }
         void refetchConversations();

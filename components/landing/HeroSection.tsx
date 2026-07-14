@@ -27,7 +27,10 @@ export function HeroSection({
             {t.subheadline}
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3 md:mt-10">
-            <Pill href={`/${lang}/feed`} className="px-7 py-3.5">
+            <Pill
+              href={`/${lang}/feed`}
+              className="bg-primary px-7 py-3.5 text-white hover:opacity-90"
+            >
               {t.ctaPrimary}
             </Pill>
             <Pill
