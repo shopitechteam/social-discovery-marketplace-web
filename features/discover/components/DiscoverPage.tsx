@@ -556,8 +556,18 @@ function locationSheetDepth(step: LocationSheetStep | null) {
 }
 
 export function DiscoverPage({ lang }: { lang: string }) {
-  const [searchDraft, setSearchDraft] = useState("");
-  const [query, setQuery] = useState("");
+  const searchParams = useSearchParams();
+  // Seed the search box from a ?q= deep link (e.g. /search?q=iphone, and the
+  // /explore?q= URL advertised in our WebSite SearchAction structured data).
+  // useState reads its argument only on the first render, so this is a plain
+  // initial value — no effect, no cascading render — after which the input owns
+  // the term and the mirror effect keeps the URL in sync.
+  const [searchDraft, setSearchDraft] = useState(
+    () => searchParams.get("q")?.trim() ?? "",
+  );
+  const [query, setQuery] = useState(
+    () => searchParams.get("q")?.trim() ?? "",
+  );
   const [selectedCategory, setSelectedCategory] =
     useState<CategoryFacet | null>(null);
   const [selectedCounty, setSelectedCounty] = useState<LocationFacet | null>(
@@ -962,7 +972,6 @@ export function DiscoverPage({ lang }: { lang: string }) {
   // Deep-link support: /explore?category=<slug> (e.g. from the SideNav Browse
   // list) preselects that category. Applied once per param value — the ref
   // stops it re-asserting after the user clears or switches categories in-page.
-  const searchParams = useSearchParams();
   const categoryParam = searchParams.get("category");
   const appliedCategoryParam = useRef<string | null>(null);
   useEffect(() => {
@@ -985,6 +994,23 @@ export function DiscoverPage({ lang }: { lang: string }) {
     setSearchDraft("");
     setQuery("");
   }, [categoryParam, categories]);
+
+  // Mirror the committed (debounced) search term back into the URL so the deep
+  // link stays truthful and shareable — replace, not push, so typing doesn't
+  // spam history. Runs alongside the category mirror below.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const next = query || null;
+    if ((params.get("q") ?? null) === next) return;
+    if (next) params.set("q", next);
+    else params.delete("q");
+    const qs = params.toString();
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${window.location.pathname}${qs ? `?${qs}` : ""}`,
+    );
+  }, [query]);
 
   // Mirror in-page category changes back into the URL (replace, not push) so
   // the deep link stays truthful — clearing or switching in-page must not

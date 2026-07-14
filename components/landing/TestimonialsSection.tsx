@@ -41,7 +41,8 @@ const useCases: {
     ),
     who: "Electronics & phones",
     accentBar: "bg-secondary",
-    accentText: "text-secondary",
+    // secondary-strong (dark amber): base #ff9f40 is only 2.04:1 on white.
+    accentText: "text-secondary-strong",
   },
   {
     node: (

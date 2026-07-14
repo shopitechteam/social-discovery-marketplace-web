@@ -1,0 +1,55 @@
+import { Suspense } from "react";
+import type { Metadata } from "next";
+import { siteConfig } from "@/config/site";
+import { locales, isValidLocale } from "@/i18n/config";
+import { DiscoverPage } from "@/features/discover/components/DiscoverPage";
+
+type Props = {
+  params: Promise<{ lang: string }>;
+  searchParams: Promise<{ q?: string }>;
+};
+
+// Self-referencing canonical per locale + hreflang alternates. The route reuses
+// the Discover UI, which reads ?q= for the search term (see DiscoverPage).
+export async function generateMetadata({
+  params,
+  searchParams,
+}: Props): Promise<Metadata> {
+  const { lang } = await params;
+  const { q } = await searchParams;
+  const safeLang = isValidLocale(lang) ? lang : "en";
+  const path = siteConfig.routes.search.path;
+  const term = q?.trim();
+
+  return {
+    title: term
+      ? `${term} — ${siteConfig.routes.search.title}`
+      : siteConfig.routes.search.title,
+    description: term
+      ? `Search results for "${term}" on ${siteConfig.name}. ${siteConfig.routes.search.description}`
+      : siteConfig.routes.search.description,
+    alternates: {
+      canonical: `${siteConfig.url}/${safeLang}${path}`,
+      languages: {
+        ...Object.fromEntries(
+          locales.map((l) => [l, `${siteConfig.url}/${l}${path}`]),
+        ),
+        "x-default": `${siteConfig.url}/en${path}`,
+      },
+    },
+    // A query-scoped results page isn't a canonical browse surface — keep the
+    // parameterless /search indexable, but don't index every ?q= permutation.
+    robots: term ? { index: false, follow: true } : undefined,
+  };
+}
+
+export default async function SearchPage({ params }: Props) {
+  const { lang } = await params;
+  // Suspense boundary: DiscoverPage reads useSearchParams() (?q=, ?category=),
+  // which requires one during prerender.
+  return (
+    <Suspense fallback={null}>
+      <DiscoverPage lang={lang} />
+    </Suspense>
+  );
+}
