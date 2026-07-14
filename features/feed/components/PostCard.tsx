@@ -257,8 +257,8 @@ function VideoMedia({
   const posterReady = !thumbnail || thumbLoaded;
   const { videoRef, buffering, playing } = useHlsVideo(
     hlsUrl,
-    shouldPlay && posterReady,
-    ended || userPaused,
+    active && posterReady,
+    ended || userPaused || !pageFocused,
     onMutedChange,
   );
 

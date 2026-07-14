@@ -301,8 +301,8 @@ function ContentVideo({
   );
   const { videoRef, buffering } = useHlsVideo(
     hlsUrl,
-    shouldPlay,
-    videoEnded,
+    true,
+    videoEnded || manualPaused || !pageFocused,
     onMutedChange,
   );
 
