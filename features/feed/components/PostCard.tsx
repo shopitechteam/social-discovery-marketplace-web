@@ -17,6 +17,7 @@ import {
   Flag,
   Share2,
   MoreHorizontal,
+  Maximize2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -202,9 +203,15 @@ function Avatar({
 function VideoMedia({
   post,
   priority,
+  fullscreenOpen,
+  resumeTime,
+  onFullscreen,
 }: {
   post: ContentCardFieldsFragment;
   priority?: boolean;
+  fullscreenOpen: boolean;
+  resumeTime: number;
+  onFullscreen: (time: number) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(false);
@@ -242,7 +249,7 @@ function VideoMedia({
   // hls.js — fast ABR + buffering state
   // Pause when the video ended OR the user tapped to pause, so useHlsVideo
   // doesn't resume on its own.
-  const shouldPlay = active && pageFocused;
+  const shouldPlay = active && pageFocused && !fullscreenOpen;
   // When the browser blocks unmuted autoplay, useHlsVideo forces the element
   // muted to keep it playing. Reconcile the store so the speaker icon reflects
   // the video's REAL muted state — otherwise it shows "unmuted" over a silent
@@ -258,7 +265,7 @@ function VideoMedia({
   const { videoRef, buffering, playing } = useHlsVideo(
     hlsUrl,
     active && posterReady,
-    ended || userPaused || !pageFocused,
+    ended || userPaused || !pageFocused || fullscreenOpen,
     onMutedChange,
   );
 
@@ -357,6 +364,12 @@ function VideoMedia({
     if (!video) return;
     video.muted = muted;
   }, [muted, videoRef]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || fullscreenOpen || resumeTime <= 0) return;
+    video.currentTime = resumeTime;
+  }, [fullscreenOpen, resumeTime, videoRef]);
 
   // Reset ended state and check for skip when video scrolls away
   useEffect(() => {
@@ -540,6 +553,19 @@ function VideoMedia({
           active={shouldPlay}
           className="opacity-90"
         />
+      )}
+      {hlsUrl && (
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onFullscreen(videoRef.current?.currentTime ?? 0);
+          }}
+          aria-label="Open video fullscreen"
+          className="absolute left-3 top-3 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white/90 backdrop-blur-sm transition-transform active:scale-95"
+        >
+          <Maximize2 className="h-4.5 w-4.5" strokeWidth={2.2} />
+        </button>
       )}
       {/* Mute / unmute button — absolute, stops propagation so it doesn't navigate */}
       {active && (
@@ -999,6 +1025,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [showCarousel, setShowCarousel] = useState(false);
+  const [fullscreenVideoTime, setFullscreenVideoTime] = useState(0);
   // Paints the chat shell instantly when "Message" is tapped, covering the
   // route-transition gap so opening a chat never flashes a blank page. The
   // overlay unmounts with the PostCard once the conversation route takes over.
@@ -1348,7 +1375,16 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
         {post.source === "TIKTOK_EMBED" && !post.media?.length ? (
           <TikTokEmbedMedia post={post} />
         ) : post.type === "VIDEO" ? (
-          <VideoMedia post={post} priority={priority} />
+          <VideoMedia
+            post={post}
+            priority={priority}
+            fullscreenOpen={showCarousel}
+            resumeTime={fullscreenVideoTime}
+            onFullscreen={(time) => {
+              setFullscreenVideoTime(time);
+              setShowCarousel(true);
+            }}
+          />
         ) : (
           <ImageMedia
             post={post}
@@ -1518,9 +1554,9 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
         />
       )}
 
-      {/* ── Image dialog (replaces PDP navigation) — single image opens as a
-          full-screen lightbox; multiple images as a swipeable carousel. ── */}
-      {showCarousel && mediaCount >= 1 && post.type !== "VIDEO" && (
+      {/* ── Full-screen media viewer — images swipe as a carousel and Mux
+          videos retain the same dialog/back-button behaviour. ── */}
+      {showCarousel && mediaCount >= 1 && (
         <MediaCarouselDialog
           open
           onOpenChange={setShowCarousel}
@@ -1528,6 +1564,8 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
             (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
           )}
           title={post.title}
+          videoStartTime={fullscreenVideoTime}
+          onVideoTimeChange={setFullscreenVideoTime}
         />
       )}
 

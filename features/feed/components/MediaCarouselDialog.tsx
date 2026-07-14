@@ -1,17 +1,27 @@
 "use client";
 
 /**
- * MediaCarouselDialog — full-screen image carousel shown when a multi-image
- * PostCard is tapped (replaces navigating to the PDP). Swipe / arrow through
- * images, tap the scrim or the ✕ to close.
+ * MediaCarouselDialog — full-screen viewer for post images and Mux videos.
+ * Swipe / arrow through media, tap the scrim or the ✕ to close.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Play,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { SHIMMER_PORTRAIT } from "@/lib/shimmer";
+import { useHlsVideo } from "@/lib/useHlsVideo";
+import { useFeedPreferencesStore } from "@/stores/feedPreferences";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
+import { BufferSpinner } from "./BufferSpinner";
+import { VideoProgressBar } from "./VideoProgressBar";
 
 type MediaItem = NonNullable<ContentCardFieldsFragment["media"]>[number];
 
@@ -31,15 +41,27 @@ export function MediaCarouselDialog({
   media,
   title,
   startIndex = 0,
+  videoStartTime = 0,
+  onVideoTimeChange,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   media: MediaItem[];
   title: string;
   startIndex?: number;
+  videoStartTime?: number;
+  onVideoTimeChange?: (time: number) => void;
 }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [idx, setIdx] = useState(startIndex);
+
+  const onOpenChangeRef = useRef(onOpenChange);
+
+  useEffect(() => {
+    onOpenChangeRef.current = onOpenChange;
+  }, [onOpenChange]);
+
+  const closeRef = useRef<() => void>(() => onOpenChangeRef.current(false));
 
   // Jump to the starting image once the dialog (and its track) is mounted.
   // Deferred so we don't setState synchronously inside the effect body.
@@ -58,20 +80,48 @@ export function MediaCarouselDialog({
   }, [open, startIndex]);
 
   // Native back-button / browser-back closes the dialog instead of leaving the
-  // feed. While open we push a throwaway history entry; pressing back pops it
-  // and we close. If the dialog is closed by other means (✕ / scrim) we undo
-  // the pushed entry so the user's real history isn't polluted.
+  // feed. Setup is deferred so React Strict Mode's throwaway effect pass cannot
+  // push and immediately pop history, which used to close the dialog on open.
   useEffect(() => {
     if (!open) return;
-    window.history.pushState({ carousel: true }, "");
-    const onPop = () => onOpenChange(false);
-    window.addEventListener("popstate", onPop);
-    return () => {
-      window.removeEventListener("popstate", onPop);
-      // If we're unmounting/closing without a popstate, remove our entry.
-      if (window.history.state?.carousel) window.history.back();
+
+    let pushed = false;
+    let closedByPop = false;
+
+    const onPop = () => {
+      closedByPop = true;
+      onOpenChangeRef.current(false);
     };
-  }, [open, onOpenChange]);
+
+    const t = setTimeout(() => {
+      window.history.pushState(
+        { ...window.history.state, mediaCarousel: true },
+        "",
+      );
+      pushed = true;
+      window.addEventListener("popstate", onPop);
+    }, 0);
+
+    closeRef.current = () => {
+      if (pushed && !closedByPop) {
+        closedByPop = true;
+        window.history.back();
+      } else {
+        onOpenChangeRef.current(false);
+      }
+    };
+
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener("popstate", onPop);
+      if (pushed && !closedByPop) window.history.back();
+    };
+  }, [open]);
+
+  const handleOpenChange = useCallback((nextOpen: boolean) => {
+    if (nextOpen) onOpenChangeRef.current(true);
+    else closeRef.current();
+  }, []);
 
   function go(next: number) {
     const el = trackRef.current;
@@ -89,9 +139,10 @@ export function MediaCarouselDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
-        className="h-svh w-screen max-w-none translate-x-[-50%] translate-y-[-50%] gap-0 border-0 bg-black p-0 sm:rounded-none [&>button:last-of-type]:hidden"
+        overlayClassName="z-[100]"
+        className="z-[100] h-svh w-screen max-w-none translate-x-[-50%] translate-y-[-50%] gap-0 border-0 bg-black p-0 sm:rounded-none [&>button:last-of-type]:hidden"
       >
         <DialogTitle className="sr-only">{title}</DialogTitle>
 
@@ -99,7 +150,7 @@ export function MediaCarouselDialog({
             button (Radix's built-in close), so this one stays visible. */}
         <button
           type="button"
-          onClick={() => onOpenChange(false)}
+          onClick={() => closeRef.current()}
           aria-label="Close"
           className="absolute right-4 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm active:scale-95"
           style={{ top: "max(env(safe-area-inset-top, 0px), 16px)" }}
@@ -126,12 +177,21 @@ export function MediaCarouselDialog({
         >
           {media.map((item, i) => {
             const src = srcOf(item);
+            const playbackId = item.muxMeta?.playbackId;
             return (
               <div
                 key={i}
                 className="relative h-svh w-screen shrink-0 snap-center bg-black"
               >
-                {src && (
+                {playbackId ? (
+                  <FullscreenVideo
+                    playbackId={playbackId}
+                    poster={src}
+                    active={i === idx}
+                    startTime={videoStartTime}
+                    onTimeChange={onVideoTimeChange}
+                  />
+                ) : src ? (
                   <Image
                     src={src}
                     alt={`${title} ${i + 1}`}
@@ -142,7 +202,7 @@ export function MediaCarouselDialog({
                     placeholder="blur"
                     blurDataURL={SHIMMER_PORTRAIT}
                   />
-                )}
+                ) : null}
               </div>
             );
           })}
@@ -191,5 +251,138 @@ export function MediaCarouselDialog({
         )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+function FullscreenVideo({
+  playbackId,
+  poster,
+  active,
+  startTime,
+  onTimeChange,
+}: {
+  playbackId: string;
+  poster?: string | null;
+  active: boolean;
+  startTime: number;
+  onTimeChange?: (time: number) => void;
+}) {
+  const muted = useFeedPreferencesStore((s) => s.videoMuted);
+  const setMuted = useFeedPreferencesStore((s) => s.setVideoMuted);
+  const onMutedChange = useCallback(
+    (nextMuted: boolean) => setMuted(nextMuted),
+    [setMuted],
+  );
+  const { videoRef, buffering, playing } = useHlsVideo(
+    `https://stream.mux.com/${playbackId}.m3u8`,
+    active,
+    !active,
+    onMutedChange,
+  );
+  const onTimeChangeRef = useRef(onTimeChange);
+  const didSeekRef = useRef(false);
+  const latestTimeRef = useRef(startTime);
+
+  useEffect(() => {
+    onTimeChangeRef.current = onTimeChange;
+  }, [onTimeChange]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = muted;
+    if (!muted && active) video.play().catch(() => {});
+  }, [active, muted, videoRef]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || didSeekRef.current || startTime <= 0) return;
+    const seek = () => {
+      if (didSeekRef.current) return;
+      video.currentTime = Math.min(startTime, video.duration || startTime);
+      latestTimeRef.current = video.currentTime;
+      didSeekRef.current = true;
+    };
+    if (video.readyState >= 1) seek();
+    else video.addEventListener("loadedmetadata", seek, { once: true });
+    return () => video.removeEventListener("loadedmetadata", seek);
+  }, [startTime, videoRef]);
+
+  useEffect(
+    () => () => {
+      onTimeChangeRef.current?.(latestTimeRef.current);
+    },
+    [],
+  );
+
+  const togglePlayback = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.paused) video.play().catch(() => {});
+    else video.pause();
+  }, [videoRef]);
+
+  const toggleMuted = useCallback(() => {
+    const next = !muted;
+    const video = videoRef.current;
+    if (video) {
+      video.muted = next;
+      if (!next) video.play().catch(() => {});
+    }
+    setMuted(next);
+  }, [muted, setMuted, videoRef]);
+
+  return (
+    <div className="relative flex h-full w-full items-center justify-center">
+      <video
+        ref={videoRef}
+        muted={muted}
+        playsInline
+        poster={poster ?? undefined}
+        className="max-h-full max-w-full object-contain"
+        onClick={togglePlayback}
+        onTimeUpdate={(event) => {
+          latestTimeRef.current = event.currentTarget.currentTime;
+        }}
+      />
+
+      {buffering ? (
+        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
+          <BufferSpinner />
+        </div>
+      ) : !playing ? (
+        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
+          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm">
+            <Play className="ml-1 h-7 w-7" fill="currentColor" />
+          </span>
+        </div>
+      ) : null}
+
+      <button
+        type="button"
+        onClick={togglePlayback}
+        aria-label={playing ? "Pause video" : "Play video"}
+        className="absolute inset-0 z-10"
+      >
+        <span className="sr-only">{playing ? "Pause video" : "Play video"}</span>
+      </button>
+
+      <button
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          toggleMuted();
+        }}
+        aria-label={muted ? "Unmute video" : "Mute video"}
+        className="absolute left-4 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm"
+        style={{ top: "max(env(safe-area-inset-top, 0px), 16px)" }}
+      >
+        {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+      </button>
+
+      <div className="absolute inset-x-4 bottom-5 z-30">
+        <VideoProgressBar videoRef={videoRef} active={active} showTime />
+      </div>
+    </div>
   );
 }
