@@ -155,14 +155,47 @@ export function useHlsVideo(
           if (!destroyed) setBuffering(false);
         });
 
+        // A fatal error must NOT just destroy the player — that leaves the
+        // buffer spinner up forever (the `waiting` event already set it) and
+        // playback never recovers. On weaker networks (typically a physical
+        // phone on cellular, not a fast laptop) a manifest/fragment load can
+        // exhaust its retries and go fatal; hls.js can recover from those.
+        // Follow hls.js's recommended recovery: retry the network for network
+        // errors, swap the decode pipeline for media errors, and only give up
+        // after a couple of failed recovery attempts.
+        let recoverAttempts = 0;
         hls.on(Hls.Events.ERROR, (_e, data) => {
-          if (data.fatal && !destroyed) {
-            hls?.destroy();
+          if (!data.fatal || destroyed) return;
+          if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+            // Kick the loaders back off; also clear the spinner so a transient
+            // stall doesn't leave it stuck if the retry succeeds silently.
+            hls?.startLoad();
+            setBuffering(false);
+            return;
           }
+          if (data.type === Hls.ErrorTypes.MEDIA_ERROR && recoverAttempts < 2) {
+            recoverAttempts += 1;
+            hls?.recoverMediaError();
+            return;
+          }
+          // Unrecoverable — tear down and clear buffering so the spinner
+          // doesn't spin forever over a dead player.
+          hls?.destroy();
+          setBuffering(false);
         });
       } else if (v.canPlayType("application/vnd.apple.mpegurl")) {
-        // Safari native HLS
-        v.src = url;
+        // Safari native HLS (iOS/macOS). Unlike the hls.js path, the native
+        // player has no `capLevelToPlayerSize` — left alone it happily pulls a
+        // 1080p Mux rendition into a thumbnail-sized feed box, which buffers
+        // constantly on cellular. Mux lets us cap the master playlist via
+        // `?max_resolution`; 720p stays sharp in the small box at a fraction of
+        // the bytes. `preload=metadata` also stops iOS from eagerly buffering
+        // ahead before the card is the one actually being watched.
+        const nativeUrl = url.includes("?")
+          ? `${url}&max_resolution=720p`
+          : `${url}?max_resolution=720p`;
+        v.preload = "metadata";
+        v.src = nativeUrl;
         v.load();
         readyRef.current = true;
         if (activeRef.current && !pausedRef.current) {
