@@ -69,9 +69,11 @@ export function LandingFooter({ dict }: { dict?: Dictionary }) {
           },
         ].map(({ heading, links }) => (
           <div key={heading}>
-            <h4 className="mb-4 text-sm font-bold tracking-[0.02em] text-foreground">
+            {/* h3, not h4: the section above the footer ends at h2, so h3 keeps
+                the page heading outline sequential (WCAG / Lighthouse). */}
+            <h3 className="mb-4 text-sm font-bold tracking-[0.02em] text-foreground">
               {heading}
-            </h4>
+            </h3>
             <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
               {links.map(({ label, href }) => (
                 <li key={label}>

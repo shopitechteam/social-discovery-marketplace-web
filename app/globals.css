@@ -3,7 +3,8 @@
 
 :root {
   /* Brand — space-separated channels so `rgb(var(--x) / alpha)` works */
-  --brand-primary: 234 25 121;
+  /* #d81470 — darkened from #ea1979 to clear WCAG AA (white-on-primary 4.94:1). */
+  --brand-primary: 216 20 112;
   --brand-secondary: 255 159 64;
   --brand-accent: 99 91 255;
 
@@ -21,7 +22,8 @@
   --color-text: 15 15 20;
   --color-text-main: 9 10 10; /* #090A0A — primary text (text-main) */
   --color-text-muted: 100 100 115;
-  --color-text-placeholder: 160 160 175;
+  /* #737382 — darkened from #a0a0af to clear WCAG AA (4.66:1 on white). */
+  --color-text-placeholder: 115 115 130;
   --color-text-on-brand: 255 255 255;
 
   /* Subtle surface — incoming chat bubbles, muted fills (#F2F4F5) */
@@ -81,8 +83,14 @@
   /* Expose brand as Tailwind colors */
   --color-primary: rgb(var(--brand-primary));
   --color-primary-soft: rgb(var(--brand-primary) / 0.12);
+  /* AA-safe deep variants for small text on white / soft-tinted backgrounds,
+     where the base brand colors fall just short of 4.5:1.
+     primary-strong #be0f60 → 5.05:1 on primary-soft; secondary-strong #b45f0a
+     → 4.58:1 on white. Use these for text, not fills. */
+  --color-primary-strong: #be0f60;
   --color-secondary: rgb(var(--brand-secondary));
   --color-secondary-soft: rgb(var(--brand-secondary) / 0.12);
+  --color-secondary-strong: #b45f0a;
   --color-accent: rgb(var(--brand-accent));
   --color-accent-soft: rgb(var(--brand-accent) / 0.12);
 

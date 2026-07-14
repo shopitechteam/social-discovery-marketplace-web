@@ -101,7 +101,7 @@ function FocusedListing() {
               <MapPin size={14} /> Ongata Rongai
             </p>
           </div>
-          <span className="rounded-full bg-primary-soft px-3 py-1 text-xs font-bold text-primary">
+          <span className="rounded-full bg-primary-soft px-3 py-1 text-xs font-bold text-primary-strong">
             Nearby
           </span>
         </div>

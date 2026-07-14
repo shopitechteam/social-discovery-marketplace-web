@@ -46,6 +46,7 @@ export const siteConfig = {
   routes: {
     feed:          { path: "/feed",          title: "Feed",          description: "Scroll a feed of real products from sellers near you, then message them directly." },
     explore:       { path: "/explore",       title: "Explore",       description: "Discover what's for sale near you, or ask the Shopi assistant to find it for you." },
+    search:        { path: "/search",        title: "Search",        description: "Search cars, phones, fashion, furniture, farm produce and more from sellers across Kenya." },
     notifications: { path: "/notifications", title: "Inbox",         description: "Your messages and activity on Shopi." },
     profile:       { path: "/profile",       title: "Profile",       description: "Your Shopi profile, posts, and settings." },
     upload:        { path: "/upload",        title: "Create a Post", description: "Post what you're selling — add a video, a price, and your location." },

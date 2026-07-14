@@ -102,8 +102,10 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1, // prevent iOS double-tap zoom
-  userScalable: false,
+  // Pinch-to-zoom is left enabled: blocking it (maximum-scale=1 /
+  // user-scalable=no) fails WCAG 1.4.4 and is flagged by Lighthouse. Modern iOS
+  // no longer double-tap-zooms inputs whose font-size is ≥16px, so the original
+  // reason to disable zoom no longer applies.
   viewportFit: "cover",
   // Status bar (theme-color) matches the page background so it blends into the
   // top of pages — white in light mode, near-black in dark mode. Browsers don't
