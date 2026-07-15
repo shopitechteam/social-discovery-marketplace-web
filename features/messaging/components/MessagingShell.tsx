@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useInbox } from "../hooks/useInbox";
 import { usePushNotifications } from "../hooks/usePushNotifications";
 import { participantName } from "../lib/helpers";
@@ -74,20 +74,40 @@ export function MessagingShell({
   // Content mode counts as having an open chat even before the id resolves.
   const hasRouteConversation = Boolean(conversationId);
 
-  // The desktop main area has no top nav; its height is the viewport minus the
-  // mobile bottom-nav padding MainShell reserves — which it only reserves at the
-  // inbox root (not on a conversation route). Mirror that so the split fills the
-  // pane exactly with no phantom gap or overflow.
-  const desktopHeight = hasRouteConversation
-    ? "100svh"
-    : "calc(100svh - var(--nav-height, 0px) - var(--safe-bottom, 0px))";
+  // The desktop split must fill the viewport below whatever chrome sits ABOVE
+  // this shell — the sticky Messages/Notifications tab header at the inbox
+  // root, nothing on a conversation route. Measure the shell's actual top
+  // offset instead of hardcoding header/nav heights: the old viewport math
+  // ignored the tab header, so the grid ran past the viewport and cut off the
+  // bottom of the list/chat panes on desktop.
+  const shellRef = useRef<HTMLDivElement | null>(null);
+  const [topOffset, setTopOffset] = useState(0);
+  useLayoutEffect(() => {
+    const el = shellRef.current;
+    if (!el) return;
+    const measure = () => {
+      const next = Math.max(0, Math.round(el.getBoundingClientRect().top));
+      setTopOffset((prev) => (prev === next ? prev : next));
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+
+  const desktopHeight = `calc(100svh - ${topOffset}px)`;
 
   return (
     <div
+      ref={shellRef}
       className="bg-app md:mx-auto md:w-full md:max-w-400 md:overflow-hidden md:bg-app"
       style={{ ["--ms-h" as string]: desktopHeight }}
     >
-      <div className="md:grid md:h-(--ms-h) md:grid-cols-[minmax(300px,360px)_minmax(0,1fr)]">
+      {/* grid-rows-[minmax(0,1fr)]: the single implicit row would otherwise
+          auto-size to the CONTENT (a long thread makes it taller than the
+          grid), so both panes overflow the viewport — the composer/list bottom
+          gets cut off and the message list never scrolls internally. Pinning
+          the row to the free space keeps the panes exactly viewport-high. */}
+      <div className="md:grid md:h-(--ms-h) md:grid-cols-[minmax(300px,360px)_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)]">
         {/* ── Conversation list (left pane) ──────────────────────────── */}
         <div
           className={[

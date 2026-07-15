@@ -3,7 +3,10 @@
 /**
  * useSocket — manages the WebSocket connection lifecycle.
  *
- * Connect when the user is authenticated, disconnect on logout.
+ * The socket connects on mount and stays up for the whole session, signed in
+ * or not (guests connect anonymously; the server upgrades them after login).
+ * Identity changes (login/logout/account switch) are handled inside
+ * socket-client, which re-handshakes with the latest token automatically.
  * Returns stable subscription/connect helpers that auto-clean up.
  *
  * Usage:
@@ -13,7 +16,6 @@
 
 import { useEffect, useCallback } from "react";
 import type { Socket } from "socket.io-client";
-import { useAuthStore } from "@/stores/auth";
 
 type SocketClientModule = typeof import("@/lib/socket/socket-client");
 
@@ -32,33 +34,20 @@ function loadSocketClient() {
 }
 
 export function useSocket() {
-  const accessToken = useAuthStore((s) => s.accessToken);
-
-  // Connect when authenticated, disconnect when logged out
+  // Connect once on mount, regardless of auth state. Logout no longer tears
+  // the socket down — socket-client re-handshakes as a guest instead, so the
+  // connection is warm the moment the user signs back in.
   useEffect(() => {
-    if (!accessToken) {
-      // Do not download Socket.IO for anonymous visitors. If this tab had an
-      // authenticated connection earlier, the already-loaded module is reused
-      // to close it on logout.
-      if (socketClientPromise) {
-        void socketClientPromise.then(({ disconnectSocket }) =>
-          disconnectSocket(),
-        );
-      }
-      return;
-    }
-
     let active = true;
-    void loadSocketClient().then(({ connectSocket, getSocket }) => {
+    void loadSocketClient().then(({ connectSocket }) => {
       if (!active) return;
-      getSocket();
       connectSocket();
     });
 
     return () => {
       active = false;
     };
-  }, [accessToken]);
+  }, []);
 
   /**
    * Subscribe to a WebSocket event.

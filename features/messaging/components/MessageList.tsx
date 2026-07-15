@@ -140,6 +140,17 @@ export function MessageList({
     scrollToBottom();
   }, [scrollToBottomSignal, scrollToBottom]);
 
+  // The typing indicator renders below the last message, so when it pops in
+  // while the user sits at the bottom it lands below the fold and shows only
+  // half-clipped. Nudge the scroller to reveal it (same near-bottom rule as
+  // the new-message auto-scroll, so it never yanks someone reading history).
+  const typingVisible = Boolean(
+    typingUserId && otherParticipantId === typingUserId,
+  );
+  useEffect(() => {
+    if (typingVisible && isNearBottom()) scrollToBottom(true);
+  }, [typingVisible, isNearBottom, scrollToBottom]);
+
   // Jump to bottom when a conversation first renders its messages.
   const didInitialScrollRef = useRef(false);
   useLayoutEffect(() => {
@@ -278,7 +289,7 @@ export function MessageList({
             ),
           )}
 
-          {typingUserId && otherParticipantId === typingUserId ? (
+          {typingVisible ? (
             <div className="flex justify-start">
               <div
                 className="rounded-2xl rounded-bl-md border px-3 py-2"

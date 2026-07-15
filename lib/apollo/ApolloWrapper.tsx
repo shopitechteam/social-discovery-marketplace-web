@@ -10,8 +10,8 @@ import {
   ApolloNextAppProvider,
   InMemoryCache,
 } from "@apollo/client-integration-nextjs";
-import type { RefreshTokenMutation } from "@/types/__generated__/graphql";
 import { useAuthStore } from "@/stores/auth";
+import { refreshAccessToken } from "@/lib/auth/refresh-token";
 
 let clientSingleton: ReturnType<typeof createClient> | undefined;
 
@@ -21,55 +21,6 @@ function makeClient() {
     return clientSingleton;
   }
   return createClient();
-}
-
-// Tracks an in-flight refresh so concurrent requests don't trigger multiple refreshes
-let refreshPromise: Promise<string | null> | null = null;
-
-async function doRefresh(refreshToken: string): Promise<string | null> {
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/graphql`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        query: `
-            mutation RefreshToken($input: RefreshTokenInput!) {
-              refreshToken(input: $input) {
-                accessToken
-                refreshToken
-                user {
-                  id
-                  email
-                  role
-                  isVerified
-                  profile { firstName lastName avatar }
-                }
-              }
-            }
-          `,
-        variables: { input: { refreshToken } },
-      }),
-    });
-
-    const json = (await res.json()) as {
-      data?: RefreshTokenMutation;
-      errors?: unknown[];
-    };
-
-    if (json.errors || !json.data?.refreshToken) return null;
-
-    const {
-      accessToken,
-      refreshToken: newRefreshToken,
-      user,
-    } = json.data.refreshToken;
-    useAuthStore
-      .getState()
-      .setAuth({ accessToken, refreshToken: newRefreshToken, user });
-    return accessToken;
-  } catch {
-    return null;
-  }
 }
 
 /**
@@ -191,14 +142,9 @@ function createClient() {
     }
 
     return new Observable((observer) => {
-      // Deduplicate: all concurrent expired requests share one refresh call
-      if (!refreshPromise) {
-        refreshPromise = doRefresh(refreshToken).finally(() => {
-          refreshPromise = null;
-        });
-      }
-
-      refreshPromise
+      // Deduped in the shared helper: all concurrent expired requests (and the
+      // socket client's reconnect path) share one refresh call.
+      refreshAccessToken()
         .then((newToken) => {
           if (!newToken) {
             useAuthStore.getState().clearAuth();
