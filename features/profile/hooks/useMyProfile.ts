@@ -22,21 +22,21 @@ export function useMyProfile() {
 export function useMyPosts(limit = 18) {
   return useQuery(GetMyPostsDocument, {
     variables: { limit },
-    fetchPolicy: "cache-first",
+    fetchPolicy: "cache-and-network",
   });
 }
 
 export function useMySavedContent(limit = 18, enabled = true) {
   return useQuery(GetMySavedContentDocument, {
     variables: { limit },
-    fetchPolicy: "cache-first",
+    fetchPolicy: "cache-and-network",
     skip: !enabled,
   });
 }
 
 export function useMyAnalytics(enabled = true) {
   return useQuery(GetMyAnalyticsDocument, {
-    fetchPolicy: "cache-first",
+    fetchPolicy: "cache-and-network",
     skip: !enabled,
   });
 }

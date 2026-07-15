@@ -79,7 +79,7 @@ export function SideNav({ lang = "en" }: { lang: string }) {
     >
       <div className="flex shrink-0 items-center px-5 pb-4 pt-5">
         <Link href={`/${lang}/feed`} scroll={false}>
-          <Logo variant="lockup" size={32} />
+          <Logo variant="icon" size={44} />
         </Link>
       </div>
 

@@ -98,7 +98,7 @@ export function AuthDesktopShell({
           {/* Logo — top */}
           <div className="relative z-10 flex justify-center">
             <Link href={`/${lang}`} className="inline-block">
-              <ShopiLogo className="h-9 w-auto brightness-0 invert" />
+              <ShopiLogo className="h-9 w-auto" />
             </Link>
           </div>
 

@@ -9,7 +9,6 @@ import {
   LayoutGrid,
   LogOut,
   Palette,
-  PenLine,
   Plus,
   Settings,
   UserRound,
@@ -463,9 +462,7 @@ function SettingsPanel({
       {/* ── Desktop — grouped cards with an account summary rail ── */}
       <div className="hidden lg:block">
         <div className="grid grid-cols-[minmax(0,320px)_minmax(0,1fr)] gap-6">
-          {/* Account summary card */}
-
-          {/* Settings groups */}
+          {/* Account summary card */}3{/* Settings groups */}
           <div className="flex flex-col gap-5">
             <SettingsGroup label="Appearance">
               <SettingsRow
