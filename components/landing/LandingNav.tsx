@@ -102,7 +102,7 @@ export function LandingNav({
           {/* Left cluster — logo + section links, Tolstoy-style */}
           <div className="flex items-center gap-10">
             <Link href="/" className="flex items-center gap-2 no-underline">
-              <ShopiLogo height={32} />
+              <ShopiLogo height={72} />
             </Link>
 
             {/* Desktop nav links */}

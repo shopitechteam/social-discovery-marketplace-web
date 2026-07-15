@@ -1,51 +1,29 @@
 // Static, server-safe — no "use client"
 
-/**
- * Shared logo artwork — the Shopi mark.
- *
- * A rounded price-tag silhouette whose inner cut doubles as a play
- * triangle: one continuous shape for "scroll a feed" + "shop a tag".
- * Drawn inside a 64x64 box.
- */
-function LogoArt() {
-  return (
-    <g transform="scale(0.6667)">
-      <path
-        d="M48 18 L74 34 V62 L48 78 L22 62 V34 Z"
-        fill="none"
-        stroke="rgb(var(--brand-primary))"
-        strokeWidth="5.5"
-        strokeLinejoin="round"
-      />
-      <circle cx="48" cy="30" r="4" fill="rgb(var(--brand-primary))" />
-      <path d="M39 40 L64 48 L39 58 Z" fill="rgb(var(--brand-primary))" />
-    </g>
-  );
-}
+// Shopi brand artwork — exported brush lockup. Intrinsic size 1536 x 1024 (3:2).
+const LOGO_SRC = "/assets/logo.svg";
+const LOGO_ASPECT = 1536 / 1024;
 
 /**
- * Icon-only mark.
+ * Icon-only mark — renders the Shopi brush artwork.
  */
 export function ShopiLogoMark({ size = 48 }: { size?: number }) {
+  const w = Math.round(size * LOGO_ASPECT);
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={size}
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={LOGO_SRC}
+      alt="Shopi"
+      width={w}
       height={size}
-      viewBox="0 0 64 64"
-      fill="none"
-      role="img"
-      aria-label="Shopi"
-      style={{ overflow: "visible" }}
-    >
-      <LogoArt />
-    </svg>
+      style={{ height: size, width: "auto" }}
+    />
   );
 }
 
 /**
- * Full logo — mark + "shopi" wordmark.
- * `height` controls overall scale; width auto-derives unless given.
+ * Full logo — renders the Shopi brush artwork.
+ * `height` controls overall scale; width auto-derives from the 3:2 artwork.
  */
 export function ShopiLogo({
   height = 36,
@@ -55,35 +33,20 @@ export function ShopiLogo({
   height?: number;
   width?: number;
   className?: string;
+  /** Retained for API compatibility; the artwork is a single lockup. */
+  tagline?: boolean;
 }) {
-  // Intrinsic art is 188 x 64; keep aspect ratio off height.
-  const w = width ?? Math.round((height / 64) * 188);
+  const w = width ?? Math.round(height * LOGO_ASPECT);
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={LOGO_SRC}
+      alt="Shopi"
       width={w}
       height={height}
-      viewBox="0 0 188 64"
-      fill="none"
-      role="img"
-      aria-label="Shopi"
       className={className}
-    >
-      {/* Mark */}
-      <LogoArt />
-      {/* Wordmark */}
-      <text
-        x="68"
-        y="42"
-        fontFamily="var(--font-display), system-ui, sans-serif"
-        fontSize="34"
-        fontWeight="700"
-        letterSpacing="-1"
-        fill="rgb(var(--color-text))"
-      >
-        shopi
-      </text>
-    </svg>
+      style={className ? undefined : { height, width: "auto" }}
+    />
   );
 }
 
