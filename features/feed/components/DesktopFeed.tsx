@@ -23,7 +23,7 @@ import { useForYouFeed, useFollowingFeed } from "../hooks/useFeed";
 import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
 import { useAuthStore } from "@/stores/auth";
 import { PostCard } from "./PostCard";
-import { PostCardSkeleton } from "./FeedSkeleton";
+import { PostCardSkeleton, FeedPaginationSkeleton } from "./FeedSkeleton";
 import { DesktopTrendingRail } from "./DesktopTrendingRail";
 import { TrendingStrip } from "./TrendingStrip";
 import { DesktopNearbyColumn } from "./DesktopNearbyColumn";
@@ -137,11 +137,7 @@ function ForYouColumn({ lang }: { lang: string }) {
         />
       ))}
       <div ref={sentinelRef} className="h-1" />
-      {loadingMore && (
-        <div className="overflow-hidden rounded-2xl border border-default bg-elevated">
-          <PostCardSkeleton />
-        </div>
-      )}
+      {loadingMore && <FeedPaginationSkeleton />}
       {!hasMore && items.length > 0 && (
         <p className="py-6 text-center text-xs text-muted-foreground">
           You&apos;re all caught up ✓
@@ -220,11 +216,7 @@ function FollowingColumn({ lang }: { lang: string }) {
         />
       ))}
       <div ref={sentinelRef} className="h-1" />
-      {loadingMore && (
-        <div className="overflow-hidden rounded-2xl border border-default bg-elevated">
-          <PostCardSkeleton />
-        </div>
-      )}
+      {loadingMore && <FeedPaginationSkeleton />}
       {!hasMore && items.length > 0 && (
         <p className="py-6 text-center text-xs text-muted-foreground">
           You&apos;re all caught up ✓

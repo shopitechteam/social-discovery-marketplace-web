@@ -40,11 +40,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { BufferSpinner } from "./BufferSpinner";
 import { useFeedPreferencesStore } from "@/stores/feedPreferences";
 import { InlineChatPanel } from "@/features/messaging/components/InlineChatPanel";
-import {
-  CommentThread,
-  CommentList,
-  useCommentThread,
-} from "./CommentThread";
+import { CommentThread, CommentList, useCommentThread } from "./CommentThread";
 import { fmtCompact as fmt } from "@/lib/format";
 import { avatarGradient as avatarColors } from "@/lib/avatar";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
@@ -178,7 +174,6 @@ const ContentDetailDocument = gql`
 // ─── helpers ──────────────────────────────────────────────────────────────────
 // Shared utilities (fmt, avatarColors/initials, useIsDesktop) now live in
 // @/lib and @/hooks; imported above and aliased to keep call sites unchanged.
-
 
 // ─── MobileImageCarousel ──────────────────────────────────────────────────────
 
@@ -570,11 +565,22 @@ export function ContentDetail({
   }, [onChatOpenChange]);
 
   // ── Content query ──────────────────────────────────────────────────────────
+  // Opening a post from the feed mounts a fresh ContentDetail, which runs this
+  // PDP-only query (categoryId/specs/aiClassification aren't in the feed card
+  // fragment). Content is normalized by id (see ApolloWrapper typePolicies),
+  // so the feed's card fields for this post are ALREADY in the cache — but
+  // cache-and-network only serves cached data when the query's full selection
+  // is satisfied, and the PDP-only fields are always missing on first open.
+  // That forced a full network round-trip (and the skeleton below) on every
+  // single click, even for a post just seen in the feed. returnPartialData
+  // lets Apollo hand back what it already has immediately while the network
+  // request fills the gap, so the shared fields paint instantly.
   const { data, loading } = useQuery(ContentDetailDocument as any, {
     variables: { id },
     // Always fetch fresh data for detail view so isLikedByMe / isFollowedByMe
     // reflect the current server state rather than a potentially stale cache.
     fetchPolicy: "cache-and-network",
+    returnPartialData: true,
   }) as {
     data?: { content?: DetailPost | null };
     loading: boolean;
@@ -1766,7 +1772,9 @@ export function ContentDetail({
                     type="button"
                     onClick={() => {
                       if (!requireAuth({ contentId: id })) return;
-                      router.push(`/${lang}/notifications/${id}?source=content`);
+                      router.push(
+                        `/${lang}/notifications/${id}?source=content`,
+                      );
                     }}
                     className="flex items-center justify-center gap-2 rounded-full bg-primary py-3 text-sm font-bold text-white transition-transform active:scale-[0.98]"
                   >
@@ -1852,23 +1860,47 @@ export function ContentDetail({
                   mobileReplyingTo ? "Write a reply…" : "Say something…"
                 }
                 maxLength={500}
-                className="min-w-0 flex-1 rounded-full border border-default bg-surface px-4 py-2.5 text-sm text-default outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
+                className="min-w-0 placeholder:text-sm flex-1 rounded-full border border-default bg-surface px-4 py-2.5 text-sm text-default outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
               />
 
               {/* Send — only shown once there's text; the input is the bar's
                   sole job now (Message/Call moved up under the stats). */}
+              <button
+                onClick={() => handleSave()}
+                className="flex lg:cursor-pointer items-center gap-1.5 px-4 py-2 rounded-full border text-xs font-semibold transition-all active:scale-95"
+                style={{
+                  borderColor: resolvedSaved
+                    ? "rgb(var(--brand-primary))"
+                    : "rgb(var(--color-border))",
+                  color: resolvedSaved
+                    ? "rgb(var(--brand-primary))"
+                    : "rgb(var(--color-text-default))",
+                  backgroundColor: resolvedSaved
+                    ? "rgb(var(--brand-primary) / 0.08)"
+                    : "transparent",
+                }}
+              >
+                <Bookmark
+                  className="w-4 h-4"
+                  fill={resolvedSaved ? "rgb(var(--brand-primary))" : "none"}
+                  strokeWidth={1.8}
+                />
+                <span>
+                  {resolvedSaveCount > 0 ? fmt(resolvedSaveCount) : "Save"}
+                </span>
+              </button>
               {mobileCommentText.trim() && (
                 <button
                   type="button"
                   onClick={handleMobileSend}
                   aria-label="Send comment"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white transition-transform active:scale-[0.98]"
+                  className="flex h-9 w-9 lg:w-11 lg:h-11 shrink-0 items-center justify-center rounded-full text-white transition-transform active:scale-[0.98]"
                   style={{
                     background:
                       "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary, var(--brand-primary))))",
                   }}
                 >
-                  <Send className="h-5 w-5" strokeWidth={2.2} />
+                  <Send className="h-4 w-4 lg:h-5 lg:w-5" strokeWidth={2.2} />
                 </button>
               )}
             </div>

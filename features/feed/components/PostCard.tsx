@@ -46,7 +46,7 @@ import { useFollow } from "../hooks/useFollow";
 import { BufferSpinner } from "./BufferSpinner";
 import { TikTokIcon } from "@/components/ui/TikTokIcon";
 import { usePageFocused } from "../hooks/usePageFocused";
-import toBase64 from "@/lib/utils";
+import toBase64, { cn } from "@/lib/utils";
 import { timeAgo } from "@/lib/time";
 import {
   Popover,
@@ -669,7 +669,7 @@ function FeedImageInner({
       alt={alt}
       fill
       sizes={sizes}
-      className={className}
+      className={cn("w-full mx-0 px-0", className)}
       preload={priority}
       loading={priority ? undefined : loadingProp}
       quality={priority ? 75 : 55}
@@ -818,8 +818,8 @@ function ImageMedia({
         className="relative w-full cursor-pointer overflow-hidden bg-surface"
         style={{
           aspectRatio: String(clamped),
-          maxHeight: "60svh",
-          minHeight: "40svh",
+          maxHeight: "60dvh",
+          minHeight: "40dvh",
         }}
         onClick={nav}
       >
@@ -1082,9 +1082,9 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
   });
 
   const caption = post.caption ?? "";
-  const isLong = caption.length > 160;
+  const isLong = caption.length > 100;
   const displayCaption =
-    isLong && !expanded ? caption.slice(0, 160) + "…" : caption;
+    isLong && !expanded ? caption.slice(0, 93) + "…" : caption;
 
   function handleOpen() {
     if (shouldFire(post.id, "DETAIL_VIEWED")) {
@@ -1174,7 +1174,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
                   ? router.push(`/${lang}/profile/${creator.id}`)
                   : handleOpen()
               }
-              className="font-semibold text-base text-default leading-tight hover:underline block"
+              className="font-bold text-base leading-tight hover:underline block"
             >
               {creatorName}
             </button>
@@ -1335,7 +1335,9 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
           {post.title}
         </p>
         {caption && (
-          <p className="text-default text-[14.5px] leading-7">
+          <p
+            className={`text-sm leading-5 ${isLong && !expanded ? "line-clamp-2" : ""}`}
+          >
             {displayCaption}
             {isLong && (
               <button
