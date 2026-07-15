@@ -411,13 +411,6 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
   return (
     <div className="flex flex-col md:flex-row h-full flex-1">
 
-      {/* ── Publishing overlay ──────────────────────────────────────────────
-          handlePost runs several sequential mutations (autosave → advance →
-          publish → optional TikTok cross-post). Without this the screen looks
-          frozen and the user can't tell anything is happening. Show a dimmed,
-          interaction-blocking overlay with a centered loader for the duration. */}
-      {publishing && <PublishingOverlay />}
-
       {/* ── Desktop left — summary card (standalone page only; the dialog
              shows the live preview panel instead) ── */}
       {!embedded && (
@@ -534,47 +527,6 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
-
-/**
- * Full-screen dimmed overlay shown while a post is being published. Sits above
- * the create-flow card (which uses z-50 on desktop) at z-[60], blocks all
- * interaction underneath, and centers a loader + label so the user knows the
- * post is in flight rather than the screen having frozen.
- */
-function PublishingOverlay() {
-  return (
-    <div
-      className="fixed inset-0 z-60 flex touch-none flex-col items-center justify-center gap-4 bg-black/60 backdrop-blur-[2px]"
-      role="status"
-      aria-live="polite"
-      aria-label="Publishing your post"
-    >
-      <svg
-        className="animate-spin"
-        width="44"
-        height="44"
-        viewBox="0 0 24 24"
-        fill="none"
-      >
-        <circle
-          cx="12"
-          cy="12"
-          r="10"
-          stroke="white"
-          strokeOpacity="0.25"
-          strokeWidth="3"
-        />
-        <path
-          d="M12 2a10 10 0 0 1 10 10"
-          stroke="white"
-          strokeWidth="3"
-          strokeLinecap="round"
-        />
-      </svg>
-      <span className="text-sm font-medium text-white/90">Posting…</span>
-    </div>
-  );
-}
 
 function MiniSpinner() {
   return (

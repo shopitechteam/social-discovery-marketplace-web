@@ -19,10 +19,27 @@ const isDev = process.env.NODE_ENV === "development";
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
 const wsUrl = process.env.NEXT_PUBLIC_WEBSOCKET_URL || "";
 
+// CSP source expressions match PATHS when one is present — an entry like
+// "ws://localhost:4000/graphql" only permits that exact path and silently
+// blocks Socket.IO's "/socket.io" endpoint (the browser then loops on
+// "websocket error" and realtime never connects). Reduce every backend URL to
+// its bare origin, and mirror the API origin onto the ws scheme, since
+// browsers don't let an http: source authorize a ws: connection.
+const toOrigin = (value: string): string => {
+  try {
+    return new URL(value).origin;
+  } catch {
+    return "";
+  }
+};
+const toWsOrigin = (value: string): string =>
+  toOrigin(value).replace(/^http/, "ws");
+
 const connectSrc = [
   "'self'",
-  apiUrl,
-  wsUrl,
+  toOrigin(apiUrl),
+  toWsOrigin(apiUrl), // Socket.IO + any WS endpoint on the API origin
+  toOrigin(wsUrl),
   // Deployed backends (in case the build's .env points at localhost)
   "https://api.shopi.co.ke",
   "https://staging.shopi.co.ke",
@@ -34,6 +51,12 @@ const connectSrc = [
   "https://image.mux.com",
   "https://stream.mux.com",
   "https://*.litix.io", // Mux Data analytics
+  // Direct browser uploads PUT straight to presigned URLs on these hosts:
+  // images → the R2 bucket endpoint, videos → Mux direct-upload endpoints
+  // (regional hosts like direct-uploads-*.mux.com). Without them the CSP
+  // silently kills every upload from the post composer.
+  "https://*.r2.cloudflarestorage.com",
+  "https://*.mux.com",
   // Maps / geocoding
   "https://maps.googleapis.com",
   "https://nominatim.openstreetmap.org",
