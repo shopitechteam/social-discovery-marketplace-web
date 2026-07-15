@@ -40,9 +40,24 @@ const VISIBILITY_OPTIONS: {
   icon: string;
   desc: string;
 }[] = [
-  { value: "public",       label: "Everyone",     icon: "🌍", desc: "Anyone can see this post" },
-  { value: "friends_only", label: "Friends only",  icon: "👥", desc: "Only people you follow" },
-  { value: "private",      label: "Only me",       icon: "🔒", desc: "Only visible to you" },
+  {
+    value: "public",
+    label: "Everyone",
+    icon: "🌍",
+    desc: "Anyone can see this post",
+  },
+  {
+    value: "friends_only",
+    label: "Friends only",
+    icon: "👥",
+    desc: "Only people you follow",
+  },
+  {
+    value: "private",
+    label: "Only me",
+    icon: "🔒",
+    desc: "Only visible to you",
+  },
 ];
 
 function toVisibilityMode(mode: Visibility): VisibilityMode {
@@ -89,7 +104,9 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
   const [tiktokReconnectNeeded, setTiktokReconnectNeeded] = useState(false);
   const [connectingTiktok, setConnectingTiktok] = useState(false);
 
-  const { data: meData, refetch: refetchMe } = useQuery(MeDocument, { fetchPolicy: "cache-and-network" });
+  const { data: meData, refetch: refetchMe } = useQuery(MeDocument, {
+    fetchPolicy: "cache-and-network",
+  });
   const isTiktokConnected = meData?.me?.authProviders?.tiktok ?? false;
 
   const [autosave] = useMutation(AutosaveDraftDocument);
@@ -110,7 +127,9 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
     // Not connected — open OAuth popup then re-check
     setConnectingTiktok(true);
     try {
-      const { data } = await getTiktokConnectUrl({ variables: { returnUrl: undefined } });
+      const { data } = await getTiktokConnectUrl({
+        variables: { returnUrl: undefined },
+      });
       const url = data?.tiktokConnectUrl;
       if (!url) return;
       const popup = window.open(url, "tiktok-connect", "width=520,height=680");
@@ -187,7 +206,9 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
         setError(stepError.message ?? "Could not finalize post");
         return;
       }
-      const serverStep = stepData?.advanceDraftStep?.currentStep as string | undefined;
+      const serverStep = stepData?.advanceDraftStep?.currentStep as
+        | string
+        | undefined;
       if (serverStep !== "READY") {
         setError("Please complete all required fields before posting.");
         return;
@@ -274,9 +295,9 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
                 Posted! 🎉
               </h2>
               <p className="text-base text-muted">
-                It’s been submitted and is going through a quick automated review
-                to make sure it meets our guidelines. It’ll show up on the feed as
-                soon as it’s approved.
+                It’s been submitted and is going through a quick automated
+                review to make sure it meets our guidelines. It’ll show up on
+                the feed as soon as it’s approved.
               </p>
             </div>
 
@@ -300,14 +321,22 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
                   TikTok cross-post needs reconnect
                 </p>
                 <p className="mb-3 text-xs text-muted">
-                  Your TikTok connection needs the posting permission. Reconnect once and it will work automatically next time.
+                  Your TikTok connection needs the posting permission. Reconnect
+                  once and it will work automatically next time.
                 </p>
                 <button
                   onClick={async () => {
                     try {
-                      const { data: urlData } = await getTiktokConnectUrl({ variables: { returnUrl: undefined } });
+                      const { data: urlData } = await getTiktokConnectUrl({
+                        variables: { returnUrl: undefined },
+                      });
                       const url = urlData?.tiktokConnectUrl;
-                      if (url) window.open(url, "tiktok-connect", "width=520,height=680");
+                      if (url)
+                        window.open(
+                          url,
+                          "tiktok-connect",
+                          "width=520,height=680",
+                        );
                     } catch {
                       /* ignore */
                     }
@@ -328,7 +357,6 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
               </div>
             )}
           </div>
-
         </Celebration>
       </div>
     );
@@ -399,8 +427,14 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
           onChange={handleTiktokToggle}
           disabled={connectingTiktok}
           icon={
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className={postOnTiktok ? "text-primary" : "text-muted"}>
-              <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.75a8.27 8.27 0 0 0 4.84 1.55V6.85a4.85 4.85 0 0 1-1.07-.16z"/>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className={postOnTiktok ? "text-primary" : "text-muted"}
+            >
+              <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.75a8.27 8.27 0 0 0 4.84 1.55V6.85a4.85 4.85 0 0 1-1.07-.16z" />
             </svg>
           }
         />
@@ -410,56 +444,55 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
 
   return (
     <div className="flex flex-col md:flex-row h-full flex-1">
-
       {/* ── Desktop left — summary card (standalone page only; the dialog
              shows the live preview panel instead) ── */}
       {!embedded && (
-      <div className="hidden w-80 shrink-0 border-r border-border bg-surface md:flex md:flex-col md:justify-center md:items-center md:gap-5 md:p-8">
-        {/* Cover thumbnail */}
-        {cover && (
-          <div className="relative h-[213px] w-40 overflow-hidden rounded-2xl border border-border bg-background">
-            {tiktokEmbed ? (
-              <TikTokCreatePreview
-                embed={tiktokEmbed}
-                className="absolute inset-0 h-full w-full"
-                sizes="160px"
-              />
-            ) : cover.type === "video" && cover.localUri ? (
-              <video
-                src={cover.localUri}
-                className="absolute inset-0 w-full h-full object-contain"
-                muted
-                playsInline
-                preload="metadata"
-              />
-            ) : coverSrc ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={coverSrc}
-                alt=""
-                className="absolute inset-0 w-full h-full object-contain"
-              />
-            ) : (
-              <div className="absolute inset-0 bg-surface" />
-            )}
-          </div>
-        )}
+        <div className="hidden w-80 shrink-0 border-r border-border bg-surface md:flex md:flex-col md:justify-center md:items-center md:gap-5 md:p-8">
+          {/* Cover thumbnail */}
+          {cover && (
+            <div className="relative h-[213px] w-40 overflow-hidden rounded-2xl border border-border bg-background">
+              {tiktokEmbed ? (
+                <TikTokCreatePreview
+                  embed={tiktokEmbed}
+                  className="absolute inset-0 h-full w-full"
+                  sizes="160px"
+                />
+              ) : cover.type === "video" && cover.localUri ? (
+                <video
+                  src={cover.localUri}
+                  className="absolute inset-0 w-full h-full object-contain"
+                  muted
+                  playsInline
+                  preload="metadata"
+                />
+              ) : coverSrc ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={coverSrc}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-contain"
+                />
+              ) : (
+                <div className="absolute inset-0 bg-surface" />
+              )}
+            </div>
+          )}
 
-        {/* Summary rows */}
-        <div className="w-full max-w-[240px] flex flex-col gap-2">
-          <SummaryRow label="Title" value={title || "—"} />
-          <SummaryRow
-            label="Price"
-            value={`${isFree || !price ? "Custom" : `${currency} ${price}`}${
-              negotiable ? " · Negotiable" : ""
-            }`}
-          />
-          <SummaryRow
-            label="Files"
-            value={`${mediaItems.length} ${mediaItems.length === 1 ? "file" : "files"}`}
-          />
+          {/* Summary rows */}
+          <div className="w-full max-w-[240px] flex flex-col gap-2">
+            <SummaryRow label="Title" value={title || "—"} />
+            <SummaryRow
+              label="Price"
+              value={`${isFree || !price ? "Custom" : `${currency} ${price}`}${
+                negotiable ? " · Negotiable" : ""
+              }`}
+            />
+            <SummaryRow
+              label="Files"
+              value={`${mediaItems.length} ${mediaItems.length === 1 ? "file" : "files"}`}
+            />
+          </div>
         </div>
-      </div>
       )}
 
       {/* ── Right / mobile — settings form ── */}
@@ -472,7 +505,13 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
               className="flex items-center gap-1 text-sm text-muted"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <path
+                  d="M15 18l-6-6 6-6"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
               Back
             </button>
@@ -487,7 +526,7 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
         >
           {visibilitySection}
           {togglesSection}
-          {tiktokSection}
+          {/* {tiktokSection} */}
 
           {error && (
             <div className="rounded-xl border border-[rgb(var(--color-error)/0.2)] bg-[rgb(var(--color-error)/0.08)] px-4 py-3 text-sm text-error">
@@ -530,23 +569,65 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
 
 function MiniSpinner() {
   return (
-    <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="12" r="10" stroke="white" strokeOpacity="0.3" strokeWidth="3" />
-      <path d="M12 2a10 10 0 0 1 10 10" stroke="white" strokeWidth="3" strokeLinecap="round" />
+    <svg
+      className="animate-spin"
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="white"
+        strokeOpacity="0.3"
+        strokeWidth="3"
+      />
+      <path
+        d="M12 2a10 10 0 0 1 10 10"
+        stroke="white"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
 
 function MiniSpinnerDark() {
   return (
-    <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.2" strokeWidth="3" />
-      <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    <svg
+      className="animate-spin"
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeOpacity="0.2"
+        strokeWidth="3"
+      />
+      <path
+        d="M12 2a10 10 0 0 1 10 10"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <div>
       <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
@@ -561,7 +642,9 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between rounded-xl border border-border bg-elevated px-3 py-2.5">
       <span className="text-xs text-muted">{label}</span>
-      <span className="line-clamp-1 max-w-35 text-right text-xs font-semibold text-foreground">{value}</span>
+      <span className="line-clamp-1 max-w-35 text-right text-xs font-semibold text-foreground">
+        {value}
+      </span>
     </div>
   );
 }
@@ -594,7 +677,9 @@ function ToggleRow({
   icon?: React.ReactNode;
 }) {
   return (
-    <div className={`flex items-center gap-3 py-3 ${disabled ? "opacity-60" : ""}`}>
+    <div
+      className={`flex items-center gap-3 py-3 ${disabled ? "opacity-60" : ""}`}
+    >
       {icon && <span className="flex-shrink-0">{icon}</span>}
       <div className="flex-1 min-w-0">
         <p className="text-base font-medium text-foreground">{label}</p>

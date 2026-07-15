@@ -284,7 +284,7 @@ export function CreatePreviewPanel() {
       </div>
 
       <p
-        className="max-w-[280px] text-center"
+        className="max-w-70 text-center"
         style={{
           fontSize: "var(--text-xs)",
           color: "rgb(var(--color-text-muted))",
