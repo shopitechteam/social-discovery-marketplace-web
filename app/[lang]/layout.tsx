@@ -4,6 +4,7 @@ import { AppDocument } from "@/components/layout/AppDocument";
 import { siteConfig } from "@/config/site";
 import { isValidLocale, locales } from "@/i18n/config";
 import "../globals.css";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
@@ -68,5 +69,10 @@ export default async function LangLayout({
   const { lang } = await params;
   if (!isValidLocale(lang)) notFound();
 
-  return <AppDocument lang={lang}>{children}</AppDocument>;
+  return (
+    <AppDocument lang={lang}>
+      {children}
+      <Analytics />
+    </AppDocument>
+  );
 }

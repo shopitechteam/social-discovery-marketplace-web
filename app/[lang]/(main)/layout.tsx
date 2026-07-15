@@ -4,7 +4,6 @@ import { SocketProvider } from "@/components/providers/SocketProvider";
 import { ApiPreconnect } from "@/components/providers/ApiPreconnect";
 import { isValidLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
-import { Analytics } from "@vercel/analytics/next";
 
 export default async function MainLayout({
   children,
@@ -20,7 +19,6 @@ export default async function MainLayout({
 
   return (
     <SocketProvider>
-      <Analytics />
       <ApiPreconnect />
       {/* ── Desktop sidebar — hidden on mobile ── */}
       <DesktopSideNav lang={lang} />
