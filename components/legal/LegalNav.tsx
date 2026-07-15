@@ -38,7 +38,7 @@ export function LegalNav({ lang }: { lang: string }) {
 
         {/* Logo → home */}
         <Link href={`/${lang}`} aria-label="Shopi home" className="absolute left-1/2 -translate-x-1/2">
-          <ShopiLogo className="h-6 w-auto" />
+          <ShopiLogo className="h-11 w-auto" />
         </Link>
 
         {/* Spacer to balance the back button */}

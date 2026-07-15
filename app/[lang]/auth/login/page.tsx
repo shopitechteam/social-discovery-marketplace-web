@@ -62,7 +62,7 @@ export default async function LoginPage({
 
         {/* Top bar */}
         <div className="flex w-full justify-center items-center  px-5 pt-5 pb-1 shrink-0">
-          <ShopiLogo height={48} />
+          <ShopiLogo height={80} />
         </div>
 
         {/* Heading */}
