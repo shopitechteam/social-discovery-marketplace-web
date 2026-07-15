@@ -154,6 +154,7 @@ export function UploadPickerPage({ lang }: { lang: string }) {
       icon: ICON_TIKTOK,
       // In place on this page, like the other types — no route hop.
       onClick: () => setView("tiktok"),
+      hidden: true,
     },
   ];
 
@@ -252,7 +253,7 @@ export function UploadPickerPage({ lang }: { lang: string }) {
             key={opt.label}
             onClick={opt.onClick}
             disabled={creating}
-            className="flex w-full items-center gap-4 rounded-2xl text-left transition-transform active:scale-[0.98] disabled:opacity-50"
+            className={`${opt.hidden ? "hidden" : "flex"} w-full items-center gap-4 rounded-2xl text-left transition-transform active:scale-[0.98] disabled:opacity-50`}
             style={{
               padding: "18px 20px",
               backgroundColor: "rgb(var(--color-bg-elevated))",
