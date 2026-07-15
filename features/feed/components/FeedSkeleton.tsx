@@ -95,8 +95,20 @@ export function FeedSkeleton() {
 
 export function FeedPaginationSkeleton() {
   return (
-    <div className="pt-2" aria-hidden>
-      <PostCardSkeleton />
+    <div className="flex justify-center py-4" aria-hidden>
+      <div
+        className="rounded-full border px-4 py-2.5"
+        style={{
+          borderColor: "rgb(var(--color-border))",
+          backgroundColor: "rgb(var(--color-bg-elevated))",
+        }}
+      >
+        <div className="flex items-center gap-1.5">
+          <span className="h-2 w-2 animate-bounce rounded-full bg-muted" />
+          <span className="h-2 w-2 animate-bounce rounded-full bg-muted [animation-delay:120ms]" />
+          <span className="h-2 w-2 animate-bounce rounded-full bg-muted [animation-delay:240ms]" />
+        </div>
+      </div>
     </div>
   );
 }

@@ -16,10 +16,12 @@ interface Props {
 function FeedGrid({ lang, active = true }: Props) {
   const { items, loading, loadingMore, hasMore, loadMore } = useForYouFeed();
 
+  console.log(loadingMore, "loadi more");
+
   const { sentinelRef } = useInfiniteScroll({
     enabled: active,
     hasMore,
-    loading: loading || loadingMore,
+    loading,
     onLoadMore: loadMore,
   });
 

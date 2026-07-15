@@ -1,8 +1,7 @@
 "use client";
 
 import { useQuery, useSuspenseQuery } from "@apollo/client/react";
-import { NetworkStatus } from "@apollo/client";
-import { startTransition, useCallback, useEffect, useRef } from "react";
+import { startTransition, useCallback, useEffect, useRef, useState } from "react";
 import {
   ForYouFeedDocument,
   FollowingFeedDocument,
@@ -60,36 +59,42 @@ export function usePaginationGuard(currentCount: number) {
 }
 
 export function useForYouFeed() {
-  const { data, error, fetchMore, networkStatus } = useSuspenseQuery(
-    ForYouFeedDocument,
-    {
-      variables: { limit: PAGE_SIZE },
-      // Preserve the accumulated window on bottom-tab navigation. Freshly
-      // published content invalidates this field explicitly (see feedCache.ts);
-      // otherwise revisiting Home should show the same 30+ cached items, not a
-      // page-1 background refresh.
-      fetchPolicy: "cache-first",
-      // Apollo's default refetch write mode is "overwrite", which can replace
-      // an exhausted 33-item window with the refreshed first page while leaving
-      // pageInfo stale. We need the field policy merge to receive `existing`.
-      refetchWritePolicy: "merge",
-      notifyOnNetworkStatusChange: true,
-    },
-  );
+  const { data, error, fetchMore } = useSuspenseQuery(ForYouFeedDocument, {
+    variables: { limit: PAGE_SIZE },
+    // Preserve the accumulated window on bottom-tab navigation. Freshly
+    // published content invalidates this field explicitly (see feedCache.ts);
+    // otherwise revisiting Home should show the same 30+ cached items, not a
+    // page-1 background refresh.
+    fetchPolicy: "cache-first",
+    // Apollo's default refetch write mode is "overwrite", which can replace
+    // an exhausted 33-item window with the refreshed first page while leaving
+    // pageInfo stale. We need the field policy merge to receive `existing`.
+    refetchWritePolicy: "merge",
+    notifyOnNetworkStatusChange: true,
+  });
 
   const items = data?.forYouFeed?.items ?? [];
   const pageInfo = data?.forYouFeed?.pageInfo;
 
   const itemCount = items.length;
   const guard = usePaginationGuard(itemCount);
+  // Apollo's networkStatus === fetchMore transition is too short-lived to
+  // reliably land in a React render — the request/response round trip can
+  // resolve within the same tick React would use to commit the "fetchMore"
+  // state, coalescing it away (verified live: items still grow, but the
+  // pagination spinner never showed). Track "in flight" ourselves instead.
+  const [loadingMore, setLoadingMore] = useState(false);
   const loadMore = useCallback(() => {
     if (!pageInfo?.hasNextPage || !pageInfo.endCursor) return;
     const cursor = pageInfo.endCursor;
     // The cache `merge` policy appends the page — no updateQuery needed.
     guard(cursor, itemCount, () => {
+      setLoadingMore(true);
       let request!: Promise<unknown>;
       startTransition(() => {
-        request = fetchMore({ variables: { limit: PAGE_SIZE, after: cursor } });
+        request = fetchMore({
+          variables: { limit: PAGE_SIZE, after: cursor },
+        }).finally(() => setLoadingMore(false));
       });
       return request;
     });
@@ -99,9 +104,7 @@ export function useForYouFeed() {
     items,
     // The initial request is represented by the nearest Suspense fallback.
     loading: false,
-    // True only while a fetchMore page is in flight — drives the pagination
-    // spinner WITHOUT firing during the silent cache-and-network refresh.
-    loadingMore: networkStatus === NetworkStatus.fetchMore,
+    loadingMore,
     error,
     hasMore: pageInfo?.hasNextPage ?? false,
     loadMore,
@@ -109,35 +112,38 @@ export function useForYouFeed() {
 }
 
 export function useFollowingFeed() {
-  const { data, loading, error, fetchMore, networkStatus } = useQuery(
-    FollowingFeedDocument,
-    {
-      variables: { limit: PAGE_SIZE },
-      // See useForYouFeed: bottom-tab navigation should restore the cached
-      // accumulated window without a page-1 background refresh.
-      fetchPolicy: "cache-first",
-      refetchWritePolicy: "merge",
-      notifyOnNetworkStatusChange: true,
-    },
-  );
+  const { data, loading, error, fetchMore } = useQuery(FollowingFeedDocument, {
+    variables: { limit: PAGE_SIZE },
+    // See useForYouFeed: bottom-tab navigation should restore the cached
+    // accumulated window without a page-1 background refresh.
+    fetchPolicy: "cache-first",
+    refetchWritePolicy: "merge",
+    notifyOnNetworkStatusChange: true,
+  });
 
   const items = data?.followingFeed?.items ?? [];
   const pageInfo = data?.followingFeed?.pageInfo;
 
   const itemCount = items.length;
   const guard = usePaginationGuard(itemCount);
+  // See useForYouFeed: networkStatus === fetchMore is too short-lived to
+  // reliably render, so loadingMore is tracked with local state instead.
+  const [loadingMore, setLoadingMore] = useState(false);
   const loadMore = useCallback(() => {
     if (!pageInfo?.hasNextPage || !pageInfo.endCursor) return;
     const cursor = pageInfo.endCursor;
-    guard(cursor, itemCount, () =>
-      fetchMore({ variables: { limit: PAGE_SIZE, after: cursor } }),
-    );
+    guard(cursor, itemCount, () => {
+      setLoadingMore(true);
+      return fetchMore({
+        variables: { limit: PAGE_SIZE, after: cursor },
+      }).finally(() => setLoadingMore(false));
+    });
   }, [fetchMore, pageInfo, guard, itemCount]);
 
   return {
     items,
-    loading: loading,
-    loadingMore: networkStatus === NetworkStatus.fetchMore,
+    loading,
+    loadingMore,
     error,
     hasMore: pageInfo?.hasNextPage ?? false,
     loadMore,
@@ -153,7 +159,7 @@ export function useNearbyFeed(
   coordinates: NearbyCoordinates | null,
   radiusKm: number,
 ) {
-  const { data, loading, error, fetchMore, networkStatus } = useQuery(
+  const { data, loading, error, fetchMore } = useQuery(
     LocalFeedDocument,
     {
       variables: {
@@ -176,12 +182,22 @@ export function useNearbyFeed(
 
   const itemCount = items.length;
   const guard = usePaginationGuard(itemCount);
+
+  // Apollo's networkStatus === fetchMore transition is too short-lived to
+  // reliably land in a React render here — the request/response round trip
+  // (particularly on a fast/local network) can resolve within the same tick
+  // React would use to commit the "fetchMore" state, so the intermediate
+  // value is coalesced away and the pagination spinner never shows even
+  // though the fetch genuinely happened (verified: items still grow).
+  // Track "in flight" ourselves instead of relying on networkStatus.
+  const [loadingMore, setLoadingMore] = useState(false);
   const loadMore = useCallback(() => {
     if (!coordinates) return;
     if (!pageInfo?.hasNextPage || !pageInfo.endCursor) return;
     const cursor = pageInfo.endCursor;
-    guard(cursor, itemCount, () =>
-      fetchMore({
+    guard(cursor, itemCount, () => {
+      setLoadingMore(true);
+      return fetchMore({
         variables: {
           latitude: coordinates.latitude,
           longitude: coordinates.longitude,
@@ -189,14 +205,14 @@ export function useNearbyFeed(
           limit: PAGE_SIZE,
           after: cursor,
         },
-      }),
-    );
+      }).finally(() => setLoadingMore(false));
+    });
   }, [fetchMore, pageInfo, coordinates, radiusKm, guard, itemCount]);
 
   return {
     items,
     loading: loading && items.length === 0,
-    loadingMore: networkStatus === NetworkStatus.fetchMore,
+    loadingMore,
     error,
     hasMore: pageInfo?.hasNextPage ?? false,
     loadMore,
