@@ -144,6 +144,7 @@ export function DesktopCreateFlow({ lang }: { lang: string }) {
       icon: <TikTokIcon size={26} className="" />,
       // Inline in this dialog, like the other types — no route hop.
       onClick: () => setTiktokOpen(true),
+      hidden: true,
     },
   ];
 
@@ -337,7 +338,7 @@ export function DesktopCreateFlow({ lang }: { lang: string }) {
                         key={opt.label}
                         onClick={opt.onClick}
                         disabled={creating}
-                        className="group flex flex-col items-center gap-3 rounded-2xl px-4 py-8 text-center transition-all hover:-translate-y-0.5 disabled:opacity-50"
+                        className={`group ${opt.hidden ? "hidden" : "flex"} flex-col items-center gap-3 rounded-2xl px-4 py-8 text-center transition-all hover:-translate-y-0.5 disabled:opacity-50`}
                         style={{
                           backgroundColor: "rgb(var(--color-bg-elevated))",
                           border: "1px solid rgb(var(--color-border))",
