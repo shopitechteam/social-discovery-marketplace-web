@@ -5,10 +5,12 @@ export const siteConfig = {
     "Shopi is Kenya's social discovery classifieds marketplace for buyers and sellers. Discover cars, phones, fashion, furniture, farm produce, livestock and everyday finds in a personalized nearby feed, then message the seller directly. Shopi does not process payments, take commission or sit between the deal.",
   // Default canonical domain. Override per-environment with NEXT_PUBLIC_APP_URL.
   url: process.env.NEXT_PUBLIC_APP_URL || "https://shopi.co.ke",
-  ogImage: "/opengraph-image",
+  // The site-wide OG card is rendered by app/[lang]/opengraph-image.tsx, so the
+  // URL must carry the default locale prefix to resolve (bare /opengraph-image 404s).
+  ogImage: "/en/opengraph-image",
   twitterHandle: "@shopiapp",
   locale: "en-KE",
-  themeColor: "#7c3aed",
+  themeColor: "#E0005C",
 
   // Primary search/discovery terms we want Shopi to surface for.
   keywords: [

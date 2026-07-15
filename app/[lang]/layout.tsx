@@ -23,14 +23,8 @@ export const metadata: Metadata = {
     siteName: siteConfig.name,
     title: `${siteConfig.name} — ${siteConfig.tagline}`,
     description: siteConfig.description,
-    images: [
-      {
-        url: siteConfig.ogImage,
-        width: 1200,
-        height: 630,
-        alt: `${siteConfig.name} — ${siteConfig.tagline}`,
-      },
-    ],
+    // OG/Twitter images are supplied by the sibling opengraph-image route
+    // (app/[lang]/opengraph-image.tsx), so they resolve under the locale prefix.
   },
   twitter: {
     card: "summary_large_image",
@@ -38,7 +32,6 @@ export const metadata: Metadata = {
     creator: siteConfig.twitterHandle,
     title: `${siteConfig.name} — ${siteConfig.tagline}`,
     description: siteConfig.description,
-    images: [siteConfig.ogImage],
   },
   manifest: "/manifest.json",
   appleWebApp: {
