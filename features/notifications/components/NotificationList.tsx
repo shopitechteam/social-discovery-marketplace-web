@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { shortTime } from "@/features/messaging/lib/helpers";
+import { useInfiniteScroll } from "@/features/feed/hooks/useInfiniteScroll";
 import type { NotificationItem } from "../types";
 
 interface Props {
@@ -46,6 +47,12 @@ export function NotificationList({
   onMarkAllRead,
   onLoadMore,
 }: Props) {
+  const { sentinelRef } = useInfiniteScroll({
+    hasMore,
+    loading,
+    onLoadMore,
+  });
+
   return (
     <section className="flex min-h-[calc(100svh-48px)] flex-col md:mx-auto md:h-full md:w-full md:max-w-[1600px] md:bg-app">
       <div
@@ -189,16 +196,23 @@ export function NotificationList({
               );
             })}
 
-            {hasMore ? (
-              <div className="px-4 py-4 md:px-6 md:py-5">
-                <button
-                  type="button"
-                  onClick={onLoadMore}
-                  className="h-10 w-full rounded-full border text-sm font-semibold"
-                  style={{ borderColor: "rgb(var(--color-border))" }}
+            <div ref={sentinelRef} className="h-1" />
+
+            {hasMore && loading ? (
+              <div className="flex justify-center py-4" aria-hidden>
+                <div
+                  className="rounded-full border px-4 py-2.5"
+                  style={{
+                    borderColor: "rgb(var(--color-border))",
+                    backgroundColor: "rgb(var(--color-bg-elevated))",
+                  }}
                 >
-                  Load more
-                </button>
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-muted" />
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-muted [animation-delay:120ms]" />
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-muted [animation-delay:240ms]" />
+                  </div>
+                </div>
               </div>
             ) : null}
           </>
