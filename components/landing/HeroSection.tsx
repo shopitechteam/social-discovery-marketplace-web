@@ -61,7 +61,6 @@ export function HeroSection({
             ))}
           </div>
           <p className="mt-5 flex items-center gap-2 text-sm text-muted">
-            <ShieldCheck size={16} className="text-primary" />
             {t.reassurance}
           </p>
         </div>

@@ -16,8 +16,8 @@ export function LandingFooter({
         {/* Brand */}
         <div>
           <div className="mb-4 flex items-center gap-2">
-            <div className="h-7.5 w-7.5 font-display text-[0.875rem]">
-              <ShopiLogo height={32} />
+            <div className="h-7.5  font-display text-[0.875rem]">
+              <ShopiLogo height={56} />
             </div>
           </div>
           <p className="max-w-65 text-sm leading-normal text-muted">
@@ -62,7 +62,10 @@ export function LandingFooter({
               { label: "Privacy Policy", href: `/${lang}/privacy` },
               { label: "Terms of Service", href: `/${lang}/terms` },
               { label: "Cookie Policy", href: `/${lang}/cookies` },
-              { label: "Community Guidelines", href: `/${lang}/community-guidelines` },
+              {
+                label: "Community Guidelines",
+                href: `/${lang}/community-guidelines`,
+              },
               { label: "Prohibited Items", href: `/${lang}/prohibited-items` },
               { label: "Safety Centre", href: `/${lang}/safety-centre` },
               { label: "Contact", href: `/${lang}/contact` },

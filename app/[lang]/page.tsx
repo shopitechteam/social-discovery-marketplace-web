@@ -86,12 +86,12 @@ const HOME_META: Record<
   { title: string; description: string; ogLocale: string }
 > = {
   en: {
-    title: `${siteConfig.name} | Kenya Local Marketplace & Classified Ads Feed`,
+    title: `Buy & Sell Locally in Kenya | ${siteConfig.name} Social Marketplace Feed`,
     description: siteConfig.description,
     ogLocale: "en_KE",
   },
   sw: {
-    title: `${siteConfig.name} | Soko la Karibu Kenya na Matangazo ya Bidhaa`,
+    title: `Nunua na Uuze Karibu Nawe Kenya | ${siteConfig.name} Soko la Kijamii`,
     description:
       "Shopi ni soko la kijamii la Kenya kwa wanunuzi na wauzaji. Gundua magari, simu, fashion, samani, mazao na bidhaa nyingine karibu nawe, kisha mtumie muuzaji ujumbe moja kwa moja. Shopi haishiki malipo wala haichukui commission.",
     ogLocale: "sw_KE",

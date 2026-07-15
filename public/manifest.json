@@ -9,7 +9,7 @@
   "lang": "en-KE",
   "categories": ["shopping", "social", "business"],
   "background_color": "#ffffff",
-  "theme_color": "#7c3aed",
+  "theme_color": "#E0005C",
   "icons": [
     {
       "src": "/assets/shopi-logo.svg",
@@ -19,15 +19,15 @@
     },
     {
       "src": "/assets/shopi-logo.png",
-      "sizes": "192x192",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/assets/shopi-logo.png",
+      "src": "/assets/shopi-logo-maskable.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "maskable"
     }
   ]
 }

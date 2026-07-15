@@ -143,7 +143,7 @@ export default async function ProfileOgImage({
               {name.length > 28 ? `${name.slice(0, 28)}…` : name}
             </div>
             {handle && (
-              <div style={{ fontSize: 34, color: "#c4b5fd", display: "flex" }}>
+              <div style={{ fontSize: 34, color: "#F5A8C4", display: "flex" }}>
                 {handle}
               </div>
             )}

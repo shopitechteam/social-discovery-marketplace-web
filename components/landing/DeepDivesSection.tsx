@@ -86,7 +86,12 @@ export function DeepDivesSection({
                 ))}
               </ul>
               <div className="mt-8 flex flex-wrap gap-3">
-                <Pill href={primaryHref}>{copy.ctaPrimary}</Pill>
+                <Pill
+                  href={primaryHref}
+                  className="bg-primary text-white hover:opacity-90"
+                >
+                  {copy.ctaPrimary}
+                </Pill>
                 <Pill href="#how-it-works" variant="outline">
                   {copy.ctaSecondary}
                 </Pill>
