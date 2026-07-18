@@ -75,16 +75,8 @@ export function LoginForm({ from, lang }: LoginFormProps) {
         router.replace(destination);
       }
     } catch (err: unknown) {
-      const suspendedMessage = getSuspendedAccountMessage(err);
-      if (suspendedMessage) {
+      if (getSuspendedAccountMessage(err)) {
         useAuthStore.getState().clearAuth();
-        const destination = `/${lang}/feed`;
-        if (typeof window !== "undefined") {
-          window.location.assign(destination);
-          return;
-        }
-        router.replace(destination);
-        return;
       }
       setServerError(
         err instanceof Error ? err.message : "Something went wrong.",

@@ -58,11 +58,6 @@ export function useOAuthMutation(lang: string, from?: string) {
   function extractError(error: unknown): string {
     if (getSuspendedAccountMessage(error)) {
       useAuthStore.getState().clearAuth();
-      if (typeof window !== "undefined") {
-        window.location.assign(`/${lang}/feed`);
-      } else {
-        router.replace(`/${lang}/feed`);
-      }
     }
     if (CombinedGraphQLErrors.is(error)) {
       return error.errors[0]?.message ?? "Something went wrong.";
