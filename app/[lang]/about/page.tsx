@@ -74,10 +74,10 @@ export default async function AboutPage({ params }: Props) {
               We built the proof.
             </h1>
             <p className="mx-auto max-w-140 text-[1.1rem] leading-[1.7] text-muted">
-              Shopi was born in Nairobi from a simple observation: Kenyans already
-              discover and recommend products through WhatsApp groups, Instagram
-              stories, and TikTok videos. We just built a marketplace that makes
-              that natural behaviour feel at home.
+              Shopi was born in Nairobi from a simple observation: Kenyans
+              already discover and recommend products through WhatsApp groups,
+              Instagram stories, and TikTok videos. We just built a marketplace
+              that makes that natural behaviour feel at home.
             </p>
           </div>
         </section>
@@ -93,10 +93,10 @@ export default async function AboutPage({ params }: Props) {
             checkout flow.
           </p>
           <p className="mt-3.5 text-[1rem] leading-[1.8] text-muted">
-            We believe the future of commerce in Africa is not built on catalogues
-            and shopping carts — it is built on trust, community, and authentic
-            content. Shopi is where that happens. We do not take a commission or
-            sit between you and the person you are dealing with.
+            We believe the future of commerce in Africa is not built on
+            catalogues and shopping carts — it is built on trust, community, and
+            authentic content. Shopi is where that happens. We do not take a
+            commission or sit between you and the person you are dealing with.
           </p>
         </section>
 
@@ -133,8 +133,8 @@ export default async function AboutPage({ params }: Props) {
             The team
           </h2>
           <p className="mb-8 max-w-140 text-[0.95rem] leading-[1.7] text-muted">
-            We are a small, focused team building consumer technology and commerce
-            for East Africa.
+            We are a small, focused team building consumer technology and
+            commerce for East Africa.
           </p>
           <div className="rounded-2xl border border-border bg-elevated p-8 text-center">
             <p className="text-[0.95rem] leading-[1.7] text-muted">
@@ -168,7 +168,8 @@ export default async function AboutPage({ params }: Props) {
           </div>
         </section>
       </main>
-      <LandingFooter />
+      <div className="mt-6 lg:mt-12" />
+      <LandingFooter lang={lang} />
     </>
   );
 }

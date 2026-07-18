@@ -8,6 +8,7 @@ import { PillarsSection } from "@/components/landing/PillarsSection";
 import { StatsSection } from "@/components/landing/StatsSection";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { LandingNav } from "@/components/landing/LandingNav";
+import { WelcomeBackBanner } from "@/components/landing/WelcomeBackBanner";
 //import { SupportChat } from "@/components/landing/SupportChat";
 import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
 import { getDictionary } from "@/i18n/getDictionary";
@@ -85,15 +86,19 @@ const HOME_META: Record<
   Locale,
   { title: string; description: string; ogLocale: string }
 > = {
+  // Brand-first titles: Google associates "Shopi" / "Shopi Kenya" queries with
+  // the homepage entity, which is what unlocks sitelinks for brand searches.
+  // Descriptions stay under ~160 chars so they aren't truncated in results.
   en: {
-    title: `Buy & Sell Locally in Kenya | ${siteConfig.name} Social Marketplace Feed`,
-    description: siteConfig.description,
+    title: `${siteConfig.name} Kenya — Buy & Sell Locally | Social Marketplace`,
+    description:
+      "Shopi is Kenya's social marketplace. Discover cars, phones, fashion, furniture and farm produce from sellers near you, then message them directly. Free, no commission.",
     ogLocale: "en_KE",
   },
   sw: {
-    title: `Nunua na Uuze Karibu Nawe Kenya | ${siteConfig.name} Soko la Kijamii`,
+    title: `${siteConfig.name} Kenya — Nunua na Uuze Karibu Nawe | Soko la Kijamii`,
     description:
-      "Shopi ni soko la kijamii la Kenya kwa wanunuzi na wauzaji. Gundua magari, simu, fashion, samani, mazao na bidhaa nyingine karibu nawe, kisha mtumie muuzaji ujumbe moja kwa moja. Shopi haishiki malipo wala haichukui commission.",
+      "Shopi ni soko la kijamii la Kenya. Gundua magari, simu, fashion, samani na mazao kutoka kwa wauzaji karibu nawe, kisha uwatumie ujumbe moja kwa moja. Bila commission.",
     ogLocale: "sw_KE",
   },
 };
@@ -156,37 +161,42 @@ export default async function Rootpage({ params }: PageProps<"/[lang]">) {
   const faq = HOME_FAQ[lang];
 
   return (
-    <div
-      // The two --landing-page-* vars tune every landing section at once.
-      className="lg:px-30 [--landing-page-max:1400px] [--landing-page-x:clamp(0.875rem,1.2vw,1.25rem)]"
-    >
-      {/* Structured data — Organization, WebSite (+search), marketplace app, FAQ */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: jsonLd(
-            organizationSchema,
-            websiteSchema,
-            marketplaceSchema,
-            faqSchema(faq),
-          ),
-        }}
-      />
+    <>
+      <div
+        // The two --landing-page-* vars tune every landing section at once.
+        // LandingFooter carries its own copy of this shell, so it renders
+        // outside this wrapper (below) to avoid doubling the lg inset.
+        className="lg:px-30 [--landing-page-max:1400px] [--landing-page-x:clamp(0.875rem,1.2vw,1.25rem)]"
+      >
+        {/* Structured data — Organization, WebSite (+search), marketplace app, FAQ */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: jsonLd(
+              organizationSchema,
+              websiteSchema,
+              marketplaceSchema,
+              faqSchema(faq),
+            ),
+          }}
+        />
 
-      <LandingNav dict={dict} lang={lang} />
-      <HeroSection dict={dict} lang={lang} />
-      <PillarsSection dict={dict} />
-      <StatsSection dict={dict} />
-      <DeepDivesSection dict={dict} lang={lang} />
-      <HowItWorksSection dict={dict} />
-      <TestimonialsSection dict={dict} />
-      {/* <BlogSection dict={dict} /> */}
-      {/* Visible FAQ — strong AEO signal and matches the FAQ structured data */}
-      <HomeFaq items={faq} lang={lang} />
-      <DownloadSection dict={dict} lang={lang} />
+        <LandingNav dict={dict} lang={lang} />
+        <HeroSection dict={dict} lang={lang} />
+        <PillarsSection dict={dict} />
+        <StatsSection dict={dict} />
+        <DeepDivesSection dict={dict} lang={lang} />
+        <HowItWorksSection dict={dict} />
+        <TestimonialsSection dict={dict} />
+        {/* <BlogSection dict={dict} /> */}
+        {/* Visible FAQ — strong AEO signal and matches the FAQ structured data */}
+        <HomeFaq items={faq} lang={lang} />
+        <DownloadSection dict={dict} lang={lang} />
+      </div>
       <LandingFooter dict={dict} lang={lang} />
+      <WelcomeBackBanner dict={dict} lang={lang} />
       {/* <SupportChat dict={dict} /> */}
-    </div>
+    </>
   );
 }
 

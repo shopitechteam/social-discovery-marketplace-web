@@ -3,6 +3,7 @@ import Link from "next/link";
 import { blogPosts } from "@/lib/blog";
 import { siteConfig } from "@/config/site";
 import { LegalNav } from "@/components/legal/LegalNav";
+import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 
 type Props = { params: Promise<{ lang: string }> };
@@ -62,6 +63,7 @@ export default async function BlogIndexPage({ params }: Props) {
   return (
     <>
       <LegalNav lang={lang} />
+      <BreadcrumbJsonLd lang={lang} trail={[{ name: "Blog", path: "/blog" }]} />
       <main className="mx-auto max-w-[1100px] px-4 pt-16 pb-12 sm:px-5 sm:pt-20 sm:pb-16">
         {/* Header */}
         <div className="mb-8 text-center">
@@ -72,13 +74,16 @@ export default async function BlogIndexPage({ params }: Props) {
             Insights for Kenya&apos;s social sellers
           </h1>
           <p className="mx-auto max-w-135 text-[1.05rem] leading-[1.65] text-muted">
-            Guides, trends, and real seller stories — everything you need to grow
-            your business through video and social discovery.
+            Guides, trends, and real seller stories — everything you need to
+            grow your business through video and social discovery.
           </p>
         </div>
 
         {/* Featured post */}
-        <Link href={`/${lang}/blog/${featured.slug}`} className="mb-8 block no-underline">
+        <Link
+          href={`/${lang}/blog/${featured.slug}`}
+          className="mb-8 block no-underline"
+        >
           <article
             className={`grid grid-cols-1 overflow-hidden rounded-lg border border-border bg-elevated min-[900px]:grid-cols-2 ${cardHover}`}
           >
@@ -130,11 +135,14 @@ export default async function BlogIndexPage({ params }: Props) {
                     {featured.author.name}
                   </div>
                   <div className="text-[0.72rem] text-muted">
-                    {new Date(featured.publishedAt).toLocaleDateString("en-KE", {
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                    })}
+                    {new Date(featured.publishedAt).toLocaleDateString(
+                      "en-KE",
+                      {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      },
+                    )}
                   </div>
                 </div>
               </div>
@@ -145,7 +153,11 @@ export default async function BlogIndexPage({ params }: Props) {
         {/* Grid of remaining posts */}
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 min-[900px]:grid-cols-3">
           {rest.map((post) => (
-            <Link key={post.slug} href={`/${lang}/blog/${post.slug}`} className="no-underline">
+            <Link
+              key={post.slug}
+              href={`/${lang}/blog/${post.slug}`}
+              className="no-underline"
+            >
               <article
                 className={`flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-elevated ${cardHover}`}
               >
@@ -201,11 +213,14 @@ export default async function BlogIndexPage({ params }: Props) {
                         {post.author.name}
                       </div>
                       <div className="text-[0.68rem] text-muted">
-                        {new Date(post.publishedAt).toLocaleDateString("en-KE", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
+                        {new Date(post.publishedAt).toLocaleDateString(
+                          "en-KE",
+                          {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          },
+                        )}
                       </div>
                     </div>
                   </div>
@@ -215,7 +230,8 @@ export default async function BlogIndexPage({ params }: Props) {
           ))}
         </div>
       </main>
-      <LandingFooter />
+      <div className="mt-6 lg:mt-12" />
+      <LandingFooter lang={lang} />
     </>
   );
 }

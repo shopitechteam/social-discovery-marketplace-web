@@ -26,10 +26,55 @@ export function setCachedVideoFrames(draftId: string, frames: Blob[]): void {
   frameCache.set(draftId, frames);
 }
 
+/**
+ * Append frames for a draft — used by the image flow, where each picked image
+ * contributes one frame and images can be added one at a time (gallery).
+ */
+export function appendCachedFrames(draftId: string, frames: Blob[]): void {
+  const existing = frameCache.get(draftId) ?? [];
+  frameCache.set(draftId, [...existing, ...frames]);
+}
+
 export function takeCachedVideoFrames(draftId: string): Blob[] | undefined {
   const frames = frameCache.get(draftId);
   if (frames) frameCache.delete(draftId); // one-shot: consumed once
   return frames;
+}
+
+/**
+ * Downscale a picked image File to a small JPEG Blob — the image counterpart
+ * of captureVideoFrames. Feeds the instant AI auto-fill so extraction starts
+ * the moment the user picks a photo, with zero dependence on the R2 upload or
+ * Sharp processing. Resolves null (never rejects) on undecodable files —
+ * instant AI is best-effort and must not disturb the upload itself.
+ */
+export async function captureImageFrame(
+  file: File,
+  maxDimension: number = MAX_DIMENSION,
+): Promise<Blob | null> {
+  try {
+    const bitmap = await createImageBitmap(file);
+    try {
+      const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
+      const w = Math.max(1, Math.round(bitmap.width * scale));
+      const h = Math.max(1, Math.round(bitmap.height * scale));
+
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return null;
+      ctx.drawImage(bitmap, 0, 0, w, h);
+
+      return await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob((blob) => resolve(blob), "image/jpeg", JPEG_QUALITY),
+      );
+    } finally {
+      bitmap.close();
+    }
+  } catch {
+    return null;
+  }
 }
 
 export interface CaptureOptions {

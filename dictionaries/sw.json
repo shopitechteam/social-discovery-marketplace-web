@@ -11,7 +11,7 @@
   "nav": {
     "features": "Vipengele",
     "howItWorks": "Jinsi Inavyofanya Kazi",
-    "creators": "Wabunifu",
+    "creators": "Uza kwenye Shopi",
     "openMenu": "Fungua menyu",
     "closeMenu": "Funga menyu",
     "toggleTheme": "Badilisha mandhari",
@@ -167,7 +167,8 @@
       "subheadline": "Teleza kwenye feed ya vitu halisi vinavyouzwa karibu nawe — magari, simu, samani, mazao freshi — kisha mtumie muuzaji ujumbe moja kwa moja. Shopi haichukui commission na haishiki pesa kamwe.",
       "ctaPrimary": "Fungua feed",
       "ctaSecondary": "Anza kuuza",
-      "reassurance": "Bure kubrowse · Bure kupost · Hakuna commission"
+      "reassurance": "Bure kubrowse · Bure kupost · Hakuna commission",
+      "ctaLoggedIn": "Endelea kwenye feed yako"
     },
     "pillars": {
       "feed": {
@@ -240,6 +241,12 @@
         "ctaPrimary": "Anza kuuza",
         "ctaSecondary": "Ona feed kwanza"
       }
+    },
+    "welcomeBack": {
+      "message": "Karibu tena, {name}!",
+      "messageNoName": "Karibu tena!",
+      "cta": "Rudi kwenye feed yako",
+      "dismiss": "Funga"
     }
   }
 }

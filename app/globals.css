@@ -1,6 +1,12 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* The app toggles theme via a `.dark` class on <html> (stores/theme.ts), so
+   `dark:` utilities must key off that class. Without this, Tailwind v4 defaults
+   them to the OS `prefers-color-scheme`, and any dark: style silently fails to
+   follow the in-app toggle. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   /* Brand — space-separated channels so `rgb(var(--x) / alpha)` works */
   /* #d81470 — darkened from #ea1979 to clear WCAG AA (white-on-primary 4.94:1). */
@@ -185,6 +191,15 @@
 /* Kill the transition on elements where it would cause visible jank */
 *:where(img, video, svg image) {
   transition: none;
+}
+
+/* While a theme switch is being applied (stores/theme.ts adds this class for
+   one frame), suppress ALL transitions so every surface, border and text color
+   flips in the same paint — the staggered fade reads as a layout shift. */
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition: none !important;
 }
 
 html {

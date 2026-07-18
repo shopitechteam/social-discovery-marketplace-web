@@ -65,30 +65,88 @@ export function PostCardSkeleton() {
 export function FeedSkeleton() {
   return (
     <div>
-      {/* Trending strip skeleton — must match TrendingStrip's real markup so
-          the initial-load skeleton doesn't shift when content swaps in:
-          same header row, mx-4 scroll spacing, and w-28 / 9:14 portrait cards. */}
-      <section className="pt-2 pb-1">
-        <div className="flex items-center justify-between px-4 mb-2.5">
-          <h2 className="text-sm font-bold text-default flex items-center gap-1.5">
-            <span>🔥</span> Trending
-          </h2>
-          <Skeleton className="h-3 w-16 rounded-full" />
-        </div>
-        <div className="flex gap-2.5 mx-4 overflow-hidden pb-0.5" aria-hidden>
-          {[...Array(5)].map((_, i) => (
-            <Skeleton
-              key={i}
-              className="flex-none w-28 rounded-xl"
-              style={{ aspectRatio: "9/14" }}
-            />
-          ))}
-        </div>
-      </section>
+      {/* ── Mobile skeleton — trending strip on top + full-width cards ── */}
+      <div className="md:hidden">
+        {/* Trending strip skeleton — must match TrendingStrip's real markup so
+            the initial-load skeleton doesn't shift when content swaps in:
+            same header row, mx-4 scroll spacing, and w-28 / 9:14 portrait cards. */}
+        <section className="pt-2 pb-1">
+          <div className="flex items-center justify-between px-4 mb-2.5">
+            <h2 className="text-sm font-bold text-default flex items-center gap-1.5">
+              <span>🔥</span> Trending
+            </h2>
+            <Skeleton className="h-3 w-16 rounded-full" />
+          </div>
+          <div className="flex gap-2.5 mx-4 overflow-hidden pb-0.5" aria-hidden>
+            {[...Array(5)].map((_, i) => (
+              <Skeleton
+                key={i}
+                className="flex-none w-28 rounded-xl"
+                style={{ aspectRatio: "9/14" }}
+              />
+            ))}
+          </div>
+        </section>
 
-      {[...Array(3)].map((_, i) => (
-        <PostCardSkeleton key={i} />
-      ))}
+        {[...Array(3)].map((_, i) => (
+          <PostCardSkeleton key={i} />
+        ))}
+      </div>
+
+      {/* ── Desktop skeleton — mirrors DesktopFeed's frame exactly (same
+          container, grid and column widths) so nothing jumps when the real
+          feed mounts: tabs + card column, trending in the RIGHT rail on xl. */}
+      <div className="hidden min-h-svh bg-app md:block" aria-hidden>
+        <div className="mx-auto w-full max-w-[1680px] px-4 pt-4 md:px-6 md:pt-6 xl:px-8">
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,360px)] xl:items-start">
+            <div className="mx-auto w-full min-w-0 max-w-[780px] pb-4 md:pb-6 xl:mx-0 xl:max-w-none">
+              {/* Tab bar placeholder — same height as the sticky tab row */}
+              <div className="mb-4 flex items-center gap-8 px-1 pb-2 pt-2">
+                {[...Array(3)].map((_, i) => (
+                  <Skeleton key={i} className="h-4 w-16 rounded-full" />
+                ))}
+              </div>
+
+              <div className="flex flex-col gap-4">
+                {[...Array(2)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="overflow-hidden rounded-2xl border border-default bg-elevated"
+                  >
+                    <PostCardSkeleton />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right rail — sell CTA + trending list, xl and up only */}
+            <aside className="sticky top-5 hidden self-start xl:block">
+              <div className="flex flex-col gap-4">
+                <Skeleton className="h-[132px] w-full rounded-2xl" />
+
+                <section className="rounded-2xl border border-default bg-elevated p-4">
+                  <div className="mb-3 flex items-center justify-between px-1">
+                    <Skeleton className="h-4 w-28 rounded-full" />
+                    <Skeleton className="h-5 w-12 rounded-full" />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {[...Array(6)].map((_, i) => (
+                      <div key={i} className="flex items-center gap-3 p-2">
+                        <Skeleton className="h-4 w-5 shrink-0 rounded" />
+                        <Skeleton className="h-9 w-9 shrink-0 rounded-xl" />
+                        <div className="flex-1 space-y-2">
+                          <Skeleton className="h-3 w-3/4 rounded-full" />
+                          <Skeleton className="h-2.5 w-1/2 rounded-full" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

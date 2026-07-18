@@ -2,6 +2,15 @@ import type { Metadata } from "next";
 import { siteConfig } from "@/config/site";
 import { isValidLocale } from "@/i18n/config";
 
+/**
+ * Metadata for private, personalized, or not-yet-built pages. Keeps them out
+ * of the index (thin/duplicate pages dilute crawl budget and sitelink quality)
+ * while still letting crawlers follow links through them.
+ */
+export function privatePageMetadata(title: string): Metadata {
+  return { title, robots: { index: false, follow: true } };
+}
+
 /** Consistent metadata for public, locale-prefixed informational pages. */
 export function publicPageMetadata(input: {
   lang: string;

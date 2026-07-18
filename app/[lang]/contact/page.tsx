@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LegalNav } from "@/components/legal/LegalNav";
+import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import { publicPageMetadata } from "@/lib/metadata";
 
 export async function generateMetadata({ params }: Props) {
@@ -23,6 +24,10 @@ export default async function ContactPage({ params }: Props) {
   return (
     <>
       <LegalNav lang={lang} />
+      <BreadcrumbJsonLd
+        lang={lang}
+        trail={[{ name: "Contact", path: "/contact" }]}
+      />
       <main className="mx-auto max-w-215 px-5 pt-20 pb-24">
         <div className="mb-10">
           <p className="mb-3 text-[0.8rem] md:text-[0.875rem] font-semibold tracking-[0.08em] uppercase text-primary">
@@ -38,61 +43,111 @@ export default async function ContactPage({ params }: Props) {
 
         <LegalSection>
           <p>
-            We&apos;re here to help. Depending on what you need, please reach out through the right channel below so we can get back to you faster.
+            We&apos;re here to help. Depending on what you need, please reach
+            out through the right channel below so we can get back to you
+            faster.
           </p>
         </LegalSection>
 
         <LegalSection title="Customer Support">
-          <p>Questions about using Shopi, your account, or how a feature works.</p>
-          <address className="not-italic">Email: <a href="mailto:support@shopi.co.ke">support@shopi.co.ke</a></address>
+          <p>
+            Questions about using Shopi, your account, or how a feature works.
+          </p>
+          <address className="not-italic">
+            Email: <a href="mailto:support@shopi.co.ke">support@shopi.co.ke</a>
+          </address>
         </LegalSection>
 
         <LegalSection title="Business Enquiries">
           <p>Partnerships, press, or general business questions.</p>
-          <address className="not-italic">Email: <a href="mailto:hello@shopi.co.ke">hello@shopi.co.ke</a></address>
+          <address className="not-italic">
+            Email: <a href="mailto:hello@shopi.co.ke">hello@shopi.co.ke</a>
+          </address>
         </LegalSection>
 
         <LegalSection title="Legal Requests">
-          <p>Questions about our <Link href={`${base}/terms`}>Terms of Service</Link>, legal notices, or law enforcement requests.</p>
-          <address className="not-italic">Email: <a href="mailto:legal@shopi.co.ke">legal@shopi.co.ke</a></address>
+          <p>
+            Questions about our{" "}
+            <Link href={`${base}/terms`}>Terms of Service</Link>, legal notices,
+            or law enforcement requests.
+          </p>
+          <address className="not-italic">
+            Email: <a href="mailto:legal@shopi.co.ke">legal@shopi.co.ke</a>
+          </address>
         </LegalSection>
 
         <LegalSection title="Privacy Requests">
-          <p>To ask what personal data we hold about you, request a correction, or request deletion under Kenya&apos;s Data Protection Act, 2019.</p>
-          <address className="not-italic">Email: <a href="mailto:privacy@shopi.co.ke">privacy@shopi.co.ke</a></address>
+          <p>
+            To ask what personal data we hold about you, request a correction,
+            or request deletion under Kenya&apos;s Data Protection Act, 2019.
+          </p>
+          <address className="not-italic">
+            Email: <a href="mailto:privacy@shopi.co.ke">privacy@shopi.co.ke</a>
+          </address>
         </LegalSection>
 
         <LegalSection title="Copyright Complaints">
-          <p>If you believe content on Shopi infringes your copyright or intellectual property rights, tell us:</p>
+          <p>
+            If you believe content on Shopi infringes your copyright or
+            intellectual property rights, tell us:
+          </p>
           <ul>
-            <li>The content you believe infringes your rights (a link or description)</li>
+            <li>
+              The content you believe infringes your rights (a link or
+              description)
+            </li>
             <li>Proof or explanation of your ownership</li>
             <li>Your contact details</li>
           </ul>
-          <address className="not-italic">Email: <a href="mailto:legal@shopi.co.ke">legal@shopi.co.ke</a></address>
+          <address className="not-italic">
+            Email: <a href="mailto:legal@shopi.co.ke">legal@shopi.co.ke</a>
+          </address>
         </LegalSection>
 
         <LegalSection title="Report Abuse">
           <p>
-            For scams, harassment, prohibited listings, or safety concerns, please use the in-app block and report tools in messaging first — this gets reviewed fastest. For anything that needs additional attention:
+            For scams, harassment, prohibited listings, or safety concerns,
+            please use the in-app block and report tools in messaging first —
+            this gets reviewed fastest. For anything that needs additional
+            attention:
           </p>
-          <address className="not-italic">Email: <a href="mailto:support@shopi.co.ke">support@shopi.co.ke</a></address>
+          <address className="not-italic">
+            Email: <a href="mailto:support@shopi.co.ke">support@shopi.co.ke</a>
+          </address>
         </LegalSection>
 
         <p className="mt-8 text-[0.8rem] text-muted italic">
-          Note: some email addresses above are placeholders and should be replaced with real, monitored inboxes before publishing this page. The hello@shopi.co.ke address is already in use in the site footer.
+          Note: some email addresses above are placeholders and should be
+          replaced with real, monitored inboxes before publishing this page. The
+          hello@shopi.co.ke address is already in use in the site footer.
         </p>
 
         <div className="mt-12 flex flex-wrap gap-6 border-t border-border pt-8">
-          <Link href={`${base}/safety-centre`} className="text-[0.875rem] text-primary">Safety Centre</Link>
-          <Link href={`${base}/community-guidelines`} className="text-[0.875rem] text-primary">Community Guidelines</Link>
+          <Link
+            href={`${base}/safety-centre`}
+            className="text-[0.875rem] text-primary"
+          >
+            Safety Centre
+          </Link>
+          <Link
+            href={`${base}/community-guidelines`}
+            className="text-[0.875rem] text-primary"
+          >
+            Community Guidelines
+          </Link>
         </div>
       </main>
     </>
   );
 }
 
-function LegalSection({ title, children }: { title?: string; children: React.ReactNode }) {
+function LegalSection({
+  title,
+  children,
+}: {
+  title?: string;
+  children: React.ReactNode;
+}) {
   return (
     <section className="mb-9">
       {title && (
