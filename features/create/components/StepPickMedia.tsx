@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMutation } from "@apollo/client/react";
 import { useCreateStore } from "@/stores/create";
 import { useMediaUpload } from "@/features/create/hooks/useMediaUpload";
+import { SHOW_TIKTOK_CREATE_OPTIONS } from "@/features/create/utils/tiktokAvailability";
 import { CreateDraftDocument } from "@/types/__generated__/graphql";
 
 export function StepPickMedia() {
@@ -212,53 +213,54 @@ export function StepPickMedia() {
           />
         </button>
 
-        {/* TikTok import hint */}
-        <div
-          className="rounded-2xl px-4 py-3 flex items-center gap-3"
-          style={{
-            backgroundColor: "rgb(var(--color-bg-subtle))",
-            border: "1px solid rgb(var(--color-border))",
-          }}
-        >
+        {SHOW_TIKTOK_CREATE_OPTIONS && (
           <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ backgroundColor: "rgb(var(--color-bg-elevated))" }}
+            className="rounded-2xl px-4 py-3 flex items-center gap-3"
+            style={{
+              backgroundColor: "rgb(var(--color-bg-subtle))",
+              border: "1px solid rgb(var(--color-border))",
+            }}
           >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.22 8.22 0 0 0 4.82 1.56V6.8a4.85 4.85 0 0 1-1.05-.11Z"
-                fill="rgb(var(--color-text-muted))"
-              />
-            </svg>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p
-              className="font-medium"
-              style={{
-                fontSize: "var(--text-sm)",
-                color: "rgb(var(--color-text))",
-              }}
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: "rgb(var(--color-bg-elevated))" }}
             >
-              Import from TikTok
-            </p>
-            <p
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.22 8.22 0 0 0 4.82 1.56V6.8a4.85 4.85 0 0 1-1.05-.11Z"
+                  fill="rgb(var(--color-text-muted))"
+                />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p
+                className="font-medium"
+                style={{
+                  fontSize: "var(--text-sm)",
+                  color: "rgb(var(--color-text))",
+                }}
+              >
+                Import from TikTok
+              </p>
+              <p
+                style={{
+                  fontSize: "var(--text-xs)",
+                  color: "rgb(var(--color-text-muted))",
+                }}
+              >
+                Auto-converts your TikTok videos to posts
+              </p>
+            </div>
+            <span
               style={{
                 fontSize: "var(--text-xs)",
                 color: "rgb(var(--color-text-muted))",
               }}
             >
-              Auto-converts your TikTok videos to posts
-            </p>
+              →
+            </span>
           </div>
-          <span
-            style={{
-              fontSize: "var(--text-xs)",
-              color: "rgb(var(--color-text-muted))",
-            }}
-          >
-            →
-          </span>
-        </div>
+        )}
       </div>
 
       {/* Error */}

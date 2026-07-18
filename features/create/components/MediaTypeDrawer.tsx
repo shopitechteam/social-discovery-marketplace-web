@@ -7,6 +7,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
+import { SHOW_TIKTOK_CREATE_OPTIONS } from "@/features/create/utils/tiktokAvailability";
 
 interface Props {
   open: boolean;
@@ -85,7 +86,9 @@ export function MediaTypeDrawer({ open, onOpenChange, onPickVideo, onPickImage, 
         </div>
       ),
     },
-    {
+  ];
+  if (SHOW_TIKTOK_CREATE_OPTIONS) {
+    options.push({
       key: "tiktok",
       label: "Import from TikTok",
       description: "Paste a TikTok link to re-post",
@@ -101,8 +104,8 @@ export function MediaTypeDrawer({ open, onOpenChange, onPickVideo, onPickImage, 
           </svg>
         </div>
       ),
-    },
-  ];
+    });
+  }
 
   return (
     <Drawer open={open} onOpenChange={(v) => { if (!v) handleClose(); }}>
