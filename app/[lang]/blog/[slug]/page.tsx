@@ -4,6 +4,7 @@ import Link from "next/link";
 import { getBlogPost, getAllSlugs, blogPosts } from "@/lib/blog";
 import { siteConfig } from "@/config/site";
 import { LegalNav } from "@/components/legal/LegalNav";
+import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 
 type Props = { params: Promise<{ lang: string; slug: string }> };
@@ -120,17 +121,27 @@ export default async function BlogPostPage({ params }: Props) {
       />
 
       <LegalNav lang={lang} />
+      <BreadcrumbJsonLd
+        lang={lang}
+        trail={[
+          { name: "Blog", path: "/blog" },
+          { name: post.title, path: `/blog/${post.slug}` },
+        ]}
+      />
 
       <main className="mx-auto max-w-[1100px] px-4 pt-16 pb-12 sm:px-5 sm:pt-20 sm:pb-16">
         <div className="grid grid-cols-1 items-start gap-8 min-[900px]:grid-cols-[1fr_300px] min-[900px]:gap-12">
-
           {/* ── Article body ─────────────────────────────────────── */}
           <article>
             {/* Breadcrumb */}
             <nav className="mb-8 text-[0.8rem] text-muted">
-              <Link href={`/${lang}`} className="text-muted no-underline">Home</Link>
+              <Link href={`/${lang}`} className="text-muted no-underline">
+                Home
+              </Link>
               <span className="mx-2">›</span>
-              <Link href={`/${lang}/blog`} className="text-muted no-underline">Blog</Link>
+              <Link href={`/${lang}/blog`} className="text-muted no-underline">
+                Blog
+              </Link>
               <span className="mx-2">›</span>
               <span className="text-foreground">{post.category}</span>
             </nav>
@@ -145,7 +156,11 @@ export default async function BlogPostPage({ params }: Props) {
               </span>
               <span className="text-[0.8rem] text-muted">{post.readTime}</span>
               <span className="text-[0.8rem] text-muted">
-                {new Date(post.publishedAt).toLocaleDateString("en-KE", { day: "numeric", month: "long", year: "numeric" })}
+                {new Date(post.publishedAt).toLocaleDateString("en-KE", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}
               </span>
             </div>
 
@@ -187,7 +202,10 @@ export default async function BlogPostPage({ params }: Props) {
                   {section.heading}
                 </h2>
                 {section.body.split("\n\n").map((para, j) => (
-                  <p key={j} className="mb-4 text-[1rem] leading-[1.8] text-muted">
+                  <p
+                    key={j}
+                    className="mb-4 text-[1rem] leading-[1.8] text-muted"
+                  >
                     {para}
                   </p>
                 ))}
@@ -200,7 +218,10 @@ export default async function BlogPostPage({ params }: Props) {
                       >
                         <span
                           className="mt-[3px] flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
-                          style={{ background: `${catColor}22`, color: catColor }}
+                          style={{
+                            background: `${catColor}22`,
+                            color: catColor,
+                          }}
                         >
                           <svg
                             width="11"
@@ -225,7 +246,9 @@ export default async function BlogPostPage({ params }: Props) {
 
             {/* Keywords / tags */}
             <div className="mb-12 border-t border-border pt-6">
-              <div className="mb-3 text-[0.75rem] font-semibold tracking-[0.05em] uppercase text-muted">Topics</div>
+              <div className="mb-3 text-[0.75rem] font-semibold tracking-[0.05em] uppercase text-muted">
+                Topics
+              </div>
               <div className="flex flex-wrap gap-2">
                 {post.keywords.map((kw) => (
                   <span
@@ -245,28 +268,30 @@ export default async function BlogPostPage({ params }: Props) {
                   Further reading
                 </div>
                 <div className="flex flex-col gap-3">
-                  {post.relatedLinks.map(({ label, url, description: desc }) => (
-                    <a
-                      key={url}
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-start gap-4 rounded-[10px] border border-border bg-surface px-4 py-3.5 no-underline transition-colors duration-150"
-                    >
-                      <span
-                        className="mt-[7px] h-2 w-2 shrink-0 rounded-full"
-                        style={{ background: catColor }}
-                      />
-                      <div>
-                        <div className="mb-1 text-[0.875rem] font-semibold text-foreground">
-                          {label} ↗
+                  {post.relatedLinks.map(
+                    ({ label, url, description: desc }) => (
+                      <a
+                        key={url}
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-start gap-4 rounded-[10px] border border-border bg-surface px-4 py-3.5 no-underline transition-colors duration-150"
+                      >
+                        <span
+                          className="mt-[7px] h-2 w-2 shrink-0 rounded-full"
+                          style={{ background: catColor }}
+                        />
+                        <div>
+                          <div className="mb-1 text-[0.875rem] font-semibold text-foreground">
+                            {label} ↗
+                          </div>
+                          <div className="text-[0.8rem] leading-[1.5] text-muted">
+                            {desc}
+                          </div>
                         </div>
-                        <div className="text-[0.8rem] leading-[1.5] text-muted">
-                          {desc}
-                        </div>
-                      </div>
-                    </a>
-                  ))}
+                      </a>
+                    ),
+                  )}
                 </div>
               </div>
             )}
@@ -305,7 +330,8 @@ export default async function BlogPostPage({ params }: Props) {
                 Ready to buy and sell locally?
               </h3>
               <p className="mb-5 text-[0.875rem] text-muted">
-                Open the feed, discover what is selling near you, and message the seller directly. Free to use.
+                Open the feed, discover what is selling near you, and message
+                the seller directly. Free to use.
               </p>
               <Link
                 href={`/${lang}/feed`}
@@ -328,7 +354,9 @@ export default async function BlogPostPage({ params }: Props) {
                   <div
                     key={i}
                     className={`py-[0.45rem] text-[0.8rem] leading-[1.4] text-muted ${
-                      i < post.sections.length - 1 ? "border-b border-border" : ""
+                      i < post.sections.length - 1
+                        ? "border-b border-border"
+                        : ""
                     }`}
                   >
                     <span
@@ -350,7 +378,11 @@ export default async function BlogPostPage({ params }: Props) {
               </div>
               <div className="flex flex-col gap-4">
                 {related.map((r) => (
-                  <Link key={r.slug} href={`/${lang}/blog/${r.slug}`} className="no-underline">
+                  <Link
+                    key={r.slug}
+                    href={`/${lang}/blog/${r.slug}`}
+                    className="no-underline"
+                  >
                     <div className="rounded-[10px] border border-border bg-surface p-3 transition-colors duration-150">
                       <span
                         className="mb-2 inline-block rounded-full px-[7px] py-[2px] text-[0.65rem] font-bold tracking-[0.04em] uppercase"
@@ -373,7 +405,6 @@ export default async function BlogPostPage({ params }: Props) {
               </div>
             </div>
           </aside>
-
         </div>
       </main>
 

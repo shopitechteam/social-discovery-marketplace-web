@@ -1,4 +1,5 @@
 import { LegalNav } from "@/components/legal/LegalNav";
+import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { publicPageMetadata } from "@/lib/metadata";
 
@@ -20,6 +21,10 @@ export default async function CareersPage({ params }: Props) {
   return (
     <>
       <LegalNav lang={lang} />
+      <BreadcrumbJsonLd
+        lang={lang}
+        trail={[{ name: "Careers", path: "/careers" }]}
+      />
       <main>
         {/* Hero */}
         <section className="bg-[linear-gradient(135deg,rgb(var(--brand-primary)/0.08)_0%,rgb(var(--brand-accent)/0.06)_100%)] px-5 pt-24 pb-16 text-center">
@@ -72,8 +77,8 @@ export default async function CareersPage({ params }: Props) {
               {/* About */}
               <RoleSection title="About the role">
                 <p>
-                  Shopi connects Kenyan buyers and sellers through short
-                  videos, direct messaging, and local discovery. As our first Customer
+                  Shopi connects Kenyan buyers and sellers through short videos,
+                  direct messaging, and local discovery. As our first Customer
                   Service hire, you will be the primary point of contact for
                   everyone on the platform — answering questions, resolving
                   issues, and making sure every interaction leaves people

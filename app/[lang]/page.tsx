@@ -86,15 +86,19 @@ const HOME_META: Record<
   Locale,
   { title: string; description: string; ogLocale: string }
 > = {
+  // Brand-first titles: Google associates "Shopi" / "Shopi Kenya" queries with
+  // the homepage entity, which is what unlocks sitelinks for brand searches.
+  // Descriptions stay under ~160 chars so they aren't truncated in results.
   en: {
-    title: `Buy & Sell Locally in Kenya | ${siteConfig.name} Social Marketplace Feed`,
-    description: siteConfig.description,
+    title: `${siteConfig.name} Kenya — Buy & Sell Locally | Social Marketplace`,
+    description:
+      "Shopi is Kenya's social marketplace. Discover cars, phones, fashion, furniture and farm produce from sellers near you, then message them directly. Free, no commission.",
     ogLocale: "en_KE",
   },
   sw: {
-    title: `Nunua na Uuze Karibu Nawe Kenya | ${siteConfig.name} Soko la Kijamii`,
+    title: `${siteConfig.name} Kenya — Nunua na Uuze Karibu Nawe | Soko la Kijamii`,
     description:
-      "Shopi ni soko la kijamii la Kenya kwa wanunuzi na wauzaji. Gundua magari, simu, fashion, samani, mazao na bidhaa nyingine karibu nawe, kisha mtumie muuzaji ujumbe moja kwa moja. Shopi haishiki malipo wala haichukui commission.",
+      "Shopi ni soko la kijamii la Kenya. Gundua magari, simu, fashion, samani na mazao kutoka kwa wauzaji karibu nawe, kisha uwatumie ujumbe moja kwa moja. Bila commission.",
     ogLocale: "sw_KE",
   },
 };

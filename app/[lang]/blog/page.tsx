@@ -3,6 +3,7 @@ import Link from "next/link";
 import { blogPosts } from "@/lib/blog";
 import { siteConfig } from "@/config/site";
 import { LegalNav } from "@/components/legal/LegalNav";
+import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 
 type Props = { params: Promise<{ lang: string }> };
@@ -62,6 +63,7 @@ export default async function BlogIndexPage({ params }: Props) {
   return (
     <>
       <LegalNav lang={lang} />
+      <BreadcrumbJsonLd lang={lang} trail={[{ name: "Blog", path: "/blog" }]} />
       <main className="mx-auto max-w-[1100px] px-4 pt-16 pb-12 sm:px-5 sm:pt-20 sm:pb-16">
         {/* Header */}
         <div className="mb-8 text-center">
