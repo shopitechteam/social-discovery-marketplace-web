@@ -20,6 +20,7 @@ import {
   CreateErrorDialog,
   createErrorMessage,
 } from "./CreateErrorDialog";
+import { SHOW_TIKTOK_CREATE_OPTIONS } from "@/features/create/utils/tiktokAvailability";
 
 const STEPS = [
   { n: 1, label: "Choose type" },
@@ -144,7 +145,7 @@ export function DesktopCreateFlow({ lang }: { lang: string }) {
       icon: <TikTokIcon size={26} className="" />,
       // Inline in this dialog, like the other types — no route hop.
       onClick: () => setTiktokOpen(true),
-      hidden: true,
+      hidden: !SHOW_TIKTOK_CREATE_OPTIONS,
     },
   ];
 

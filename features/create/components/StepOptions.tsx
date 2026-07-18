@@ -22,6 +22,7 @@ import {
   trackDraftAutosave,
   unblockDraftAutosave,
 } from "@/features/create/utils/draftAutosave";
+import { SHOW_TIKTOK_CREATE_OPTIONS } from "@/features/create/utils/tiktokAvailability";
 import { Celebration, SuccessBadge } from "./Celebration";
 import celebrationStyles from "./Celebration.module.css";
 import { TikTokCreatePreview } from "./TikTokCreatePreview";
@@ -121,6 +122,14 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
   const [publishDraft] = useMutation(PublishDraftDocument);
   const [postToTiktok] = useMutation(POST_TO_TIKTOK) as any;
   const [getTiktokConnectUrl] = useMutation(TiktokConnectUrlDocument);
+  const showTiktokCrossPost =
+    SHOW_TIKTOK_CREATE_OPTIONS && contentType === "video";
+
+  useEffect(() => {
+    if (!showTiktokCrossPost && postOnTiktok) {
+      setPostOnTiktok(false);
+    }
+  }, [postOnTiktok, setPostOnTiktok, showTiktokCrossPost]);
 
   const queueAutosave = useCallback(
     (input: {
@@ -272,7 +281,7 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
       setPublished(true);
 
       // 4. Optional TikTok cross-post
-      if (postOnTiktok && contentId) {
+      if (showTiktokCrossPost && postOnTiktok && contentId) {
         try {
           const tiktokResult = await postToTiktok({ variables: { contentId } });
           const tiktokErrors = tiktokResult?.errors ?? [];
@@ -456,7 +465,7 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
     </Section>
   );
 
-  const tiktokSection = contentType === "video" && (
+  const tiktokSection = showTiktokCrossPost && (
     <Section title="Share">
       <div className="flex flex-col">
         <ToggleRow

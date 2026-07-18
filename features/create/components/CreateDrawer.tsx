@@ -6,6 +6,7 @@ import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { useMutation } from "@apollo/client/react";
 import { useCreateStore } from "@/stores/create";
 import { useMediaUpload } from "@/features/create/hooks/useMediaUpload";
+import { SHOW_TIKTOK_CREATE_OPTIONS } from "@/features/create/utils/tiktokAvailability";
 import { CreateDraftDocument } from "@/types/__generated__/graphql";
 import { Button } from "@/components/ui/button";
 
@@ -176,17 +177,20 @@ export function CreateDrawer({ lang }: { lang: string }) {
               <span className="text-md font-medium">Photos</span>
             </Button>
 
-            <div className="h-px bg-border" />
+            {SHOW_TIKTOK_CREATE_OPTIONS && (
+              <>
+                <div className="h-px bg-border" />
 
-            {/* TikTok import */}
-            <Button
-              variant="ghost"
-              onClick={handleTiktokImport}
-              disabled={preparingTiktok}
-              className="w-full h-14 rounded-none active:bg-surface transition-colors"
-            >
-              <span className="text-md font-medium">TikTok Imports</span>
-            </Button>
+                <Button
+                  variant="ghost"
+                  onClick={handleTiktokImport}
+                  disabled={preparingTiktok}
+                  className="w-full h-14 rounded-none active:bg-surface transition-colors"
+                >
+                  <span className="text-md font-medium">TikTok Imports</span>
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Separator */}
