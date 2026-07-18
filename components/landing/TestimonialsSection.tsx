@@ -1,7 +1,13 @@
 import React from "react";
 import type { Dictionary } from "@/i18n/getDictionary";
 
-const EL = ({ href, children }: { href: string; children: React.ReactNode }) => (
+const EL = ({
+  href,
+  children,
+}: {
+  href: string;
+  children: React.ReactNode;
+}) => (
   <a
     href={href}
     target="_blank"
@@ -78,7 +84,7 @@ export function TestimonialsSection({ dict }: { dict: Dictionary }) {
               key={who}
               className="flex flex-col gap-5 rounded-lg border border-border bg-elevated p-8"
             >
-              <div className={`h-1 w-9 rounded-[4px] ${accentBar}`} />
+              <div className={`h-1 w-9 rounded-sm ${accentBar}`} />
               <p className="flex-1 text-md leading-[1.6] text-foreground">
                 {node}
               </p>
