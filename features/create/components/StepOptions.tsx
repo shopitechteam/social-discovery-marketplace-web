@@ -217,12 +217,13 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
       await autosaveInFlightRef.current?.catch(() => undefined);
 
       // 1. Autosave options
-      const { error: saveError } = await queueAutosave({
+      const saveResult = await queueAutosave({
         price: { amount: parsedPrice, currency, negotiable },
         visibilityMode: toVisibilityMode(visibilityMode),
         allowDownload,
         hdEnabled,
       });
+      const saveError = saveResult?.error;
       if (saveError) {
         setError(saveError.message ?? "Failed to save settings");
         return;
