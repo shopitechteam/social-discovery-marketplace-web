@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { gql } from "@apollo/client";
 import { useMutation, useQuery } from "@apollo/client/react";
@@ -103,6 +103,7 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
   const [published, setPublished] = useState(false);
   const [tiktokReconnectNeeded, setTiktokReconnectNeeded] = useState(false);
   const [connectingTiktok, setConnectingTiktok] = useState(false);
+  const autosaveInFlightRef = useRef<Promise<unknown> | null>(null);
 
   const { data: meData, refetch: refetchMe } = useQuery(MeDocument, {
     fetchPolicy: "cache-and-network",
@@ -114,6 +115,30 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
   const [publishDraft] = useMutation(PublishDraftDocument);
   const [postToTiktok] = useMutation(POST_TO_TIKTOK) as any;
   const [getTiktokConnectUrl] = useMutation(TiktokConnectUrlDocument);
+
+  const queueAutosave = useCallback(
+    (input: {
+      price?: { amount: number; currency: string; negotiable: boolean };
+      visibilityMode?: VisibilityMode;
+      allowDownload?: boolean;
+      hdEnabled?: boolean;
+    }) => {
+      if (!draftId) return null;
+      const request = autosave({
+        variables: {
+          id: draftId,
+          input,
+        },
+      });
+      autosaveInFlightRef.current = request;
+      return request.finally(() => {
+        if (autosaveInFlightRef.current === request) {
+          autosaveInFlightRef.current = null;
+        }
+      });
+    },
+    [autosave, draftId],
+  );
 
   async function handleTiktokToggle() {
     if (postOnTiktok) {
@@ -158,27 +183,22 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
     if (publishing || published) return;
 
     const timer = setTimeout(() => {
-      autosave({
-        variables: {
-          id: draftId,
-          input: {
-            visibilityMode: toVisibilityMode(visibilityMode),
-            allowDownload,
-            hdEnabled,
-          },
-        },
-      }).catch(() => undefined);
+      queueAutosave({
+        visibilityMode: toVisibilityMode(visibilityMode),
+        allowDownload,
+        hdEnabled,
+      })?.catch(() => undefined);
     }, 250);
 
     return () => clearTimeout(timer);
   }, [
     allowDownload,
-    autosave,
     draftId,
     hdEnabled,
     visibilityMode,
     publishing,
     published,
+    queueAutosave,
   ]);
 
   /**
@@ -194,18 +214,16 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
     const parsedPrice = price ?? 0;
 
     try {
+      await autosaveInFlightRef.current?.catch(() => undefined);
+
       // 1. Autosave options
-      const { error: saveError } = await autosave({
-        variables: {
-          id: draftId,
-          input: {
-            price: { amount: parsedPrice, currency, negotiable },
-            visibilityMode: toVisibilityMode(visibilityMode),
-            allowDownload,
-            hdEnabled,
-          },
-        },
+      const saveResult = await queueAutosave({
+        price: { amount: parsedPrice, currency, negotiable },
+        visibilityMode: toVisibilityMode(visibilityMode),
+        allowDownload,
+        hdEnabled,
       });
+      const saveError = saveResult?.error;
       if (saveError) {
         setError(saveError.message ?? "Failed to save settings");
         return;
