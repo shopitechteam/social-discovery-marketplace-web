@@ -156,6 +156,11 @@ const nextConfig: NextConfig = {
       "cookies",
       "feed",
       "explore",
+      "search",
+      "contact",
+      "community-guidelines",
+      "prohibited-items",
+      "safety-centre",
     ];
     return [
       { source: "/", destination: "/en", permanent: true },
