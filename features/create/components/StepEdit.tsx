@@ -16,6 +16,10 @@ import { MediaPicker } from "./MediaPicker";
 import { CategoryPickerDrawer } from "./CategoryPickerDrawer";
 import { useVideoFrameExtract } from "@/features/create/hooks/useVideoFrameExtract";
 import { takeCachedVideoFrames } from "@/features/create/utils/captureVideoFrames";
+import {
+  isDraftAutosaveBlocked,
+  trackDraftAutosave,
+} from "@/features/create/utils/draftAutosave";
 import { Switch } from "@/components/ui/switch";
 
 interface EditFormValues {
@@ -354,33 +358,37 @@ export function StepEdit({
   useEffect(() => {
     if (!draftId) return;
     const timer = setTimeout(() => {
-      autosaveMutation({
-        variables: {
-          id: draftId,
-          input: {
-            title: titleValue || undefined,
-            caption: watchCaption || undefined,
-            hashtags: tags.length ? tags : undefined,
-            categoryId: categoryId ?? undefined,
-            specs: specs.length
-              ? specs
-                  .filter((s) => s.key.trim() && s.value.trim())
-                  .map((s) => ({ key: s.key.trim(), value: s.value.trim() }))
-              : undefined,
-            location: location
-              ? {
-                  placeName: location.placeName,
-                  formattedAddress: location.formattedAddress,
-                  placeId: location.placeId,
-                  latitude: location.latitude,
-                  longitude: location.longitude,
-                  county: location.county,
-                  subregion: location.subregion,
-                }
-              : undefined,
+      if (isDraftAutosaveBlocked(draftId)) return;
+      void trackDraftAutosave(
+        draftId,
+        autosaveMutation({
+          variables: {
+            id: draftId,
+            input: {
+              title: titleValue || undefined,
+              caption: watchCaption || undefined,
+              hashtags: tags.length ? tags : undefined,
+              categoryId: categoryId ?? undefined,
+              specs: specs.length
+                ? specs
+                    .filter((s) => s.key.trim() && s.value.trim())
+                    .map((s) => ({ key: s.key.trim(), value: s.value.trim() }))
+                : undefined,
+              location: location
+                ? {
+                    placeName: location.placeName,
+                    formattedAddress: location.formattedAddress,
+                    placeId: location.placeId,
+                    latitude: location.latitude,
+                    longitude: location.longitude,
+                    county: location.county,
+                    subregion: location.subregion,
+                  }
+                : undefined,
+            },
           },
-        },
-      }).catch(() => undefined);
+        }),
+      ).catch(() => undefined);
     }, 800);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
