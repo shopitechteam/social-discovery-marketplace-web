@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { gql } from "@apollo/client";
 import { useMutation, useQuery } from "@apollo/client/react";
@@ -15,6 +15,13 @@ import {
 } from "@/types/__generated__/graphql";
 import type { VisibilityMode } from "@/types/__generated__/graphql";
 import { getMediaPreviewSrc } from "@/features/create/utils/mediaPreview";
+import {
+  awaitDraftAutosaves,
+  blockDraftAutosave,
+  isDraftAutosaveBlocked,
+  trackDraftAutosave,
+  unblockDraftAutosave,
+} from "@/features/create/utils/draftAutosave";
 import { Celebration, SuccessBadge } from "./Celebration";
 import celebrationStyles from "./Celebration.module.css";
 import { TikTokCreatePreview } from "./TikTokCreatePreview";
@@ -103,7 +110,6 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
   const [published, setPublished] = useState(false);
   const [tiktokReconnectNeeded, setTiktokReconnectNeeded] = useState(false);
   const [connectingTiktok, setConnectingTiktok] = useState(false);
-  const autosaveInFlightRef = useRef<Promise<unknown> | null>(null);
 
   const { data: meData, refetch: refetchMe } = useQuery(MeDocument, {
     fetchPolicy: "cache-and-network",
@@ -124,18 +130,16 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
       hdEnabled?: boolean;
     }) => {
       if (!draftId) return null;
-      const request = autosave({
-        variables: {
-          id: draftId,
-          input,
-        },
-      });
-      autosaveInFlightRef.current = request;
-      return request.finally(() => {
-        if (autosaveInFlightRef.current === request) {
-          autosaveInFlightRef.current = null;
-        }
-      });
+      if (isDraftAutosaveBlocked(draftId)) return null;
+      return trackDraftAutosave(
+        draftId,
+        autosave({
+          variables: {
+            id: draftId,
+            input,
+          },
+        }),
+      );
     },
     [autosave, draftId],
   );
@@ -214,18 +218,24 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
     const parsedPrice = price ?? 0;
 
     try {
-      await autosaveInFlightRef.current?.catch(() => undefined);
+      blockDraftAutosave(draftId);
+      await awaitDraftAutosaves(draftId);
 
       // 1. Autosave options
-      const saveResult = await queueAutosave({
-        price: { amount: parsedPrice, currency, negotiable },
-        visibilityMode: toVisibilityMode(visibilityMode),
-        allowDownload,
-        hdEnabled,
+      const { error: saveError } = await autosave({
+        variables: {
+          id: draftId,
+          input: {
+            price: { amount: parsedPrice, currency, negotiable },
+            visibilityMode: toVisibilityMode(visibilityMode),
+            allowDownload,
+            hdEnabled,
+          },
+        },
       });
-      const saveError = saveResult?.error;
       if (saveError) {
         setError(saveError.message ?? "Failed to save settings");
+        unblockDraftAutosave(draftId);
         return;
       }
 
@@ -235,6 +245,7 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
       });
       if (stepError) {
         setError(stepError.message ?? "Could not finalize post");
+        unblockDraftAutosave(draftId);
         return;
       }
       const serverStep = stepData?.advanceDraftStep?.currentStep as
@@ -242,6 +253,7 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
         | undefined;
       if (serverStep !== "READY") {
         setError("Please complete all required fields before posting.");
+        unblockDraftAutosave(draftId);
         return;
       }
 
@@ -251,6 +263,7 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
       });
       if (publishError) {
         setError(publishError.message ?? "Failed to publish");
+        unblockDraftAutosave(draftId);
         return;
       }
       if (!pubData?.publishDraft) return;
@@ -279,6 +292,7 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
       // "Go to feed". The post is already submitted and will appear once it
       // clears automated review in the background.
     } catch (err) {
+      unblockDraftAutosave(draftId);
       setError(String(err));
     } finally {
       setPublishing(false);
