@@ -93,7 +93,7 @@ export function TiktokSaverSection({ dict }: { dict: Dictionary }) {
         <div className="rounded-[1.1rem] border border-dashed border-border bg-surface p-6 md:p-8">
           <div className="grid items-center gap-6 md:grid-cols-[1fr_minmax(0,26rem)] md:gap-10">
             {/* Copy */}
-            <div>
+            <div className="min-w-0">
               <p className="text-xs font-bold uppercase tracking-[0.08em] text-muted">
                 {t.eyebrow}
               </p>
@@ -107,7 +107,7 @@ export function TiktokSaverSection({ dict }: { dict: Dictionary }) {
             </div>
 
             {/* Tool */}
-            <div>
+            <div className="min-w-0">
               {state !== "ready" ? (
                 <form onSubmit={handleSubmit} className="flex flex-col gap-2">
                   <div className="flex flex-col gap-2 rounded-[1.5rem] border border-border bg-elevated p-2 sm:flex-row sm:items-center sm:rounded-full sm:py-1.5 sm:pr-1.5 sm:pl-4">

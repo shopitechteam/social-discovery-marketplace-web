@@ -21,6 +21,7 @@ import {
   createErrorMessage,
 } from "./CreateErrorDialog";
 import { SHOW_TIKTOK_CREATE_OPTIONS } from "@/features/create/utils/tiktokAvailability";
+import { getSuspendedAccountMessage } from "@/lib/apollo/suspended-account";
 
 const STEPS = [
   { n: 1, label: "Choose type" },
@@ -81,6 +82,7 @@ export function DesktopCreateFlow({ lang }: { lang: string }) {
       setContentType(kind);
       setStep("edit");
     } catch (err) {
+      if (getSuspendedAccountMessage(err)) return;
       setCreateError(createErrorMessage(err));
     } finally {
       setCreating(false);

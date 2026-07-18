@@ -7,7 +7,7 @@ export interface NotificationActor {
 
 export interface NotificationItem {
   id: string;
-  type: "FOLLOW" | "SAVE" | "POST_LIVE";
+  type: "FOLLOW" | "SAVE" | "POST_LIVE" | "POST_REJECTED";
   title: string;
   body: string;
   actorCount: number;

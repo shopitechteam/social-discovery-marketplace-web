@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import {
+  AlertCircle,
   Bell,
   Bookmark,
   CheckCheck,
@@ -157,6 +158,8 @@ export function NotificationList({
                     <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white ring-2 ring-[rgb(var(--color-bg))]">
                       {notification.type === "SAVE" ? (
                         <Bookmark size={13} />
+                      ) : notification.type === "POST_REJECTED" ? (
+                        <AlertCircle size={13} />
                       ) : notification.type === "POST_LIVE" ? (
                         <PlayCircle size={13} />
                       ) : (

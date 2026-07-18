@@ -117,8 +117,10 @@ export function LandingNav({
                     key={label}
                     href={sectionHref(href)}
                     onClick={(e) => handleHashLink(e, href)}
-                    className={`whitespace-nowrap no-underline transition-colors duration-150 hover:text-foreground ${
-                      isActive ? "text-foreground" : "text-muted"
+                    className={`whitespace-nowrap transition-colors duration-150 hover:text-foreground ${
+                      isActive
+                        ? "font-bold text-foreground underline decoration-2 underline-offset-8"
+                        : "text-muted no-underline"
                     }`}
                   >
                     {label}
@@ -217,7 +219,11 @@ export function LandingNav({
               key={label}
               href={sectionHref(href)}
               onClick={(e) => handleHashLink(e, href)}
-              className="border-b border-border py-[0.65rem] text-[0.85rem] font-semibold text-foreground no-underline"
+              className={`border-b border-border py-[0.65rem] text-[0.85rem] text-foreground ${
+                activeHash === href
+                  ? "font-bold underline decoration-2 underline-offset-4"
+                  : "font-semibold no-underline"
+              }`}
             >
               {label}
             </a>

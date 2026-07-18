@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { gql } from "@apollo/client";
 import { useMutation, useQuery } from "@apollo/client/react";
@@ -15,14 +15,6 @@ import {
 } from "@/types/__generated__/graphql";
 import type { VisibilityMode } from "@/types/__generated__/graphql";
 import { getMediaPreviewSrc } from "@/features/create/utils/mediaPreview";
-import {
-  awaitDraftAutosaves,
-  blockDraftAutosave,
-  isDraftAutosaveBlocked,
-  trackDraftAutosave,
-  unblockDraftAutosave,
-} from "@/features/create/utils/draftAutosave";
-import { SHOW_TIKTOK_CREATE_OPTIONS } from "@/features/create/utils/tiktokAvailability";
 import { Celebration, SuccessBadge } from "./Celebration";
 import celebrationStyles from "./Celebration.module.css";
 import { TikTokCreatePreview } from "./TikTokCreatePreview";
@@ -111,6 +103,7 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
   const [published, setPublished] = useState(false);
   const [tiktokReconnectNeeded, setTiktokReconnectNeeded] = useState(false);
   const [connectingTiktok, setConnectingTiktok] = useState(false);
+  const autosaveInFlightRef = useRef<Promise<unknown> | null>(null);
 
   const { data: meData, refetch: refetchMe } = useQuery(MeDocument, {
     fetchPolicy: "cache-and-network",
@@ -122,14 +115,6 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
   const [publishDraft] = useMutation(PublishDraftDocument);
   const [postToTiktok] = useMutation(POST_TO_TIKTOK) as any;
   const [getTiktokConnectUrl] = useMutation(TiktokConnectUrlDocument);
-  const showTiktokCrossPost =
-    SHOW_TIKTOK_CREATE_OPTIONS && contentType === "video";
-
-  useEffect(() => {
-    if (!showTiktokCrossPost && postOnTiktok) {
-      setPostOnTiktok(false);
-    }
-  }, [postOnTiktok, setPostOnTiktok, showTiktokCrossPost]);
 
   const queueAutosave = useCallback(
     (input: {
@@ -139,16 +124,18 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
       hdEnabled?: boolean;
     }) => {
       if (!draftId) return null;
-      if (isDraftAutosaveBlocked(draftId)) return null;
-      return trackDraftAutosave(
-        draftId,
-        autosave({
-          variables: {
-            id: draftId,
-            input,
-          },
-        }),
-      );
+      const request = autosave({
+        variables: {
+          id: draftId,
+          input,
+        },
+      });
+      autosaveInFlightRef.current = request;
+      return request.finally(() => {
+        if (autosaveInFlightRef.current === request) {
+          autosaveInFlightRef.current = null;
+        }
+      });
     },
     [autosave, draftId],
   );
@@ -227,24 +214,18 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
     const parsedPrice = price ?? 0;
 
     try {
-      blockDraftAutosave(draftId);
-      await awaitDraftAutosaves(draftId);
+      await autosaveInFlightRef.current?.catch(() => undefined);
 
       // 1. Autosave options
-      const { error: saveError } = await autosave({
-        variables: {
-          id: draftId,
-          input: {
-            price: { amount: parsedPrice, currency, negotiable },
-            visibilityMode: toVisibilityMode(visibilityMode),
-            allowDownload,
-            hdEnabled,
-          },
-        },
+      const saveResult = await queueAutosave({
+        price: { amount: parsedPrice, currency, negotiable },
+        visibilityMode: toVisibilityMode(visibilityMode),
+        allowDownload,
+        hdEnabled,
       });
+      const saveError = saveResult?.error;
       if (saveError) {
         setError(saveError.message ?? "Failed to save settings");
-        unblockDraftAutosave(draftId);
         return;
       }
 
@@ -254,7 +235,6 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
       });
       if (stepError) {
         setError(stepError.message ?? "Could not finalize post");
-        unblockDraftAutosave(draftId);
         return;
       }
       const serverStep = stepData?.advanceDraftStep?.currentStep as
@@ -262,7 +242,6 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
         | undefined;
       if (serverStep !== "READY") {
         setError("Please complete all required fields before posting.");
-        unblockDraftAutosave(draftId);
         return;
       }
 
@@ -272,7 +251,6 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
       });
       if (publishError) {
         setError(publishError.message ?? "Failed to publish");
-        unblockDraftAutosave(draftId);
         return;
       }
       if (!pubData?.publishDraft) return;
@@ -281,7 +259,7 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
       setPublished(true);
 
       // 4. Optional TikTok cross-post
-      if (showTiktokCrossPost && postOnTiktok && contentId) {
+      if (postOnTiktok && contentId) {
         try {
           const tiktokResult = await postToTiktok({ variables: { contentId } });
           const tiktokErrors = tiktokResult?.errors ?? [];
@@ -301,7 +279,6 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
       // "Go to feed". The post is already submitted and will appear once it
       // clears automated review in the background.
     } catch (err) {
-      unblockDraftAutosave(draftId);
       setError(String(err));
     } finally {
       setPublishing(false);
@@ -339,7 +316,7 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
   // ── Published success ──────────────────────────────────────────────────────
   if (published) {
     return (
-      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-background">
+      <div className="fixed inset-0 z-60 flex items-center justify-center bg-background">
         <Celebration>
           <div className="flex flex-col items-center justify-center gap-5 px-6 text-center max-w-sm mx-auto">
             <SuccessBadge />
@@ -454,7 +431,7 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
           value={allowDownload}
           onChange={setAllowDownload}
         />
-        <div className="my-[2px] h-px bg-border" />
+        <div className="my-0.5 h-px bg-border" />
         <ToggleRow
           label="HD quality"
           description="Upload and serve in high definition"
@@ -465,7 +442,7 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
     </Section>
   );
 
-  const tiktokSection = showTiktokCrossPost && (
+  const tiktokSection = contentType === "video" && (
     <Section title="Share">
       <div className="flex flex-col">
         <ToggleRow
@@ -580,7 +557,7 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
         >
           {visibilitySection}
           {togglesSection}
-          {/* {tiktokSection} */}
+          {process.env.NODE_ENV === "development" && tiktokSection}
 
           {error && (
             <div className="rounded-xl border border-[rgb(var(--color-error)/0.2)] bg-[rgb(var(--color-error)/0.08)] px-4 py-3 text-sm text-error">

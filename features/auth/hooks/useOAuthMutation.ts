@@ -10,6 +10,7 @@ import {
 import { useAuthStore } from "@/stores/auth";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
+import { getSuspendedAccountMessage } from "@/lib/apollo/suspended-account";
 
 export function useOAuthMutation(lang: string, from?: string) {
   const router = useRouter();
@@ -55,6 +56,14 @@ export function useOAuthMutation(lang: string, from?: string) {
   }
 
   function extractError(error: unknown): string {
+    if (getSuspendedAccountMessage(error)) {
+      useAuthStore.getState().clearAuth();
+      if (typeof window !== "undefined") {
+        window.location.assign(`/${lang}/feed`);
+      } else {
+        router.replace(`/${lang}/feed`);
+      }
+    }
     if (CombinedGraphQLErrors.is(error)) {
       return error.errors[0]?.message ?? "Something went wrong.";
     }
