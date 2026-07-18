@@ -151,6 +151,11 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
 
   useEffect(() => {
     if (!draftId) return;
+    // No autosaves once a publish starts or has succeeded: publishing moves the
+    // draft out of ACTIVE, so a late debounced save gets rejected by the API
+    // ("Cannot edit a non-active draft"). Depending on `publishing` also clears
+    // any timer that was scheduled just before Post was clicked.
+    if (publishing || published) return;
 
     const timer = setTimeout(() => {
       autosave({
@@ -166,7 +171,15 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
     }, 250);
 
     return () => clearTimeout(timer);
-  }, [allowDownload, autosave, draftId, hdEnabled, visibilityMode]);
+  }, [
+    allowDownload,
+    autosave,
+    draftId,
+    hdEnabled,
+    visibilityMode,
+    publishing,
+    published,
+  ]);
 
   /**
    * Post: save settings, advance the draft to READY (the backend requires READY
