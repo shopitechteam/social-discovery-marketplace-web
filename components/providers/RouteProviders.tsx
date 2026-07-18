@@ -11,6 +11,9 @@ const ApolloWrapper = dynamic(() =>
 const Toaster = dynamic(() =>
   import("@/components/ui/sonner").then((mod) => mod.Toaster),
 );
+const SessionAnalyticsTracker = dynamic(() =>
+  import("@/components/providers/SessionAnalyticsTracker").then((mod) => mod.SessionAnalyticsTracker),
+);
 
 const landingPaths = new Set<string>(locales.map((locale) => `/${locale}`));
 
@@ -30,6 +33,7 @@ export function RouteProviders({ children }: { children: React.ReactNode }) {
       ) : (
         <>
           <ApolloWrapper>
+            <SessionAnalyticsTracker />
             <main>{children}</main>
           </ApolloWrapper>
           <Toaster position="bottom-center" richColors />

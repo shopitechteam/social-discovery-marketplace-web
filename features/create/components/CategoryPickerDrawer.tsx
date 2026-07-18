@@ -108,6 +108,16 @@ export function CategoryPickerDrawer({
       <Loader2 className="h-4 w-4 animate-spin" />
       Loading categories...
     </div>
+  ) : categories.length === 0 ? (
+    <div
+      className="flex h-32 items-center justify-center text-center"
+      style={{
+        color: "rgb(var(--color-text-muted))",
+        fontSize: "var(--text-sm)",
+      }}
+    >
+      No active categories available right now.
+    </div>
   ) : (
     <RadioGroup
       value={value ?? ""}

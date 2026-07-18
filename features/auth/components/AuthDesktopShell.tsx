@@ -165,7 +165,28 @@ export function AuthDesktopShell({
         {/* Right panel — form */}
         <div className="flex-1 flex items-center justify-center p-8 xl:p-16 overflow-y-auto bg-app">
           {/* Card container — lifted surface on large screens */}
-          <div className="w-full max-w-110 rounded-3xl p-8 xl:p-10 bg-elevated border border-border shadow-(--shadow-lg)">
+          <div className="relative w-full max-w-110 rounded-3xl p-8 xl:p-10 bg-elevated border border-border shadow-(--shadow-lg)">
+            <div className="mb-6 flex justify-end">
+              <Link
+                href={`/${lang}`}
+                className="inline-flex items-center gap-2 rounded-full bg-surface px-3 py-2 text-sm font-medium text-muted transition-opacity hover:opacity-80"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M3 10.5 12 3l9 7.5" />
+                  <path d="M5 9.5V21h14V9.5" />
+                </svg>
+                Home
+              </Link>
+            </div>
             {children}
           </div>
         </div>

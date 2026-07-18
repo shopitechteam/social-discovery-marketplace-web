@@ -10,6 +10,7 @@ import { DesktopCreateFlow } from "./DesktopCreateFlow";
 import { TikTokPicker } from "./TikTokPicker";
 import { CreateErrorDialog, createErrorMessage } from "./CreateErrorDialog";
 import { SHOW_TIKTOK_CREATE_OPTIONS } from "@/features/create/utils/tiktokAvailability";
+import { getSuspendedAccountMessage } from "@/lib/apollo/suspended-account";
 
 const ICON_VIDEO = (
   <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
@@ -123,6 +124,10 @@ export function UploadPickerPage({ lang }: { lang: string }) {
       setStep("edit");
       router.push(`/${lang}/upload/create`);
     } catch (err) {
+      if (getSuspendedAccountMessage(err)) {
+        setCreating(false);
+        return;
+      }
       setCreateError(createErrorMessage(err));
       setCreating(false);
     }

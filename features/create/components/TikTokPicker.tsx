@@ -28,6 +28,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
 import { TikTokIcon } from "@/components/ui/TikTokIcon";
 import { createErrorMessage } from "./CreateErrorDialog";
+import { getSuspendedAccountMessage } from "@/lib/apollo/suspended-account";
 import {
   MeDocument,
   MyTiktokVideosDocument,
@@ -174,6 +175,7 @@ export function TikTokPicker({
       setStep("edit");
       onUsed();
     } catch (e) {
+      if (getSuspendedAccountMessage(e)) return;
       const message = createErrorMessage(e);
       if (onError) onError(message);
       else setError(message);
