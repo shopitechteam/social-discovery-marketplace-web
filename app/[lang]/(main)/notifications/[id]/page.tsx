@@ -1,3 +1,7 @@
+import { privatePageMetadata } from "@/lib/metadata";
+
+export const metadata = privatePageMetadata("Notification");
+
 import { MessagingShell } from "@/features/messaging/components/MessagingShell";
 
 export default async function ConversationPage({

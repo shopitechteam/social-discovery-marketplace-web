@@ -18,7 +18,8 @@ import { useQuery } from "@apollo/client/react";
 import { useInboxUnreadCount } from "@/features/messaging/hooks/useUnreadCount";
 import { useLogout } from "@/features/auth/hooks/useLogout";
 import { DISCOVERY_CATEGORIES } from "@/features/discover/categories";
-import { useAuthStore } from "@/stores/auth";
+import { useAuthSession } from "@/hooks/useAuthSession";
+import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { useThemeStore } from "@/stores/theme";
 import { Logo } from "@/components/ui/Logo";
 import { Switch } from "@/components/ui/switch";
@@ -49,8 +50,13 @@ const MAX_BROWSE_CATEGORIES = 6;
 
 export function SideNav({ lang = "en" }: { lang: string }) {
   const pathname = usePathname();
-  const unreadCount = useInboxUnreadCount();
-  const user = useAuthStore((s) => s.user);
+  // The aside itself is server-rendered so the desktop frame is stable from the
+  // first paint. Data widgets (unread badge, categories) are gated on the
+  // desktop media query so a CSS-hidden sidenav on phones never fires queries.
+  const isDesktop = useIsDesktop({ ssrDefault: false });
+  // Hydration-safe user — SSR and first client paint show the guest card, the
+  // real identity swaps in right after the auth store rehydrates.
+  const { user } = useAuthSession();
 
   if (
     pathname.includes("/upload/create") ||
@@ -78,7 +84,7 @@ export function SideNav({ lang = "en" }: { lang: string }) {
       className="fixed left-0 top-0 z-40 hidden h-full w-(--side-nav-width,220px) flex-col border-r border-default bg-elevated md:flex"
     >
       <div className="flex shrink-0 items-center px-5 pb-4 pt-5">
-        <Link href={`/${lang}/feed`} scroll={false}>
+        <Link href={`/${lang}`} scroll={false}>
           <Logo size={60} />
         </Link>
       </div>
@@ -112,15 +118,8 @@ export function SideNav({ lang = "en" }: { lang: string }) {
             >
               <Icon className="h-5 w-5" strokeWidth={isActive ? 2.4 : 2} />
               <span>{tab.label}</span>
-              {tab.key === "notifications" && unreadCount > 0 ? (
-                <span
-                  className={[
-                    "ml-auto inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-bold",
-                    isActive ? "bg-white text-primary" : "bg-primary text-white",
-                  ].join(" ")}
-                >
-                  {unreadCount > 99 ? "99+" : unreadCount}
-                </span>
+              {tab.key === "notifications" && isDesktop ? (
+                <InboxUnreadBadge isActive={isActive} />
               ) : null}
             </Link>
           );
@@ -128,9 +127,9 @@ export function SideNav({ lang = "en" }: { lang: string }) {
       </nav>
 
       {/* Explore has its own full category UI, so Browse is redundant there. */}
-      {pathname.startsWith(`/${lang}/explore`) ? null : (
+      {isDesktop && !pathname.startsWith(`/${lang}/explore`) ? (
         <BrowseCategories lang={lang} />
-      )}
+      ) : null}
 
       <div className="mt-auto flex shrink-0 flex-col gap-3 p-3">
         <div className="flex items-center gap-3 rounded-xl border border-default bg-surface px-3 py-2.5">
@@ -148,6 +147,24 @@ export function SideNav({ lang = "en" }: { lang: string }) {
         <ThemeToggle />
       </div>
     </aside>
+  );
+}
+
+/** Mounted only on desktop so the unread-count query and socket listeners
+ *  never run while the sidenav is CSS-hidden on phones. */
+function InboxUnreadBadge({ isActive }: { isActive: boolean }) {
+  const unreadCount = useInboxUnreadCount();
+  if (unreadCount <= 0) return null;
+
+  return (
+    <span
+      className={[
+        "ml-auto inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-bold",
+        isActive ? "bg-white text-primary" : "bg-primary text-white",
+      ].join(" ")}
+    >
+      {unreadCount > 99 ? "99+" : unreadCount}
+    </span>
   );
 }
 
@@ -215,14 +232,14 @@ function ThemeToggle() {
   useEffect(() => setMounted(true), []);
 
   if (!mounted) {
-    return <div aria-hidden className="h-10 w-full" />;
+    return <div aria-hidden className="h-9 w-full" />;
   }
 
   const isDark = resolvedTheme === "dark";
   const Icon = isDark ? Sun : Moon;
 
   return (
-    <div className="flex w-full items-center justify-between rounded-xl px-2 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface hover:text-default">
+    <div className="flex h-9 w-full items-center justify-between rounded-xl px-2 text-sm font-medium text-muted transition-colors hover:bg-surface hover:text-default">
       <span className="flex items-center gap-2">
         <Icon className="h-4 w-4" />
         {isDark ? "Light mode" : "Dark mode"}

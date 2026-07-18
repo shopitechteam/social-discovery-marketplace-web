@@ -1,3 +1,7 @@
+import { privatePageMetadata } from "@/lib/metadata";
+
+export const metadata = privatePageMetadata("Followers");
+
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { ProfileFollowersView } from "@/features/profile/components/ProfileFollowersView";

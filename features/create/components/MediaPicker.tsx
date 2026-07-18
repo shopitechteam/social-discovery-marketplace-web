@@ -172,17 +172,6 @@ export function MediaPicker() {
             </div>
           )}
 
-          {/* {item.status !== "ready" && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-10 pointer-events-none">
-              <div className="flex flex-col items-center gap-1.5">
-                <Spinner />
-                <span style={{ fontSize: 10, color: "white", fontWeight: 600, letterSpacing: "0.05em" }}>
-                  {item.status === "uploading" ? "UPLOADING" : "PROCESSING"}
-                </span>
-              </div>
-            </div>
-          )} */}
-
           {/* Replace button */}
           <button
             type="button"
@@ -236,9 +225,12 @@ export function MediaPicker() {
                 </div>
               )}
 
-              {item.status !== "ready" && (
+              {/* Failure only — upload/processing runs silently in the
+                  background (same as video); the local preview is already
+                  showing, so a spinner overlay just makes it feel slow. */}
+              {item.status === "error" && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-10 pointer-events-none">
-                  <Spinner small />
+                  <span style={{ color: "#ff5555", fontSize: 16 }}>✕</span>
                 </div>
               )}
 
@@ -307,34 +299,6 @@ export function MediaPicker() {
       </p>
       {hiddenInput}
     </div>
-  );
-}
-
-function Spinner({ small }: { small?: boolean }) {
-  const s = small ? 18 : 24;
-  return (
-    <svg
-      className="animate-spin"
-      width={s}
-      height={s}
-      viewBox="0 0 24 24"
-      fill="none"
-    >
-      <circle
-        cx="12"
-        cy="12"
-        r="10"
-        stroke="white"
-        strokeOpacity="0.3"
-        strokeWidth="3"
-      />
-      <path
-        d="M12 2a10 10 0 0 1 10 10"
-        stroke="white"
-        strokeWidth="3"
-        strokeLinecap="round"
-      />
-    </svg>
   );
 }
 

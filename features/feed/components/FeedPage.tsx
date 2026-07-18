@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { FeedHeader } from "./FeedHeader";
 import FeedGrid from "./FeedGrid";
+import { FeedSkeleton } from "./FeedSkeleton";
 
 const FollowingGrid = dynamic(() =>
   import("./FollowingGrid").then((mod) => mod.FollowingGrid),
@@ -12,7 +13,11 @@ const FollowingGrid = dynamic(() =>
 const NearbyGrid = dynamic(() =>
   import("./NearbyGrid").then((mod) => mod.NearbyGrid),
 );
-const DesktopFeed = dynamic(() => import("./DesktopFeed"));
+const DesktopFeed = dynamic(() => import("./DesktopFeed"), {
+  // Show the desktop-shaped skeleton while the chunk downloads, so the
+  // dashboard frame (tabs, column, right rail) is stable from the first paint.
+  loading: () => <FeedSkeleton />,
+});
 
 interface Props {
   lang: string;
@@ -110,11 +115,16 @@ export function FeedPage({ lang, visible = true }: Props) {
 
   return (
     <div>
-      {/* ── Desktop: loaded only on a desktop viewport ── */}
+      {/* ── Desktop: loaded only on a desktop viewport. Until the media query
+          resolves, desktop viewports see the desktop-shaped skeleton (inside
+          `hidden md:block` so it never shows on phones) instead of a blank
+          reserved area. ── */}
       {desktop ? (
         <DesktopFeed lang={lang} visible={visible} />
       ) : (
-        <div className="hidden min-h-svh md:block" aria-hidden />
+        <div className="hidden md:block" aria-hidden>
+          <FeedSkeleton />
+        </div>
       )}
 
       {/* ── Mobile: existing card feed with tabs ── */}

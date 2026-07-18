@@ -190,12 +190,11 @@ export function StepMediaReview({ onBack }: { onBack?: () => void }) {
               <div className="w-full h-full" style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }} />
             )}
 
-            {/* Status badge. For video we never show the uploading/processing
-                spinner — the upload runs silently in the background and the user
-                sees their local preview. We still surface a "Failed" badge for
-                video so genuine errors aren't hidden. Images keep the full badge. */}
-            {preview.status !== "ready" &&
-              (preview.status === "error" || contentType !== "video") && (
+            {/* Status badge. Uploads run silently in the background for BOTH
+                video and images — the user already sees their local preview,
+                so "Uploading…/Processing…" noise only makes the flow feel
+                slow. Only genuine failures surface. */}
+            {preview.status === "error" && (
               <div
                 className="absolute top-3 left-3 rounded-full px-3 py-1 flex items-center gap-1.5"
                 style={{
@@ -203,47 +202,10 @@ export function StepMediaReview({ onBack }: { onBack?: () => void }) {
                   backdropFilter: "blur(8px)",
                 }}
               >
-                {preview.status === "error" ? (
-                  <span
-                    style={{ fontSize: "var(--text-xs)", color: "#ff5555" }}
-                  >
-                    ✕ Failed
-                  </span>
-                ) : (
-                  <>
-                    <MiniSpinner color="white" />
-                    <span
-                      style={{ fontSize: "var(--text-xs)", color: "white" }}
-                    >
-                      {preview.status === "uploading"
-                        ? "Uploading…"
-                        : "Processing…"}
-                    </span>
-                  </>
-                )}
-              </div>
-            )}
-
-            {/* Ready check — image only; video has no visible processing state. */}
-            {preview.status === "ready" && contentType !== "video" && (
-              <div
-                className="absolute top-3 left-3 rounded-full px-3 py-1 flex items-center gap-1.5"
-                style={{
-                  backgroundColor: "rgb(0 0 0 / 0.45)",
-                  backdropFilter: "blur(8px)",
-                }}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M5 13l4 4L19 7"
-                    stroke="#4ade80"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                <span style={{ fontSize: "var(--text-xs)", color: "#4ade80" }}>
-                  Ready
+                <span
+                  style={{ fontSize: "var(--text-xs)", color: "#ff5555" }}
+                >
+                  ✕ Failed
                 </span>
               </div>
             )}
@@ -282,17 +244,14 @@ export function StepMediaReview({ onBack }: { onBack?: () => void }) {
                   unoptimized
                 />
               )}
-              {/* Processing overlay */}
-              {item.status !== "ready" && (
+              {/* Failure overlay only — processing runs silently in the
+                  background, same as video. */}
+              {item.status === "error" && (
                 <div
                   className="absolute inset-0 flex items-center justify-center"
                   style={{ backgroundColor: "rgb(0 0 0 / 0.45)" }}
                 >
-                  {item.status === "error" ? (
-                    <span style={{ color: "#ff5555", fontSize: 16 }}>✕</span>
-                  ) : (
-                    <MiniSpinner color="white" />
-                  )}
+                  <span style={{ color: "#ff5555", fontSize: 16 }}>✕</span>
                 </div>
               )}
               {/* Remove */}

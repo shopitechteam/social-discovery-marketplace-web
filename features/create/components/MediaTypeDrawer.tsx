@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
   Drawer,
@@ -7,6 +8,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
+import { SHOW_TIKTOK_CREATE_OPTIONS } from "@/features/create/utils/tiktokAvailability";
 
 interface Props {
   open: boolean;
@@ -17,6 +19,16 @@ interface Props {
   lang: string;
 }
 
+type MediaTypeOption = {
+  key: string;
+  label: string;
+  description: string;
+  onClick: () => void;
+  disabled: boolean;
+  badge: string | null;
+  icon: ReactNode;
+};
+
 export function MediaTypeDrawer({ open, onOpenChange, onPickVideo, onPickImage, onPickText, lang }: Props) {
   const router = useRouter();
 
@@ -26,7 +38,7 @@ export function MediaTypeDrawer({ open, onOpenChange, onPickVideo, onPickImage, 
     else router.push(`/${lang}/feed`);
   }
 
-  const options = [
+  const options: MediaTypeOption[] = [
     {
       key: "video",
       label: "Video",
@@ -85,7 +97,9 @@ export function MediaTypeDrawer({ open, onOpenChange, onPickVideo, onPickImage, 
         </div>
       ),
     },
-    {
+  ];
+  if (SHOW_TIKTOK_CREATE_OPTIONS) {
+    options.push({
       key: "tiktok",
       label: "Import from TikTok",
       description: "Paste a TikTok link to re-post",
@@ -101,8 +115,8 @@ export function MediaTypeDrawer({ open, onOpenChange, onPickVideo, onPickImage, 
           </svg>
         </div>
       ),
-    },
-  ];
+    });
+  }
 
   return (
     <Drawer open={open} onOpenChange={(v) => { if (!v) handleClose(); }}>

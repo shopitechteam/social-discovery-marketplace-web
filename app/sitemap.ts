@@ -92,6 +92,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/feed", changeFrequency: "always", priority: 0.9 },
     { path: "/explore", changeFrequency: "hourly", priority: 0.8 },
     { path: "/search", changeFrequency: "hourly", priority: 0.8 },
+    { path: "/contact", changeFrequency: "monthly", priority: 0.5 },
+    { path: "/privacy", changeFrequency: "yearly", priority: 0.3 },
+    { path: "/terms", changeFrequency: "yearly", priority: 0.3 },
+    { path: "/cookies", changeFrequency: "yearly", priority: 0.3 },
+    { path: "/community-guidelines", changeFrequency: "yearly", priority: 0.3 },
+    { path: "/prohibited-items", changeFrequency: "yearly", priority: 0.3 },
+    { path: "/safety-centre", changeFrequency: "yearly", priority: 0.4 },
   ];
 
   const staticEntries: MetadataRoute.Sitemap = staticPages.map((p) => ({

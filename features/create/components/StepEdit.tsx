@@ -16,6 +16,10 @@ import { MediaPicker } from "./MediaPicker";
 import { CategoryPickerDrawer } from "./CategoryPickerDrawer";
 import { useVideoFrameExtract } from "@/features/create/hooks/useVideoFrameExtract";
 import { takeCachedVideoFrames } from "@/features/create/utils/captureVideoFrames";
+import {
+  isDraftAutosaveBlocked,
+  trackDraftAutosave,
+} from "@/features/create/utils/draftAutosave";
 import { Switch } from "@/components/ui/switch";
 
 interface EditFormValues {
@@ -102,8 +106,12 @@ export function StepEdit({
   );
   const [extractDetails] = useMutation(ExtractDraftDetailsDocument);
   const { extractFromFrames } = useVideoFrameExtract();
-  // One-shot guard for the instant video extraction (keyed by draftId).
-  const videoExtractStartedRef = useRef<string | null>(null);
+  // One-shot guard for the instant frame extraction (keyed by draftId).
+  const frameExtractStartedRef = useRef<string | null>(null);
+  // Set when no locally-captured frames showed up (e.g. a resumed draft after
+  // reload — the in-memory frame cache is gone). Unblocks the server-side
+  // extraction fallback for image drafts.
+  const [frameExtractGaveUp, setFrameExtractGaveUp] = useState(false);
 
   // ── Title (autosize textarea) ──────────────────────────────────────────────
   const [titleValue, setTitleValue] = useState(title);
@@ -189,18 +197,48 @@ export function StepEdit({
   // The "killer feature". Whatever it returns is fully editable; the user can
   // clear/override anything. Two paths, both one-shot per draft:
   //
-  //   • VIDEO (native): runs INSTANTLY off frames snapshotted from the local
-  //     file at pick-time (cached by draftId). Decoupled from the Mux upload —
-  //     no need to wait for processing, matching the image flow's speed.
-  //   • IMAGE / TikTok embed: runs the server-side extractDraftDetails mutation
-  //     once the media is READY (or off the TikTok cover for embeds).
+  //   • NATIVE (video AND image): runs INSTANTLY off frames snapshotted from
+  //     the local file at pick-time (cached by draftId). Decoupled from the
+  //     Mux/R2/Sharp uploads — extraction never waits for processing.
+  //   • TikTok embed (no local file), or a resumed native draft whose local
+  //     frames are gone: server-side extractDraftDetails once media is READY.
   const allReady =
     mediaItems.length > 0 && mediaItems.every((m) => m.status === "ready");
 
   const isNativeVideo = contentType === "video" && !tiktokEmbed;
+  // Native drafts (video AND image) use the instant frame path — frames are
+  // snapshotted from the local file at pick-time, so extraction never waits
+  // for Mux or the R2/Sharp pipeline. Embeds have no local file.
+  const isNativeDraft = !tiktokEmbed;
+
+  // Soft cap on the visible "Writing with AI…" state. When it fires the
+  // spinner stops and the user just types; the request keeps running in the
+  // background and a late result still fills any fields left untouched.
+  const EXTRACT_SOFT_TIMEOUT_MS = 12_000;
+
+  // Current form values, readable at result-arrival time. With the soft
+  // timeout an AI result can land AFTER the user started typing — the apply
+  // guards must read what is on screen NOW, not the values captured when the
+  // request started, or a late result would overwrite the user's own text.
+  const formNowRef = useRef({
+    title: "",
+    caption: "",
+    price: "",
+    specsCount: 0,
+    categoryId: null as string | null,
+  });
+  useEffect(() => {
+    formNowRef.current = {
+      title: titleValue,
+      caption: watchCaption ?? "",
+      price: priceInput,
+      specsCount: specs.length,
+      categoryId: categoryId ?? null,
+    };
+  });
 
   // Apply an extracted result to the form — only fills fields the user hasn't
-  // already typed into. Shared by both the video and image/embed paths.
+  // already typed into. Shared by the frame and server paths.
   function applyExtracted(r: {
     title?: string | null;
     description?: string | null;
@@ -209,87 +247,110 @@ export function StepEdit({
     level1?: string | null;
     categoryId?: string | null;
   }) {
-    if (r.title && !titleValue.trim()) setTitleValue(r.title);
-    if (r.description && !watchCaption?.trim()) {
+    const now = formNowRef.current;
+    if (r.title && !now.title.trim()) setTitleValue(r.title);
+    if (r.description && !now.caption.trim()) {
       setValue("caption", r.description);
     }
-    if (r.price != null && !priceInput.trim()) {
+    if (r.price != null && !now.price.trim()) {
       setPriceInput(String(r.price));
     }
     const cleanSpecs = (r.specs ?? [])
       .map((s) => ({ key: s.key, value: s.value }))
       .filter((s) => s.key.trim() && s.value.trim());
-    if (cleanSpecs.length > 0 && specs.length === 0) {
+    if (cleanSpecs.length > 0 && now.specsCount === 0) {
       setSpecs(cleanSpecs);
     }
-    if (r.categoryId && !categoryId) {
+    if (r.categoryId && !now.categoryId) {
       setCategory(r.categoryId, r.level1 ?? null, "ai");
     }
   }
 
-  // Embed-backed drafts (TikTok) have no media assets, but AI auto-fill can run
-  // off the TikTok thumbnail (the server uses coverImageUrl for these). Native
-  // image drafts need all media READY first; native video uses the frame path.
-  const canExtractServer =
-    !isNativeVideo && (!!tiktokEmbed?.coverImageUrl || allReady);
+  // Run one extraction with the soft-timeout UX. AI is an assist, never a
+  // gate: the form stays fully editable throughout, and the spinner cannot
+  // outlive the cap even if the request hangs.
+  async function runExtraction(
+    task: () => Promise<Parameters<typeof applyExtracted>[0] | null>,
+  ) {
+    setHasExtracted(true); // one-shot per draft
+    setIsExtracting(true);
+    const softTimer = setTimeout(
+      () => setIsExtracting(false),
+      EXTRACT_SOFT_TIMEOUT_MS,
+    );
+    try {
+      const r = await task();
+      if (r) applyExtracted(r);
+    } catch (err) {
+      console.error("[AI-extract] extraction error", err);
+    } finally {
+      clearTimeout(softTimer);
+      setIsExtracting(false);
+    }
+  }
 
-  // ── Video path: instant frame-based extraction ─────────────────────────────
+  // Server-side extraction fallback. Embeds (TikTok) always use it — the
+  // server reads the embed's cover image. Native image drafts reach it only
+  // when no locally-captured frames exist (resumed draft after a reload), and
+  // then must wait for the CDN variants (allReady) as before.
+  const canExtractServer =
+    !!tiktokEmbed?.coverImageUrl ||
+    (!isNativeVideo && allReady && frameExtractGaveUp);
+
+  // ── Instant path (native video and images): extract from local frames ──────
   // One-shot per draft via a ref guard — NOT via effect state, so re-renders
   // (e.g. setIsExtracting) never re-enter or cancel the in-flight request. That
   // bug previously dropped the result and left the spinner stuck.
+  // Re-runs when media is added, so picking a photo directly on this step
+  // (MediaPicker) still triggers instant extraction.
   useEffect(() => {
-    if (!draftId || !isNativeVideo) return;
-    if (videoExtractStartedRef.current === draftId) return;
+    if (!draftId || !isNativeDraft || hasExtracted) return;
+    if (frameExtractStartedRef.current === draftId) return;
 
     // Frames are captured asynchronously at pick-time; poll briefly for them.
+    // Video frame capture can take a while on big files; image frames are
+    // near-instant, so give up quickly and fall back to the server path.
     const startedAt = Date.now();
-    const FRAME_WAIT_MS = 15_000;
+    const FRAME_WAIT_MS = isNativeVideo ? 15_000 : 5_000;
     let timer: ReturnType<typeof setTimeout> | undefined;
+    let cancelled = false;
 
     const tryExtract = async () => {
+      if (cancelled || frameExtractStartedRef.current === draftId) return;
       const frames = takeCachedVideoFrames(draftId);
       if (!frames || frames.length === 0) {
         if (Date.now() - startedAt < FRAME_WAIT_MS) {
           timer = setTimeout(tryExtract, 400);
+        } else {
+          setFrameExtractGaveUp(true); // resumed draft — server fallback may run
         }
         return;
       }
 
-      videoExtractStartedRef.current = draftId; // lock in once frames are in hand
-      setHasExtracted(true);
-      setIsExtracting(true);
-      try {
-        const r = await extractFromFrames(draftId, frames);
-        if (r) applyExtracted(r);
-      } catch (err) {
-        console.error("[AI-extract] video frame extraction error", err);
-      } finally {
-        setIsExtracting(false);
-      }
+      frameExtractStartedRef.current = draftId; // lock in once frames are in hand
+      await runExtraction(() => extractFromFrames(draftId, frames));
     };
     tryExtract();
 
     return () => {
+      cancelled = true;
       if (timer) clearTimeout(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draftId, isNativeVideo]);
+  }, [draftId, isNativeDraft, isNativeVideo, hasExtracted, mediaItems.length]);
 
-  // ── Image / TikTok embed path: server-side extraction ──────────────────────
+  // ── Server path: TikTok embeds, and image drafts without local frames ──────
   useEffect(() => {
     if (!draftId || hasExtracted || isExtracting || !canExtractServer) return;
+    if (frameExtractStartedRef.current === draftId) return;
 
-    setHasExtracted(true); // guard: never re-run for this draft
-    setIsExtracting(true);
-    extractDetails({ variables: { id: draftId } })
-      .then(({ data }) => {
-        const r = data?.extractDraftDetails;
-        if (r) applyExtracted(r);
-      })
-      .catch((err) => {
-        console.error("[AI-extract] mutation error", err);
-      })
-      .finally(() => setIsExtracting(false));
+    // Claim the shared one-shot lock so a frame poll that finds late-arriving
+    // frames can never start a second, parallel extraction.
+    frameExtractStartedRef.current = draftId;
+    runExtraction(async () => {
+      const { data } = await extractDetails({ variables: { id: draftId } });
+      return data?.extractDraftDetails ?? null;
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canExtractServer, draftId, hasExtracted]);
 
@@ -297,33 +358,37 @@ export function StepEdit({
   useEffect(() => {
     if (!draftId) return;
     const timer = setTimeout(() => {
-      autosaveMutation({
-        variables: {
-          id: draftId,
-          input: {
-            title: titleValue || undefined,
-            caption: watchCaption || undefined,
-            hashtags: tags.length ? tags : undefined,
-            categoryId: categoryId ?? undefined,
-            specs: specs.length
-              ? specs
-                  .filter((s) => s.key.trim() && s.value.trim())
-                  .map((s) => ({ key: s.key.trim(), value: s.value.trim() }))
-              : undefined,
-            location: location
-              ? {
-                  placeName: location.placeName,
-                  formattedAddress: location.formattedAddress,
-                  placeId: location.placeId,
-                  latitude: location.latitude,
-                  longitude: location.longitude,
-                  county: location.county,
-                  subregion: location.subregion,
-                }
-              : undefined,
+      if (isDraftAutosaveBlocked(draftId)) return;
+      void trackDraftAutosave(
+        draftId,
+        autosaveMutation({
+          variables: {
+            id: draftId,
+            input: {
+              title: titleValue || undefined,
+              caption: watchCaption || undefined,
+              hashtags: tags.length ? tags : undefined,
+              categoryId: categoryId ?? undefined,
+              specs: specs.length
+                ? specs
+                    .filter((s) => s.key.trim() && s.value.trim())
+                    .map((s) => ({ key: s.key.trim(), value: s.value.trim() }))
+                : undefined,
+              location: location
+                ? {
+                    placeName: location.placeName,
+                    formattedAddress: location.formattedAddress,
+                    placeId: location.placeId,
+                    latitude: location.latitude,
+                    longitude: location.longitude,
+                    county: location.county,
+                    subregion: location.subregion,
+                  }
+                : undefined,
+            },
           },
-        },
-      }).catch(() => undefined);
+        }),
+      ).catch(() => undefined);
     }, 800);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -357,14 +422,16 @@ export function StepEdit({
   const hasUsableMedia =
     mediaItems.length > 0 && !mediaItems.every((m) => m.status === "error");
 
+  // AI extraction must NEVER gate progression: if the user has filled the form
+  // (or the AI is slow/hung), they proceed. A late AI result only fills fields
+  // that are still empty, so letting them move on loses nothing.
   const canProceed =
     !!draftId &&
     titleValue.trim().length > 0 &&
     !!location &&
     !!categoryId &&
     hasUsableMedia &&
-    priceValid &&
-    !isExtracting;
+    priceValid;
 
   async function onNext(values: EditFormValues) {
     if (!draftId) {

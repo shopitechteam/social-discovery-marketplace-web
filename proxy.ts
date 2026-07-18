@@ -6,9 +6,9 @@ import { locales, defaultLocale } from "@/i18n/config";
 // Matched after locale prefix is stripped, so "/profile" covers "/{locale}/profile".
 const PROTECTED_PATHS = ["/profile", "/upload", "/notifications", "/settings"];
 
-// Routes a logged-in user shouldn't see — the marketing landing root and the
-// auth flows. They're redirected straight to the feed instead.
-const GUEST_ONLY_PATHS = ["/", "/auth"];
+// Routes a logged-in user shouldn't see — the auth flows. They're redirected
+// straight to the feed instead. The landing root stays accessible to everyone.
+const GUEST_ONLY_PATHS = ["/auth"];
 
 // …except the OAuth callback, which must run even when a session already exists
 // (it finalizes tokens and posts them back to the login popup's opener).
@@ -31,9 +31,7 @@ function isGuestOnly(pathname: string): boolean {
   if (GUEST_ONLY_EXCEPTIONS.some((p) => bare === p || bare.startsWith(`${p}/`))) {
     return false;
   }
-  return GUEST_ONLY_PATHS.some((p) =>
-    p === "/" ? bare === "/" : bare === p || bare.startsWith(`${p}/`),
-  );
+  return GUEST_ONLY_PATHS.some((p) => bare === p || bare.startsWith(`${p}/`));
 }
 
 function getPathLocale(pathname: string) {

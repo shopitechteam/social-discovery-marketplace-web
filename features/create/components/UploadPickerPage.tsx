@@ -9,6 +9,7 @@ import { CreateDraftDocument } from "@/types/__generated__/graphql";
 import { DesktopCreateFlow } from "./DesktopCreateFlow";
 import { TikTokPicker } from "./TikTokPicker";
 import { CreateErrorDialog, createErrorMessage } from "./CreateErrorDialog";
+import { SHOW_TIKTOK_CREATE_OPTIONS } from "@/features/create/utils/tiktokAvailability";
 
 const ICON_VIDEO = (
   <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
@@ -154,6 +155,7 @@ export function UploadPickerPage({ lang }: { lang: string }) {
       icon: ICON_TIKTOK,
       // In place on this page, like the other types — no route hop.
       onClick: () => setView("tiktok"),
+      hidden: !SHOW_TIKTOK_CREATE_OPTIONS,
     },
   ];
 
@@ -252,7 +254,7 @@ export function UploadPickerPage({ lang }: { lang: string }) {
             key={opt.label}
             onClick={opt.onClick}
             disabled={creating}
-            className="flex w-full items-center gap-4 rounded-2xl text-left transition-transform active:scale-[0.98] disabled:opacity-50"
+            className={`${opt.hidden ? "hidden" : "flex"} w-full items-center gap-4 rounded-2xl text-left transition-transform active:scale-[0.98] disabled:opacity-50`}
             style={{
               padding: "18px 20px",
               backgroundColor: "rgb(var(--color-bg-elevated))",

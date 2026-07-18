@@ -156,6 +156,11 @@ const nextConfig: NextConfig = {
       "cookies",
       "feed",
       "explore",
+      "search",
+      "contact",
+      "community-guidelines",
+      "prohibited-items",
+      "safety-centre",
     ];
     return [
       { source: "/", destination: "/en", permanent: true },
@@ -204,6 +209,10 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "images.unsplash.com",
+      },
+      {
+        protocol: "https",
+        hostname: "images.shopi.co.ke",
       },
     ],
   },

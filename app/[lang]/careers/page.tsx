@@ -1,4 +1,5 @@
 import { LegalNav } from "@/components/legal/LegalNav";
+import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { publicPageMetadata } from "@/lib/metadata";
 
@@ -20,6 +21,10 @@ export default async function CareersPage({ params }: Props) {
   return (
     <>
       <LegalNav lang={lang} />
+      <BreadcrumbJsonLd
+        lang={lang}
+        trail={[{ name: "Careers", path: "/careers" }]}
+      />
       <main>
         {/* Hero */}
         <section className="bg-[linear-gradient(135deg,rgb(var(--brand-primary)/0.08)_0%,rgb(var(--brand-accent)/0.06)_100%)] px-5 pt-24 pb-16 text-center">
@@ -31,7 +36,9 @@ export default async function CareersPage({ params }: Props) {
               Help us take care of every customer
             </h1>
             <p className="text-[1.05rem] leading-[1.7] text-muted">
-              We are a small remote team building Kenya&apos;s social commerce platform. Every person here matters — and right now, we need someone who will make every buyer and seller feel heard.
+              We are a small remote team building Kenya&apos;s social commerce
+              platform. Every person here matters — and right now, we need
+              someone who will make every buyer and seller feel heard.
             </p>
           </div>
         </section>
@@ -42,7 +49,12 @@ export default async function CareersPage({ params }: Props) {
             {/* Header */}
             <div className="border-b border-border bg-surface p-8 pb-7">
               <div className="mb-4 flex flex-wrap gap-2">
-                {["Customer Service", "Full-time", "Remote — Kenya", "Salary: Negotiable"].map((tag) => (
+                {[
+                  "Customer Service",
+                  "Full-time",
+                  "Remote — Kenya",
+                  "Salary: Negotiable",
+                ].map((tag) => (
                   <span
                     key={tag}
                     className="rounded-full bg-[rgb(var(--brand-primary)/0.1)] px-[10px] py-[3px] text-[0.7rem] font-bold tracking-[0.04em] uppercase text-primary"
@@ -55,7 +67,8 @@ export default async function CareersPage({ params }: Props) {
                 Customer Service Representative
               </h2>
               <p className="text-[0.95rem] leading-[1.65] text-muted italic">
-                Be the friendly face (and fast fingers) behind every great Shopi experience.
+                Be the friendly face (and fast fingers) behind every great Shopi
+                experience.
               </p>
             </div>
 
@@ -64,10 +77,19 @@ export default async function CareersPage({ params }: Props) {
               {/* About */}
               <RoleSection title="About the role">
                 <p>
-                  Shopi connects Kenyan buyers and sellers through short videos, live drops, and direct discovery. As our first Customer Service hire, you will be the primary point of contact for everyone on the platform — answering questions, resolving issues, and making sure every interaction leaves people feeling good about Shopi.
+                  Shopi connects Kenyan buyers and sellers through short videos,
+                  direct messaging, and local discovery. As our first Customer
+                  Service hire, you will be the primary point of contact for
+                  everyone on the platform — answering questions, resolving
+                  issues, and making sure every interaction leaves people
+                  feeling good about Shopi.
                 </p>
                 <p>
-                  You will manage the live chat on our homepage, respond to queries across all our support channels, and work closely with the founding team to identify and flag recurring problems. This is a remote role — you work from wherever you are in Kenya, on your own schedule, as long as customers are covered.
+                  You will manage the live chat on our homepage, respond to
+                  queries across all our support channels, and work closely with
+                  the founding team to identify and flag recurring problems.
+                  This is a remote role — you work from wherever you are in
+                  Kenya, on your own schedule, as long as customers are covered.
                 </p>
               </RoleSection>
 
@@ -157,7 +179,8 @@ export default async function CareersPage({ params }: Props) {
                     Ready to apply?
                   </p>
                   <p className="text-[0.8rem] text-muted">
-                    Send your CV and a short note (2–3 sentences) about why this role is a good fit for you.
+                    Send your CV and a short note (2–3 sentences) about why this
+                    role is a good fit for you.
                   </p>
                 </div>
                 <a
@@ -173,7 +196,8 @@ export default async function CareersPage({ params }: Props) {
           {/* No other roles */}
           <div className="mt-10 rounded-2xl border border-border bg-surface p-8 text-center">
             <p className="mb-4 text-[0.9rem] leading-[1.7] text-muted">
-              Don&apos;t see a role that fits? We are always open to hearing from great people.
+              Don&apos;t see a role that fits? We are always open to hearing
+              from great people.
             </p>
             <a
               href="mailto:careers@shopi.app?subject=Speculative Application"
@@ -184,12 +208,19 @@ export default async function CareersPage({ params }: Props) {
           </div>
         </section>
       </main>
-      <LandingFooter />
+      <div className="mt-6 lg:mt-12" />
+      <LandingFooter lang={lang} />
     </>
   );
 }
 
-function RoleSection({ title, children }: { title: string; children: React.ReactNode }) {
+function RoleSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <div>
       <h3 className="mb-3.5 text-[0.75rem] font-bold tracking-[0.07em] uppercase text-foreground">

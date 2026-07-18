@@ -1,3 +1,7 @@
+import { privatePageMetadata } from "@/lib/metadata";
+
+export const metadata = privatePageMetadata("Profile Visitors");
+
 import { notFound } from "next/navigation";
 import { ProfileVisitorsView } from "@/features/profile/components/ProfileVisitorsView";
 import { isValidLocale } from "@/i18n/config";

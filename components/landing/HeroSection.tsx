@@ -2,7 +2,7 @@ import type { Dictionary } from "@/i18n/getDictionary";
 import Image from "next/image";
 import { MapPin, MessageCircle, ShieldCheck } from "lucide-react";
 import { landingPhotos } from "./mockups";
-import { Pill } from "./Pill";
+import { HeroCtas } from "./HeroCtas";
 
 export function HeroSection({
   dict,
@@ -26,21 +26,12 @@ export function HeroSection({
           <p className="mt-6 max-w-2xl text-base leading-normal text-muted md:text-md">
             {t.subheadline}
           </p>
-          <div className="mt-8 flex flex-wrap items-center gap-3 md:mt-10">
-            <Pill
-              href={`/${lang}/feed`}
-              className="bg-primary px-7 py-3.5 text-white hover:opacity-90"
-            >
-              {t.ctaPrimary}
-            </Pill>
-            <Pill
-              href={`/${lang}/upload`}
-              variant="outline"
-              className="px-7 py-3.5"
-            >
-              {t.ctaSecondary}
-            </Pill>
-          </div>
+          <HeroCtas
+            lang={lang}
+            ctaPrimary={t.ctaPrimary}
+            ctaLoggedIn={t.ctaLoggedIn}
+            ctaSecondary={t.ctaSecondary}
+          />
           <div className="mt-6 grid max-w-xl gap-3 sm:grid-cols-3">
             {[
               ["KES 0", "commission"],

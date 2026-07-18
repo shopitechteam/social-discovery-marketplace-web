@@ -37,6 +37,8 @@ import {
 import {
   captureVideoFrames,
   setCachedVideoFrames,
+  captureImageFrame,
+  appendCachedFrames,
 } from "@/features/create/utils/captureVideoFrames";
 
 const WS_TIMEOUT_MS = 120_000;
@@ -151,6 +153,16 @@ export function useMediaUpload() {
       const tempId = `temp-img-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
       addMediaItem({ id: tempId, localUri, type: "image", status: "uploading" });
+
+      // Downscale a small JPEG of the picked image NOW (instant, no R2/Sharp
+      // wait) so the edit step can run AI auto-fill immediately — the exact
+      // mirror of the video flow's frame capture. Best-effort — never blocks
+      // or fails the upload.
+      captureImageFrame(file)
+        .then((frame) => {
+          if (frame) appendCachedFrames(did, [frame]);
+        })
+        .catch(() => undefined);
 
       (async () => {
         let mediaAssetId: string | null = null;

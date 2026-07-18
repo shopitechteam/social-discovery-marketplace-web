@@ -1,3 +1,7 @@
+import { privatePageMetadata } from "@/lib/metadata";
+
+export const metadata = privatePageMetadata("Edit Profile");
+
 import { notFound } from "next/navigation";
 import { EditProfileScreen } from "@/features/profile/components/EditProfileScreen";
 import { isValidLocale } from "@/i18n/config";

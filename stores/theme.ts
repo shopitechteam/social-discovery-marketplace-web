@@ -22,7 +22,17 @@ function resolveTheme(theme: Theme): "light" | "dark" {
 
 function applyTheme(resolved: "light" | "dark") {
   if (typeof document === "undefined") return;
-  document.documentElement.classList.toggle("dark", resolved === "dark");
+  const root = document.documentElement;
+  const dark = resolved === "dark";
+  if (root.classList.contains("dark") === dark) return;
+
+  // Flip the theme atomically: the global 0.18s per-element color transition
+  // (globals.css) makes surfaces, borders and images repaint at different
+  // moments during a switch, which reads as the page shifting. Suppressing
+  // transitions for the flip makes every element change in the same frame.
+  root.classList.add("theme-switching");
+  root.classList.toggle("dark", dark);
+  window.setTimeout(() => root.classList.remove("theme-switching"), 80);
 }
 
 export const useThemeStore = create<ThemeState>()(

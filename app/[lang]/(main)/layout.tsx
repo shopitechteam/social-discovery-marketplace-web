@@ -1,5 +1,5 @@
 import { MainShell } from "@/components/layout/MainShell";
-import { DesktopSideNav } from "@/components/layout/DesktopSideNav";
+import { SideNav } from "@/components/layout/SideNav";
 import { SocketProvider } from "@/components/providers/SocketProvider";
 import { ApiPreconnect } from "@/components/providers/ApiPreconnect";
 import { isValidLocale } from "@/i18n/config";
@@ -20,8 +20,9 @@ export default async function MainLayout({
   return (
     <SocketProvider>
       <ApiPreconnect />
-      {/* ── Desktop sidebar — hidden on mobile ── */}
-      <DesktopSideNav lang={lang} />
+      {/* ── Desktop sidebar — server-rendered for a stable frame, CSS-hidden on
+          mobile; its data widgets self-gate on the desktop media query. ── */}
+      <SideNav lang={lang} />
 
       <MainShell lang={lang}>{children}</MainShell>
       {modal}
