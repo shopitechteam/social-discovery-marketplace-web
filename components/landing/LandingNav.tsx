@@ -2,8 +2,10 @@
 "use client";
 
 import { useThemeStore } from "@/stores/theme";
+import { useAuthSession } from "@/hooks/useAuthSession";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 //import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import type { Dictionary } from "@/i18n/getDictionary";
 import type { Locale } from "@/i18n/config";
@@ -25,6 +27,7 @@ export function LandingNav({
     { label: dict?.nav.creators ?? "Creators", href: "#creators" },
   ];
   const { resolvedTheme, toggleTheme } = useThemeStore();
+  const { isAuthenticated, user } = useAuthSession();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeHash, setActiveHash] = useState("");
@@ -145,20 +148,44 @@ export function LandingNav({
               )}
             </div>
 
-            {/* Sign in — quiet text link */}
-            <Link
-              href={`${homeBase}/auth/login`}
-              className="hidden px-3 py-2 text-sm font-medium whitespace-nowrap text-muted no-underline md:inline-flex"
-            >
-              {dict?.auth.login.submit ?? "Sign in"}
-            </Link>
+            {/* Sign in (guests) / avatar → profile (signed in) */}
+            {isAuthenticated ? (
+              <Link
+                href={`${homeBase}/profile`}
+                aria-label="Your profile"
+                className="hidden h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-border bg-elevated no-underline md:inline-flex"
+              >
+                {user?.profile?.avatar ? (
+                  <Image
+                    src={user.profile.avatar}
+                    alt=""
+                    width={36}
+                    height={36}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span className="text-sm font-bold text-foreground">
+                    {(user?.profile?.firstName?.[0] ?? "?").toUpperCase()}
+                  </span>
+                )}
+              </Link>
+            ) : (
+              <Link
+                href={`${homeBase}/auth/login`}
+                className="hidden px-3 py-2 text-sm font-medium whitespace-nowrap text-muted no-underline md:inline-flex"
+              >
+                {dict?.auth.login.submit ?? "Sign in"}
+              </Link>
+            )}
 
             {/* Desktop CTA pair — outline + solid primary, Tolstoy-style */}
             <Link
               href={`${homeBase}/feed`}
               className="hidden items-center rounded-full border border-border bg-elevated px-[1.1rem] py-2 text-sm font-semibold whitespace-nowrap text-foreground no-underline md:inline-flex"
             >
-              {dict?.common.openFeed ?? "Open the feed"}
+              {isAuthenticated
+                ? (dict?.landing.hero.ctaLoggedIn ?? "Continue to your feed")
+                : (dict?.common.openFeed ?? "Open the feed")}
             </Link>
             <Link
               href={`${homeBase}/upload`}
@@ -196,6 +223,16 @@ export function LandingNav({
             </a>
           ))}
 
+          {isAuthenticated && (
+            <Link
+              href={`${homeBase}/profile`}
+              onClick={() => setMenuOpen(false)}
+              className="border-b border-border py-[0.65rem] text-[0.85rem] font-semibold text-foreground no-underline"
+            >
+              Your profile
+            </Link>
+          )}
+
           {/* Primary CTA → feed */}
           <div className="mt-5 flex flex-col gap-3">
             <Link
@@ -203,12 +240,16 @@ export function LandingNav({
               onClick={() => setMenuOpen(false)}
               className="flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-[0.85rem] text-[0.9rem] font-bold text-white no-underline"
             >
-              {dict?.common.openFeed ?? "Open the feed"}
+              {isAuthenticated
+                ? (dict?.landing.hero.ctaLoggedIn ?? "Continue to your feed")
+                : (dict?.common.openFeed ?? "Open the feed")}
               <span aria-hidden>→</span>
             </Link>
-            <p className="text-center text-[0.78rem] text-muted">
-              Free to use · No account needed to start looking
-            </p>
+            {!isAuthenticated && (
+              <p className="text-center text-[0.78rem] text-muted">
+                Free to use · No account needed to start looking
+              </p>
+            )}
           </div>
         </div>
       )}

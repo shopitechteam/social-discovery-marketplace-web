@@ -167,7 +167,8 @@
       "subheadline": "Buy and sell almost anything in Kenya. Shopi is a local feed of real things for sale, tuned to your interests and location. When you find something you like, message the seller directly and agree on the deal between yourselves.",
       "ctaPrimary": "Open the feed",
       "ctaSecondary": "Start selling",
-      "reassurance": "Free to browse · Free to post · No commission"
+      "reassurance": "Free to browse · Free to post · No commission",
+      "ctaLoggedIn": "Continue to your feed"
     },
     "pillars": {
       "feed": {
@@ -240,6 +241,12 @@
         "ctaPrimary": "Start selling",
         "ctaSecondary": "See the feed first"
       }
+    },
+    "welcomeBack": {
+      "message": "Welcome back, {name}!",
+      "messageNoName": "Welcome back!",
+      "cta": "Jump back to your feed",
+      "dismiss": "Dismiss"
     }
   }
 }

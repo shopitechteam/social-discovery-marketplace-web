@@ -8,6 +8,7 @@ import { PillarsSection } from "@/components/landing/PillarsSection";
 import { StatsSection } from "@/components/landing/StatsSection";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { LandingNav } from "@/components/landing/LandingNav";
+import { WelcomeBackBanner } from "@/components/landing/WelcomeBackBanner";
 //import { SupportChat } from "@/components/landing/SupportChat";
 import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
 import { getDictionary } from "@/i18n/getDictionary";
@@ -185,6 +186,7 @@ export default async function Rootpage({ params }: PageProps<"/[lang]">) {
       <HomeFaq items={faq} lang={lang} />
       <DownloadSection dict={dict} lang={lang} />
       <LandingFooter dict={dict} lang={lang} />
+      <WelcomeBackBanner dict={dict} lang={lang} />
       {/* <SupportChat dict={dict} /> */}
     </div>
   );

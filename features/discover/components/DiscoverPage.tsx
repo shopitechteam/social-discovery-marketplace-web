@@ -401,8 +401,10 @@ function CategorySkeletonRow() {
 function DiscoverFeedSkeleton() {
   return (
     <div className="px-4 pb-8 pt-3 lg:px-0">
+      {/* 15 tiles so every column count (2 → 5) fills the viewport with full
+          rows — fewer left the tail columns empty on wide screens. */}
       <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3 xl:grid-cols-4 min-[90rem]:grid-cols-5">
-        {Array.from({ length: 6 }).map((_, i) => (
+        {Array.from({ length: 15 }).map((_, i) => (
           <div
             key={i}
             className="overflow-hidden rounded-2xl border border-default bg-app"
