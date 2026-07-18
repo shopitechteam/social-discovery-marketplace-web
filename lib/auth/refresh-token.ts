@@ -10,6 +10,7 @@
 
 import type { RefreshTokenMutation } from "@/types/__generated__/graphql";
 import { useAuthStore } from "@/stores/auth";
+import { getSuspendedAccountMessage } from "@/lib/apollo/suspended-account";
 
 // Tracks an in-flight refresh so concurrent callers share a single request
 let refreshPromise: Promise<string | null> | null = null;
@@ -44,7 +45,12 @@ async function doRefresh(refreshToken: string): Promise<string | null> {
       errors?: unknown[];
     };
 
-    if (json.errors || !json.data?.refreshToken) return null;
+    if (json.errors || !json.data?.refreshToken) {
+      if (getSuspendedAccountMessage({ errors: json.errors ?? [] })) {
+        useAuthStore.getState().clearAuth();
+      }
+      return null;
+    }
 
     const {
       accessToken,

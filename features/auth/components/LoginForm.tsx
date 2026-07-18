@@ -11,6 +11,7 @@ import {
   LoginWithEmailDocument,
   type LoginWithEmailMutation,
 } from "@/types/__generated__/graphql";
+import { getSuspendedAccountMessage } from "@/lib/apollo/suspended-account";
 
 interface FormValues {
   email: string;
@@ -68,8 +69,15 @@ export function LoginForm({ from, lang }: LoginFormProps) {
       setAuth(payload);
 
       const destination = from && from.startsWith("/") ? from : `/${lang}/feed`;
-      router.replace(destination);
+      if (typeof window !== "undefined") {
+        window.location.assign(destination);
+      } else {
+        router.replace(destination);
+      }
     } catch (err: unknown) {
+      if (getSuspendedAccountMessage(err)) {
+        useAuthStore.getState().clearAuth();
+      }
       setServerError(
         err instanceof Error ? err.message : "Something went wrong.",
       );

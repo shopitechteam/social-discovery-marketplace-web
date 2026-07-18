@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ShopiLogo, Divider } from "@/features/auth/components/AuthIcons";
 import { SocialButtons } from "@/features/auth/components/SocialButtons";
 import { AuthDesktopShell } from "@/features/auth/components/AuthDesktopShell";
-import { ChevronLeftIcon } from "lucide-react";
+import { ChevronLeftIcon, HomeIcon } from "lucide-react";
 
 export const metadata = { title: "Create account" };
 
@@ -64,13 +64,22 @@ export default async function RegisterPage({
       <div
         className="relative mx-auto flex h-svh max-w-107.5 flex-col overflow-hidden bg-app lg:hidden"
       >
-        <Link
-          href={`/${lang}/auth/auth-welcome`}
-          aria-label="Back"
-          className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-surface text-muted active:opacity-70 transition-opacity"
-        >
-          <ChevronLeftIcon />
-        </Link>
+        <div className="flex items-center justify-between">
+          <Link
+            href={`/${lang}/auth/auth-welcome`}
+            aria-label="Back"
+            className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-surface text-muted active:opacity-70 transition-opacity"
+          >
+            <ChevronLeftIcon />
+          </Link>
+          <Link
+            href={`/${lang}`}
+            className="inline-flex items-center gap-2 rounded-full bg-surface px-3 py-2 text-sm font-medium text-muted transition-opacity active:opacity-70"
+          >
+            <HomeIcon className="h-4 w-4" />
+            Home
+          </Link>
+        </div>
         <div
           aria-hidden
           className="pointer-events-none absolute -top-20 -right-20 w-64 h-64 rounded-full blur-3xl bg-[rgb(var(--brand-primary)/0.07)]"

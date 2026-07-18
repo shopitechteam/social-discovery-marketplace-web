@@ -12,6 +12,11 @@ import {
 } from "@apollo/client-integration-nextjs";
 import { useAuthStore } from "@/stores/auth";
 import { refreshAccessToken } from "@/lib/auth/refresh-token";
+import {
+  emitSuspendedAccountEvent,
+  getSuspendedAccountMessage,
+} from "@/lib/apollo/suspended-account";
+import { SuspendedAccountDialogProvider } from "@/components/providers/SuspendedAccountDialogProvider";
 
 let clientSingleton: ReturnType<typeof createClient> | undefined;
 
@@ -125,6 +130,11 @@ function createClient() {
   // Intercept UNAUTHENTICATED errors → refresh → retry once, invisibly
   const refreshLink = new ErrorLink(({ error, operation, forward }) => {
     if (!CombinedGraphQLErrors.is(error)) return;
+
+    const suspendedMessage = getSuspendedAccountMessage(error);
+    if (suspendedMessage) {
+      emitSuspendedAccountEvent(suspendedMessage);
+    }
 
     const isUnauth = error.errors.some(
       (e) =>
@@ -354,6 +364,7 @@ export function ApolloWrapper({ children }: React.PropsWithChildren) {
   return (
     <ApolloNextAppProvider makeClient={makeClient}>
       {children}
+      <SuspendedAccountDialogProvider />
     </ApolloNextAppProvider>
   );
 }
