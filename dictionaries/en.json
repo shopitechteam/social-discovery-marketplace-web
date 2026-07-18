@@ -247,6 +247,18 @@
       "messageNoName": "Welcome back!",
       "cta": "Jump back to your feed",
       "dismiss": "Dismiss"
+    },
+    "tiktokSaver": {
+      "eyebrow": "By the way",
+      "title": "Need a clean copy of a TikTok video?",
+      "body": "Paste a TikTok link and save the video to your device without the watermark — handy when you want to reuse your own product videos on Shopi, WhatsApp status, or anywhere else.",
+      "placeholder": "Paste a TikTok link…",
+      "button": "Get video",
+      "fetching": "Fetching…",
+      "save": "Save video",
+      "tryAnother": "Try another link",
+      "error": "Couldn't fetch that video. Check the link and try again.",
+      "disclaimer": "Only save videos you created or have permission to use."
     }
   }
 }

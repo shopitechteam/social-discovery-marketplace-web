@@ -247,6 +247,18 @@
       "messageNoName": "Karibu tena!",
       "cta": "Rudi kwenye feed yako",
       "dismiss": "Funga"
+    },
+    "tiktokSaver": {
+      "eyebrow": "Ukiwa hapa",
+      "title": "Unahitaji nakala safi ya video ya TikTok?",
+      "body": "Bandika link ya TikTok uhifadhi video kwenye kifaa chako bila watermark — inafaa unapotaka kutumia tena video zako za bidhaa kwenye Shopi, WhatsApp status, au popote pengine.",
+      "placeholder": "Bandika link ya TikTok…",
+      "button": "Pata video",
+      "fetching": "Inatafuta…",
+      "save": "Hifadhi video",
+      "tryAnother": "Jaribu link nyingine",
+      "error": "Imeshindwa kupata video hiyo. Angalia link kisha ujaribu tena.",
+      "disclaimer": "Hifadhi tu video ulizotengeneza au ulizo na ruhusa ya kuzitumia."
     }
   }
 }
