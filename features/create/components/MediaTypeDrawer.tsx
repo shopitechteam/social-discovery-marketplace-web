@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
   Drawer,
@@ -18,6 +19,16 @@ interface Props {
   lang: string;
 }
 
+type MediaTypeOption = {
+  key: string;
+  label: string;
+  description: string;
+  onClick: () => void;
+  disabled: boolean;
+  badge: string | null;
+  icon: ReactNode;
+};
+
 export function MediaTypeDrawer({ open, onOpenChange, onPickVideo, onPickImage, onPickText, lang }: Props) {
   const router = useRouter();
 
@@ -27,7 +38,7 @@ export function MediaTypeDrawer({ open, onOpenChange, onPickVideo, onPickImage, 
     else router.push(`/${lang}/feed`);
   }
 
-  const options = [
+  const options: MediaTypeOption[] = [
     {
       key: "video",
       label: "Video",
