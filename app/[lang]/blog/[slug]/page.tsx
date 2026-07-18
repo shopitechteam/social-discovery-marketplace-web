@@ -71,10 +71,12 @@ export default async function BlogPostPage({ params }: Props) {
     description: post.description,
     keywords: post.keywords.join(", "),
     datePublished: post.publishedAt,
+    // Posts are authored by the Shopi team, not named individuals — an
+    // Organization author is the accurate schema for that.
     author: {
-      "@type": "Person",
-      name: post.author.name,
-      jobTitle: post.author.role,
+      "@type": "Organization",
+      name: siteConfig.name,
+      url: siteConfig.url,
     },
     publisher: {
       "@type": "Organization",
@@ -375,7 +377,7 @@ export default async function BlogPostPage({ params }: Props) {
         </div>
       </main>
 
-      <LandingFooter />
+      <LandingFooter lang={lang} />
     </>
   );
 }

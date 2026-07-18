@@ -31,7 +31,7 @@ export const blogPosts: BlogPost[] = [
     category: "Trends",
     readTime: "6 min read",
     publishedAt: "2026-05-10",
-    author: { name: "Amara Osei", role: "Head of Growth", initials: "AO", color: "#f59e0b" },
+    author: { name: "Shopi Team", role: "Editorial", initials: "S", color: "#f59e0b" },
     keywords: [
       "social commerce Kenya",
       "social discovery shopping",
@@ -53,11 +53,11 @@ export const blogPosts: BlogPost[] = [
       },
       {
         heading: "Trust is local, and local is powerful",
-        body: "In Kenya's social commerce landscape, proximity builds trust. Buyers want to know a seller is in Kiambu, not a warehouse in Guangzhou. They want to see a face, hear a voice, read genuine reviews from people in the same neighbourhood.\n\nSocial discovery feeds that surface local sellers first tap into a trust dynamic that no global marketplace can replicate. When you see your neighbour's favourite fashion vendor on your feed, the decision to buy is already half-made.",
+        body: "In Kenya's social commerce landscape, proximity builds trust. Buyers want to know a seller is in Kiambu, not a warehouse in Guangzhou. They want to see a face, hear a voice, and talk to the actual person selling.\n\nSocial discovery feeds that surface local sellers first tap into a trust dynamic that no global marketplace can replicate. When you see your neighbour's favourite fashion vendor on your feed, the decision to buy is already half-made.",
         list: [
-          "Location-tagged posts surface sellers within a buyer's delivery radius",
-          "Profile verification signals legitimacy without bureaucratic friction",
-          "Buyer reviews tied to real accounts create authentic social proof",
+          "Location-tagged posts surface sellers near the buyer first",
+          "Every post carries a real price and a real location",
+          "Video shows the actual product — not a stock photo",
           "Direct messaging lets buyers negotiate, ask questions, and build relationships",
         ],
       },
@@ -113,7 +113,7 @@ export const blogPosts: BlogPost[] = [
     category: "Seller Guide",
     readTime: "8 min read",
     publishedAt: "2026-05-14",
-    author: { name: "Brian Kamau", role: "Seller Success", initials: "BK", color: "#10b981" },
+    author: { name: "Shopi Team", role: "Seller Guides", initials: "S", color: "#10b981" },
     keywords: [
       "how to sell on Shopi",
       "sell online Kenya",
@@ -127,7 +127,7 @@ export const blogPosts: BlogPost[] = [
     sections: [
       {
         heading: "Step 1 — Set up a seller profile that builds trust",
-        body: "Your profile is your storefront. Buyers scan it in under three seconds before deciding whether to message you. A strong seller profile on Shopi includes a clear face photo (not a logo — people buy from people), your real location, and a one-line description of what you sell.\n\nGetting started on Shopi takes minutes: confirm your phone number, tag your location so the feed can surface you to buyers nearby, and post your first product. There is no fee to join and nothing to pay to start selling.",
+        body: "Your profile is your storefront. Buyers scan it in under three seconds before deciding whether to message you. A strong seller profile on Shopi includes a clear face photo (not a logo — people buy from people), your real location, and a one-line description of what you sell.\n\nGetting started on Shopi takes minutes: create your account, tag your location so the feed can surface you to buyers nearby, and post your first product. There is no fee to join and nothing to pay to start selling.",
         list: [
           "Use a real face photo — not a logo or stock image",
           "Add your exact neighbourhood (e.g. 'Gikomba, Nairobi')",
@@ -155,11 +155,11 @@ export const blogPosts: BlogPost[] = [
       },
       {
         heading: "Common mistakes new Shopi sellers make",
-        body: "The most common reasons new sellers stall are: posting infrequently (less than three times a week), using only product photos instead of video, writing captions without prices, and being slow to respond to messages. Fix these four things and your first 100 orders will follow.",
+        body: "The most common reasons new sellers stall are: posting infrequently (less than three times a week), using only product photos instead of video, writing captions without prices, and being slow to respond to messages. Fix these four things and your first deals will follow.",
         list: [
-          "Posting fewer than 3 times per week — the algorithm deprioritises inactive accounts",
+          "Posting fewer than 3 times per week — consistent sellers stay visible in the feed",
           "Hiding the price — always lead with the number",
-          "Ignoring negative reviews — respond professionally, always",
+          "Ignoring questions in chat — every reply is a chance to close a deal",
           "Not using location tags — local discovery is your biggest edge",
         ],
       },
@@ -207,7 +207,7 @@ export const blogPosts: BlogPost[] = [
     category: "Industry",
     readTime: "7 min read",
     publishedAt: "2026-05-18",
-    author: { name: "Zara Mwangi", role: "Market Research", initials: "ZM", color: "#8b5cf6" },
+    author: { name: "Shopi Team", role: "Editorial", initials: "S", color: "#8b5cf6" },
     keywords: [
       "video commerce Africa",
       "e-commerce vs social commerce",
@@ -221,20 +221,20 @@ export const blogPosts: BlogPost[] = [
     sections: [
       {
         heading: "The promise vs the reality of traditional e-commerce in Africa",
-        body: "Traditional e-commerce arrived in Africa with enormous ambition. Jumia, Kilimall, and dozens of clones promised to bring the Amazon model to the continent. The results were mixed. Logistics costs remained punishing. Catalogue trust was low — buyers couldn't verify product quality. Card penetration was limited. And the model assumed a desktop-first internet user that Africa largely never had.\n\nBy 2024, Jumia's active customer base was shrinking. Meanwhile, informal social selling on WhatsApp and Instagram was quietly generating billions of dollars in GMV across sub-Saharan Africa.",
+        body: "Traditional e-commerce arrived in Africa with enormous ambition. Jumia, Kilimall, and dozens of clones promised to bring the Amazon model to the continent. The results were mixed. Logistics costs remained punishing. Catalogue trust was low — buyers couldn't verify product quality. Card penetration was limited. And the model assumed a desktop-first internet user that Africa largely never had.\n\nMeanwhile, informal social selling on WhatsApp and Instagram quietly thrived across sub-Saharan Africa — not because anyone built it a platform, but because it matched how people already buy and sell.",
       },
       {
         heading: "What video commerce does differently",
         body: "Video commerce does not ask buyers to trust a catalogue listing. It asks them to trust a person. When a seller in Nairobi films themselves demonstrating a dress — showing the fabric, the fit, the colour in natural light — they are providing information no product image can match.\n\nThis matters enormously in markets where returns are expensive, delivery is uncertain, and trust in anonymous online sellers is low. Video reduces perceived risk. It builds the kind of seller credibility that traditional platforms spend millions trying to manufacture with star ratings and review systems.",
       },
       {
-        heading: "The numbers tell the story",
-        body: "Studies of comparable social commerce markets in Southeast Asia — the closest analogue to East Africa's mobile-first, informal-sector-dominant economy — tell a consistent story about video-first selling:",
+        heading: "Why video-first selling converts",
+        body: "Southeast Asia's social commerce boom — the closest analogue to East Africa's mobile-first, informal-sector-dominant economy — points to a consistent pattern: buyers act faster and with more confidence when a real person shows them a real product. The reasons are structural, not magic:",
         list: [
-          "Video post conversion rates are 3–5× higher than static product listings",
-          "Average order value is 18% higher when the buyer has watched a video first",
-          "Return rates drop by 40% when buyers purchase via video — expectations are set accurately",
-          "Time-to-first-sale for new sellers is 11 days on video-first platforms vs 47 days on catalogue platforms",
+          "A video answers the questions a static listing leaves open — condition, size, colour, feel",
+          "Seeing the seller on camera builds the personal trust that informal commerce runs on",
+          "Accurate expectations mean fewer disputes and disappointed buyers after the deal",
+          "A camera and good light are all a new seller needs to start — no catalogue, no studio",
         ],
       },
       {
@@ -285,15 +285,15 @@ export const blogPosts: BlogPost[] = [
   // ─────────────────────────────────────────────────────────────────
   {
     slug: "how-nairobi-local-sellers-are-winning-online-with-short-videos",
-    title: "How Nairobi's Local Sellers Are Winning Online With Short Videos",
+    title: "How Nairobi's Local Sellers Can Win Online With Short Videos",
     description:
-      "Meet the Nairobi sellers turning 30-second videos into thriving businesses — and learn the exact strategies they use to find buyers, build trust, and grow fast.",
+      "A practical playbook for Nairobi sellers — from Gikomba fashion to Luthuli Avenue electronics — on using 30-second videos to find buyers and build trust.",
     excerpt:
-      "From Gikomba fabric traders to Westlands electronics dealers — Nairobi's local sellers are building real businesses on Shopi, one short video at a time.",
-    category: "Success Stories",
+      "From Gikomba fabric traders to Luthuli Avenue electronics dealers — a practical playbook for taking a Nairobi stall online, one short video at a time.",
+    category: "Seller Guide",
     readTime: "5 min read",
     publishedAt: "2026-05-21",
-    author: { name: "Cynthia Otieno", role: "Community Stories", initials: "CO", color: "#ef4444" },
+    author: { name: "Shopi Team", role: "Seller Guides", initials: "S", color: "#ef4444" },
     keywords: [
       "Nairobi online sellers",
       "Gikomba fashion online",
@@ -306,50 +306,50 @@ export const blogPosts: BlogPost[] = [
     ],
     sections: [
       {
-        heading: "The Gikomba seller who built a 10K following in 3 months",
-        body: "Grace Wanjiru has been selling second-hand fashion at Gikomba Market for six years. She joined Shopi in February 2026 on a friend's recommendation, initially skeptical. 'I thought online was for big companies,' she says. 'Not for someone like me.'\n\nHer first video — a 22-second clip showing a vintage denim jacket she'd just sourced, filmed against her shop wall — got 4,300 views overnight. Within a week she had 47 orders. Three months later she has over 10,000 followers and delivers to buyers across Nairobi, Nakuru, and Kisumu. She has hired two people to help with packing.",
+        heading: "Your stall already has everything a video needs",
+        body: "A Gikomba fashion trader flipping through today's sourcing, a Luthuli Avenue dealer booting up a phone to show it works, a South B home cook lifting the lid off a sufuria — these are the videos local buyers actually want to watch. Nothing about them requires a studio.\n\nThe sellers best placed to win online are the ones already doing the physical version of the pitch every day. A short video is the same pitch, recorded once, shown to every buyer who scrolls past.",
       },
       {
-        heading: "What makes their videos work",
-        body: "The sellers succeeding on Shopi in Nairobi are not the most polished. They are the most authentic. The common thread across top performers is specificity: they show exactly what they have, at exactly what price, for exactly what kind of buyer.\n\nGrace holds her jackets up to the window light to show the actual colour. She shows the stitching. She says the price in the first ten seconds. 'I treat the camera like a customer standing in front of me,' she explains. 'I show them what I'd show a person who walked into my stall.'",
+        heading: "What makes a selling video work",
+        body: "Polish is not the goal — specificity is. Show exactly what you have, at exactly what price, for exactly the kind of buyer you want. Hold the jacket up to window light so the colour is honest. Show the stitching. Say the price early.\n\nA useful rule: treat the camera like a customer standing in front of you. Show them what you would show a person who walked into your stall.",
         list: [
           "Show real imperfections — buyers trust sellers who are honest about wear and tear",
-          "Name the price before the 10-second mark — every time, without exception",
+          "Name the price early — every time, without exception",
           "Use Kiswahili and English in the same video to reach the widest audience",
-          "Post during school run times (7–8 AM) when parents are on their phones",
+          "Film in daylight — natural light shows true colour better than any filter",
         ],
       },
       {
-        heading: "Electronics traders building national reach from Luthuli Avenue",
-        body: "Tech seller David Mwangi operates from a single shop on Luthuli Avenue. Before Shopi, his sales were entirely foot traffic and a WhatsApp group of 200 contacts. He now reaches buyers in Mombasa, Eldoret, and as far as Kisii.\n\n'The video proves the phone works,' he says. 'I show it booting up, I show the battery percentage, I show the IMEI. Buyers who've never met me trust me because they've watched me be honest in 30 seconds.' His conversion rate on video posts is 23% — nearly four times the industry average for used electronics.",
+        heading: "For electronics: prove it works on camera",
+        body: "Used electronics live or die on trust. A video can carry proof a photo never could: the phone booting up, the battery percentage, the charging port doing its job. A buyer who has watched a device work for thirty seconds has far fewer reasons to hesitate.\n\nThat proof travels, too. A trader on Luthuli Avenue is no longer limited to foot traffic and a WhatsApp group — a clear, honest video can reach buyers well beyond the CBD, and the deal continues in chat.",
       },
       {
-        heading: "Food sellers creating the fastest-growing category on Shopi",
-        body: "Food is now Shopi's fastest-growing category in Nairobi, driven largely by home cooks and caterers using video to show their cooking process. The food safety question — 'how do I know this is clean?' — is answered more effectively by a 30-second kitchen video than by any certificate or rating.\n\nFatuma Hassan, who sells homemade sambusas and pilau from her home in South B, earns more from Shopi orders on weekends than she previously earned in a full week at her office job. She posts every morning at 7 AM, always starting with the sound of something sizzling.",
+        heading: "Reaching buyers beyond your neighbourhood",
+        body: "Shopi surfaces nearby posts first, so your first audience is the one that can reach you fastest — your estate, your side of town. But nothing stops a deal from travelling. Buyers and sellers agree delivery directly in chat, and Kenya already has the rails for it: boda couriers within the city, matatu and courier parcel services between towns.\n\nStart local, deliver further as trust and repeat buyers build up. You set the terms — Shopi stays out of the transaction.",
       },
       {
-        heading: "The pattern behind every success story",
-        body: "Every seller profiled here shares the same four habits: they post consistently (at least four times per week), they respond to messages within 30 minutes, they show real product and honest pricing, and they ask happy buyers to leave reviews. There is no secret formula beyond showing up, being real, and being responsive.",
+        heading: "The habits that compound",
+        body: "There is no secret formula beyond showing up, being real, and being responsive. The playbook is short:",
         list: [
-          "Post at minimum 4× per week — consistency beats virality",
-          "Respond to every message within 30 minutes during business hours",
-          "Ask every satisfied buyer for a review — most will happily oblige",
-          "Reshare positive reviews as posts — social proof is your most powerful ad",
+          "Post consistently — a steady rhythm beats a one-off viral clip",
+          "Respond to messages quickly — speed is what turns a question into a deal",
+          "Show real product and honest pricing in every post",
+          "Repost your best videos to TikTok and WhatsApp status — meet buyers where they already scroll",
         ],
       },
     ],
     faq: [
       {
-        q: "What kinds of products sell best on Shopi in Nairobi?",
-        a: "Fashion and clothing, used electronics, home décor, food and catering, and beauty products consistently top Shopi's sales charts in Nairobi. These categories benefit most from video — buyers need to see and trust before buying.",
+        q: "What kinds of products suit short-video selling in Nairobi?",
+        a: "Fashion and clothing, used electronics, home décor, food and catering, and beauty products benefit most from video — these are categories where buyers need to see condition, colour, and quality before they commit.",
       },
       {
         q: "Do I need professional equipment to make videos for Shopi?",
-        a: "No. The best-performing Shopi sellers use nothing more than a smartphone and natural window light. Authenticity outperforms production value on every metric.",
+        a: "No. A smartphone and natural window light are enough. Authentic, specific videos consistently do the job better than polished, generic ones.",
       },
       {
-        q: "How long does it take to make a first sale on Shopi?",
-        a: "Sellers who post consistently (3+ videos per week with visible pricing and location) typically make their first sale within 7–14 days of joining.",
+        q: "How do I start selling on Shopi from Nairobi?",
+        a: "Create an account, add your location, and post a short video of something you are selling with a clear price. Posting is free, and buyers message you directly — see our complete seller guide for a step-by-step walkthrough.",
       },
       {
         q: "Can I sell from Nairobi to buyers in other Kenyan cities?",

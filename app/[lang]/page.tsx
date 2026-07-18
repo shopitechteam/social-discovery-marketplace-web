@@ -157,38 +157,42 @@ export default async function Rootpage({ params }: PageProps<"/[lang]">) {
   const faq = HOME_FAQ[lang];
 
   return (
-    <div
-      // The two --landing-page-* vars tune every landing section at once.
-      className="lg:px-30 [--landing-page-max:1400px] [--landing-page-x:clamp(0.875rem,1.2vw,1.25rem)]"
-    >
-      {/* Structured data — Organization, WebSite (+search), marketplace app, FAQ */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: jsonLd(
-            organizationSchema,
-            websiteSchema,
-            marketplaceSchema,
-            faqSchema(faq),
-          ),
-        }}
-      />
+    <>
+      <div
+        // The two --landing-page-* vars tune every landing section at once.
+        // LandingFooter carries its own copy of this shell, so it renders
+        // outside this wrapper (below) to avoid doubling the lg inset.
+        className="lg:px-30 [--landing-page-max:1400px] [--landing-page-x:clamp(0.875rem,1.2vw,1.25rem)]"
+      >
+        {/* Structured data — Organization, WebSite (+search), marketplace app, FAQ */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: jsonLd(
+              organizationSchema,
+              websiteSchema,
+              marketplaceSchema,
+              faqSchema(faq),
+            ),
+          }}
+        />
 
-      <LandingNav dict={dict} lang={lang} />
-      <HeroSection dict={dict} lang={lang} />
-      <PillarsSection dict={dict} />
-      <StatsSection dict={dict} />
-      <DeepDivesSection dict={dict} lang={lang} />
-      <HowItWorksSection dict={dict} />
-      <TestimonialsSection dict={dict} />
-      {/* <BlogSection dict={dict} /> */}
-      {/* Visible FAQ — strong AEO signal and matches the FAQ structured data */}
-      <HomeFaq items={faq} lang={lang} />
-      <DownloadSection dict={dict} lang={lang} />
+        <LandingNav dict={dict} lang={lang} />
+        <HeroSection dict={dict} lang={lang} />
+        <PillarsSection dict={dict} />
+        <StatsSection dict={dict} />
+        <DeepDivesSection dict={dict} lang={lang} />
+        <HowItWorksSection dict={dict} />
+        <TestimonialsSection dict={dict} />
+        {/* <BlogSection dict={dict} /> */}
+        {/* Visible FAQ — strong AEO signal and matches the FAQ structured data */}
+        <HomeFaq items={faq} lang={lang} />
+        <DownloadSection dict={dict} lang={lang} />
+      </div>
       <LandingFooter dict={dict} lang={lang} />
       <WelcomeBackBanner dict={dict} lang={lang} />
       {/* <SupportChat dict={dict} /> */}
-    </div>
+    </>
   );
 }
 

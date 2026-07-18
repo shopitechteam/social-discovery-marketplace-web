@@ -24,7 +24,7 @@ export function LandingNav({
   const NAV_LINKS = [
     { label: dict?.nav.features ?? "Features", href: "#features" },
     { label: dict?.nav.howItWorks ?? "How It Works", href: "#how-it-works" },
-    { label: dict?.nav.creators ?? "Creators", href: "#creators" },
+    { label: dict?.nav.creators ?? "Sell on Shopi", href: "#creators" },
   ];
   const { resolvedTheme, toggleTheme } = useThemeStore();
   const { isAuthenticated, user } = useAuthSession();
