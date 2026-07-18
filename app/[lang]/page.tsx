@@ -11,6 +11,7 @@ import { LandingNav } from "@/components/landing/LandingNav";
 import { WelcomeBackBanner } from "@/components/landing/WelcomeBackBanner";
 //import { SupportChat } from "@/components/landing/SupportChat";
 import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
+import { TiktokSaverSection } from "@/components/landing/TiktokSaverSection";
 import { getDictionary } from "@/i18n/getDictionary";
 import { isValidLocale, locales, type Locale } from "@/i18n/config";
 import { notFound } from "next/navigation";
@@ -212,6 +213,9 @@ export default async function Rootpage({ params }: PageProps<"/[lang]">) {
         <DeepDivesSection dict={dict} lang={lang} />
         <HowItWorksSection dict={dict} />
         <TestimonialsSection dict={dict} />
+        {/* Side utility, intentionally low on the page — a "by the way" tool,
+            not a headline feature. */}
+        <TiktokSaverSection dict={dict} />
         {/* <BlogSection dict={dict} /> */}
         {/* Visible FAQ — strong AEO signal and matches the FAQ structured data */}
         <HomeFaq items={faq} lang={lang} />
