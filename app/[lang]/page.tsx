@@ -50,6 +50,18 @@ const HOME_FAQ_EN: FaqItem[] = [
     q: "Does Shopi work across Kenya?",
     a: "Yes. Shopi is built for local discovery across Kenya, including Nairobi, Mombasa, Kisumu, Nakuru, Meru and smaller towns. Nearby posts are prioritized, but buyers and sellers can still connect across locations.",
   },
+  {
+    q: "How do I create a Shopi account?",
+    a: "Go to shopi.co.ke and tap Sign in, then create an account with Google or with your email address and a password. Sign in with Apple is available on Apple devices. You do not need a registered business or phone-number verification to join.",
+  },
+  {
+    q: "How do I post something for sale on Shopi?",
+    a: "Sign in and tap Create, then add a video or photos of your item, a title, a description, a price in Kenyan Shillings, a category, and your location. Publishing is free and the listing goes live in the local feed immediately.",
+  },
+  {
+    q: "How do buyers and sellers communicate on Shopi?",
+    a: "Through Shopi's built-in chat. Open a listing and tap Message — the conversation happens inside Shopi, not on WhatsApp. Buyer and seller then agree on price, payment, and pickup or delivery directly.",
+  },
 ];
 
 const HOME_FAQ: Record<Locale, FaqItem[]> = {
@@ -79,6 +91,18 @@ const HOME_FAQ: Record<Locale, FaqItem[]> = {
       q: "Je, Shopi inafanya kazi kote Kenya?",
       a: "Ndiyo. Shopi imejengwa kwa ugunduzi wa karibu kote Kenya, ikiwemo Nairobi, Mombasa, Kisumu, Nakuru, Meru na miji midogo. Post za karibu hupewa kipaumbele, lakini wanunuzi na wauzaji wanaweza kuwasiliana kutoka maeneo tofauti.",
     },
+    {
+      q: "Ninafunguaje akaunti ya Shopi?",
+      a: "Nenda shopi.co.ke, gusa Sign in, kisha ufungue akaunti kwa Google au kwa barua pepe na nenosiri. Kuingia kwa Apple kunapatikana kwenye vifaa vya Apple. Huhitaji biashara iliyosajiliwa wala uthibitisho wa nambari ya simu ili kujiunga.",
+    },
+    {
+      q: "Ninawezaje kuweka bidhaa ya kuuza kwenye Shopi?",
+      a: "Ingia kisha ugonge Create, kisha ongeza video au picha za bidhaa yako, kichwa, maelezo, bei kwa Shilingi za Kenya, kategoria, na mahali ulipo. Kuchapisha ni bure na tangazo linaonekana kwenye feed ya karibu mara moja.",
+    },
+    {
+      q: "Wanunuzi na wauzaji huwasilianaje kwenye Shopi?",
+      a: "Kupitia chat iliyojengwa ndani ya Shopi. Fungua tangazo kisha ugonge Message — mazungumzo hufanyika ndani ya Shopi, si kwenye WhatsApp. Kisha mnunuzi na muuzaji hukubaliana bei, malipo, na kuchukua au usafirishaji moja kwa moja.",
+    },
   ],
 };
 
@@ -90,13 +114,13 @@ const HOME_META: Record<
   // the homepage entity, which is what unlocks sitelinks for brand searches.
   // Descriptions stay under ~160 chars so they aren't truncated in results.
   en: {
-    title: `${siteConfig.name} Kenya — Buy & Sell Locally | Social Marketplace`,
+    title: `${siteConfig.name} — Buy & Sell Locally | Kenya Social Marketplace Feed`,
     description:
       "Shopi is Kenya's social marketplace. Discover cars, phones, fashion, furniture and farm produce from sellers near you, then message them directly. Free, no commission.",
     ogLocale: "en_KE",
   },
   sw: {
-    title: `${siteConfig.name} Kenya — Nunua na Uuze Karibu Nawe | Soko la Kijamii`,
+    title: `${siteConfig.name} — Nunua na Uuze Karibu Nawe | Soko la Kijamii la Kenya`,
     description:
       "Shopi ni soko la kijamii la Kenya. Gundua magari, simu, fashion, samani na mazao kutoka kwa wauzaji karibu nawe, kisha uwatumie ujumbe moja kwa moja. Bila commission.",
     ogLocale: "sw_KE",
