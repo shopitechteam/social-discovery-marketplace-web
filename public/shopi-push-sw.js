@@ -12,7 +12,30 @@ self.addEventListener("push", (event) => {
     },
   };
 
-  event.waitUntil(self.registration.showNotification(title, options));
+  const broadcastToClients = clients
+    .matchAll({ type: "window", includeUncontrolled: true })
+    .then((windowClients) =>
+      Promise.all(
+        windowClients.map((client) =>
+          client.postMessage({
+            type: "shopi:push",
+            payload: {
+              title,
+              body: options.body,
+              url: options.data?.url || "/",
+              tag: options.tag,
+            },
+          }),
+        ),
+      ),
+    );
+
+  event.waitUntil(
+    Promise.all([
+      self.registration.showNotification(title, options),
+      broadcastToClients,
+    ]),
+  );
 });
 
 self.addEventListener("notificationclick", (event) => {

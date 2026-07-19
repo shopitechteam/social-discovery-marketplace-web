@@ -56,6 +56,8 @@ export const MY_DIRECT_CONVERSATIONS = gql`
     myDirectConversations(limit: $limit) {
       id
       contentId
+      sellerId
+      buyerId
       lastMessageId
       lastMessageText
       lastMessageType
@@ -68,6 +70,9 @@ export const MY_DIRECT_CONVERSATIONS = gql`
     blockedByMe
     blockedByOther
     canSendMessages
+    lifecycleStatus
+    sellerFirstResponseMinutes
+    buyerFirstResponseMinutes
     dealClosedAt
     dealClosedByUserId
     otherParticipant {
@@ -92,6 +97,8 @@ export const DIRECT_CONVERSATION = gql`
     directConversation(conversationId: $conversationId) {
       id
       contentId
+      sellerId
+      buyerId
       lastMessageId
       lastMessageText
       lastMessageType
@@ -104,6 +111,9 @@ export const DIRECT_CONVERSATION = gql`
       blockedByMe
       blockedByOther
       canSendMessages
+      lifecycleStatus
+      sellerFirstResponseMinutes
+      buyerFirstResponseMinutes
       dealClosedAt
       dealClosedByUserId
       otherParticipant {
@@ -244,6 +254,8 @@ export const BLOCK_DIRECT_CONVERSATION = gql`
     blockDirectConversation(conversationId: $conversationId) {
       id
       contentId
+      sellerId
+      buyerId
       lastMessageId
       lastMessageText
       lastMessageType
@@ -254,6 +266,9 @@ export const BLOCK_DIRECT_CONVERSATION = gql`
       blockedByMe
       blockedByOther
       canSendMessages
+      lifecycleStatus
+      sellerFirstResponseMinutes
+      buyerFirstResponseMinutes
       dealClosedAt
       dealClosedByUserId
       otherParticipantOnline
@@ -280,6 +295,8 @@ export const UNBLOCK_DIRECT_CONVERSATION = gql`
     unblockDirectConversation(conversationId: $conversationId) {
       id
       contentId
+      sellerId
+      buyerId
       lastMessageId
       lastMessageText
       lastMessageType
@@ -290,6 +307,9 @@ export const UNBLOCK_DIRECT_CONVERSATION = gql`
       blockedByMe
       blockedByOther
       canSendMessages
+      lifecycleStatus
+      sellerFirstResponseMinutes
+      buyerFirstResponseMinutes
       dealClosedAt
       dealClosedByUserId
       otherParticipantOnline
@@ -316,6 +336,8 @@ export const MARK_DIRECT_CONVERSATION_DEAL = gql`
     markDirectConversationDeal(input: $input) {
       id
       contentId
+      sellerId
+      buyerId
       lastMessageId
       lastMessageText
       lastMessageType
@@ -326,6 +348,9 @@ export const MARK_DIRECT_CONVERSATION_DEAL = gql`
       blockedByMe
       blockedByOther
       canSendMessages
+      lifecycleStatus
+      sellerFirstResponseMinutes
+      buyerFirstResponseMinutes
       dealClosedAt
       dealClosedByUserId
       otherParticipantOnline

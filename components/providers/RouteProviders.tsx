@@ -2,8 +2,11 @@
 
 import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import { locales } from "@/i18n/config";
+import { GlobalPushBootstrap } from "@/components/providers/GlobalPushBootstrap";
+import { GlobalPushToastBridge } from "@/components/providers/GlobalPushToastBridge";
 
 const ApolloWrapper = dynamic(() =>
   import("@/lib/apollo/ApolloWrapper").then((mod) => mod.ApolloWrapper),
@@ -25,9 +28,29 @@ const landingPaths = new Set<string>(locales.map((locale) => `/${locale}`));
 export function RouteProviders({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isLandingPage = landingPaths.has(pathname.replace(/\/$/, ""));
+  const [toastPosition, setToastPosition] = useState<"top-center" | "bottom-center">(
+    "bottom-center",
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const syncPosition = () => {
+      setToastPosition(mediaQuery.matches ? "top-center" : "bottom-center");
+    };
+
+    syncPosition();
+    mediaQuery.addEventListener("change", syncPosition);
+    return () => {
+      mediaQuery.removeEventListener("change", syncPosition);
+    };
+  }, []);
 
   return (
     <ThemeProvider>
+      <GlobalPushBootstrap lang={pathname.split("/")[1] || "en"} />
+      <GlobalPushToastBridge />
       {isLandingPage ? (
         <main>{children}</main>
       ) : (
@@ -36,9 +59,9 @@ export function RouteProviders({ children }: { children: React.ReactNode }) {
             <SessionAnalyticsTracker />
             <main>{children}</main>
           </ApolloWrapper>
-          <Toaster position="bottom-center" richColors />
         </>
       )}
+      <Toaster position={toastPosition} richColors />
     </ThemeProvider>
   );
 }

@@ -10,11 +10,10 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 export default async function OgImage() {
-  // The hand-painted SHOPI brush lockup — the real brand mark.
-  const lockup = await readFile(
-    join(process.cwd(), "public/assets/shopi-lockup.png"),
+  const badge = await readFile(
+    join(process.cwd(), "public/assets/shopi-logo.png"),
   );
-  const logoSrc = `data:image/png;base64,${lockup.toString("base64")}`;
+  const logoSrc = `data:image/png;base64,${badge.toString("base64")}`;
 
   return new ImageResponse(
     (
@@ -32,9 +31,8 @@ export default async function OgImage() {
           fontFamily: "sans-serif",
         }}
       >
-        {/* Real brand lockup */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={logoSrc} alt={siteConfig.name} width={600} height={400} />
+        <img src={logoSrc} alt={siteConfig.name} width={220} height={220} />
 
         <div
           style={{
