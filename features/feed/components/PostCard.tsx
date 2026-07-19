@@ -54,6 +54,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { toast } from "sonner";
+import { absoluteContentUrl, contentPath } from "@/lib/content-url";
 import { Button } from "@/components/ui/button";
 
 const CommentsDrawer = dynamic(() =>
@@ -1090,12 +1091,12 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
     if (shouldFire(post.id, "DETAIL_VIEWED")) {
       trackDetailViewed({ variables: { contentId: post.id } }).catch(() => {});
     }
-    router.push(`/${lang}/content/${post.id}`, { scroll: false });
+    router.push(contentPath(lang, post), { scroll: false });
   }
 
   async function handleCopyLink() {
     if (typeof window === "undefined") return;
-    const url = `${window.location.origin}/${lang}/content/${post.id}`;
+    const url = absoluteContentUrl(window.location.origin, lang, post);
     try {
       await navigator.clipboard?.writeText(url);
     } catch {

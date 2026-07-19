@@ -396,6 +396,7 @@ export function useCommentThread({ contentId, onCommentAdded }: ThreadOptions) {
   const { data, loading, fetchMore } = useQuery(GetCommentsDocument, {
     variables: { contentId, limit: 20 },
     fetchPolicy: "cache-and-network",
+    skip: !contentId,
   });
 
   const [addComment] = useMutation(AddCommentDocument);
@@ -469,7 +470,7 @@ export function useCommentThread({ contentId, onCommentAdded }: ThreadOptions) {
 
   async function handleSend() {
     const trimmed = text.trim();
-    if (!trimmed) return;
+    if (!trimmed || !contentId) return;
     setText("");
     const parentId = replyingTo?.id ?? undefined;
     setReplyingTo(null);
@@ -610,7 +611,7 @@ export function useCommentThread({ contentId, onCommentAdded }: ThreadOptions) {
 
   function handleScroll() {
     const el = listRef.current;
-    if (!el || !hasMore || !endCursor) return;
+    if (!el || !contentId || !hasMore || !endCursor) return;
     if (el.scrollTop < 80) {
       fetchMore({
         variables: { contentId, limit: 20, after: endCursor },

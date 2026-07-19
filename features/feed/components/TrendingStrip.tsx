@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useTrending } from "../hooks/useFeed";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
+import { contentPath } from "@/lib/content-url";
 
 interface Props {
   lang: string;
@@ -42,7 +43,7 @@ function TrendingItem({
 
   return (
     <button
-      onClick={() => router.push(`/${lang}/content/${post.id}`, { scroll: false })}
+      onClick={() => router.push(contentPath(lang, post), { scroll: false })}
       className="relative flex-none w-28 bg-gray-200 rounded-xl overflow-hidden group"
       style={{ aspectRatio: "9/14" }}
       aria-label={post.title}

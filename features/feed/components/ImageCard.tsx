@@ -10,6 +10,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { SHIMMER } from "@/lib/shimmer";
+import { contentPath } from "@/lib/content-url";
 import { PriceTag } from "./PriceTag";
 import { StatRow } from "./StatRow";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
@@ -44,7 +45,7 @@ export function ImageCard({ post, lang, priority, variant = "tall" }: Props) {
 
   return (
     <article
-      onClick={() => router.push(`/${lang}/content/${post.id}`, { scroll: false })}
+      onClick={() => router.push(contentPath(lang, post), { scroll: false })}
       className="relative cursor-pointer group rounded-xl overflow-hidden bg-surface select-none"
       style={{ aspectRatio }}
       aria-label={post.title}

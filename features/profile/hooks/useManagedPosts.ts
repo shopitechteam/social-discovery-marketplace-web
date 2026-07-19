@@ -18,6 +18,7 @@ export type ManagedPostType = "VIDEO" | "IMAGE";
 
 export type ManagedPost = {
   id: string;
+  slug?: string | null;
   type: ManagedPostType;
   title: string;
   caption?: string | null;
@@ -117,6 +118,7 @@ type DeleteContentVariables = {
 const MANAGED_POST_FIELDS = gql`
   fragment ManagedPostFields on Content {
     id
+    slug
     type
     title
     caption

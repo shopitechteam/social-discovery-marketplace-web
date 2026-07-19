@@ -42,6 +42,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { CategoryPickerDrawer } from "@/features/create/components/CategoryPickerDrawer";
+import { contentPath } from "@/lib/content-url";
 import {
   useManagedPostMutations,
   type ManagedPost,
@@ -528,7 +529,7 @@ export function ManagedPostsGrid({
       {
         key: "visit",
         label: "Visit listing",
-        href: `/${lang}/content/${actionsPost.id}`,
+        href: contentPath(lang, actionsPost),
         icon: Globe,
       },
     ];

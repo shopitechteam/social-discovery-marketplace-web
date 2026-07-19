@@ -60,6 +60,7 @@ function EmbeddedChatPanelBody({
   }, [contentId]);
 
   const resolving =
+    inbox.ensuringConversation ||
     !inbox.selectedConversationId || !inbox.selectedConversation;
 
   // Keep ChatDetail mounted across resolution so the panel doesn't flip between

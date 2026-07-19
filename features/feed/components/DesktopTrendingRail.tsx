@@ -19,6 +19,7 @@ import { fmtCompact as fmt } from "@/lib/format";
 import { idInitials } from "@/lib/avatar";
 import { useAuthStore } from "@/stores/auth";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
+import { contentPath } from "@/lib/content-url";
 
 type SellerToFollow = {
   id: string;
@@ -96,7 +97,7 @@ function TrendingRow({
 
   return (
     <button
-      onClick={() => router.push(`/${lang}/content/${post.id}`, { scroll: false })}
+      onClick={() => router.push(contentPath(lang, post), { scroll: false })}
       className="group flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors hover:bg-surface"
     >
       {/* Rank */}

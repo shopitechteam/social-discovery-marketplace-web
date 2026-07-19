@@ -48,12 +48,14 @@ import { VideoProgressBar } from "./VideoProgressBar";
 import { usePageFocused } from "../hooks/usePageFocused";
 import { shouldFire } from "@/lib/interactionDedup";
 import { timeAgoLong as timeAgo } from "@/lib/time";
+import { absoluteContentUrl } from "@/lib/content-url";
 
 const MediaCarouselDialog = dynamic(() =>
   import("./MediaCarouselDialog").then((mod) => mod.MediaCarouselDialog),
 );
 
 type DetailPost = ContentCardFieldsFragment & {
+  slug?: string | null;
   categoryId?: string | null;
   specs?: Array<{ key: string; value: string }>;
   aiClassification?: {
@@ -75,6 +77,7 @@ const ContentDetailDocument = gql`
   query ContentDetailPdp($id: String!) {
     content(id: $id) {
       id
+      slug
       type
       source
       isLive
@@ -174,6 +177,9 @@ const ContentDetailDocument = gql`
 // ─── helpers ──────────────────────────────────────────────────────────────────
 // Shared utilities (fmt, avatarColors/initials, useIsDesktop) now live in
 // @/lib and @/hooks; imported above and aliased to keep call sites unchanged.
+function isMongoObjectId(value: string) {
+  return /^[a-f\d]{24}$/i.test(value);
+}
 
 // ─── MobileImageCarousel ──────────────────────────────────────────────────────
 
@@ -553,12 +559,6 @@ export function ContentDetail({
   const [rootEl, setRootEl] = useState<HTMLDivElement | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
 
-  const openChat = useCallback(() => {
-    if (!requireAuth({ contentId: id })) return;
-    setChatOpen(true);
-    onChatOpenChange?.(true);
-  }, [requireAuth, id, onChatOpenChange]);
-
   const closeChat = useCallback(() => {
     setChatOpen(false);
     onChatOpenChange?.(false);
@@ -625,6 +625,7 @@ export function ContentDetail({
 
   // ── Local state ────────────────────────────────────────────────────────────
   const post = data?.content;
+  const resolvedContentId = post?.id ?? (isMongoObjectId(id) ? id : "");
   const [menuOpen, setMenuOpen] = useState(false);
   const [imgIdx, setImgIdx] = useState(0);
   const [showMediaDialog, setShowMediaDialog] = useState(false);
@@ -632,14 +633,21 @@ export function ContentDetail({
   const muted = useFeedPreferencesStore((s) => s.videoMuted);
   const setVideoMuted = useFeedPreferencesStore((s) => s.setVideoMuted);
   const isDesktop = useIsDesktop();
+  const openChat = useCallback(() => {
+    if (!resolvedContentId) return;
+    if (!requireAuth({ contentId: resolvedContentId })) return;
+    setChatOpen(true);
+    onChatOpenChange?.(true);
+  }, [requireAuth, resolvedContentId, onChatOpenChange]);
   const openMessageRoute = useCallback(() => {
-    const href = `/${lang}/notifications/${id}?source=content`;
+    if (!resolvedContentId) return;
+    const href = `/${lang}/notifications/${resolvedContentId}?source=content`;
     if (typeof window !== "undefined" && !isDesktop) {
       window.location.href = href;
       return;
     }
     router.push(href);
-  }, [id, isDesktop, lang, router]);
+  }, [isDesktop, lang, resolvedContentId, router]);
   const resolvedSaved =
     (post as typeof post & { isSavedByMe?: boolean })?.isSavedByMe ?? false;
   const resolvedSaveCount = post?.stats?.saves ?? 0;
@@ -652,7 +660,7 @@ export function ContentDetail({
   // Shared comment thread (list + replies + optimistic posting). The mobile PDP
   // renders its list inline and drives the composer from the fixed bottom bar.
   const mobileThread = useCommentThread({
-    contentId: id,
+    contentId: resolvedContentId,
     onCommentAdded: () => setCommentCountOverride(null),
   });
   const {
@@ -682,18 +690,29 @@ export function ContentDetail({
       ? `https://image.mux.com/${mux.playbackId}/thumbnail.jpg?time=0&width=900&fit_mode=smartcrop`
       : null);
 
+  useEffect(() => {
+    if (!post?.id || !isVideo || !hlsUrl) return;
+    setVideoMuted(false);
+  }, [hlsUrl, isVideo, post?.id, setVideoMuted]);
+
   // Fire view on mount
   useEffect(() => {
-    viewMutation({ variables: { contentId: id } }).catch(() => {});
-  }, [id, viewMutation]);
+    if (!resolvedContentId) return;
+    viewMutation({ variables: { contentId: resolvedContentId } }).catch(
+      () => {},
+    );
+  }, [resolvedContentId, viewMutation]);
 
   // ── Video completion / replay tracking ────────────────────────────────────
   const handleVideoCompleted = useCallback(
     (completionRate: number, watchDuration: number) => {
-      if (shouldFire(id, "VIDEO_COMPLETED")) {
+      if (
+        resolvedContentId &&
+        shouldFire(resolvedContentId, "VIDEO_COMPLETED")
+      ) {
         trackInteractionMutation({
           variables: {
-            contentId: id,
+            contentId: resolvedContentId,
             type: "VIDEO_COMPLETED",
             completionRate,
             watchDuration,
@@ -701,20 +720,25 @@ export function ContentDetail({
         }).catch(() => {});
       }
     },
-    [id, trackInteractionMutation],
+    [resolvedContentId, trackInteractionMutation],
   );
 
   const handleVideoReplayed = useCallback(() => {
+    if (!resolvedContentId) return;
     // VIDEO_REPLAYED is always allowed (not in SESSION_ONCE)
     trackInteractionMutation({
-      variables: { contentId: id, type: "VIDEO_REPLAYED" },
+      variables: { contentId: resolvedContentId, type: "VIDEO_REPLAYED" },
     }).catch(() => {});
-  }, [id, trackInteractionMutation]);
+  }, [resolvedContentId, trackInteractionMutation]);
 
   // ── Cache writer — keeps feed cards + detail in sync ─────────────────────
   function writeSaveToCache(saved: boolean, saveCount: number) {
+    if (!resolvedContentId) return;
     client.cache.modify({
-      id: client.cache.identify({ __typename: "Content", id }),
+      id: client.cache.identify({
+        __typename: "Content",
+        id: resolvedContentId,
+      }),
       fields: {
         isSavedByMe: () => saved,
         stats: (existing: any) => ({ ...existing, saves: saveCount }),
@@ -724,14 +748,18 @@ export function ContentDetail({
 
   // ── Save handler ───────────────────────────────────────────────────────────
   async function handleSave(collectionId?: string) {
-    if (!requireAuth({ contentId: id, action: "save" })) return;
+    if (!resolvedContentId) return;
+    if (!requireAuth({ contentId: resolvedContentId, action: "save" })) return;
     const wasSaved = resolvedSaved;
     const newSaved = !wasSaved;
     const newCount = resolvedSaveCount + (wasSaved ? -1 : 1);
     writeSaveToCache(newSaved, newCount);
     try {
       const { data: res } = await toggleSaveMutation({
-        variables: { contentId: id, collectionId: collectionId ?? null },
+        variables: {
+          contentId: resolvedContentId,
+          collectionId: collectionId ?? null,
+        },
       });
       if (res?.toggleSave)
         writeSaveToCache(res.toggleSave.saved, res.toggleSave.saveCount);
@@ -741,10 +769,15 @@ export function ContentDetail({
   }
 
   function handleShare() {
-    shareMutation({ variables: { contentId: id } }).catch(() => {});
+    if (resolvedContentId) {
+      shareMutation({ variables: { contentId: resolvedContentId } }).catch(
+        () => {},
+      );
+    }
     if (navigator.share && post) {
+      const url = absoluteContentUrl(window.location.origin, lang, post);
       navigator
-        .share({ title: post.title, url: window.location.href })
+        .share({ title: post.title, url })
         .catch(() => {});
     }
   }
@@ -753,7 +786,11 @@ export function ContentDetail({
     try {
       const url =
         typeof window !== "undefined"
-          ? `${window.location.origin}/${lang}/content/${id}`
+          ? absoluteContentUrl(window.location.origin, lang, {
+              id: resolvedContentId || id,
+              title: post?.title ?? null,
+              slug: post?.slug ?? null,
+            })
           : "";
       await navigator.clipboard?.writeText(url);
       toast.success("Link copied");
@@ -763,7 +800,8 @@ export function ContentDetail({
   }
 
   async function handleReport() {
-    await reportMutation({ variables: { contentId: id } });
+    if (!resolvedContentId) return;
+    await reportMutation({ variables: { contentId: resolvedContentId } });
   }
 
   async function handleDownload() {
@@ -1096,7 +1134,8 @@ export function ContentDetail({
           <button
             type="button"
             onClick={() => {
-              if (!requireAuth({ contentId: id })) return;
+              if (!resolvedContentId) return;
+              if (!requireAuth({ contentId: resolvedContentId })) return;
               setMenuOpen(false);
               void handleReport().then(() => toast.success("Report submitted"));
             }}
@@ -1313,7 +1352,8 @@ export function ContentDetail({
               openChat();
               return;
             }
-            if (!requireAuth({ contentId: id })) return;
+            if (!resolvedContentId) return;
+            if (!requireAuth({ contentId: resolvedContentId })) return;
             openMessageRoute();
           }}
           className="flex-1 lg:cursor-pointer flex items-center justify-center gap-1.5 px-8 py-2.5 rounded-full bg-primary/90 text-xs font-semibold text-[#f1f1f1] transition-all active:scale-95"
@@ -1519,7 +1559,12 @@ export function ContentDetail({
 
             {/* Comments + replies + reply-aware composer (shared thread) */}
             <div className="flex min-h-0 flex-1 flex-col border-t border-default">
-              <CommentThread contentId={id} contentCreatorId={post.creatorId} />
+              {resolvedContentId && (
+                <CommentThread
+                  contentId={resolvedContentId}
+                  contentCreatorId={post.creatorId}
+                />
+              )}
             </div>
           </div>
 
@@ -1529,7 +1574,9 @@ export function ContentDetail({
           {isSheet && (
             <InlineChatPanel
               lang={lang}
-              contentId={chatOpen ? id : null}
+              contentId={
+                chatOpen && resolvedContentId ? resolvedContentId : null
+              }
               onClose={closeChat}
               // The post's creator row beside this column already shows the
               // seller's name + avatar, so hide them in the chat header to
@@ -1779,7 +1826,8 @@ export function ContentDetail({
                   <button
                     type="button"
                     onClick={() => {
-                      if (!requireAuth({ contentId: id })) return;
+                      if (!resolvedContentId) return;
+                      if (!requireAuth({ contentId: resolvedContentId })) return;
                       openMessageRoute();
                     }}
                     className="flex items-center justify-center gap-2 rounded-full bg-primary py-3 text-sm font-bold text-white transition-transform active:scale-[0.98]"
@@ -1859,7 +1907,13 @@ export function ContentDetail({
                   }
                 }}
                 onFocus={() => {
-                  if (!requireAuth({ contentId: id, action: "comment" }))
+                  if (
+                    !resolvedContentId ||
+                    !requireAuth({
+                      contentId: resolvedContentId,
+                      action: "comment",
+                    })
+                  )
                     mobileCommentInputRef.current?.blur();
                 }}
                 placeholder={
