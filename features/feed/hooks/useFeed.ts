@@ -1,7 +1,13 @@
 "use client";
 
 import { useQuery, useSuspenseQuery } from "@apollo/client/react";
-import { startTransition, useCallback, useEffect, useRef, useState } from "react";
+import {
+  startTransition,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   ForYouFeedDocument,
   FollowingFeedDocument,
@@ -59,19 +65,22 @@ export function usePaginationGuard(currentCount: number) {
 }
 
 export function useForYouFeed() {
-  const { data, error, fetchMore } = useSuspenseQuery(ForYouFeedDocument, {
-    variables: { limit: PAGE_SIZE },
-    // Preserve the accumulated window on bottom-tab navigation. Freshly
-    // published content invalidates this field explicitly (see feedCache.ts);
-    // otherwise revisiting Home should show the same 30+ cached items, not a
-    // page-1 background refresh.
-    fetchPolicy: "cache-first",
-    // Apollo's default refetch write mode is "overwrite", which can replace
-    // an exhausted 33-item window with the refreshed first page while leaving
-    // pageInfo stale. We need the field policy merge to receive `existing`.
-    refetchWritePolicy: "merge",
-    notifyOnNetworkStatusChange: true,
-  });
+  const { data, error, fetchMore } = useSuspenseQuery(
+    ForYouFeedDocument,
+    {
+      variables: { limit: PAGE_SIZE },
+      // Preserve the accumulated window on bottom-tab navigation. Freshly
+      // published content invalidates this field explicitly (see feedCache.ts);
+      // otherwise revisiting Home should show the same 30+ cached items, not a
+      // page-1 background refresh.
+      fetchPolicy: "cache-first",
+      // Apollo's default refetch write mode is "overwrite", which can replace
+      // an exhausted 33-item window with the refreshed first page while leaving
+      // pageInfo stale. We need the field policy merge to receive `existing`.
+      refetchWritePolicy: "merge",
+      notifyOnNetworkStatusChange: true,
+    },
+  );
 
   const items = data?.forYouFeed?.items ?? [];
   const pageInfo = data?.forYouFeed?.pageInfo;
@@ -112,14 +121,17 @@ export function useForYouFeed() {
 }
 
 export function useFollowingFeed() {
-  const { data, loading, error, fetchMore } = useQuery(FollowingFeedDocument, {
-    variables: { limit: PAGE_SIZE },
-    // See useForYouFeed: bottom-tab navigation should restore the cached
-    // accumulated window without a page-1 background refresh.
-    fetchPolicy: "cache-first",
-    refetchWritePolicy: "merge",
-    notifyOnNetworkStatusChange: true,
-  });
+  const { data, loading, error, fetchMore } = useQuery(
+    FollowingFeedDocument,
+    {
+      variables: { limit: PAGE_SIZE },
+      // See useForYouFeed: bottom-tab navigation should restore the cached
+      // accumulated window without a page-1 background refresh.
+      fetchPolicy: "cache-first",
+      refetchWritePolicy: "merge",
+      notifyOnNetworkStatusChange: true,
+    },
+  );
 
   const items = data?.followingFeed?.items ?? [];
   const pageInfo = data?.followingFeed?.pageInfo;
