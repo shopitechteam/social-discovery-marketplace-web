@@ -1,29 +1,31 @@
 // Static, server-safe — no "use client"
 
-// Shopi brand artwork — exported brush lockup. Intrinsic size 1536 x 1024 (3:2).
-const LOGO_SRC = "/assets/logo.svg";
-const LOGO_ASPECT = 1536 / 1024;
+// Shopi primary badge artwork — simple square "S" mark. Intrinsic size 96 x 96.
+const LOGO_SRC = "/assets/shopi-logo.svg";
+const LOGO_ASPECT = 1;
+const LOGO_VISUAL_SCALE = 0.72;
 
 /**
- * Icon-only mark — renders the Shopi brush artwork.
+ * Icon-only mark — renders the Shopi primary badge.
  */
 export function ShopiLogoMark({ size = 48 }: { size?: number }) {
-  const w = Math.round(size * LOGO_ASPECT);
+  const scaledSize = Math.round(size * LOGO_VISUAL_SCALE);
+  const w = Math.round(scaledSize * LOGO_ASPECT);
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={LOGO_SRC}
       alt="Shopi"
       width={w}
-      height={size}
-      style={{ height: size, width: "auto" }}
+      height={scaledSize}
+      style={{ height: scaledSize, width: "auto" }}
     />
   );
 }
 
 /**
- * Full logo — renders the Shopi brush artwork.
- * `height` controls overall scale; width auto-derives from the 3:2 artwork.
+ * Full logo — renders the Shopi primary badge.
+ * `height` controls overall scale; width auto-derives from the square artwork.
  */
 export function ShopiLogo({
   height = 36,
@@ -33,19 +35,20 @@ export function ShopiLogo({
   height?: number;
   width?: number;
   className?: string;
-  /** Retained for API compatibility; the artwork is a single lockup. */
+  /** Retained for API compatibility. */
   tagline?: boolean;
 }) {
-  const w = width ?? Math.round(height * LOGO_ASPECT);
+  const scaledHeight = Math.round(height * LOGO_VISUAL_SCALE);
+  const w = width ?? Math.round(scaledHeight * LOGO_ASPECT);
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={LOGO_SRC}
       alt="Shopi"
       width={w}
-      height={height}
+      height={scaledHeight}
       className={className}
-      style={className ? undefined : { height, width: "auto" }}
+      style={className ? undefined : { height: scaledHeight, width: "auto" }}
     />
   );
 }

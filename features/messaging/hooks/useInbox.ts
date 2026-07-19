@@ -9,6 +9,7 @@ import { getSocket } from "@/lib/socket";
 import {
   DirectConversationUpdatedPayload,
   DirectConversationRemovedPayload,
+  DirectConversationViewportPayload,
   DirectMessageCreatedPayload,
   DirectMessageUpdatedPayload,
   DirectPresenceUpdatedPayload,
@@ -57,6 +58,13 @@ const sortMessagesChronologically = (items: Message[]) =>
 const isOptimisticMessage = (message: Message) =>
   message.id.startsWith("optimistic:");
 
+function createConversationViewportTabId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `tab-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 export function useInbox(lang: string) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -94,6 +102,9 @@ export function useInbox(lang: string) {
 
   const ensureKeyRef = useRef<string | null>(null);
   const readKeyRef = useRef<string | null>(null);
+  const conversationViewportTabIdRef = useRef<string>(
+    createConversationViewportTabId(),
+  );
   const selectedConversationIdRef = useRef<string | null>(null);
   const activeConversationIdRef = useRef<string | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -395,6 +406,54 @@ export function useInbox(lang: string) {
     return () => {
       offConnect();
       socket.emit(WS_CLIENT_EVENTS.LEAVE_CONVERSATION, selectedConversationId);
+    };
+  }, [isAuthenticated, on, selectedConversationId]);
+
+  useEffect(() => {
+    if (!selectedConversationId || !isAuthenticated) return;
+
+    const socket = getSocket();
+    const tabId = conversationViewportTabIdRef.current;
+
+    const syncViewport = () => {
+      const payload: DirectConversationViewportPayload = {
+        conversationId: selectedConversationId,
+        tabId,
+        isActive:
+          document.visibilityState === "visible" &&
+          (typeof document.hasFocus !== "function" || document.hasFocus()),
+      };
+      socket.emit(WS_CLIENT_EVENTS.SET_CONVERSATION_VIEWPORT, payload);
+    };
+
+    const refreshActiveViewport = () => {
+      if (
+        document.visibilityState !== "visible" ||
+        (typeof document.hasFocus === "function" && !document.hasFocus())
+      ) {
+        return;
+      }
+      syncViewport();
+    };
+
+    syncViewport();
+    const offConnect = on("connect", syncViewport);
+    document.addEventListener("visibilitychange", syncViewport);
+    window.addEventListener("focus", syncViewport);
+    window.addEventListener("blur", syncViewport);
+    const heartbeatId = window.setInterval(refreshActiveViewport, 20_000);
+
+    return () => {
+      offConnect();
+      window.clearInterval(heartbeatId);
+      document.removeEventListener("visibilitychange", syncViewport);
+      window.removeEventListener("focus", syncViewport);
+      window.removeEventListener("blur", syncViewport);
+      socket.emit(WS_CLIENT_EVENTS.SET_CONVERSATION_VIEWPORT, {
+        conversationId: selectedConversationId,
+        tabId,
+        isActive: false,
+      } satisfies DirectConversationViewportPayload);
     };
   }, [isAuthenticated, on, selectedConversationId]);
 
@@ -1289,6 +1348,8 @@ export function useInbox(lang: string) {
         return upsertConversation(prev, {
           conversationId: conversation.id,
           contentId: conversation.contentId,
+          sellerId: conversation.sellerId,
+          buyerId: conversation.buyerId,
           lastMessageId: conversation.lastMessageId ?? undefined,
           lastMessageText: conversation.lastMessageText ?? undefined,
           lastMessageType:
@@ -1303,6 +1364,11 @@ export function useInbox(lang: string) {
           blockedByMe: conversation.blockedByMe ?? undefined,
           blockedByOther: conversation.blockedByOther ?? undefined,
           canSendMessages: conversation.canSendMessages ?? undefined,
+          lifecycleStatus: conversation.lifecycleStatus ?? undefined,
+          sellerFirstResponseMinutes:
+            conversation.sellerFirstResponseMinutes ?? undefined,
+          buyerFirstResponseMinutes:
+            conversation.buyerFirstResponseMinutes ?? undefined,
           dealClosedAt: conversation.dealClosedAt ?? undefined,
           dealClosedByUserId: conversation.dealClosedByUserId ?? undefined,
         });

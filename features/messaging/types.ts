@@ -45,6 +45,8 @@ export type Conversation = {
   updatedAt: string | null | undefined;
   id: string;
   contentId: string;
+  sellerId: string;
+  buyerId: string;
   lastMessageId?: string | null;
   lastMessageText?: string | null;
   lastMessageType?: string | null;
@@ -58,6 +60,9 @@ export type Conversation = {
   blockedByMe?: boolean | null;
   blockedByOther?: boolean | null;
   canSendMessages?: boolean | null;
+  lifecycleStatus?: string | null;
+  sellerFirstResponseMinutes?: number | null;
+  buyerFirstResponseMinutes?: number | null;
   /** Set when either party marks the deal closed (completed/profitable chat). */
   dealClosedAt?: string | null;
   /** Which participant closed the deal. */
