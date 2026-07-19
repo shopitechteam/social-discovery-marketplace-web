@@ -13,7 +13,6 @@ import type {
   GetRepliesQuery,
 } from "@/types/__generated__/graphql";
 import { useVisualViewport } from "@/hooks/useKeyboardInset";
-import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
 import { timeAgo } from "@/lib/time";
 import { fmtCompact as formatCount } from "@/lib/format";
@@ -195,16 +194,12 @@ function CommentRow({
   const replyCount = comment.replyCount ?? 0;
   const [toggleLike] = useMutation(ToggleCommentLikeDocument);
 
-  // cache-and-network on the first open (fetch fresh replies), but fall back to
-  // cache-first afterwards so an optimistic reply we just wrote into the cache
-  // isn't clobbered by a late network response (which wouldn't yet include it).
   const { data: repliesData, loading: repliesLoading } = useQuery(
     GetRepliesDocument,
     {
       variables: { commentId: comment.id },
       skip: !showReplies,
-      fetchPolicy: "cache-and-network",
-      nextFetchPolicy: "cache-first",
+      fetchPolicy: "cache-first",
     },
   );
   // Dedupe by id — an optimistic reply and the server's canonical list can
@@ -337,36 +332,6 @@ function CommentRow({
   );
 }
 
-// ─── Loading skeleton — mirrors the comment row layout ────────────────────────
-
-function CommentSkeleton({ short }: { short?: boolean }) {
-  return (
-    <div className="flex gap-3 py-3 px-4">
-      <Skeleton className="h-8 w-8 rounded-full shrink-0" />
-      <div className="flex-1 min-w-0 space-y-2 py-0.5">
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-3 w-24 rounded-full" />
-          <Skeleton className="h-2.5 w-8 rounded-full" />
-        </div>
-        <Skeleton className="h-3 w-full rounded-full" />
-        {!short && <Skeleton className="h-3 w-2/3 rounded-full" />}
-        <Skeleton className="h-2.5 w-10 rounded-full" />
-      </div>
-      <Skeleton className="h-4 w-4 rounded-full shrink-0" />
-    </div>
-  );
-}
-
-function CommentListSkeleton() {
-  return (
-    <div className="divide-y divide-default">
-      {Array.from({ length: 13 }).map((_, i) => (
-        <CommentSkeleton key={i} short={i % 3 === 0} />
-      ))}
-    </div>
-  );
-}
-
 // ─── Shared comment thread (list + replies + reply-aware input) ───────────────
 
 // ─── useCommentThread — all comment/reply state + Apollo logic ────────────────
@@ -396,6 +361,8 @@ export function useCommentThread({ contentId, onCommentAdded }: ThreadOptions) {
   const { data, loading, fetchMore } = useQuery(GetCommentsDocument, {
     variables: { contentId, limit: 20 },
     fetchPolicy: "cache-and-network",
+    nextFetchPolicy: "cache-first",
+    skip: !contentId,
   });
 
   const [addComment] = useMutation(AddCommentDocument);
@@ -469,7 +436,7 @@ export function useCommentThread({ contentId, onCommentAdded }: ThreadOptions) {
 
   async function handleSend() {
     const trimmed = text.trim();
-    if (!trimmed) return;
+    if (!trimmed || !contentId) return;
     setText("");
     const parentId = replyingTo?.id ?? undefined;
     setReplyingTo(null);
@@ -610,7 +577,7 @@ export function useCommentThread({ contentId, onCommentAdded }: ThreadOptions) {
 
   function handleScroll() {
     const el = listRef.current;
-    if (!el || !hasMore || !endCursor) return;
+    if (!el || !contentId || !hasMore || !endCursor) return;
     if (el.scrollTop < 80) {
       fetchMore({
         variables: { contentId, limit: 20, after: endCursor },
@@ -635,6 +602,7 @@ export function useCommentThread({ contentId, onCommentAdded }: ThreadOptions) {
     /** Merged (optimistic + server) comment list. */
     comments: merged,
     loading,
+    hasResult: Boolean(data?.comments),
     hasMore,
     /** Composer text + setter. */
     text,
@@ -674,6 +642,7 @@ function CommentList({
   const {
     comments,
     loading,
+    hasResult,
     hasMore,
     expandedParentId,
     setExpandedParentId,
@@ -690,8 +659,13 @@ function CommentList({
       className={className ?? "flex-1 overflow-y-auto overscroll-contain"}
       style={{ minHeight: 0 }}
     >
-      {loading && comments.length === 0 && <CommentListSkeleton />}
-      {!loading && comments.length === 0 && (
+      {loading && comments.length === 0 && !hasResult && (
+        <div className="flex flex-col items-center justify-center py-12 text-muted-foreground text-sm">
+          <span className="mb-3 h-5 w-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+          Loading comments…
+        </div>
+      )}
+      {(!loading || hasResult) && comments.length === 0 && (
         <div className="flex flex-col items-center justify-center py-12 text-muted-foreground text-sm">
           <span className="text-2xl mb-2">💬</span>
           No comments yet. Be the first!

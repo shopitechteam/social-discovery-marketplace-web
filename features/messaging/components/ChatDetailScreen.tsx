@@ -44,7 +44,9 @@ export function ChatDetailScreen({
   // resolving the id alone must not flash a half-populated header.
   const resolvingFromContent =
     mode === "content" &&
-    (!inbox.selectedConversationId || !inbox.selectedConversation);
+    (inbox.ensuringConversation ||
+      !inbox.selectedConversationId ||
+      !inbox.selectedConversation);
 
   return (
     <div className="fixed inset-0 flex flex-col bg-app">

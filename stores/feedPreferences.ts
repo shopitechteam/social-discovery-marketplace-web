@@ -27,6 +27,7 @@ type FeedPreferencesState = {
 type PersistedFeedPreferencesState = {
   nearbyLocation?: NearbyLocation | null;
   nearbyRadiusKm?: number;
+  videoMuted?: boolean;
 };
 
 const DEFAULT_NEARBY_RADIUS_KM = 50;
@@ -61,6 +62,7 @@ export const useFeedPreferencesStore = create<FeedPreferencesState>()(
       partialize: (state) => ({
         nearbyLocation: state.nearbyLocation,
         nearbyRadiusKm: state.nearbyRadiusKm,
+        videoMuted: state.videoMuted,
       }),
       merge: (persisted, current) => {
         const persistedState = persisted as PersistedFeedPreferencesState | null;
@@ -79,7 +81,10 @@ export const useFeedPreferencesStore = create<FeedPreferencesState>()(
           ...current,
           nearbyLocation,
           nearbyRadiusKm,
-          videoMuted: true,
+          videoMuted:
+            typeof persistedState?.videoMuted === "boolean"
+              ? persistedState.videoMuted
+              : true,
         };
       },
     },

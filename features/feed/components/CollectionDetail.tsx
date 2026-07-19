@@ -6,11 +6,13 @@ import { gql } from "@apollo/client";
 import { useQuery, useMutation } from "@apollo/client/react";
 import Image from "next/image";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
+import { contentPath } from "@/lib/content-url";
 
 const GET_COLLECTION_CONTENT = gql`
   query CollectionDetailContent($collectionId: String!) {
     collectionContent(collectionId: $collectionId) {
       id
+      slug
       title
       type
       media {
@@ -40,7 +42,9 @@ const TOGGLE_SAVE = gql`
   }
 `;
 
-type Item = Pick<ContentCardFieldsFragment, "id" | "title" | "type" | "media" | "price" | "stats" | "isSavedByMe">;
+type Item = Pick<ContentCardFieldsFragment, "id" | "title" | "type" | "media" | "price" | "stats" | "isSavedByMe"> & {
+  slug?: string | null;
+};
 type Collection = { id: string; name: string; color?: string | null; itemCount: number };
 
 function thumbUrl(item: Item): string | null {
@@ -135,7 +139,7 @@ export function CollectionDetail({ lang, collectionId, from }: { lang: string; c
                 {/* Tap to open PDP */}
                 <button
                   className="absolute inset-0"
-                  onClick={() => router.push(`/${lang}/content/${item.id}`, { scroll: false })}
+                  onClick={() => router.push(contentPath(lang, item), { scroll: false })}
                 />
 
                 {/* Price badge */}

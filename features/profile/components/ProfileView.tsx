@@ -23,13 +23,14 @@ type TabIcon = React.ComponentType<{
 }>;
 import {
   useMyProfile,
-  useMyPosts,
   useMySavedContent,
   useMyAnalytics,
 } from "../hooks/useMyProfile";
+import { useMyManagedPosts } from "../hooks/useManagedPosts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProfileHeader } from "./ProfileHeader";
 import { PostsGrid } from "./PostsGrid";
+import { ManagedPostsGrid } from "./ManagedPostsGrid";
 import { DraftsGrid } from "./DraftsGrid";
 import { AnalyticsPanel } from "./AnalyticsPanel";
 import { TiktokImportPanel } from "./TiktokImportPanel";
@@ -127,10 +128,11 @@ export function ProfileView({ lang }: Props) {
 
   const { data: profileData, loading: profileLoading } = useMyProfile();
   const {
-    data: postsData,
-    loading: postsLoading,
+    data: managedPostsData,
+    loading: managedPostsLoading,
     fetchMore,
-  } = useMyPosts(postsLimit);
+    refetch: refetchManagedPosts,
+  } = useMyManagedPosts(postsLimit);
   const {
     data: savedData,
     loading: savedLoading,
@@ -145,20 +147,23 @@ export function ProfileView({ lang }: Props) {
   const user = profileData?.me;
   if (!user) return null;
 
-  const posts = postsData?.myPosts.posts ?? [];
-  const hasMore = postsData?.myPosts.hasMore ?? false;
-  const nextCursor = postsData?.myPosts.nextCursor;
+  const managedPosts = managedPostsData?.myManagedContent.items ?? [];
+  const managedHasMore = managedPostsData?.myManagedContent.hasMore ?? false;
+  const managedNextCursor = managedPostsData?.myManagedContent.nextCursor;
 
   function handleLoadMore() {
-    if (!nextCursor) return;
+    if (!managedNextCursor) return;
     fetchMore({
-      variables: { afterId: nextCursor, limit: postsLimit },
+      variables: { afterId: managedNextCursor, limit: postsLimit },
       updateQuery(prev, { fetchMoreResult }) {
         if (!fetchMoreResult) return prev;
         return {
-          myPosts: {
-            ...fetchMoreResult.myPosts,
-            posts: [...prev.myPosts.posts, ...fetchMoreResult.myPosts.posts],
+          myManagedContent: {
+            ...fetchMoreResult.myManagedContent,
+            items: [
+              ...prev.myManagedContent.items,
+              ...fetchMoreResult.myManagedContent.items,
+            ],
           },
         };
       },
@@ -281,12 +286,13 @@ export function ProfileView({ lang }: Props) {
       </div>
 
       {tab === "posts" && (
-        <PostsGrid
-          posts={posts}
-          hasMore={hasMore}
+        <ManagedPostsGrid
+          posts={managedPosts}
+          hasMore={managedHasMore}
           onLoadMore={handleLoadMore}
-          loading={postsLoading}
+          loading={managedPostsLoading}
           lang={lang}
+          onRefresh={() => refetchManagedPosts({ limit: postsLimit })}
         />
       )}
 

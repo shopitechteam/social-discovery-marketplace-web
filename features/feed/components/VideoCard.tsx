@@ -10,6 +10,7 @@ import { useRef, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { SHIMMER_PORTRAIT } from "@/lib/shimmer";
+import { contentPath } from "@/lib/content-url";
 import { useHlsVideo } from "@/lib/useHlsVideo";
 import { PriceTag } from "./PriceTag";
 import { StatRow } from "./StatRow";
@@ -75,7 +76,7 @@ export function VideoCard({ post, lang, priority }: Props) {
   return (
     <article
       ref={containerRef}
-      onClick={() => router.push(`/${lang}/content/${post.id}`, { scroll: false })}
+      onClick={() => router.push(contentPath(lang, post), { scroll: false })}
       className="relative cursor-pointer group select-none"
       style={{ aspectRatio }}
       aria-label={post.title}

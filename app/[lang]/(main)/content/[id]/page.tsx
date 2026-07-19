@@ -4,11 +4,13 @@ import { query } from "@/lib/apollo/ApolloClient";
 import { GetContentDocument } from "@/types/__generated__/graphql";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { siteConfig } from "@/config/site";
+import { permanentRedirect } from "next/navigation";
 import {
   productSchema,
   breadcrumbSchema,
   jsonLd,
 } from "@/lib/structured-data";
+import { contentPath } from "@/lib/content-url";
 
 type Props = { params: Promise<{ lang: string; id: string }> };
 
@@ -18,7 +20,7 @@ export const revalidate = 3600;
 
 // ── Server-side fetch + SEO field derivation ────────────────────────────────
 
-type Post = ContentCardFieldsFragment;
+type Post = ContentCardFieldsFragment & { slug?: string | null };
 
 async function getPost(id: string): Promise<Post | null> {
   try {
@@ -87,7 +89,9 @@ function buildDescription(post: Post): string {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { lang, id } = await params;
   const post = await getPost(id);
-  const canonical = `${siteConfig.url}/${lang}/content/${id}`;
+  const canonical = post
+    ? `${siteConfig.url}${contentPath(lang, post)}`
+    : `${siteConfig.url}/${lang}/content/${id}`;
 
   if (!post) {
     return {
@@ -144,7 +148,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ContentDetailPage({ params }: Props) {
   const { lang, id } = await params;
   const post = await getPost(id);
-  const canonical = `${siteConfig.url}/${lang}/content/${id}`;
+  const canonical = post
+    ? `${siteConfig.url}${contentPath(lang, post)}`
+    : `${siteConfig.url}/${lang}/content/${id}`;
+  const canonicalPath = post ? contentPath(lang, post) : null;
+
+  if (canonicalPath && canonicalPath !== `/${lang}/content/${id}`) {
+    permanentRedirect(canonicalPath);
+  }
 
   return (
     <>

@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { siteConfig } from "@/config/site";
 import { blogPosts } from "@/lib/blog";
 import { locales } from "@/i18n/config";
+import { contentPath } from "@/lib/content-url";
 
 /**
  * The app is served under /[lang]. Every public page exists per-locale, so each
@@ -18,7 +19,12 @@ import { locales } from "@/i18n/config";
 const LISTING_SITEMAP_PAGE = 50;
 const LISTING_SITEMAP_MAX = 300;
 
-type SitemapListing = { id: string; createdAt?: string | null };
+type SitemapListing = {
+  id: string;
+  slug?: string | null;
+  title?: string | null;
+  createdAt?: string | null;
+};
 
 async function fetchRecentListings(): Promise<SitemapListing[]> {
   const api = process.env.NEXT_PUBLIC_API_URL;
@@ -36,7 +42,7 @@ async function fetchRecentListings(): Promise<SitemapListing[]> {
           query: `
             query SitemapListings($limit: Int, $after: String) {
               discoveryFeed(sort: NEWEST, limit: $limit, after: $after) {
-                items { id createdAt }
+                items { id slug title createdAt }
                 pageInfo { hasNextPage endCursor }
               }
             }
@@ -118,13 +124,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   const listings = await fetchRecentListings();
-  const listingEntries: MetadataRoute.Sitemap = listings.map((item) => ({
-    url: langs("en", `/content/${item.id}`),
-    lastModified: item.createdAt ? new Date(item.createdAt) : now,
-    changeFrequency: "daily",
-    priority: 0.65,
-    alternates: alternates(`/content/${item.id}`),
-  }));
+  const listingEntries: MetadataRoute.Sitemap = listings.map((item) => {
+    const path = contentPath("en", item).replace(/^\/en/, "");
+    return {
+      url: langs("en", path),
+      lastModified: item.createdAt ? new Date(item.createdAt) : now,
+      changeFrequency: "daily",
+      priority: 0.65,
+      alternates: alternates(path),
+    };
+  });
 
   return [...staticEntries, ...blogEntries, ...listingEntries];
 }

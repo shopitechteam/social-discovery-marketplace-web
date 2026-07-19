@@ -30,6 +30,7 @@ import {
 } from "@/features/video/components/HoverVideoPreview";
 import { useAuthStore } from "@/stores/auth";
 import { Skeleton } from "@/components/ui/skeleton";
+import { absoluteContentUrl, contentPath } from "@/lib/content-url";
 
 function formatCompact(value: number | null | undefined) {
   if (value == null) return "0";
@@ -145,7 +146,7 @@ function PostTile({
       <div className="relative aspect-9/10" {...bind}>
         {/* Whole thumbnail navigates to content detail */}
         <Link
-          href={`/${lang}/content/${post.id}`}
+          href={contentPath(lang, post)}
           scroll={false}
           className="absolute inset-0 z-10"
           aria-label={post.title}
@@ -244,7 +245,7 @@ function PostTile({
                 onMouseLeave={() => setMenuOpen(false)}
               >
                 <Link
-                  href={`/${lang}/content/${post.id}`}
+                  href={contentPath(lang, post)}
                   scroll={false}
                   className="flex items-center gap-2 px-3 py-2 font-medium transition-colors hover:bg-surface"
                   style={{
@@ -293,7 +294,7 @@ function PostTile({
 
       {/* Meta — title / location / performance (matches /profile cards) */}
       <Link
-        href={`/${lang}/content/${post.id}`}
+        href={contentPath(lang, post)}
         scroll={false}
         className="block p-2.5"
       >
@@ -446,7 +447,7 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
 
   const handleShare = useCallback(
     (post: ProfilePostFieldsFragment) => {
-      const url = `${window.location.origin}/${lang}/content/${post.id}`;
+      const url = absoluteContentUrl(window.location.origin, lang, post);
       if (navigator.share) {
         navigator.share({ title: post.title, url }).catch(() => {});
       } else {
@@ -458,7 +459,7 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
 
   const handleCopyLink = useCallback(
     (post: ProfilePostFieldsFragment) => {
-      const url = `${window.location.origin}/${lang}/content/${post.id}`;
+      const url = absoluteContentUrl(window.location.origin, lang, post);
       navigator.clipboard.writeText(url).catch(() => {});
     },
     [lang],

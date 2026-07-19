@@ -21,6 +21,7 @@ fragment ProfileUserFields on User {
 
 fragment ProfilePostFields on Content {
   id
+  slug
   type
   title
   caption

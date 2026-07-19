@@ -31,6 +31,7 @@ fragment MediaItemFields on MediaItem {
 
 fragment ContentCardFields on Content {
   id
+  slug
   type
   source
   isLive
@@ -90,6 +91,32 @@ fragment ContentCardFields on Content {
   isLikedByMe
   isSavedByMe
   isMyContent
+  recentSavers {
+    id
+    username
+    isVerified
+    profile {
+      firstName
+      lastName
+      avatar
+    }
+  }
+  latestComment {
+    id
+    text
+    creatorId
+    createdAt
+    author {
+      id
+      username
+      isVerified
+      profile {
+        firstName
+        lastName
+        avatar
+      }
+    }
+  }
 }
 
 query ForYouFeed($limit: Int, $after: String) {
