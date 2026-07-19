@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ChevronLeft, Handshake, MessageCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { Conversation, Message, StagedMedia, UserLite } from "../types";
 import {
   avatarGradient,
@@ -116,6 +117,63 @@ export function ChatDetail({
   const contentSummary = selectedConversation?.content;
   const otherParticipant: UserLite | null | undefined =
     selectedConversation?.otherParticipant;
+  const isSeller = Boolean(
+    selectedConversation && currentUserId && selectedConversation.sellerId === currentUserId,
+  );
+  const myReplyIsPending =
+    Boolean(selectedConversation?.myUnreadCount) &&
+    selectedConversation?.lastMessageSenderId !== currentUserId;
+  const lastMessageAgeMinutes = selectedConversation?.lastMessageAt
+    ? Math.floor(
+        (Date.now() - new Date(selectedConversation.lastMessageAt).getTime()) /
+          (60 * 1000),
+      )
+    : 0;
+
+  const conversationNudge = (() => {
+    if (!selectedConversation || selectedConversation.dealClosedAt) {
+      return selectedConversation?.dealClosedAt
+        ? {
+            tone: "success" as const,
+            title: "Deal marked as closed",
+            body: "Nice work. You can still keep chatting if you need to confirm pickup, payment, or follow-up details.",
+          }
+        : null;
+    }
+    if (selectedConversation.canSendMessages === false) return null;
+
+    if (myReplyIsPending && lastMessageAgeMinutes >= 24 * 60) {
+      return {
+        tone: "warning" as const,
+        title: "This conversation is going stale",
+        body: isSeller
+          ? "Reply now to keep this buyer engaged. Once a thread sits too long, conversion drops fast."
+          : "The seller already replied. Send a quick response if you still want the item so the thread stays active.",
+      };
+    }
+
+    if (myReplyIsPending && lastMessageAgeMinutes >= 15) {
+      return {
+        tone: "warning" as const,
+        title: isSeller ? "A buyer is waiting on you" : "The seller is waiting on you",
+        body: isSeller
+          ? "Fast replies help buyers stay warm and improve your chances of closing the deal."
+          : "A quick reply keeps the negotiation moving and makes it easier to secure the item.",
+      };
+    }
+
+    if (!myReplyIsPending && selectedConversation.lastMessageSenderId === currentUserId && lastMessageAgeMinutes >= 6 * 60) {
+      return {
+        tone: "default" as const,
+        title: "A polite follow-up could help",
+        body: isSeller
+          ? "You sent the last message a while ago. A short follow-up or clearer next step can revive the conversation."
+          : "If you are still interested, a gentle follow-up can restart the thread without feeling pushy.",
+      };
+    }
+
+    return null;
+  })();
 
   // Bumped on every send so the message list force-scrolls to the bottom even if
   // the user had scrolled up — sending always reveals your new message.
@@ -365,6 +423,24 @@ export function ChatDetail({
             ) : null}
           </div>
 
+          {conversationNudge ? (
+            <div
+              className={cn(
+                "mx-4 mt-3 rounded-2xl border px-4 py-3",
+                conversationNudge.tone === "success"
+                  ? "border-emerald-500/20 bg-emerald-500/10"
+                  : conversationNudge.tone === "warning"
+                    ? "border-amber-500/20 bg-amber-500/10"
+                    : "border-border bg-elevated",
+              )}
+            >
+              <p className="text-sm font-semibold text-foreground">
+                {conversationNudge.title}
+              </p>
+              <p className="mt-1 text-sm text-muted">{conversationNudge.body}</p>
+            </div>
+          ) : null}
+
           <MessageList
             messages={messages}
             currentUserId={currentUserId}
@@ -385,6 +461,8 @@ export function ChatDetail({
 
           <Composer
             composer={composer}
+            conversation={selectedConversation}
+            currentUserId={currentUserId}
             stagedMedia={stagedMedia}
             isUploading={isUploading}
             disabledReason={

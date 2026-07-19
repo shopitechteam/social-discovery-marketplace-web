@@ -20,10 +20,7 @@ export default async function MainLayout({
   return (
     <SocketProvider>
       <ApiPreconnect />
-      {/* ── Desktop sidebar — server-rendered for a stable frame, CSS-hidden on
-          mobile; its data widgets self-gate on the desktop media query. ── */}
       <SideNav lang={lang} />
-
       <MainShell lang={lang}>{children}</MainShell>
       {modal}
     </SocketProvider>

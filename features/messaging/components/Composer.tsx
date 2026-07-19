@@ -13,11 +13,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import type { StagedMedia } from "../types";
+import type { Conversation, StagedMedia } from "../types";
 import { QuickReplies } from "./QuickReplies";
 
 interface Props {
   composer: string;
+  conversation?: Conversation | null;
+  currentUserId?: string | null;
   stagedMedia: StagedMedia | null;
   isUploading: boolean;
   disabledReason?: string | null;
@@ -39,6 +41,8 @@ const MAX_TEXTAREA_HEIGHT = 120; // px — ~5 lines before it scrolls internally
 /** Message composer — staged-media preview, auto-sizing input, send button. */
 export function Composer({
   composer,
+  conversation,
+  currentUserId,
   stagedMedia,
   isUploading,
   disabledReason,
@@ -135,7 +139,12 @@ export function Composer({
       {/* ── Quick-reply chips ("peels") — only when idle (no draft/media) ── */}
       {!stagedMedia && composer.trim().length === 0 ? (
         <div>
-          <QuickReplies disabled={disabled} onSend={onQuickReply} />
+          <QuickReplies
+            disabled={disabled}
+            conversation={conversation}
+            currentUserId={currentUserId}
+            onSend={onQuickReply}
+          />
         </div>
       ) : null}
 

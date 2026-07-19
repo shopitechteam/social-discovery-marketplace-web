@@ -27,9 +27,16 @@ export const WS_CLIENT_EVENTS = {
   UNWATCH_DRAFT: 'unwatch:draft',
   JOIN_CONVERSATION: 'join:conversation',
   LEAVE_CONVERSATION: 'leave:conversation',
+  SET_CONVERSATION_VIEWPORT: 'conversation:viewport',
   START_TYPING: 'typing:start',
   STOP_TYPING: 'typing:stop',
 } as const;
+
+export interface DirectConversationViewportPayload {
+  conversationId: string;
+  tabId: string;
+  isActive: boolean;
+}
 
 export interface MediaReadyPayload {
   mediaAssetId: string;
@@ -120,6 +127,8 @@ export interface DirectMessageUpdatedPayload {
 export interface DirectConversationUpdatedPayload {
   conversationId: string;
   contentId: string;
+  sellerId: string;
+  buyerId: string;
   lastMessageId?: string;
   lastMessageText?: string;
   lastMessageType?: 'text' | 'image' | 'video' | 'location';
@@ -129,6 +138,9 @@ export interface DirectConversationUpdatedPayload {
   blockedByMe?: boolean;
   blockedByOther?: boolean;
   canSendMessages?: boolean;
+  lifecycleStatus?: string;
+  sellerFirstResponseMinutes?: number;
+  buyerFirstResponseMinutes?: number;
   dealClosedAt?: string;
   dealClosedByUserId?: string;
 }
