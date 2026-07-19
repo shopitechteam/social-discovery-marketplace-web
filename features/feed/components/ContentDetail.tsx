@@ -632,6 +632,14 @@ export function ContentDetail({
   const muted = useFeedPreferencesStore((s) => s.videoMuted);
   const setVideoMuted = useFeedPreferencesStore((s) => s.setVideoMuted);
   const isDesktop = useIsDesktop();
+  const openMessageRoute = useCallback(() => {
+    const href = `/${lang}/notifications/${id}?source=content`;
+    if (typeof window !== "undefined" && !isDesktop) {
+      window.location.href = href;
+      return;
+    }
+    router.push(href);
+  }, [id, isDesktop, lang, router]);
   const resolvedSaved =
     (post as typeof post & { isSavedByMe?: boolean })?.isSavedByMe ?? false;
   const resolvedSaveCount = post?.stats?.saves ?? 0;
@@ -1306,7 +1314,7 @@ export function ContentDetail({
               return;
             }
             if (!requireAuth({ contentId: id })) return;
-            router.push(`/${lang}/notifications/${id}?source=content`);
+            openMessageRoute();
           }}
           className="flex-1 lg:cursor-pointer flex items-center justify-center gap-1.5 px-8 py-2.5 rounded-full bg-primary/90 text-xs font-semibold text-[#f1f1f1] transition-all active:scale-95"
         >
@@ -1772,9 +1780,7 @@ export function ContentDetail({
                     type="button"
                     onClick={() => {
                       if (!requireAuth({ contentId: id })) return;
-                      router.push(
-                        `/${lang}/notifications/${id}?source=content`,
-                      );
+                      openMessageRoute();
                     }}
                     className="flex items-center justify-center gap-2 rounded-full bg-primary py-3 text-sm font-bold text-white transition-transform active:scale-[0.98]"
                   >

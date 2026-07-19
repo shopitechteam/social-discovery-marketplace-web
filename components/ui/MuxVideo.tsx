@@ -20,6 +20,7 @@ interface MuxVideoProps {
   playsInline?: boolean;
   poster?: string;
   objectFit?: "cover" | "contain" | "fill";
+  controls?: boolean;
   onPlay?: () => void;
   onPause?: () => void;
   onTimeUpdate?: () => void;
@@ -38,6 +39,7 @@ export function MuxVideo({
   playsInline = true,
   poster,
   objectFit = "cover",
+  controls = false,
   onPlay,
   onPause,
   onTimeUpdate,
@@ -55,6 +57,7 @@ export function MuxVideo({
         muted={muted}
         playsInline={playsInline}
         poster={poster}
+        controls={controls}
         onPlay={onPlay}
         onPause={onPause}
         onTimeUpdate={onTimeUpdate}
