@@ -50,6 +50,7 @@ export function useInfiniteScroll({
     if (!enabled) return;
 
     const maybeLoadMore = () => {
+      if (document.body.classList.contains("comments-open")) return;
       const state = latest.current;
       if (state.hasMore && !state.loading) state.onLoadMore();
     };
@@ -92,6 +93,7 @@ export function useInfiniteScroll({
 
     const frame = requestAnimationFrame(() => {
       const state = latest.current;
+      if (document.body.classList.contains("comments-open")) return;
       if (!state.hasMore || state.loading) return;
       if (sentinelWithinMargin(sentinelEl, rootMargin)) state.onLoadMore();
     });

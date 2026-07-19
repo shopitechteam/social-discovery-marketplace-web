@@ -6,9 +6,11 @@ import {
   useEffect,
   useState,
   useCallback,
+  useLayoutEffect,
   useId,
   useMemo,
 } from "react";
+import type { CSSProperties } from "react";
 import {
   Download,
   MapPin,
@@ -16,7 +18,7 @@ import {
   Link2,
   Flag,
   Share2,
-  MoreHorizontal,
+  MoreVertical,
   Maximize2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -32,10 +34,13 @@ import Shimmer, {
 import { registerVideo, updateRatio } from "@/lib/activeVideo";
 import { useHlsVideo } from "@/lib/useHlsVideo";
 import { useFeedPreferencesStore } from "@/stores/feedPreferences";
-import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
+import {
+  GetContentDocument,
+  type ContentCardFieldsFragment,
+} from "@/types/__generated__/graphql";
 import { VideoProgressBar } from "./VideoProgressBar";
 import { gql } from "@apollo/client";
-import { useMutation } from "@apollo/client/react";
+import { useApolloClient, useMutation } from "@apollo/client/react";
 import { shouldFire, hasFired } from "@/lib/interactionDedup";
 import { useFeedChat } from "./FeedChatContext";
 import { fmtCompact as fmt } from "@/lib/format";
@@ -79,6 +84,28 @@ interface Props {
    */
   onMessage?: (contentId: string, anchor: HTMLElement | null) => void;
 }
+
+type FeedSocialUser = {
+  id: string;
+  username?: string | null;
+  isVerified?: boolean | null;
+  profile?: {
+    firstName?: string | null;
+    lastName?: string | null;
+    avatar?: string | null;
+  } | null;
+};
+type FeedPreviewComment = {
+  id: string;
+  text: string;
+  creatorId: string;
+  createdAt?: unknown;
+  author?: FeedSocialUser | null;
+};
+type FeedPostSocialPreview = ContentCardFieldsFragment & {
+  recentSavers?: FeedSocialUser[] | null;
+  latestComment?: FeedPreviewComment | null;
+};
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 // fmt, initials, and the avatar gradient palette are shared from @/lib
@@ -124,6 +151,31 @@ function locationTrail(loc: {
   return parts.length ? parts.join(" › ") : null;
 }
 
+function userDisplayName(user?: FeedSocialUser | null): string {
+  if (!user) return "";
+  const profileName = [user.profile?.firstName, user.profile?.lastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+  return profileName || user.username || `Shopi user`;
+}
+
+function savedByText(
+  savers: FeedSocialUser[],
+  saveCount: number,
+): string | null {
+  if (saveCount <= 0) return null;
+  const visibleNames = savers.map(userDisplayName).filter(Boolean);
+  if (visibleNames.length === 0) {
+    return `${fmt(saveCount)} shopper${saveCount === 1 ? "" : "s"} saved this listing`;
+  }
+
+  if (saveCount === 1) return `${visibleNames[0]} saved this listing`;
+
+  const remaining = Math.max(saveCount - 1, 0);
+  return `${visibleNames[0]} and ${fmt(remaining)} other${remaining === 1 ? "" : "s"} saved this listing`;
+}
+
 // ── Avatar ────────────────────────────────────────────────────────────────────
 
 interface AvatarProps {
@@ -154,6 +206,67 @@ function VerifiedBadge() {
         strokeLinejoin="round"
       />
     </svg>
+  );
+}
+
+function MiniAvatar({ user, index }: { user: FeedSocialUser; index: number }) {
+  const label = userDisplayName(user).slice(0, 1).toUpperCase() || "S";
+  const color = avatarGradient(user.id);
+
+  return (
+    <span
+      className={cn(
+        "relative inline-flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full ring-2 ring-[rgb(var(--color-bg-elevated))]",
+        index > 0 && "-ml-2",
+        !user.profile?.avatar && `bg-linear-to-br ${color}`,
+      )}
+    >
+      {user.profile?.avatar ? (
+        <Image
+          src={user.profile.avatar}
+          alt=""
+          fill
+          className="object-cover"
+          sizes="24px"
+        />
+      ) : (
+        <span className="text-[10px] font-bold text-white">{label}</span>
+      )}
+    </span>
+  );
+}
+
+function SaveBurst({ burstKey }: { burstKey: number }) {
+  if (burstKey === 0) return null;
+
+  return (
+    <span
+      key={burstKey}
+      className="pointer-events-none absolute left-1/2 top-0 z-20"
+      aria-hidden
+    >
+      <span className="shopi-save-burst flex h-12 w-12 items-center justify-center rounded-full bg-[rgb(var(--brand-primary))] text-white shadow-[0_16px_38px_rgb(var(--brand-primary)/0.34)]">
+        <Bookmark className="h-6 w-6" fill="currentColor" strokeWidth={2} />
+      </span>
+      {[
+        ["-24px", "-30px"],
+        ["28px", "-26px"],
+        ["-18px", "14px"],
+        ["24px", "16px"],
+      ].map(([x, y], index) => (
+        <span
+          key={`${x}-${y}`}
+          className="shopi-save-spark absolute left-1/2 top-1/2 h-1.5 w-1.5 rounded-full bg-[rgb(var(--brand-secondary))]"
+          style={
+            {
+              "--spark-x": x,
+              "--spark-y": y,
+              animationDelay: `${index * 36}ms`,
+            } as CSSProperties
+          }
+        />
+      ))}
+    </span>
   );
 }
 
@@ -200,6 +313,31 @@ function Avatar({
 
 // ── Video media block ─────────────────────────────────────────────────────────
 
+const feedVideoResumeTimes = new Map<string, number>();
+
+function saveFeedVideoTime(contentId: string, video: HTMLVideoElement | null) {
+  if (!video) return;
+  const time = video.currentTime;
+  if (!Number.isFinite(time) || time < 0.25) return;
+  const duration = video.duration;
+  if (Number.isFinite(duration) && duration > 0 && time >= duration - 0.5) {
+    feedVideoResumeTimes.delete(contentId);
+    return;
+  }
+  feedVideoResumeTimes.set(contentId, time);
+}
+
+function restoreFeedVideoTime(contentId: string, video: HTMLVideoElement | null) {
+  if (!video) return;
+  const time = feedVideoResumeTimes.get(contentId);
+  if (!time || Math.abs(video.currentTime - time) < 0.4) return;
+  try {
+    video.currentTime = time;
+  } catch {
+    // Some native HLS implementations reject seeks before enough metadata loads.
+  }
+}
+
 function VideoMedia({
   post,
   priority,
@@ -242,6 +380,7 @@ function VideoMedia({
     : null;
 
   const [ended, setEnded] = useState(false);
+  const [actualMuted, setActualMuted] = useState(muted);
   // Manual play/pause: tapping the video toggles this. It overrides autoplay
   // until the video scrolls away (reset in the inactive effect below).
   const [userPaused, setUserPaused] = useState(false);
@@ -250,13 +389,11 @@ function VideoMedia({
   // Pause when the video ended OR the user tapped to pause, so useHlsVideo
   // doesn't resume on its own.
   const shouldPlay = active && pageFocused && !fullscreenOpen;
-  // When the browser blocks unmuted autoplay, useHlsVideo forces the element
-  // muted to keep it playing. Reconcile the store so the speaker icon reflects
-  // the video's REAL muted state — otherwise it shows "unmuted" over a silent
-  // video and the user has to tap twice to actually get sound.
+  // When the browser blocks unmuted autoplay, useHlsVideo may force only this
+  // element muted. Keep that as local reality, not the persisted user preference.
   const onMutedChange = useCallback(
-    (forcedMuted: boolean) => setVideoMuted(forcedMuted),
-    [setVideoMuted],
+    (forcedMuted: boolean) => setActualMuted(forcedMuted),
+    [],
   );
   // Only the PRIORITY (first / LCP) card waits for its poster before starting
   // playback work — there the poster is the LCP candidate and we don't want the
@@ -275,16 +412,18 @@ function VideoMedia({
   // store so one tap always takes effect — never relying on a store→effect round
   // trip that could lag a frame behind reality.
   const toggleMuted = useCallback(() => {
-    const next = !muted;
     const video = videoRef.current;
+    const next = !(video?.muted ?? actualMuted);
     if (video) {
       video.muted = next;
+      video.defaultMuted = next;
       // Unmuting needs the click's user activation to actually produce sound;
       // re-issue play so an autoplay-muted video starts emitting audio now.
       if (!next) video.play().catch(() => {});
     }
+    setActualMuted(next);
     setVideoMuted(next);
-  }, [muted, videoRef, setVideoMuted]);
+  }, [actualMuted, videoRef, setVideoMuted]);
 
   // Tap to play/pause. Base the decision on the video's ACTUAL state, not a
   // blind boolean toggle — otherwise, when the video is already not playing
@@ -327,6 +466,7 @@ function VideoMedia({
     const video = videoRef.current;
     if (!video) return;
     const handleEnded = () => {
+      feedVideoResumeTimes.delete(post.id);
       const duration = video.duration || 0;
       const watched = video.currentTime || duration;
       const completionRate = duration > 0 ? Math.min(watched / duration, 1) : 1;
@@ -357,14 +497,49 @@ function VideoMedia({
     return () => video.removeEventListener("ended", handleEnded);
   }, [videoRef, post.id, trackInteractionMutation]);
 
-  // Keep the element's muted property in sync with the global preference. The
-  // `muted` JSX prop alone is unreliable (React doesn't always push it to the DOM
-  // after mount), and useHlsVideo may toggle muted imperatively when recovering
-  // from a blocked unmuted autoplay — this effect makes the store authoritative.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const save = () => saveFeedVideoTime(post.id, video);
+    const restore = () => restoreFeedVideoTime(post.id, video);
+    video.addEventListener("timeupdate", save);
+    video.addEventListener("pause", save);
+    video.addEventListener("loadedmetadata", restore);
+    video.addEventListener("canplay", restore);
+
+    if (active) restore();
+
+    return () => {
+      save();
+      video.removeEventListener("timeupdate", save);
+      video.removeEventListener("pause", save);
+      video.removeEventListener("loadedmetadata", restore);
+      video.removeEventListener("canplay", restore);
+    };
+  }, [active, post.id, videoRef]);
+
+  // Keep the element's muted property in sync when the USER preference changes.
+  // Browser autoplay fallback is intentionally local so it does not flip the
+  // global preference back to muted after the user has chosen sound on.
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
     video.muted = muted;
+    video.defaultMuted = muted;
+    setActualMuted(video.muted);
+    if (!muted && shouldPlay && !ended && !userPaused) {
+      video.play().catch(() => {});
+    }
+  }, [muted, shouldPlay, ended, userPaused, videoRef]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const syncActualMuted = () => setActualMuted(video.muted);
+    syncActualMuted();
+    video.addEventListener("volumechange", syncActualMuted);
+    return () => video.removeEventListener("volumechange", syncActualMuted);
   }, [muted, videoRef]);
 
   useEffect(() => {
@@ -376,6 +551,7 @@ function VideoMedia({
   // Reset ended state and check for skip when video scrolls away
   useEffect(() => {
     if (!active) {
+      saveFeedVideoTime(post.id, videoRef.current);
       // Defer resetting ended to avoid synchronous setState inside the effect
       const t = setTimeout(() => {
         setEnded(false);
@@ -414,6 +590,7 @@ function VideoMedia({
   function handleReplay() {
     const video = videoRef.current;
     if (!video) return;
+    feedVideoResumeTimes.delete(post.id);
     endedCountRef.current += 1;
     setEnded(false);
     video.currentTime = 0;
@@ -499,8 +676,17 @@ function VideoMedia({
       {hlsUrl && (
         <video
           ref={videoRef}
-          muted={muted}
+          muted={actualMuted}
           playsInline
+          onLoadedMetadata={(event) =>
+            restoreFeedVideoTime(post.id, event.currentTarget)
+          }
+          onCanPlay={(event) =>
+            restoreFeedVideoTime(post.id, event.currentTarget)
+          }
+          onTimeUpdate={(event) =>
+            saveFeedVideoTime(post.id, event.currentTarget)
+          }
           className="absolute inset-0 w-full h-full object-contain"
         />
       )}
@@ -577,9 +763,9 @@ function VideoMedia({
             toggleMuted();
           }}
           className="absolute bottom-5 left-2 z-50 bg-black/60 backdrop-blur-sm rounded-full p-1.5 text-white/90 active:scale-95 transition-transform"
-          aria-label={muted ? "Unmute" : "Mute"}
+          aria-label={actualMuted ? "Unmute" : "Mute"}
         >
-          {muted ? (
+          {actualMuted ? (
             // Muted — speaker with X
             <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
               <path
@@ -1012,6 +1198,8 @@ function ImageMedia({
 
 function PostCardImpl({ post, lang, priority, onMessage }: Props) {
   const router = useRouter();
+  const client = useApolloClient();
+  const socialPost = post as FeedPostSocialPreview;
   // Desktop feed provides an inline-chat opener via context; an explicit
   // `onMessage` prop still wins if passed directly.
   const feedChatOpen = useFeedChat();
@@ -1022,12 +1210,15 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
       requireAuth,
     });
   const cardRef = useRef<HTMLElement>(null);
+  const captionRef = useRef<HTMLParagraphElement>(null);
   const [expanded, setExpanded] = useState(false);
+  const [captionOverflows, setCaptionOverflows] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [showCarousel, setShowCarousel] = useState(false);
   const [fullscreenVideoTime, setFullscreenVideoTime] = useState(0);
+  const [saveBurstKey, setSaveBurstKey] = useState(0);
   // Paints the chat shell instantly when "Message" is tapped, covering the
   // route-transition gap so opening a chat never flashes a blank page. The
   // overlay unmounts with the PostCard once the conversation route takes over.
@@ -1083,15 +1274,68 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
   });
 
   const caption = post.caption ?? "";
-  const isLong = caption.length > 100;
-  const displayCaption =
-    isLong && !expanded ? caption.slice(0, 93) + "…" : caption;
+  const recentSavers = socialPost.recentSavers?.filter(Boolean) ?? [];
+  const saveProofText = savedByText(recentSavers, saveCount);
+  const latestComment = socialPost.latestComment?.text
+    ? socialPost.latestComment
+    : null;
+  const latestCommentAuthor = userDisplayName(latestComment?.author);
+
+  function handleSavePress() {
+    if (!requireAuth({ contentId: post.id, action: "save" })) return;
+    if (!saved) setSaveBurstKey((key) => key + 1);
+    void handleSave();
+  }
+
+  function openComments() {
+    setShowComments(true);
+  }
+
+  useLayoutEffect(() => {
+    const el = captionRef.current;
+    if (!el) {
+      setCaptionOverflows(false);
+      return;
+    }
+
+    const measure = () => {
+      setCaptionOverflows(el.scrollHeight > el.clientHeight + 1);
+    };
+
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [caption, expanded]);
 
   function handleOpen() {
     if (shouldFire(post.id, "DETAIL_VIEWED")) {
       trackDetailViewed({ variables: { contentId: post.id } }).catch(() => {});
     }
-    router.push(contentPath(lang, post), { scroll: false });
+    const href = contentPath(lang, post);
+    const routeId = decodeURIComponent(href.split("/").pop() || post.id);
+
+    try {
+      // The public URL uses the SEO slug, but the feed entity is normalized by
+      // Mongo id. Seed Query.content(slug) so the intercepted detail sheet can
+      // paint from this card immediately instead of flashing its full skeleton.
+      client.cache.writeQuery({
+        query: GetContentDocument,
+        variables: { id: routeId },
+        data: { content: post },
+      });
+      if (routeId !== post.id) {
+        client.cache.writeQuery({
+          query: GetContentDocument,
+          variables: { id: post.id },
+          data: { content: post },
+        });
+      }
+    } catch {
+      // Cache priming is a UX optimization; navigation should never depend on it.
+    }
+
+    router.push(href, { scroll: false });
   }
 
   async function handleCopyLink() {
@@ -1227,10 +1471,13 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
             <button
               type="button"
               onClick={(e) => e.stopPropagation()}
-              className="w-8 h-8 lg:cursor-pointer flex items-center justify-center rounded-full hover:bg-surface text-muted-foreground"
+              className={cn(
+                "flex h-10 w-10 items-center justify-center rounded-full bg-surface/80 text-muted-foreground transition-colors lg:cursor-pointer hover:bg-surface hover:text-default active:bg-muted",
+                menuOpen && "bg-surface text-default",
+              )}
               aria-label="Post options"
             >
-              <MoreHorizontal className="w-5 h-5" strokeWidth={2.6} />
+              <MoreVertical className="h-5 w-5" strokeWidth={2.6} />
             </button>
           </PopoverTrigger>
           <PopoverContent
@@ -1336,22 +1583,26 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
           {post.title}
         </p>
         {caption && (
-          <p
-            className={`text-sm leading-5 ${isLong && !expanded ? "line-clamp-2" : ""}`}
-          >
-            {displayCaption}
-            {isLong && (
+          <div className="text-sm leading-5 text-default">
+            <p
+              ref={captionRef}
+              className={cn(!expanded && "line-clamp-2")}
+            >
+              {caption}
+            </p>
+            {(captionOverflows || expanded) && (
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   setExpanded((v) => !v);
                 }}
-                className="text-muted-foreground font-medium ml-1"
+                className="mt-0.5 text-sm font-bold text-muted-foreground transition-colors hover:text-default"
               >
-                {expanded ? " See less" : " See more"}
+                {expanded ? "See less" : "more"}
               </button>
             )}
-          </p>
+          </div>
         )}
         {/* Hashtags */}
         {post.hashtags && post.hashtags.length > 0 && (
@@ -1420,7 +1671,6 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
       {/* ── Stats row ──────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between px-4 pt-2.5 pb-1">
         <div className="flex items-center gap-3 text-muted-foreground text-xs font-medium">
-          {/* {saveCount > 0 && <span>{fmt(saveCount)} saved</span>} */}
           {/* {(post.stats?.comments ?? 0) > 0 && (
             <span>
               · {fmt(post.stats!.comments!)} comment
@@ -1451,12 +1701,32 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
         )}
       </div>
 
+      {saveProofText && (
+        <div className="mx-4 mb-1.5 flex max-w-[calc(100%-2rem)] items-center gap-2 rounded-2xl px-0.5 py-1 text-xs text-muted-foreground">
+          {recentSavers.length > 0 && (
+            <span className="flex shrink-0 items-center">
+              {recentSavers.slice(0, 2).map((user, index) => (
+                <MiniAvatar key={user.id} user={user} index={index} />
+              ))}
+            </span>
+          )}
+          <span className="min-w-0 truncate">
+            <span className="font-semibold text-default">
+              {saveProofText.split(" saved this listing")[0]}
+            </span>
+            {saveProofText.includes(" saved this listing")
+              ? " saved this listing"
+              : ""}
+          </span>
+        </div>
+      )}
+
       {/* ── Action bar — 4 pill buttons matching design ─────────────────── */}
       <div className="flex items-center gap-2 px-3 pb-3 pt-1">
         {/* Save pill — outlined, active = filled primary */}
         <button
-          onClick={() => handleSave()}
-          className="flex lg:cursor-pointer items-center gap-1.5 px-4 py-2.5 rounded-full border text-xs font-semibold transition-all active:scale-95"
+          onClick={handleSavePress}
+          className="relative flex lg:cursor-pointer items-center gap-1.5 px-4 py-2.5 rounded-full border text-xs font-semibold transition-all active:scale-95"
           style={{
             borderColor: saved
               ? "rgb(var(--brand-primary))"
@@ -1469,8 +1739,12 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
               : "transparent",
           }}
         >
+          <SaveBurst burstKey={saveBurstKey} />
           <Bookmark
-            className="w-4 h-4"
+            className={cn(
+              "w-4 h-4 transition-transform duration-300",
+              saved && "scale-110",
+            )}
             fill={saved ? "rgb(var(--brand-primary))" : "none"}
             strokeWidth={1.8}
           />
@@ -1479,7 +1753,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
 
         {/* Comment pill — opens the lazy-loaded comments sheet */}
         <button
-          onClick={() => setShowComments(true)}
+          onClick={openComments}
           className="flex lg:cursor-pointer items-center gap-1.5  px-4 py-2.5 rounded-full border border-border text-xs font-semibold text-default transition-all active:scale-95"
         >
           <svg
@@ -1549,14 +1823,40 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
         )}
       </div>
 
-      {/* ── Lazy comments sheet — mounted (and queried) only when opened ── */}
-      {showComments && (
-        <CommentsDrawer
-          contentId={post.id}
-          contentCreatorId={creator?.id ?? post.creatorId}
-          onClose={() => setShowComments(false)}
-        />
+      {latestComment && (
+        <button
+          type="button"
+          onClick={openComments}
+          className="mx-4 mb-3 flex w-[calc(100%-2rem)] items-start gap-2.5 rounded-3xl bg-surface px-3 py-2.5 text-left transition-transform active:scale-[0.99]"
+        >
+          {latestComment.author ? (
+            <MiniAvatar user={latestComment.author} index={0} />
+          ) : (
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">
+              S
+            </span>
+          )}
+          <span className="min-w-0 flex-1">
+            <span className="mb-0.5 block truncate text-xs font-bold text-default">
+              {latestCommentAuthor ||
+                `User ${latestComment.creatorId.slice(-6)}`}
+            </span>
+            <span className="line-clamp-2 text-sm leading-5 text-default">
+              {latestComment.text}
+            </span>
+          </span>
+        </button>
       )}
+
+      {/* ── Comments sheet — controlled like MediaCarouselDialog, so reopening
+          preserves the mounted comment thread instead of refetching the feed. ── */}
+
+      <CommentsDrawer
+        contentId={post.id}
+        contentCreatorId={creator?.id ?? post.creatorId}
+        onClose={() => setShowComments(false)}
+        open={showComments}
+      />
 
       {/* ── Full-screen media viewer — images swipe as a carousel and Mux
           videos retain the same dialog/back-button behaviour. ── */}

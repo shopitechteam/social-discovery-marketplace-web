@@ -307,12 +307,13 @@ function ContentVideo({
   const pageFocused = usePageFocused();
   const [manualPaused, setManualPaused] = useState(false);
   const [videoEnded, setVideoEnded] = useState(false);
+  const [actualMuted, setActualMuted] = useState(muted);
   const shouldPlay = pageFocused && !manualPaused && !fullscreenOpen;
-  // Reconcile mute state when the browser forces the element muted to satisfy
-  // autoplay policy, so the speaker icon matches the video's real audio state.
+  // Browser autoplay fallback can force this element muted. Keep that local so
+  // it does not overwrite the user's global sound preference.
   const onMutedChange = useCallback(
-    (forcedMuted: boolean) => setMuted?.(forcedMuted),
-    [setMuted],
+    (forcedMuted: boolean) => setActualMuted(forcedMuted),
+    [],
   );
   const { videoRef, buffering } = useHlsVideo(
     hlsUrl,
@@ -323,14 +324,16 @@ function ContentVideo({
 
   // Authoritative mute toggle — apply to the element AND the store in one tap.
   const toggleMuted = useCallback(() => {
-    const next = !muted;
     const video = videoRef.current;
+    const next = !(video?.muted ?? actualMuted);
     if (video) {
       video.muted = next;
+      video.defaultMuted = next;
       if (!next) video.play().catch(() => {});
     }
+    setActualMuted(next);
     setMuted?.(next);
-  }, [muted, videoRef, setMuted]);
+  }, [actualMuted, videoRef, setMuted]);
   const [playing, setPlaying] = useState(false);
   const endedCountRef = useRef(0);
 
@@ -347,6 +350,7 @@ function ContentVideo({
     video.muted = muted;
     video.defaultMuted = muted;
     video.playsInline = true;
+    setActualMuted(video.muted);
     // Unmuting requires the user gesture's activation to actually emit audio;
     // re-issue play so a video that autoplayed muted starts sounding on one tap
     // (covers the parent-chrome mute button which only flips the store).
@@ -354,6 +358,7 @@ function ContentVideo({
 
     const markPlaying = () => setPlaying(true);
     const markStopped = () => setPlaying(false);
+    const syncActualMuted = () => setActualMuted(video.muted);
     const handleEnded = () => {
       setPlaying(false);
       setVideoEnded(true);
@@ -371,11 +376,13 @@ function ContentVideo({
     video.addEventListener("playing", markPlaying);
     video.addEventListener("pause", markStopped);
     video.addEventListener("ended", handleEnded);
+    video.addEventListener("volumechange", syncActualMuted);
 
     return () => {
       video.removeEventListener("playing", markPlaying);
       video.removeEventListener("pause", markStopped);
       video.removeEventListener("ended", handleEnded);
+      video.removeEventListener("volumechange", syncActualMuted);
     };
   }, [hlsUrl, muted, shouldPlay, videoRef, onVideoCompleted, onVideoReplayed]);
 
@@ -424,7 +431,7 @@ function ContentVideo({
 
       <video
         ref={videoRef}
-        muted={muted}
+        muted={actualMuted}
         playsInline
         preload="auto"
         poster={thumbnailUrl ?? undefined}
@@ -490,9 +497,10 @@ function ContentVideo({
             e.stopPropagation();
             toggleMuted();
           }}
+          aria-label={actualMuted ? "Unmute video" : "Mute video"}
           className="absolute bottom-12 right-4 z-50 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white"
         >
-          {muted ? (
+          {actualMuted ? (
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
               <path
                 fillRule="evenodd"
@@ -565,21 +573,12 @@ export function ContentDetail({
   }, [onChatOpenChange]);
 
   // ── Content query ──────────────────────────────────────────────────────────
-  // Opening a post from the feed mounts a fresh ContentDetail, which runs this
-  // PDP-only query (categoryId/specs/aiClassification aren't in the feed card
-  // fragment). Content is normalized by id (see ApolloWrapper typePolicies),
-  // so the feed's card fields for this post are ALREADY in the cache — but
-  // cache-and-network only serves cached data when the query's full selection
-  // is satisfied, and the PDP-only fields are always missing on first open.
-  // That forced a full network round-trip (and the skeleton below) on every
-  // single click, even for a post just seen in the feed. returnPartialData
-  // lets Apollo hand back what it already has immediately while the network
-  // request fills the gap, so the shared fields paint instantly.
+  // Opening from the feed seeds Query.content(slug) before navigation. With
+  // cache-first + partial data, the detail sheet paints from that clicked card
+  // immediately and only fetches when PDP-only fields are genuinely missing.
   const { data, loading } = useQuery(ContentDetailDocument as any, {
     variables: { id },
-    // Always fetch fresh data for detail view so isLikedByMe / isFollowedByMe
-    // reflect the current server state rather than a potentially stale cache.
-    fetchPolicy: "cache-and-network",
+    fetchPolicy: "cache-first",
     returnPartialData: true,
   }) as {
     data?: { content?: DetailPost | null };

@@ -269,9 +269,10 @@ function FullscreenVideo({
 }) {
   const muted = useFeedPreferencesStore((s) => s.videoMuted);
   const setMuted = useFeedPreferencesStore((s) => s.setVideoMuted);
+  const [actualMuted, setActualMuted] = useState(muted);
   const onMutedChange = useCallback(
-    (nextMuted: boolean) => setMuted(nextMuted),
-    [setMuted],
+    (nextMuted: boolean) => setActualMuted(nextMuted),
+    [],
   );
   const { videoRef, buffering, playing } = useHlsVideo(
     `https://stream.mux.com/${playbackId}.m3u8`,
@@ -291,8 +292,19 @@ function FullscreenVideo({
     const video = videoRef.current;
     if (!video) return;
     video.muted = muted;
+    video.defaultMuted = muted;
+    setActualMuted(video.muted);
     if (!muted && active) video.play().catch(() => {});
   }, [active, muted, videoRef]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const syncActualMuted = () => setActualMuted(video.muted);
+    syncActualMuted();
+    video.addEventListener("volumechange", syncActualMuted);
+    return () => video.removeEventListener("volumechange", syncActualMuted);
+  }, [videoRef]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -323,20 +335,22 @@ function FullscreenVideo({
   }, [videoRef]);
 
   const toggleMuted = useCallback(() => {
-    const next = !muted;
     const video = videoRef.current;
+    const next = !(video?.muted ?? actualMuted);
     if (video) {
       video.muted = next;
+      video.defaultMuted = next;
       if (!next) video.play().catch(() => {});
     }
+    setActualMuted(next);
     setMuted(next);
-  }, [muted, setMuted, videoRef]);
+  }, [actualMuted, setMuted, videoRef]);
 
   return (
     <div className="relative flex h-full w-full items-center justify-center">
       <video
         ref={videoRef}
-        muted={muted}
+        muted={actualMuted}
         playsInline
         poster={poster ?? undefined}
         className="max-h-full max-w-full object-contain"
@@ -373,11 +387,11 @@ function FullscreenVideo({
           event.stopPropagation();
           toggleMuted();
         }}
-        aria-label={muted ? "Unmute video" : "Mute video"}
+        aria-label={actualMuted ? "Unmute video" : "Mute video"}
         className="absolute left-4 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm"
         style={{ top: "max(env(safe-area-inset-top, 0px), 16px)" }}
       >
-        {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+        {actualMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
       </button>
 
       <div className="absolute inset-x-4 bottom-5 z-30">

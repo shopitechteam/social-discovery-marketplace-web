@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { X } from "lucide-react";
-import { motion, AnimatePresence, type PanInfo } from "framer-motion";
+import { motion, type PanInfo } from "framer-motion";
 import { CommentThread } from "./CommentThread";
 
 interface Props {
@@ -10,6 +10,8 @@ interface Props {
   /** The userId of the content's creator — used to label their comments "Creator". */
   contentCreatorId?: string;
   onClose: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   onCommentAdded?: () => void;
   desktopInline?: boolean;
 }
@@ -23,14 +25,23 @@ export function CommentsDrawer({
   contentId,
   contentCreatorId,
   onClose,
+  open = true,
+  onOpenChange,
   onCommentAdded,
   desktopInline = false,
 }: Props) {
-  // `visible` drives the open/close animation; when it flips to false the sheet
-  // animates out and AnimatePresence's onExitComplete fires the real onClose
-  // (which unmounts us). This gives a smooth slide-down on dismiss.
-  const [visible, setVisible] = useState(true);
-  const requestClose = useCallback(() => setVisible(false), []);
+  // Keep the comment thread mounted after the first open. Reopening the drawer
+  // then preserves Apollo's observer/cache state instead of recreating the
+  // query and accidentally nudging the surrounding feed watchers.
+  const [hasOpened, setHasOpened] = useState(open || desktopInline);
+  const requestClose = useCallback(() => {
+    onOpenChange?.(false);
+    onClose();
+  }, [onClose, onOpenChange]);
+
+  useEffect(() => {
+    if (open) setHasOpened(true);
+  }, [open]);
 
   // Swipe-to-dismiss handled by framer-motion `drag="y"`. Past ~120px pull or a
   // fast downward flick → dismiss.
@@ -41,7 +52,7 @@ export function CommentsDrawer({
   // Lock the page behind the sheet so it can't scroll while open. Restores the
   // exact scroll position on close (position:fixed would otherwise jump to top).
   useEffect(() => {
-    if (desktopInline) return;
+    if (desktopInline || !open) return;
     document.body.classList.add("comments-open");
 
     const scrollY = window.scrollY;
@@ -71,7 +82,7 @@ export function CommentsDrawer({
       body.style.overflow = prev.overflow;
       window.scrollTo(0, scrollY);
     };
-  }, [desktopInline]);
+  }, [desktopInline, open]);
 
   if (desktopInline) {
     return (
@@ -85,24 +96,31 @@ export function CommentsDrawer({
     );
   }
 
+  if (!hasOpened) return null;
+
   // ── Mobile: keyboard-avoiding bottom sheet (TikTok-style) ──
   // The overlay is full-screen `position: fixed` so it never affects page layout
   // and the drawer body stays put. When the keyboard opens we DON'T move the
   // sheet — only the input bar lifts to sit above the keyboard (CommentThread's
   // `keyboardAvoiding`), exactly like TikTok.
   return (
-    <AnimatePresence onExitComplete={onClose}>
-      {visible && (
-        <div className="fixed inset-0 z-80" role="dialog" aria-modal="true">
+        <div
+          className={[
+            "fixed inset-0 z-80",
+            open ? "pointer-events-auto" : "pointer-events-none",
+          ].join(" ")}
+          role="dialog"
+          aria-modal="true"
+          aria-hidden={!open}
+        >
           {/* Scrim */}
           <motion.button
             type="button"
             aria-label="Close comments"
             onClick={requestClose}
             className="absolute inset-0 bg-black/60"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={false}
+            animate={{ opacity: open ? 1 : 0 }}
             transition={{ duration: 0.25 }}
           />
 
@@ -110,11 +128,10 @@ export function CommentsDrawer({
           <motion.div
             className="absolute inset-x-0 bottom-0 mx-auto flex max-w-107.5 flex-col overflow-hidden rounded-t-3xl bg-app shadow-2xl md:hidden"
             style={{ height: "75dvh" }}
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
+            initial={false}
+            animate={{ y: open ? 0 : "100%" }}
             transition={{ type: "spring", damping: 32, stiffness: 320 }}
-            drag="y"
+            drag={open ? "y" : false}
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={{ top: 0, bottom: 0.6 }}
             onDragEnd={handleDragEnd}
@@ -149,9 +166,12 @@ export function CommentsDrawer({
           <motion.div
             className="absolute left-1/2 top-1/2 hidden w-[min(760px,calc(100vw-3rem))] max-w-[760px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[28px] border border-default bg-app shadow-2xl md:flex lg:w-[min(860px,calc(100vw-5rem))] lg:max-w-[860px]"
             style={{ height: "min(82dvh, 860px)" }}
-            initial={{ opacity: 0, scale: 0.96, y: 18 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 18 }}
+            initial={false}
+            animate={{
+              opacity: open ? 1 : 0,
+              scale: open ? 1 : 0.96,
+              y: open ? 0 : 18,
+            }}
             transition={{ duration: 0.22, ease: "easeOut" }}
           >
             <div className="shrink-0 border-b border-default bg-[rgb(var(--color-bg)/0.96)] backdrop-blur-md">
@@ -180,7 +200,5 @@ export function CommentsDrawer({
             />
           </motion.div>
         </div>
-      )}
-    </AnimatePresence>
   );
 }

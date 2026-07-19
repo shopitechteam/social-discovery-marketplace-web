@@ -10,11 +10,9 @@ import { useEffect, useRef, useState } from "react";
  * restore sound once it's actually playing. Net effect: in-view videos always
  * autoplay, and stay unmuted whenever the browser permits — TikTok/IG behaviour.
  *
- * `onMutedChange` is fired whenever we end up forcing the element muted against
- * the caller's wishes (autoplay was blocked unmuted). The caller uses it to keep
- * its own mute UI/state in sync with the element's REAL muted state — otherwise
- * the speaker icon shows "unmuted" while the video plays silently, and the user
- * has to tap twice to actually get sound.
+ * `onMutedChange` reports the element's REAL muted state when fallback has to
+ * change it. Callers should treat this as local element state, not as the user's
+ * persisted mute preference.
  */
 function playWithUnmuteFallback(
   v: HTMLVideoElement,
@@ -25,10 +23,12 @@ function playWithUnmuteFallback(
     if (wantedMuted) return; // already muted and still blocked — nothing to do
     // Retry muted so it at least plays, then try to unmute again.
     v.muted = true;
+    onMutedChange?.(true);
     v.play()
       .then(() => {
         // Restore the user's unmuted intent now that playback has started.
         v.muted = false;
+        onMutedChange?.(false);
         // If unmuting re-pauses it (rare), fall back to muted playback.
         v.play().catch(() => {
           v.muted = true;
