@@ -141,6 +141,7 @@ const DISCOVERY_FEED: TypedDocumentNode<DiscoveryFeedData, DiscoveryFeedVars> =
       ) {
         items {
           id
+          slug
           type
           title
           caption

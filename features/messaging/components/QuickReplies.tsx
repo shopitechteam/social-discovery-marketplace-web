@@ -80,7 +80,7 @@ export function QuickReplies({ disabled, conversation, currentUserId, onSend }: 
           key={text}
           type="button"
           onClick={() => onSend(text)}
-          className="shrink-0 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent"
+          className="shrink-0 rounded-full border px-3 py-1.5 text-sm font-medium text-default transition-colors hover:bg-surface"
           style={{ borderColor: "rgb(var(--color-border))" }}
         >
           {text}

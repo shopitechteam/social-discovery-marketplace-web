@@ -9,6 +9,7 @@ import {
   ShareContentDocument,
 } from "@/types/__generated__/graphql";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
+import { absoluteContentUrl } from "@/lib/content-url";
 
 const TOGGLE_SAVE = gql`
   mutation ToggleSave($contentId: String!, $collectionId: String) {
@@ -175,8 +176,16 @@ export function useInteractions(
   function handleShare() {
     shareMutation({ variables: { contentId: post.id } }).catch(() => {});
     if (typeof navigator !== "undefined" && navigator.share) {
+      const url =
+        typeof window !== "undefined"
+          ? absoluteContentUrl(
+              window.location.origin,
+              window.location.pathname.split("/")[1] || "en",
+              post,
+            )
+          : "";
       navigator
-        .share({ title: post.title, url: window.location.href })
+        .share({ title: post.title, url })
         .catch(() => {});
     }
   }

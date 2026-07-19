@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Bookmark, Eye, MapPin, Play } from "lucide-react";
 import { SHIMMER_PORTRAIT } from "@/lib/shimmer";
+import { contentPath } from "@/lib/content-url";
 import {
   HoverVideoPreview,
   useHoverPreview,
@@ -103,7 +104,7 @@ function DiscoverGridCardImpl({
 
   return (
     <Link
-      href={`/${lang}/content/${post.id}`}
+      href={contentPath(lang, post)}
       scroll={false}
       className="group block overflow-hidden rounded-2xl border outline-none focus-visible:ring-2 focus-visible:ring-primary"
       style={{

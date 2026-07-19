@@ -117,6 +117,12 @@ export function ChatDetail({
   const contentSummary = selectedConversation?.content;
   const otherParticipant: UserLite | null | undefined =
     selectedConversation?.otherParticipant;
+  const conversationNotReady =
+    pending ||
+    !selectedConversationId ||
+    !selectedConversation ||
+    conversationLoading ||
+    (messagesLoading && messages.length === 0);
   const isSeller = Boolean(
     selectedConversation && currentUserId && selectedConversation.sellerId === currentUserId,
   );
@@ -466,7 +472,9 @@ export function ChatDetail({
             stagedMedia={stagedMedia}
             isUploading={isUploading}
             disabledReason={
-              selectedConversation?.blockedByMe
+              conversationNotReady
+                ? "Preparing chat..."
+                : selectedConversation?.blockedByMe
                 ? "You blocked this user"
                 : selectedConversation?.blockedByOther
                   ? "This user blocked you"

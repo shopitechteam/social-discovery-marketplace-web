@@ -67,7 +67,9 @@ export function MessagingShell({
   // chat shell (header skeleton + composer) right away.
   const resolvingFromContent =
     mode === "content" &&
-    (!inbox.selectedConversationId || !inbox.selectedConversation);
+    (inbox.ensuringConversation ||
+      !inbox.selectedConversationId ||
+      !inbox.selectedConversation);
 
   // On a conversation route the mobile view should show only the chat; at the
   // inbox root it should show only the list. On desktop both are always visible.

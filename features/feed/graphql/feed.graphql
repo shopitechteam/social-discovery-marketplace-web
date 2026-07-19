@@ -31,6 +31,7 @@ fragment MediaItemFields on MediaItem {
 
 fragment ContentCardFields on Content {
   id
+  slug
   type
   source
   isLive

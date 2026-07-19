@@ -661,6 +661,13 @@ export function useInbox(lang: string) {
       null,
     [activeConversation, conversations, selectedConversationId],
   );
+  const isConversationReadyForSending = Boolean(
+    selectedConversationId &&
+      selectedConversation &&
+      !ensuringConversation &&
+      !conversationLoading &&
+      !(messagesLoading && messages.length === 0),
+  );
 
   const unreadThreads =
     (unreadData as { myUnreadDirectConversationCount?: number } | undefined)
@@ -812,7 +819,7 @@ export function useInbox(lang: string) {
       const myId = currentUser?.id;
       const fromComposer = explicitText === undefined;
       const text = (explicitText ?? composer).trim();
-      if (!conversationId || !text || !myId) return;
+      if (!conversationId || !text || !myId || !isConversationReadyForSending) return;
       if (selectedConversation?.canSendMessages === false) {
         toast.error(
           selectedConversation.blockedByMe
@@ -846,7 +853,13 @@ export function useInbox(lang: string) {
 
       void sendTextMessage(clientMessageId, conversationId, text);
     },
-    [composer, currentUser?.id, selectedConversation, sendTextMessage],
+    [
+      composer,
+      currentUser?.id,
+      isConversationReadyForSending,
+      selectedConversation,
+      sendTextMessage,
+    ],
   );
 
   /** Send a canned quick-reply ("peel") directly, bypassing the composer. */
@@ -866,7 +879,7 @@ export function useInbox(lang: string) {
     (latitude: number, longitude: number, locationLabel?: string) => {
       const conversationId = selectedConversationIdRef.current;
       const myId = currentUser?.id;
-      if (!conversationId || !myId) return;
+      if (!conversationId || !myId || !isConversationReadyForSending) return;
       if (selectedConversation?.canSendMessages === false) {
         toast.error(
           selectedConversation.blockedByMe
@@ -929,6 +942,7 @@ export function useInbox(lang: string) {
     },
     [
       currentUser?.id,
+      isConversationReadyForSending,
       selectedConversation,
       sendDirectMessage,
       refetchConversations,
@@ -1079,6 +1093,7 @@ export function useInbox(lang: string) {
    */
   const stageMedia = useCallback(
     async (file: File, kind: "image" | "video") => {
+      if (!isConversationReadyForSending) return;
       if (selectedConversation?.canSendMessages === false) {
         toast.error(
           selectedConversation.blockedByMe
@@ -1102,7 +1117,7 @@ export function useInbox(lang: string) {
         return { file, kind, previewUrl };
       });
     },
-    [selectedConversation],
+    [isConversationReadyForSending, selectedConversation],
   );
 
   const clearStagedMedia = useCallback(() => {
@@ -1123,7 +1138,7 @@ export function useInbox(lang: string) {
     ) => {
       const myId = currentUser?.id;
       const conversationId = selectedConversationIdRef.current;
-      if (!conversationId || !myId) return;
+      if (!conversationId || !myId || !isConversationReadyForSending) return;
 
       const textToSend = text?.trim() || undefined;
       const clientMessageId = crypto.randomUUID();
@@ -1170,7 +1185,12 @@ export function useInbox(lang: string) {
         textToSend,
       );
     },
-    [currentUser?.id, runMediaUpload, selectedConversation],
+    [
+      currentUser?.id,
+      isConversationReadyForSending,
+      runMediaUpload,
+      selectedConversation,
+    ],
   );
 
   /**
@@ -1180,7 +1200,7 @@ export function useInbox(lang: string) {
    */
   const handleSend = useCallback(() => {
     const conversationId = selectedConversationIdRef.current;
-    if (!conversationId || !currentUser?.id) return;
+    if (!conversationId || !currentUser?.id || !isConversationReadyForSending) return;
     if (selectedConversation?.canSendMessages === false) {
       toast.error(
         selectedConversation.blockedByMe
@@ -1211,6 +1231,7 @@ export function useInbox(lang: string) {
     composer,
     currentUser?.id,
     handleSendText,
+    isConversationReadyForSending,
     selectedConversation,
     sendMedia,
     stagedMedia,
