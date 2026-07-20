@@ -145,13 +145,13 @@ export function VideoBubble() {
             // the bottom. From sm+ it returns to the corner-anchored card.
             cn(
               "inset-x-0 bottom-0",
-              "sm:inset-x-auto sm:right-[max(1rem,env(safe-area-inset-right))]",
-              "sm:bottom-[max(1rem,env(safe-area-inset-bottom))]",
+              "sm:inset-x-auto sm:right-[calc(1.5rem+env(safe-area-inset-right))]",
+              "sm:bottom-[calc(1.5rem+env(safe-area-inset-bottom))]",
             )
           : // Collapsed: corner bubble, insets clear the iOS home indicator.
             cn(
-              "right-[max(0.875rem,env(safe-area-inset-right))]",
-              "bottom-[max(0.875rem,env(safe-area-inset-bottom))]",
+              "right-[calc(1.5rem+env(safe-area-inset-right))]",
+              "bottom-[calc(1.5rem+env(safe-area-inset-bottom))]",
             ),
       )}
     >
