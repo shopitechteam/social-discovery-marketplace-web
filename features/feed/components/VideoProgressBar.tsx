@@ -71,6 +71,12 @@ export function VideoProgressBar({
     // the buffered bar growing without needing the rAF loop to be running.
     const handleProgress = () => syncProgress();
 
+    // Seed from the element's CURRENT state before subscribing. When this bar
+    // mounts onto a video that is already playing (e.g. it appears only once a
+    // player is expanded), `loadedmetadata` fired long ago and would never fire
+    // again — leaving the total time stuck at 0:00.
+    if (video.readyState >= HTMLMediaElement.HAVE_METADATA) handleMetadata();
+
     video.addEventListener("loadedmetadata", handleMetadata);
     video.addEventListener("durationchange", handleMetadata);
     video.addEventListener("seeked", handleSeeked);
