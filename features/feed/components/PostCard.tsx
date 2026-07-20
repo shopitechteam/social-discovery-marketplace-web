@@ -1856,6 +1856,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
         contentCreatorId={creator?.id ?? post.creatorId}
         onClose={() => setShowComments(false)}
         open={showComments}
+        lang={lang}
       />
 
       {/* ── Full-screen media viewer — images swipe as a carousel and Mux

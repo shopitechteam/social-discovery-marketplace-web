@@ -20,6 +20,7 @@ import Image from "next/image";
 import { timeAgo } from "@/lib/time";
 import { fmtCompact as formatCount } from "@/lib/format";
 import { avatarGradient } from "@/lib/avatar";
+import { useAuthGuard, type AuthIntent } from "../hooks/useAuthGuard";
 
 type CommentItem = NonNullable<GetCommentsQuery["comments"]["items"]>[number];
 type ReplyItem = NonNullable<GetRepliesQuery["replies"]>[number];
@@ -35,6 +36,8 @@ interface Props {
    * When false (inline / desktop), the input stays put.
    */
   keyboardAvoiding?: boolean;
+  /** Locale, for routing signed-out users to the auth-welcome screen. */
+  lang: string;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -179,17 +182,20 @@ function ReplyRow({
   contentCreatorId,
   canDelete,
   onDelete,
+  requireAuth,
 }: {
   reply: ReplyItem;
   contentCreatorId?: string;
   canDelete: boolean;
   onDelete: (reply: ReplyItem) => void;
+  requireAuth: (intent?: AuthIntent) => boolean;
 }) {
   const [liked, setLiked] = useState(reply.isLikedByMe ?? false);
   const [likeCount, setLikeCount] = useState(reply.likeCount ?? 0);
   const [toggleLike] = useMutation(ToggleCommentLikeDocument);
 
   async function handleLike() {
+    if (!requireAuth({ action: "like" })) return;
     const was = liked;
     setLiked(!was);
     setLikeCount((c) => c + (was ? -1 : 1));
@@ -270,6 +276,7 @@ function CommentRow({
   viewerId,
   onDeleteComment,
   onDeleteReply,
+  requireAuth,
 }: {
   comment: CommentItem;
   onReply: (comment: CommentItem) => void;
@@ -280,6 +287,7 @@ function CommentRow({
   viewerId?: string;
   onDeleteComment: (comment: CommentItem) => void;
   onDeleteReply: (reply: ReplyItem) => void;
+  requireAuth: (intent?: AuthIntent) => boolean;
 }) {
   const [liked, setLiked] = useState(comment.isLikedByMe ?? false);
   const [likeCount, setLikeCount] = useState(comment.likeCount ?? 0);
@@ -306,6 +314,7 @@ function CommentRow({
   })();
 
   async function handleLike() {
+    if (!requireAuth({ action: "like" })) return;
     const was = liked;
     setLiked(!was);
     setLikeCount((c) => c + (was ? -1 : 1));
@@ -417,6 +426,7 @@ function CommentRow({
               contentCreatorId={contentCreatorId}
               canDelete={canDeleteComment(r, viewerId, contentCreatorId)}
               onDelete={onDeleteReply}
+              requireAuth={requireAuth}
             />
           ))}
           {/* Reply input shortcut */}
@@ -439,6 +449,8 @@ function CommentRow({
 interface ThreadOptions {
   contentId: string;
   onCommentAdded?: () => void;
+  /** Locale, for routing signed-out users to the auth-welcome screen. */
+  lang: string;
 }
 
 /**
@@ -446,7 +458,12 @@ interface ThreadOptions {
  * pagination. Returned values can drive either the bundled composer
  * ({@link CommentThread}) or an external one (the PDP's mobile bottom bar).
  */
-export function useCommentThread({ contentId, onCommentAdded }: ThreadOptions) {
+export function useCommentThread({
+  contentId,
+  onCommentAdded,
+  lang,
+}: ThreadOptions) {
+  const { isAuthenticated, requireAuth } = useAuthGuard(lang);
   const [text, setText] = useState("");
   const [replyingTo, setReplyingTo] = useState<CommentItem | null>(null);
   // Which comment's replies are expanded. Lifted here (not local to CommentRow)
@@ -658,6 +675,10 @@ export function useCommentThread({ contentId, onCommentAdded }: ThreadOptions) {
   async function handleSend() {
     const trimmed = text.trim();
     if (!trimmed || !contentId) return;
+    // Signed-out: stash the intent and route to auth instead of firing a
+    // mutation the API would reject anyway (and which would optimistically
+    // paint a comment that then vanishes).
+    if (!requireAuth({ contentId, action: "comment" })) return;
     setText("");
     const parentId = replyingTo?.id ?? undefined;
     setReplyingTo(null);
@@ -846,6 +867,10 @@ export function useCommentThread({ contentId, onCommentAdded }: ThreadOptions) {
     handleDeleteReply,
     /** The signed-in user's id, for deciding who may delete a comment. */
     viewerId,
+    /** False for guests — composer and like buttons route to auth instead. */
+    isAuthenticated,
+    /** Returns true if signed in; otherwise redirects to auth and returns false. */
+    requireAuth,
     /** Post the current `text` (as a reply when `replyingTo` is set). */
     handleSend,
     /** Infinite-scroll handler for the list container's onScroll. */
@@ -880,6 +905,7 @@ function CommentList({
     handleDeleteComment,
     handleDeleteReply,
     viewerId,
+    requireAuth,
   } = thread;
 
   return (
@@ -913,6 +939,7 @@ function CommentList({
           viewerId={viewerId}
           onDeleteComment={handleDeleteComment}
           onDeleteReply={handleDeleteReply}
+          requireAuth={requireAuth}
         />
       ))}
       {hasMore && (
@@ -933,8 +960,16 @@ function CommentComposer({
   thread: CommentThreadApi;
   keyboardAvoiding?: boolean;
 }) {
-  const { text, setText, replyingTo, setReplyingTo, inputRef, handleSend } =
-    thread;
+  const {
+    text,
+    setText,
+    replyingTo,
+    setReplyingTo,
+    inputRef,
+    handleSend,
+    isAuthenticated,
+    requireAuth,
+  } = thread;
   const { keyboardHeight } = useVisualViewport();
 
   return (
@@ -952,8 +987,22 @@ function CommentComposer({
             : "env(safe-area-inset-bottom, 0px)",
       }}
     >
+      {/* Guests read the thread but can't compose — tapping routes to auth and
+          the intent is replayed on return. Swapping the whole bar (rather than
+          disabling the textarea) keeps the keyboard from ever opening. */}
+      {!isAuthenticated && (
+        <div className="px-3 pt-2 pb-3">
+          <button
+            type="button"
+            onClick={() => requireAuth({ action: "comment" })}
+            className="flex h-10 w-full items-center justify-center rounded-2xl bg-surface px-4 text-sm font-semibold text-muted-foreground border border-default transition-colors hover:text-default"
+          >
+            Sign in to comment
+          </button>
+        </div>
+      )}
       {/* Replying-to banner */}
-      {replyingTo && (
+      {isAuthenticated && replyingTo && (
         <div className="flex items-center justify-between px-4 py-1.5 bg-surface text-xs text-muted-foreground">
           <span>
             Replying to{" "}
@@ -969,7 +1018,9 @@ function CommentComposer({
           </button>
         </div>
       )}
-      <div className="flex items-end gap-2 px-3 pt-2 pb-3">
+      <div
+        className={`items-end gap-2 px-3 pt-2 pb-3 ${isAuthenticated ? "flex" : "hidden"}`}
+      >
         <textarea
           ref={inputRef as React.RefObject<HTMLTextAreaElement>}
           value={text}
@@ -1036,8 +1087,9 @@ export function CommentThread({
   contentCreatorId,
   onCommentAdded,
   keyboardAvoiding = false,
+  lang,
 }: Props) {
-  const thread = useCommentThread({ contentId, onCommentAdded });
+  const thread = useCommentThread({ contentId, onCommentAdded, lang });
   return (
     <>
       <CommentList thread={thread} contentCreatorId={contentCreatorId} />

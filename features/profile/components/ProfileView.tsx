@@ -110,6 +110,69 @@ function ProfileSkeleton() {
   );
 }
 
+function ProfileUnavailable({
+  onRetry,
+  error,
+}: {
+  onRetry: () => void;
+  error: boolean;
+}) {
+  return (
+    <div
+      className="flex min-h-screen items-center justify-center px-6 py-12"
+      style={{ backgroundColor: "rgb(var(--color-bg))" }}
+    >
+      <div className="flex max-w-sm flex-col items-center text-center">
+        <div
+          className="mb-4 flex h-16 w-16 items-center justify-center rounded-lg border"
+          style={{
+            backgroundColor: "rgb(var(--color-bg-elevated))",
+            borderColor: "rgb(var(--color-border))",
+            color: "rgb(var(--color-text-muted))",
+            boxShadow: "var(--shadow-sm)",
+          }}
+        >
+          <UserRound size={26} strokeWidth={2} />
+        </div>
+        <h2
+          className="font-bold"
+          style={{
+            fontSize: "var(--text-lg)",
+            color: "rgb(var(--color-text))",
+          }}
+        >
+          Couldn&apos;t load your profile
+        </h2>
+        <p
+          className="mt-2 leading-snug"
+          style={{
+            fontSize: "var(--text-base)",
+            color: "rgb(var(--color-text-muted))",
+          }}
+        >
+          {error
+            ? "Something went wrong on our end."
+            : "Your session may have expired."}{" "}
+          Try again.
+        </p>
+        <button
+          type="button"
+          onClick={onRetry}
+          className="mt-5 inline-flex h-10 items-center justify-center rounded-lg px-5 font-semibold text-white active:opacity-80"
+          style={{
+            fontSize: "var(--text-sm)",
+            background:
+              "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)))",
+            boxShadow: "0 10px 24px rgb(var(--brand-primary) / 0.24)",
+          }}
+        >
+          Retry
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // NOTE: the "tiktok" tab is intentionally omitted here so it's hidden from the
 // UI, but the TiktokImportPanel component and its render branch below are kept
 // intact (the functionality is preserved, just not surfaced as a subtab).
@@ -126,7 +189,12 @@ export function ProfileView({ lang }: Props) {
   const [tab, setTab] = useState<Tab>("posts");
   const [postsLimit] = useState(18);
 
-  const { data: profileData, loading: profileLoading } = useMyProfile();
+  const {
+    data: profileData,
+    loading: profileLoading,
+    error: profileError,
+    refetch: refetchProfile,
+  } = useMyProfile();
   const {
     data: managedPostsData,
     loading: managedPostsLoading,
@@ -145,7 +213,10 @@ export function ProfileView({ lang }: Props) {
   if (profileLoading && !profileData) return <ProfileSkeleton />;
 
   const user = profileData?.me;
-  if (!user) return null;
+  // Never render nothing: a viewer-scoped query that errored or resolved
+  // `me: null` (expired token, refresh mid-flight) used to bail to `null` here,
+  // leaving a blank screen with no way out except a hard reload.
+  if (!user) return <ProfileUnavailable onRetry={() => refetchProfile()} error={!!profileError} />;
 
   const managedPosts = managedPostsData?.myManagedContent.items ?? [];
   const managedHasMore = managedPostsData?.myManagedContent.hasMore ?? false;

@@ -11,12 +11,20 @@ import {
   CheckUsernameAvailabilityDocument,
 } from "@/types/__generated__/graphql";
 
-// Profile data changes rarely, so default to cache-first: revisits render
-// instantly from cache instead of refetching on every mount. Mutations
-// (useUpdateProfile, create/delete post) keep the cache correct via
-// refetchQueries / cache writes, so we don't need a network read every time.
+// Profile data changes rarely, so cached data renders instantly on revisit —
+// but this query is viewer-scoped, so a resolution that happened while the
+// access token was missing/expired caches `me: null`. Under cache-first that
+// bad state is sticky and the profile screen stays blank until a hard reload.
+// cache-and-network keeps the instant paint AND re-reads on every mount, so a
+// token refresh corrects it on the next visit. errorPolicy "all" is needed
+// because the client only sets it for `query`/`mutate`, not `watchQuery`:
+// without it any GraphQL error blanks `data` instead of surfacing `error`.
 export function useMyProfile() {
-  return useQuery(GetMyProfileDocument, { fetchPolicy: "cache-first" });
+  return useQuery(GetMyProfileDocument, {
+    fetchPolicy: "cache-and-network",
+    errorPolicy: "all",
+    notifyOnNetworkStatusChange: true,
+  });
 }
 
 export function useMyPosts(limit = 18) {

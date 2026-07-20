@@ -661,6 +661,7 @@ export function ContentDetail({
   const mobileThread = useCommentThread({
     contentId: resolvedContentId,
     onCommentAdded: () => setCommentCountOverride(null),
+    lang,
   });
   const {
     text: mobileCommentText,
@@ -1562,6 +1563,7 @@ export function ContentDetail({
                 <CommentThread
                   contentId={resolvedContentId}
                   contentCreatorId={post.creatorId}
+                  lang={lang}
                 />
               )}
             </div>
