@@ -13,6 +13,7 @@
  * the caller never has to parse anything.
  */
 
+import { useEffect, useState } from "react";
 import { Phone } from "lucide-react";
 import {
   formatSubscriberDigits,
@@ -31,10 +32,24 @@ interface PhoneInputProps {
 }
 
 export function PhoneInput({ value, onChange, error, id = "contact-phone" }: PhoneInputProps) {
-  const digits = fromStoredPhone(value);
+  // The in-progress digits live here, NOT in the parent. The parent only ever
+  // holds the canonical number or null, so a half-typed "71" has no
+  // representation up there — driving the field off that value directly would
+  // echo back "" on every keystroke and make the input impossible to type in.
+  const [digits, setDigits] = useState(() => fromStoredPhone(value));
+
+  // Adopt the parent's value only when it genuinely disagrees with what we're
+  // showing: initial hydration of a saved draft, or an external reset. While
+  // the user is mid-number both sides are null, so this correctly stays out of
+  // the way instead of clearing the field.
+  useEffect(() => {
+    if (value !== toStoredPhone(digits)) setDigits(fromStoredPhone(value));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
 
   function handleChange(raw: string) {
     const next = toSubscriberDigits(raw);
+    setDigits(next);
     onChange(toStoredPhone(next));
   }
 

@@ -20,6 +20,7 @@ import {
   Share2,
   MoreVertical,
   Maximize2,
+  Phone,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -48,6 +49,9 @@ import { avatarGradient, idInitials as initials } from "@/lib/avatar";
 import { useInteractions } from "../hooks/useInteractions";
 import { useAuthGuard } from "../hooks/useAuthGuard";
 import { useFollow } from "../hooks/useFollow";
+import { useSellerPhone } from "../hooks/useSellerPhone";
+import { formatStoredPhone } from "@/lib/phone";
+import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { BufferSpinner } from "./BufferSpinner";
 import { TikTokIcon } from "@/components/ui/TikTokIcon";
 import { usePageFocused } from "../hooks/usePageFocused";
@@ -1273,6 +1277,19 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
     lang,
   });
 
+  const {
+    phone,
+    reveal,
+    dial,
+    loading: phoneLoading,
+    unavailable: phoneUnavailable,
+  } = useSellerPhone(post.id);
+  // Desktop has no dialer, so the number is the end state there rather than a
+  // step on the way to a call. Stays null until measured; we only dial on a
+  // confirmed-mobile viewport so a first-paint tap can't misfire into tel:.
+  const isDesktop = useIsDesktop();
+  const canDial = isDesktop === false;
+
   const caption = post.caption ?? "";
   const recentSavers = socialPost.recentSavers?.filter(Boolean) ?? [];
   const saveProofText = savedByText(recentSavers, saveCount);
@@ -1285,6 +1302,21 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
     if (!requireAuth({ contentId: post.id, action: "save" })) return;
     if (!saved) setSaveBurstKey((key) => key + 1);
     void handleSave();
+  }
+
+  // The number isn't in the card payload (it's kept out of feed/PDP responses
+  // so it can't be scraped), so the first tap fetches it for this signed-in
+  // buyer. On mobile a second tap then opens the dialer; on desktop revealing
+  // the number IS the whole interaction — there's nothing to dial with.
+  function handleCallPress() {
+    if (!requireAuth({ contentId: post.id })) return;
+    if (phone) {
+      if (canDial) dial();
+      return;
+    }
+    void reveal().then((revealed) => {
+      if (!revealed) toast.error("This seller didn't leave a number");
+    });
   }
 
   function openComments() {
@@ -1777,6 +1809,35 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
             <span>Comment</span>
           )}
         </button>
+
+        {/* Call pill — outlined like Comment so Message stays the primary CTA.
+            Label walks: "Call" → the revealed number → dials on the next tap. */}
+        {!isOwnPost && !phoneUnavailable && (
+          <button
+            onClick={handleCallPress}
+            // Once revealed on desktop there's no further action, so the pill
+            // stops presenting itself as a control and just displays the number.
+            disabled={phoneLoading || (!!phone && !canDial)}
+            aria-label={
+              phone
+                ? canDial
+                  ? `Call ${formatStoredPhone(phone)}`
+                  : `Seller's number: ${formatStoredPhone(phone)}`
+                : "Show seller's number"
+            }
+            className={cn(
+              "flex items-center gap-1.5 px-4 py-2.5 rounded-full border border-border text-xs font-semibold text-default transition-all",
+              phone && !canDial
+                ? "disabled:opacity-100 select-text"
+                : "lg:cursor-pointer active:scale-95 disabled:opacity-60",
+            )}
+          >
+            <Phone className="w-4 h-4 shrink-0" strokeWidth={1.8} />
+            <span className="whitespace-nowrap">
+              {phone ? formatStoredPhone(phone) : "Call"}
+            </span>
+          </button>
+        )}
 
         {!isOwnPost && (
           <Button
