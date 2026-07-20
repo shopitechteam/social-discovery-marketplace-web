@@ -7,12 +7,15 @@ import {
   AddCommentDocument,
   ToggleCommentLikeDocument,
   GetRepliesDocument,
+  DeleteCommentDocument,
 } from "@/types/__generated__/graphql";
 import type {
   GetCommentsQuery,
   GetRepliesQuery,
 } from "@/types/__generated__/graphql";
 import { useVisualViewport } from "@/hooks/useKeyboardInset";
+import { useAuthSession } from "@/hooks/useAuthSession";
+import { Trash2 } from "lucide-react";
 import Image from "next/image";
 import { timeAgo } from "@/lib/time";
 import { fmtCompact as formatCount } from "@/lib/format";
@@ -62,12 +65,85 @@ function getDisplayName(c: {
   return `User ${c.creatorId.slice(-6)}`;
 }
 
+/**
+ * Who may delete a comment: its own author, or the creator of the post it sits
+ * on (so sellers can moderate their own listings). Mirrors the rule the API
+ * enforces in CommentService.deleteComment — this only decides whether to show
+ * the control; the server is the authority.
+ *
+ * Optimistic rows (temp ids) aren't on the server yet, so they're excluded.
+ */
+function canDeleteComment(
+  comment: { id: string; creatorId: string },
+  viewerId?: string,
+  contentCreatorId?: string,
+): boolean {
+  if (!viewerId || comment.id.startsWith("temp-")) return false;
+  return comment.creatorId === viewerId || contentCreatorId === viewerId;
+}
+
 // Small "Creator" badge — shown when the commenter is the content's creator
 function CreatorBadge() {
   return (
     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-bold leading-none bg-primary/10 text-primary border border-primary/20 flex-shrink-0">
       Creator
     </span>
+  );
+}
+
+/**
+ * Two-step delete control: the trash icon swaps into an inline
+ * "Delete / Cancel" confirm rather than opening a modal, which would fight the
+ * comment sheet for focus on mobile. Deletion is soft on the server, but it's
+ * still irreversible from the UI, so it never fires on a single tap.
+ */
+function DeleteControl({
+  onDelete,
+  label,
+}: {
+  onDelete: () => void;
+  label: string;
+}) {
+  const [confirming, setConfirming] = useState(false);
+
+  // Auto-dismiss the confirm so a stray tap doesn't leave the row armed.
+  useEffect(() => {
+    if (!confirming) return;
+    const timer = setTimeout(() => setConfirming(false), 4000);
+    return () => clearTimeout(timer);
+  }, [confirming]);
+
+  if (confirming) {
+    return (
+      <span className="flex items-center gap-2">
+        <button
+          onClick={() => {
+            setConfirming(false);
+            onDelete();
+          }}
+          className="text-xs font-semibold text-red-500 hover:text-red-600 transition-colors"
+        >
+          Delete
+        </button>
+        <button
+          onClick={() => setConfirming(false)}
+          className="text-xs text-muted-foreground hover:text-default transition-colors"
+        >
+          Cancel
+        </button>
+      </span>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => setConfirming(true)}
+      aria-label={label}
+      title={label}
+      className="text-muted-foreground hover:text-red-500 transition-colors"
+    >
+      <Trash2 className="w-3.5 h-3.5" />
+    </button>
   );
 }
 
@@ -101,9 +177,13 @@ function Avatar({ comment }: { comment: CommentItem | ReplyItem }) {
 function ReplyRow({
   reply,
   contentCreatorId,
+  canDelete,
+  onDelete,
 }: {
   reply: ReplyItem;
   contentCreatorId?: string;
+  canDelete: boolean;
+  onDelete: (reply: ReplyItem) => void;
 }) {
   const [liked, setLiked] = useState(reply.isLikedByMe ?? false);
   const [likeCount, setLikeCount] = useState(reply.likeCount ?? 0);
@@ -139,6 +219,12 @@ function ReplyRow({
           <span className="text-xs text-muted-foreground">
             {timeAgo(reply.createdAt)}
           </span>
+          {canDelete && (
+            <DeleteControl
+              label="Delete reply"
+              onDelete={() => onDelete(reply)}
+            />
+          )}
         </div>
         <p className="text-sm text-default leading-snug wrap-break-word">
           {reply.text}
@@ -181,6 +267,9 @@ function CommentRow({
   contentCreatorId,
   showReplies,
   onToggleReplies,
+  viewerId,
+  onDeleteComment,
+  onDeleteReply,
 }: {
   comment: CommentItem;
   onReply: (comment: CommentItem) => void;
@@ -188,6 +277,9 @@ function CommentRow({
   contentCreatorId?: string;
   showReplies: boolean;
   onToggleReplies: (commentId: string, next: boolean) => void;
+  viewerId?: string;
+  onDeleteComment: (comment: CommentItem) => void;
+  onDeleteReply: (reply: ReplyItem) => void;
 }) {
   const [liked, setLiked] = useState(comment.isLikedByMe ?? false);
   const [likeCount, setLikeCount] = useState(comment.likeCount ?? 0);
@@ -275,6 +367,12 @@ function CommentRow({
                   : `View ${replyCount} ${replyCount === 1 ? "reply" : "replies"}`}
               </button>
             )}
+            {canDeleteComment(comment, viewerId, contentCreatorId) && (
+              <DeleteControl
+                label="Delete comment"
+                onDelete={() => onDeleteComment(comment)}
+              />
+            )}
           </div>
         </div>
 
@@ -317,6 +415,8 @@ function CommentRow({
               key={r.id}
               reply={r}
               contentCreatorId={contentCreatorId}
+              canDelete={canDeleteComment(r, viewerId, contentCreatorId)}
+              onDelete={onDeleteReply}
             />
           ))}
           {/* Reply input shortcut */}
@@ -358,7 +458,10 @@ export function useCommentThread({ contentId, onCommentAdded }: ThreadOptions) {
   const listRef = useRef<HTMLDivElement>(null);
   const client = useApolloClient();
 
-  const { data, loading, fetchMore } = useQuery(GetCommentsDocument, {
+  const { user } = useAuthSession();
+  const viewerId = user?.id;
+
+  const { data, loading, fetchMore, refetch } = useQuery(GetCommentsDocument, {
     variables: { contentId, limit: 20 },
     fetchPolicy: "cache-and-network",
     nextFetchPolicy: "cache-first",
@@ -366,6 +469,7 @@ export function useCommentThread({ contentId, onCommentAdded }: ThreadOptions) {
   });
 
   const [addComment] = useMutation(AddCommentDocument);
+  const [deleteCommentMutation] = useMutation(DeleteCommentDocument);
   const [optimistic, setOptimistic] = useState<CommentItem[]>([]);
 
   const serverItems = data?.comments?.items ?? [];
@@ -432,6 +536,123 @@ export function useCommentThread({ contentId, onCommentAdded }: ThreadOptions) {
       }
     },
     [client],
+  );
+
+  // ── Deletion ───────────────────────────────────────────────────────────────
+  // Both handlers remove the row optimistically and correct the denormalized
+  // counts, then reconcile. On failure we refetch rather than trying to splice
+  // the row back at its original position — the list is cursor-paginated, so a
+  // re-insert can't reliably restore ordering.
+
+  const handleDeleteComment = useCallback(
+    async (comment: CommentItem) => {
+      // A top-level delete takes its replies with it (the API cascades), and
+      // every reply counts toward the content's comment stat.
+      const removed = 1 + (comment.replyCount ?? 0);
+
+      setOptimistic((prev) => prev.filter((c) => c.id !== comment.id));
+      client.cache.updateQuery(
+        {
+          query: GetCommentsDocument,
+          variables: { contentId, limit: 20 },
+        },
+        (existing) =>
+          existing?.comments
+            ? {
+                comments: {
+                  ...existing.comments,
+                  items: (existing.comments.items ?? []).filter(
+                    (c: { id: string }) => c.id !== comment.id,
+                  ),
+                },
+              }
+            : existing,
+      );
+      bumpContentCommentCount(-removed);
+      onCommentAdded?.();
+
+      try {
+        await deleteCommentMutation({ variables: { commentId: comment.id } });
+      } catch {
+        bumpContentCommentCount(removed);
+        onCommentAdded?.();
+        void refetch();
+      }
+    },
+    [
+      bumpContentCommentCount,
+      client,
+      contentId,
+      deleteCommentMutation,
+      onCommentAdded,
+      refetch,
+    ],
+  );
+
+  const handleDeleteReply = useCallback(
+    async (reply: ReplyItem) => {
+      const parentId = reply.parentId;
+      if (!parentId) return;
+
+      const parentCacheId = client.cache.identify({
+        __typename: "Comment",
+        id: parentId,
+      });
+
+      const removeFromCache = () =>
+        client.cache.updateQuery(
+          { query: GetRepliesDocument, variables: { commentId: parentId } },
+          (existing) => ({
+            replies: (existing?.replies ?? []).filter(
+              (r: { id: string }) => r.id !== reply.id,
+            ),
+          }),
+        );
+
+      removeFromCache();
+      if (parentCacheId) {
+        client.cache.modify({
+          id: parentCacheId,
+          fields: {
+            replyCount: (prev: number) => Math.max(0, (prev ?? 0) - 1),
+          },
+        });
+      }
+      bumpContentCommentCount(-1);
+      onCommentAdded?.();
+
+      try {
+        await deleteCommentMutation({ variables: { commentId: reply.id } });
+      } catch {
+        // Put the reply back — replies are ordered oldest-first and fetched as
+        // a whole list, so re-inserting and re-sorting restores the true order.
+        client.cache.updateQuery(
+          { query: GetRepliesDocument, variables: { commentId: parentId } },
+          (existing) => {
+            const list = existing?.replies ?? [];
+            if (list.some((r: { id: string }) => r.id === reply.id)) {
+              return { replies: list };
+            }
+            return {
+              replies: [...list, reply].sort(
+                (a, b) =>
+                  new Date(a.createdAt as string).getTime() -
+                  new Date(b.createdAt as string).getTime(),
+              ),
+            };
+          },
+        );
+        if (parentCacheId) {
+          client.cache.modify({
+            id: parentCacheId,
+            fields: { replyCount: (prev: number) => (prev ?? 0) + 1 },
+          });
+        }
+        bumpContentCommentCount(1);
+        onCommentAdded?.();
+      }
+    },
+    [bumpContentCommentCount, client, deleteCommentMutation, onCommentAdded],
   );
 
   async function handleSend() {
@@ -619,6 +840,12 @@ export function useCommentThread({ contentId, onCommentAdded }: ThreadOptions) {
     /** Set replyingTo and focus the composer. */
     handleReply,
     handleLikeComment,
+    /** Soft-delete a top-level comment (cascades to its replies). */
+    handleDeleteComment,
+    /** Soft-delete a single reply. */
+    handleDeleteReply,
+    /** The signed-in user's id, for deciding who may delete a comment. */
+    viewerId,
     /** Post the current `text` (as a reply when `replyingTo` is set). */
     handleSend,
     /** Infinite-scroll handler for the list container's onScroll. */
@@ -650,6 +877,9 @@ function CommentList({
     handleReply,
     handleLikeComment,
     handleScroll,
+    handleDeleteComment,
+    handleDeleteReply,
+    viewerId,
   } = thread;
 
   return (
@@ -680,6 +910,9 @@ function CommentList({
           contentCreatorId={contentCreatorId}
           showReplies={expandedParentId === comment.id}
           onToggleReplies={(id, next) => setExpandedParentId(next ? id : null)}
+          viewerId={viewerId}
+          onDeleteComment={handleDeleteComment}
+          onDeleteReply={handleDeleteReply}
         />
       ))}
       {hasMore && (
