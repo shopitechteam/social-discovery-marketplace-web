@@ -78,6 +78,13 @@ export type CreateFlowState = {
   postOnTiktok: boolean;
   scheduledPublishAt: Date | null;
   location: DraftLocation | null;
+  /**
+   * Seller's contact number for this listing, canonical `254XXXXXXXXX` —
+   * the same shape the API stores, so it round-trips through autosave without
+   * reformatting. Null until the seller has entered one (or it pre-fills from
+   * their saved number).
+   */
+  contactPhone: string | null;
   isSubmitting: boolean;
   error: string | null;
   isRestoring: boolean;
@@ -117,6 +124,7 @@ type CreateFlowActions = {
   setPostOnTiktok: (v: boolean) => void;
   setScheduledPublishAt: (date: Date | null) => void;
   setLocation: (loc: DraftLocation | null) => void;
+  setContactPhone: (phone: string | null) => void;
   setIsSubmitting: (v: boolean) => void;
   setIsRestoring: (v: boolean) => void;
   setDraftPending: (v: boolean) => void;
@@ -149,6 +157,7 @@ const DEFAULT_STATE: CreateFlowState = {
   postOnTiktok: false,
   scheduledPublishAt: null,
   location: null,
+  contactPhone: null,
   isSubmitting: false,
   error: null,
   isRestoring: false,
@@ -210,6 +219,7 @@ export const useCreateStore = create<CreateFlowState & CreateFlowActions>()(
       setPostOnTiktok: (postOnTiktok) => set({ postOnTiktok }),
       setScheduledPublishAt: (scheduledPublishAt) => set({ scheduledPublishAt }),
       setLocation: (location) => set({ location }),
+      setContactPhone: (contactPhone) => set({ contactPhone }),
       setIsSubmitting: (isSubmitting) => set({ isSubmitting }),
       setIsRestoring: (isRestoring) => set({ isRestoring }),
       setDraftPending: (draftPending) => set({ draftPending }),

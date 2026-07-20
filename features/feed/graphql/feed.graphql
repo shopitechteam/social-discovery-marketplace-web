@@ -143,6 +143,13 @@ query GetContent($id: String!) {
   }
 }
 
+# Revealed on demand when a signed-in buyer taps Call. Deliberately NOT part of
+# ContentCardFields: keeping it off the feed/PDP payload is what stops every
+# seller's number being harvested from a page crawl. See the API resolver.
+query SellerContactPhone($contentId: String!) {
+  sellerContactPhone(contentId: $contentId)
+}
+
 query FollowingFeed($limit: Int, $after: String) {
   followingFeed(limit: $limit, after: $after) {
     items {
