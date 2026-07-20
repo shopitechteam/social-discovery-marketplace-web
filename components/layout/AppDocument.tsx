@@ -1,5 +1,8 @@
+import { GoogleTagManager } from "@next/third-parties/google";
 import { Bricolage_Grotesque, JetBrains_Mono, Manrope } from "next/font/google";
 import { RouteProviders } from "@/components/providers/RouteProviders";
+
+const gtmId = process.env.NEXT_PUBLIC_GTM_ID;
 
 const manrope = Manrope({
   weight: ["400", "500", "600", "700", "800"],
@@ -49,6 +52,7 @@ export function AppDocument({
       suppressHydrationWarning
       className={`${manrope.variable} ${bricolage.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
+      {gtmId && <GoogleTagManager gtmId={gtmId} />}
       <body className="min-h-full flex flex-col bg-app text-default">
         <script
           id="theme-script"
