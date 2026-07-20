@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useMutation } from "@apollo/client/react";
 import { CombinedGraphQLErrors } from "@apollo/client/errors";
 
@@ -126,13 +127,12 @@ export function LoginForm({ from, lang }: LoginFormProps) {
           >
             Password
           </label>
-          <button
-            type="button"
+          <Link
+            href={`/${lang}/auth/forgot-password`}
             className="text-xs text-primary font-medium"
-            tabIndex={-1}
           >
             Forgot password?
-          </button>
+          </Link>
         </div>
         <div className="relative">
           <input

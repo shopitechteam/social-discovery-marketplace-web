@@ -43,6 +43,19 @@ mutation LoginWithEmail($input: LoginEmailInput!) {
   }
 }
 
+mutation RequestPasswordReset($input: RequestPasswordResetInput!) {
+  requestPasswordReset(input: $input) {
+    status
+    existingProviders
+  }
+}
+
+mutation ResetPassword($input: ResetPasswordInput!) {
+  resetPassword(input: $input) {
+    ...AuthPayloadFields
+  }
+}
+
 mutation RefreshToken($input: RefreshTokenInput!) {
   refreshToken(input: $input) {
     ...AuthPayloadFields
