@@ -165,11 +165,11 @@ export function VideoBubble() {
               // sm+ becomes a floating portrait card that grows with the screen.
               cn(
                 "h-[80dvh] w-full rounded-t-2xl",
-                "sm:h-128 sm:w-80 sm:rounded-2xl sm:ring-1 sm:ring-white/15",
-                "lg:h-144 lg:w-96",
+                "sm:h-136 sm:w-88 sm:rounded-2xl sm:ring-1 sm:ring-white/15",
+                "lg:h-200 lg:w-120",
               )
             : // Bubble — big enough that a face actually reads at a glance.
-              "h-24 w-24 rounded-full ring-2 ring-primary/70 sm:h-32 sm:w-32 lg:h-36 lg:w-36",
+              "h-24 w-24 rounded-full ring-2 ring-primary/70 sm:h-32 lg:h-32 lg:w-32",
         )}
       >
         <video
