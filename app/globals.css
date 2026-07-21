@@ -276,7 +276,9 @@ body {
   position: fixed;
   z-index: 2147483647;
   inset: 0;
-  display: grid;
+  /* Hidden by default: this prevents a reload flash before the tiny
+     sessionStorage script decides whether the current tab is a new session. */
+  display: none;
   place-items: center;
   overflow: hidden;
   background:
@@ -288,9 +290,19 @@ body {
   transition: opacity 220ms ease, visibility 220ms ease;
 }
 
+html.shopi-pwa-splash-pending #shopi-pwa-splash {
+  display: grid;
+}
+
 #shopi-pwa-splash.shopi-splash--ready {
   opacity: 0;
   visibility: hidden;
+}
+
+/* Set by the tiny pre-hydration script. This keeps the server-rendered splash
+   hidden during same-tab refreshes until React removes it. */
+html.shopi-pwa-splash-seen #shopi-pwa-splash {
+  display: none;
 }
 
 .shopi-splash__glow {
