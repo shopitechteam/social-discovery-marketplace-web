@@ -77,10 +77,18 @@ export function SocialButtons({ lang, from, verb = "Continue" }: Props) {
       {/* This must be Google's real rendered button. Calling click() on a hidden
           GIS button loses the trusted user gesture in standalone PWAs. */}
       <div
-        ref={googleButtonRef}
         aria-busy={loading}
-        className={`min-h-13 w-full overflow-hidden rounded-2xl ${loading ? "pointer-events-none opacity-50" : ""}`}
-      />
+        className={`relative w-full rounded-2xl border border-border bg-elevated p-1.5 shadow-[0_8px_24px_rgb(15_15_20_/_0.06)] transition-all duration-200 ${loading ? "pointer-events-none opacity-50" : "hover:border-primary/35 hover:shadow-[0_10px_28px_rgb(216_20_112_/_0.12)]"}`}
+      >
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-7 top-0 h-px bg-linear-to-r from-transparent via-primary/45 to-transparent"
+        />
+        <div
+          ref={googleButtonRef}
+          className="min-h-11 w-full overflow-hidden rounded-xl"
+        />
+      </div>
     </div>
   );
 }
