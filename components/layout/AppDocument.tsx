@@ -39,6 +39,26 @@ const themeScript = `
 })();
 `;
 
+// Rendered by the server before React hydrates so installed PWAs never flash a
+// blank white screen while Next loads. It deliberately uses only inline styles
+// and the local app icon, which makes it reliable on slow mobile connections.
+const splashScript = `
+(function(){
+  var splash = document.getElementById('shopi-pwa-splash');
+  if (!splash) return;
+  var started = Date.now();
+  function dismiss() {
+    var remaining = Math.max(0, 420 - (Date.now() - started));
+    window.setTimeout(function() {
+      splash.classList.add('shopi-splash--ready');
+      window.setTimeout(function() { splash.remove(); }, 280);
+    }, remaining);
+  }
+  if (document.readyState === 'complete') dismiss();
+  else window.addEventListener('load', dismiss, { once: true });
+})();
+`;
+
 export function AppDocument({
   children,
   lang,
@@ -54,9 +74,31 @@ export function AppDocument({
     >
       {gtmId && <GoogleTagManager gtmId={gtmId} />}
       <body className="min-h-full flex flex-col bg-app text-default">
+        <div id="shopi-pwa-splash" role="status" aria-label="Opening Shopi">
+          <div className="shopi-splash__glow" />
+          <div className="shopi-splash__content">
+            {/* A plain image is intentional: this is the first paint, before the
+                Next image runtime has hydrated, and the icon is already local. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              className="shopi-splash__logo"
+              src="/assets/shopi-logo.png"
+              width="112"
+              height="112"
+              alt=""
+            />
+            <p className="shopi-splash__name">Shopi</p>
+            <p className="shopi-splash__tagline">Discover what&apos;s nearby</p>
+            <span className="shopi-splash__loader" aria-hidden="true" />
+          </div>
+        </div>
         <script
           id="theme-script"
           dangerouslySetInnerHTML={{ __html: themeScript }}
+        />
+        <script
+          id="pwa-splash-script"
+          dangerouslySetInnerHTML={{ __html: splashScript }}
         />
         <RouteProviders>{children}</RouteProviders>
       </body>
