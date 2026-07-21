@@ -196,6 +196,8 @@ export function useOAuthMutation(lang: string, from?: string) {
         });
         google.accounts.id.renderButton(container, {
           type: "standard",
+          // Google's outline theme supplies the expected white surface in
+          // light mode; the Shopi wrapper provides the visible outer border.
           theme: "outline",
           size: "large",
           text: "continue_with",

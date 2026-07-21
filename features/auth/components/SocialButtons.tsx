@@ -78,7 +78,7 @@ export function SocialButtons({ lang, from, verb = "Continue" }: Props) {
           GIS button loses the trusted user gesture in standalone PWAs. */}
       <div
         aria-busy={loading}
-        className={`relative w-full rounded-2xl border border-border bg-elevated p-1.5 shadow-[0_8px_24px_rgb(15_15_20_/_0.06)] transition-all duration-200 ${loading ? "pointer-events-none opacity-50" : "hover:border-primary/35 hover:shadow-[0_10px_28px_rgb(216_20_112_/_0.12)]"}`}
+        className={`relative w-full rounded-2xl border border-border bg-transparent p-1.5 shadow-[0_8px_24px_rgb(15_15_20_/_0.06)] transition-all duration-200 ${loading ? "pointer-events-none opacity-50" : "hover:border-primary/35 hover:shadow-[0_10px_28px_rgb(216_20_112_/_0.12)]"}`}
       >
         <span
           aria-hidden="true"
