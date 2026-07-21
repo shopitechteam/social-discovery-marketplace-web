@@ -11,8 +11,8 @@ import { LandingNav } from "@/components/landing/LandingNav";
 import { WelcomeBackBanner } from "@/components/landing/WelcomeBackBanner";
 //import { SupportChat } from "@/components/landing/SupportChat";
 import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
-import { TiktokSaverSection } from "@/components/landing/TiktokSaverSection";
-import { VideoBubble } from "@/components/landing/VideoBubble";
+import { TiktokSaverSection } from "@/components/landing/TiktokSaverSection"; //
+//import { VideoBubble } from "@/components/landing/VideoBubble";
 import { getDictionary } from "@/i18n/getDictionary";
 import { isValidLocale, locales, type Locale } from "@/i18n/config";
 import { notFound } from "next/navigation";
@@ -225,7 +225,7 @@ export default async function Rootpage({ params }: PageProps<"/[lang]">) {
       <LandingFooter dict={dict} lang={lang} />
       <WelcomeBackBanner dict={dict} lang={lang} />
       {/* Landing-only floating video greeter; dismissible for the session. */}
-      <VideoBubble />
+      {/* <VideoBubble /> */}
       {/* <SupportChat dict={dict} /> */}
     </>
   );
