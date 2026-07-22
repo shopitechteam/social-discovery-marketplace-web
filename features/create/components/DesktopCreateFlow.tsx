@@ -16,10 +16,7 @@ import { TikTokIcon } from "@/components/ui/TikTokIcon";
 import { CreateFlow } from "./CreateFlow";
 import { CreatePreviewPanel } from "./CreatePreviewPanel";
 import { TikTokPicker } from "./TikTokPicker";
-import {
-  CreateErrorDialog,
-  createErrorMessage,
-} from "./CreateErrorDialog";
+import { CreateErrorDialog, createErrorMessage } from "./CreateErrorDialog";
 import { SHOW_TIKTOK_CREATE_OPTIONS } from "@/features/create/utils/tiktokAvailability";
 import { getSuspendedAccountMessage } from "@/lib/apollo/suspended-account";
 
@@ -341,7 +338,7 @@ export function DesktopCreateFlow({ lang }: { lang: string }) {
                         key={opt.label}
                         onClick={opt.onClick}
                         disabled={creating}
-                        className={`group ${opt.hidden ? "hidden" : "flex"} flex-col items-center gap-3 rounded-2xl px-4 py-8 text-center transition-all hover:-translate-y-0.5 disabled:opacity-50`}
+                        className={`group ${opt.hidden ? "flex" : "flex"} flex-col items-center gap-3 rounded-2xl px-4 py-8 text-center transition-all hover:-translate-y-0.5 disabled:opacity-50`}
                         style={{
                           backgroundColor: "rgb(var(--color-bg-elevated))",
                           border: "1px solid rgb(var(--color-border))",
@@ -464,22 +461,24 @@ function CreateBanner() {
 
       {/* Bottom tip strip (peeks below the dialog) */}
       <div className="absolute inset-x-0 bottom-5 flex items-center justify-center gap-6">
-        {["AI writes your listing", "Reach nearby buyers", "Post to TikTok too"].map(
-          (tip) => (
-            <span
-              key={tip}
-              className="rounded-full px-3 py-1 font-medium"
-              style={{
-                fontSize: "var(--text-xs)",
-                backgroundColor: "rgb(var(--color-bg-elevated) / 0.7)",
-                border: "1px solid rgb(var(--color-border))",
-                color: "rgb(var(--color-text-muted))",
-              }}
-            >
-              {tip}
-            </span>
-          ),
-        )}
+        {[
+          "AI writes your listing",
+          "Reach nearby buyers",
+          "Post to TikTok too",
+        ].map((tip) => (
+          <span
+            key={tip}
+            className="rounded-full px-3 py-1 font-medium"
+            style={{
+              fontSize: "var(--text-xs)",
+              backgroundColor: "rgb(var(--color-bg-elevated) / 0.7)",
+              border: "1px solid rgb(var(--color-border))",
+              color: "rgb(var(--color-text-muted))",
+            }}
+          >
+            {tip}
+          </span>
+        ))}
       </div>
     </div>
   );
