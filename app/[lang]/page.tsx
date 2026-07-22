@@ -8,6 +8,7 @@ import { PillarsSection } from "@/components/landing/PillarsSection";
 import { StatsSection } from "@/components/landing/StatsSection";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { LandingNav } from "@/components/landing/LandingNav";
+import { MarketplaceCategoriesSection } from "@/components/landing/MarketplaceCategoriesSection";
 import { WelcomeBackBanner } from "@/components/landing/WelcomeBackBanner";
 //import { SupportChat } from "@/components/landing/SupportChat";
 import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
@@ -185,6 +186,34 @@ export default async function Rootpage({ params }: PageProps<"/[lang]">) {
 
   const dict = await getDictionary(lang);
   const faq = HOME_FAQ[lang];
+  const homepageCategorySchema = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "@id": `${siteConfig.url}/${lang}#popular-categories`,
+    name: "Popular Shopi marketplace categories in Kenya",
+    itemListElement: [
+      {
+        name: "Phones and electronics for sale in Kenya",
+        url: `${siteConfig.url}/${lang}/phones-electronics-kenya`,
+      },
+      {
+        name: "Land, plots and property for sale in Kenya",
+        url: `${siteConfig.url}/${lang}/property-for-sale-kenya`,
+      },
+      {
+        name: "Cars for sale in Kenya",
+        url: `${siteConfig.url}/${lang}/sell-car-kenya`,
+      },
+      {
+        name: "Beauty and cosmetics in Kenya",
+        url: `${siteConfig.url}/${lang}/beauty-cosmetics-kenya`,
+      },
+    ].map((item, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      ...item,
+    })),
+  };
 
   return (
     <>
@@ -202,6 +231,7 @@ export default async function Rootpage({ params }: PageProps<"/[lang]">) {
               organizationSchema,
               websiteSchema,
               marketplaceSchema,
+              homepageCategorySchema,
               faqSchema(faq),
             ),
           }}
@@ -210,6 +240,7 @@ export default async function Rootpage({ params }: PageProps<"/[lang]">) {
         <LandingNav dict={dict} lang={lang} />
         <HeroSection dict={dict} lang={lang} />
         <PillarsSection dict={dict} />
+        <MarketplaceCategoriesSection lang={lang} />
         <StatsSection dict={dict} />
         <DeepDivesSection dict={dict} lang={lang} />
         <HowItWorksSection dict={dict} />
