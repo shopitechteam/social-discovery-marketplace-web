@@ -575,7 +575,7 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
         >
           {visibilitySection}
           {togglesSection}
-          {process.env.NODE_ENV === "development" && tiktokSection}
+          {tiktokSection}
 
           {error && (
             <div className="rounded-xl border border-[rgb(var(--color-error)/0.2)] bg-[rgb(var(--color-error)/0.08)] px-4 py-3 text-sm text-error">
