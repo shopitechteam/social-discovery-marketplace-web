@@ -3,6 +3,7 @@ import Link from "next/link";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { LegalNav } from "@/components/legal/LegalNav";
 import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
+import { CategoryCrossLinks } from "@/components/seo/CategoryCrossLinks";
 import { siteConfig } from "@/config/site";
 import { isValidLocale } from "@/i18n/config";
 import { publicPageMetadata } from "@/lib/metadata";
@@ -29,9 +30,7 @@ const faq = [
   },
 ];
 
-export async function generateMetadata({
-  params,
-}: Props): Promise<Metadata> {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { lang } = await params;
   return publicPageMetadata({
     lang,
@@ -100,7 +99,8 @@ export default async function BeautyCosmeticsKenyaPage({ params }: Props) {
               Beauty and cosmetics in Kenya
             </p>
             <h1 className="max-w-175 font-display text-[clamp(2rem,5vw,3.6rem)] font-bold tracking-normal leading-[1.08] text-foreground">
-              Buy and sell skincare, makeup, perfumes and hair products in Kenya.
+              Buy and sell skincare, makeup, perfumes and hair products in
+              Kenya.
             </h1>
             <p className="mt-5 max-w-150 text-[1.05rem] leading-[1.75] text-muted">
               Shopi helps beauty sellers reach local buyers with real product
@@ -233,6 +233,10 @@ export default async function BeautyCosmeticsKenyaPage({ params }: Props) {
             ))}
           </div>
         </section>
+        <CategoryCrossLinks
+          lang={safeLang}
+          currentPath="/beauty-cosmetics-kenya"
+        />
       </main>
       <LandingFooter lang={safeLang} />
     </>

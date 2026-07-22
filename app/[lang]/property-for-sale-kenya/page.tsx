@@ -3,6 +3,7 @@ import Link from "next/link";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { LegalNav } from "@/components/legal/LegalNav";
 import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
+import { CategoryCrossLinks } from "@/components/seo/CategoryCrossLinks";
 import { siteConfig } from "@/config/site";
 import { isValidLocale } from "@/i18n/config";
 import { publicPageMetadata } from "@/lib/metadata";
@@ -29,9 +30,7 @@ const faq = [
   },
 ];
 
-export async function generateMetadata({
-  params,
-}: Props): Promise<Metadata> {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { lang } = await params;
   return publicPageMetadata({
     lang,
@@ -88,7 +87,9 @@ export default async function PropertyForSaleKenyaPage({ params }: Props) {
       <LegalNav lang={safeLang} />
       <BreadcrumbJsonLd
         lang={safeLang}
-        trail={[{ name: "Property in Kenya", path: "/property-for-sale-kenya" }]}
+        trail={[
+          { name: "Property in Kenya", path: "/property-for-sale-kenya" },
+        ]}
       />
 
       <main>
@@ -98,7 +99,8 @@ export default async function PropertyForSaleKenyaPage({ params }: Props) {
               Property for sale and rent in Kenya
             </p>
             <h1 className="max-w-175 font-display text-[clamp(2rem,5vw,3.6rem)] font-bold tracking-normal leading-[1.08] text-foreground">
-              Find land, plots, houses for sale and houses for rent across Kenya.
+              Find land, plots, houses for sale and houses for rent across
+              Kenya.
             </h1>
             <p className="mt-5 max-w-150 text-[1.05rem] leading-[1.75] text-muted">
               Search or list property on Shopi: plots for sale in Nyahururu,
@@ -231,6 +233,10 @@ export default async function PropertyForSaleKenyaPage({ params }: Props) {
             ))}
           </div>
         </section>
+        <CategoryCrossLinks
+          lang={safeLang}
+          currentPath="/property-for-sale-kenya"
+        />
       </main>
       <LandingFooter lang={safeLang} />
     </>

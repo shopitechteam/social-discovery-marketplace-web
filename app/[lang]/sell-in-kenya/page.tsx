@@ -3,6 +3,7 @@ import Link from "next/link";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { LegalNav } from "@/components/legal/LegalNav";
 import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
+import { CategoryCrossLinks } from "@/components/seo/CategoryCrossLinks";
 import { siteConfig } from "@/config/site";
 import { isValidLocale } from "@/i18n/config";
 import { publicPageMetadata } from "@/lib/metadata";
@@ -29,9 +30,7 @@ const faq = [
   },
 ];
 
-export async function generateMetadata({
-  params,
-}: Props): Promise<Metadata> {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { lang } = await params;
   return publicPageMetadata({
     lang,
@@ -234,6 +233,7 @@ export default async function SellInKenyaPage({ params }: Props) {
             ))}
           </div>
         </section>
+        <CategoryCrossLinks lang={safeLang} currentPath="/sell-in-kenya" />
       </main>
       <LandingFooter lang={safeLang} />
     </>
