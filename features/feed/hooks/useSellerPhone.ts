@@ -1,13 +1,13 @@
 "use client";
 
 /**
- * Two-tap "show number → dial" for a listing's Call button.
+ * Fetch-on-demand seller number for a listing's Call button.
  *
  * The number is never part of the content payload — it's fetched only when a
  * signed-in buyer asks for it, which keeps every seller's number out of the
- * crawlable PDP HTML and off the feed responses. First tap reveals, second tap
- * dials; that's the pattern Kenyan buyers already know from the big classifieds
- * sites, and it gives us a real "intent to call" moment to measure.
+ * crawlable PDP HTML and off the feed responses, and gives us a real "intent
+ * to call" moment to measure. Callers decide what to do with it: phones hand
+ * it straight to the dialer, desktop displays it (nothing there to dial with).
  */
 
 import { useCallback, useState } from "react";
@@ -39,10 +39,18 @@ export function useSellerPhone(contentId: string | null | undefined) {
     return revealed;
   }, [contentId, phone, fetchPhone]);
 
-  const dial = useCallback(() => {
-    if (!phone) return;
-    window.location.href = telHref(phone);
-  }, [phone]);
+  /**
+   * Pass the number when dialling straight off a `reveal()` — that state write
+   * hasn't landed yet in the same tick, so the closed-over `phone` is stale.
+   */
+  const dial = useCallback(
+    (override?: string) => {
+      const target = override ?? phone;
+      if (!target) return;
+      window.location.href = telHref(target);
+    },
+    [phone],
+  );
 
   return { phone, reveal, dial, loading, unavailable };
 }

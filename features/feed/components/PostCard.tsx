@@ -1289,6 +1289,9 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
   // confirmed-mobile viewport so a first-paint tap can't misfire into tel:.
   const isDesktop = useIsDesktop();
   const canDial = isDesktop === false;
+  // Only desktop ever puts the number in the pill — on a phone it's a long
+  // string in a quarter-width cell that the dialer is about to receive anyway.
+  const showNumber = !!phone && !canDial;
 
   // The action bar is an even grid on phones so the pills can never run past
   // the viewport. Call and Chat drop out on your own posts (and Call drops out
@@ -1317,9 +1320,10 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
   }
 
   // The number isn't in the card payload (it's kept out of feed/PDP responses
-  // so it can't be scraped), so the first tap fetches it for this signed-in
-  // buyer. On mobile a second tap then opens the dialer; on desktop revealing
-  // the number IS the whole interaction — there's nothing to dial with.
+  // so it can't be scraped), so the tap fetches it for this signed-in buyer.
+  // On mobile that fetch is invisible — we hand the number straight to the
+  // dialer, so the pill never has to show it. On desktop there's nothing to
+  // dial with, so revealing the number IS the whole interaction.
   function handleCallPress() {
     if (!requireAuth({ contentId: post.id })) return;
     if (phone) {
@@ -1327,7 +1331,11 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
       return;
     }
     void reveal().then((revealed) => {
-      if (!revealed) toast.error("This seller didn't leave a number");
+      if (!revealed) {
+        toast.error("This seller didn't leave a number");
+        return;
+      }
+      if (canDial) dial(revealed);
     });
   }
 
@@ -1775,7 +1783,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
         {/* Save pill — outlined, active = filled primary */}
         <button
           onClick={handleSavePress}
-          className="relative flex w-full min-w-0 lg:cursor-pointer items-center justify-center gap-1 px-2 py-2 rounded-full border text-[11px] font-semibold transition-all active:scale-95 md:w-auto md:justify-start md:gap-1.5 md:px-4 md:py-2.5 md:text-xs"
+          className="relative flex w-full min-w-0 md:min-w-fit lg:cursor-pointer items-center justify-center gap-1 px-2 py-2 rounded-full border text-[11px] font-semibold transition-all active:scale-95 md:w-auto md:justify-start md:gap-1.5 md:px-4 md:py-2.5 md:text-xs"
           style={{
             borderColor: saved
               ? "rgb(var(--brand-primary))"
@@ -1805,7 +1813,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
         {/* Comment pill — opens the lazy-loaded comments sheet */}
         <button
           onClick={openComments}
-          className="flex w-full min-w-0 lg:cursor-pointer items-center justify-center gap-1 px-2 py-2 rounded-full border border-border text-[11px] font-semibold text-default transition-all active:scale-95 md:w-auto md:justify-start md:gap-1.5 md:px-4 md:py-2.5 md:text-xs"
+          className="flex w-full min-w-0 md:min-w-fit lg:cursor-pointer items-center justify-center gap-1 px-2 py-2 rounded-full border border-border text-[11px] font-semibold text-default transition-all active:scale-95 md:w-auto md:justify-start md:gap-1.5 md:px-4 md:py-2.5 md:text-xs"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -1830,38 +1838,28 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
         </button>
 
         {/* Call pill — outlined like Comment so Message stays the primary CTA.
-            Label walks: "Call" → the revealed number → dials on the next tap. */}
+            Mobile: one tap dials, the pill always reads "Call". Desktop: the
+            tap swaps the label for the number, since there's no dialer. */}
         {!isOwnPost && !phoneUnavailable && (
           <button
             onClick={handleCallPress}
             // Once revealed on desktop there's no further action, so the pill
             // stops presenting itself as a control and just displays the number.
-            disabled={phoneLoading || (!!phone && !canDial)}
-            aria-label={
-              phone
-                ? canDial
-                  ? `Call ${formatStoredPhone(phone)}`
-                  : `Seller's number: ${formatStoredPhone(phone)}`
-                : "Show seller's number"
-            }
+            disabled={phoneLoading || showNumber}
+            aria-label={showNumber ? undefined : "Call seller"}
             className={cn(
-              "flex w-full min-w-0 items-center justify-center gap-1 px-2 py-2 rounded-full border border-border text-[11px] font-semibold text-default transition-all md:w-auto md:justify-start md:gap-1.5 md:px-4 md:py-2.5 md:text-xs",
-              phone && !canDial
+              "flex w-full min-w-0 md:min-w-fit items-center justify-center gap-1 px-2 py-2 rounded-full border border-border text-[11px] font-semibold text-default transition-all md:w-auto md:justify-start md:gap-1.5 md:px-4 md:py-2.5 md:text-xs",
+              showNumber
                 ? "disabled:opacity-100 select-text"
                 : "lg:cursor-pointer active:scale-95 disabled:opacity-60",
             )}
           >
-            {/* The revealed number needs the whole grid cell on a phone, so the
-                icon steps aside there once there's a number to show. */}
             <Phone
-              className={cn(
-                "w-3.5 h-3.5 shrink-0 md:w-4 md:h-4 md:inline",
-                phone && "hidden",
-              )}
+              className="w-3.5 h-3.5 shrink-0 md:w-4 md:h-4"
               strokeWidth={1.8}
             />
             <span className="truncate md:whitespace-nowrap">
-              {phone ? formatStoredPhone(phone) : "Call"}
+              {showNumber ? formatStoredPhone(phone!) : "Call"}
             </span>
           </button>
         )}
@@ -1891,7 +1889,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
               // so we never flash the inbox list.
               router.push(`/${lang}/notifications/${post.id}?source=content`);
             }}
-            className="h-auto w-full min-w-0 px-2 py-2 text-[11px] gap-1 [&_svg]:size-3.5 md:[&_svg]:size-4 md:h-10 md:flex-1 lg:flex-0 bg-primary lg:w-fit md:px-4 lg:px-8 md:py-2.5 md:text-xs md:gap-1.5 lg:cursor-pointer flex items-center justify-center rounded-full font-semibold text-white transition-all hover:bg-primary/90 active:scale-95"
+            className="h-auto w-full min-w-0 md:min-w-fit px-2 py-2 text-[11px] gap-1 [&_svg]:size-3.5 md:[&_svg]:size-4 md:h-10 md:flex-1 lg:flex-0 bg-primary lg:w-fit md:px-4 lg:px-8 md:py-2.5 md:text-xs md:gap-1.5 lg:cursor-pointer flex items-center justify-center rounded-full font-semibold text-white transition-all hover:bg-primary/90 active:scale-95"
           >
             <svg
               fill="none"
