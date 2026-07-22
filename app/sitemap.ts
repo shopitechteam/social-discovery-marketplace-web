@@ -98,6 +98,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/feed", changeFrequency: "always", priority: 0.9 },
     { path: "/explore", changeFrequency: "hourly", priority: 0.8 },
     { path: "/search", changeFrequency: "hourly", priority: 0.8 },
+    { path: "/sell-in-kenya", changeFrequency: "weekly", priority: 0.9 },
+    { path: "/sell-car-kenya", changeFrequency: "weekly", priority: 0.9 },
+    {
+      path: "/property-for-sale-kenya",
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
+      path: "/beauty-cosmetics-kenya",
+      changeFrequency: "weekly",
+      priority: 0.85,
+    },
+    {
+      path: "/phones-electronics-kenya",
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
     { path: "/contact", changeFrequency: "monthly", priority: 0.5 },
     { path: "/privacy", changeFrequency: "yearly", priority: 0.3 },
     { path: "/terms", changeFrequency: "yearly", priority: 0.3 },

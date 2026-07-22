@@ -1,5 +1,6 @@
 import { GoogleTagManager } from "@next/third-parties/google";
 import { Bricolage_Grotesque, JetBrains_Mono, Manrope } from "next/font/google";
+import { PwaSplash } from "@/components/layout/PwaSplash";
 import { RouteProviders } from "@/components/providers/RouteProviders";
 
 const gtmId = process.env.NEXT_PUBLIC_GTM_ID;
@@ -35,6 +36,11 @@ const themeScript = `
     var t = s.state?.theme || 'light';
     var dark = t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
     if (dark) document.documentElement.classList.add('dark');
+    if (sessionStorage.getItem('shopi-pwa-splash-seen') === 'true') {
+      document.documentElement.classList.add('shopi-pwa-splash-seen');
+    } else {
+      document.documentElement.classList.add('shopi-pwa-splash-pending');
+    }
   } catch(e){}
 })();
 `;
@@ -58,6 +64,7 @@ export function AppDocument({
           id="theme-script"
           dangerouslySetInnerHTML={{ __html: themeScript }}
         />
+        <PwaSplash />
         <RouteProviders>{children}</RouteProviders>
       </body>
     </html>

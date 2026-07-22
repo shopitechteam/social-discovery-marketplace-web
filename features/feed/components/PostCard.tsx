@@ -20,6 +20,7 @@ import {
   Share2,
   MoreVertical,
   Maximize2,
+  Phone,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -48,6 +49,9 @@ import { avatarGradient, idInitials as initials } from "@/lib/avatar";
 import { useInteractions } from "../hooks/useInteractions";
 import { useAuthGuard } from "../hooks/useAuthGuard";
 import { useFollow } from "../hooks/useFollow";
+import { useSellerPhone } from "../hooks/useSellerPhone";
+import { formatStoredPhone } from "@/lib/phone";
+import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { BufferSpinner } from "./BufferSpinner";
 import { TikTokIcon } from "@/components/ui/TikTokIcon";
 import { usePageFocused } from "../hooks/usePageFocused";
@@ -1273,6 +1277,34 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
     lang,
   });
 
+  const {
+    phone,
+    reveal,
+    dial,
+    loading: phoneLoading,
+    unavailable: phoneUnavailable,
+  } = useSellerPhone(post.id);
+  // Desktop has no dialer, so the number is the end state there rather than a
+  // step on the way to a call. Stays null until measured; we only dial on a
+  // confirmed-mobile viewport so a first-paint tap can't misfire into tel:.
+  const isDesktop = useIsDesktop();
+  const canDial = isDesktop === false;
+  // Only desktop ever puts the number in the pill — on a phone it's a long
+  // string in a quarter-width cell that the dialer is about to receive anyway.
+  const showNumber = !!phone && !canDial;
+
+  // The action bar is an even grid on phones so the pills can never run past
+  // the viewport. Call and Chat drop out on your own posts (and Call drops out
+  // when the seller left no number), so the column count follows what's shown.
+  const actionCount =
+    2 + (isOwnPost ? 0 : 1) + (isOwnPost || phoneUnavailable ? 0 : 1);
+  const actionGridCols =
+    actionCount === 4
+      ? "grid-cols-4"
+      : actionCount === 3
+        ? "grid-cols-3"
+        : "grid-cols-2";
+
   const caption = post.caption ?? "";
   const recentSavers = socialPost.recentSavers?.filter(Boolean) ?? [];
   const saveProofText = savedByText(recentSavers, saveCount);
@@ -1285,6 +1317,26 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
     if (!requireAuth({ contentId: post.id, action: "save" })) return;
     if (!saved) setSaveBurstKey((key) => key + 1);
     void handleSave();
+  }
+
+  // The number isn't in the card payload (it's kept out of feed/PDP responses
+  // so it can't be scraped), so the tap fetches it for this signed-in buyer.
+  // On mobile that fetch is invisible — we hand the number straight to the
+  // dialer, so the pill never has to show it. On desktop there's nothing to
+  // dial with, so revealing the number IS the whole interaction.
+  function handleCallPress() {
+    if (!requireAuth({ contentId: post.id })) return;
+    if (phone) {
+      if (canDial) dial();
+      return;
+    }
+    void reveal().then((revealed) => {
+      if (!revealed) {
+        toast.error("This seller didn't leave a number");
+        return;
+      }
+      if (canDial) dial(revealed);
+    });
   }
 
   function openComments() {
@@ -1722,11 +1774,16 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
       )}
 
       {/* ── Action bar — 4 pill buttons matching design ─────────────────── */}
-      <div className="flex items-center gap-2 px-3 pb-3 pt-1">
+      <div
+        className={cn(
+          "grid items-stretch gap-1.5 px-3 pb-3 pt-1 md:flex md:items-center md:gap-2",
+          actionGridCols,
+        )}
+      >
         {/* Save pill — outlined, active = filled primary */}
         <button
           onClick={handleSavePress}
-          className="relative flex lg:cursor-pointer items-center gap-1.5 px-4 py-2.5 rounded-full border text-xs font-semibold transition-all active:scale-95"
+          className="relative flex w-full min-w-0 md:min-w-fit lg:cursor-pointer items-center justify-center gap-1 px-2 py-2 rounded-full border text-[11px] font-semibold transition-all active:scale-95 md:w-auto md:justify-start md:gap-1.5 md:px-4 md:py-2.5 md:text-xs"
           style={{
             borderColor: saved
               ? "rgb(var(--brand-primary))"
@@ -1742,19 +1799,21 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
           <SaveBurst burstKey={saveBurstKey} />
           <Bookmark
             className={cn(
-              "w-4 h-4 transition-transform duration-300",
+              "w-3.5 h-3.5 shrink-0 transition-transform duration-300 md:w-4 md:h-4",
               saved && "scale-110",
             )}
             fill={saved ? "rgb(var(--brand-primary))" : "none"}
             strokeWidth={1.8}
           />
-          <span>{saveCount > 0 ? fmt(saveCount) : "Save"}</span>
+          <span className="truncate">
+            {saveCount > 0 ? fmt(saveCount) : "Save"}
+          </span>
         </button>
 
         {/* Comment pill — opens the lazy-loaded comments sheet */}
         <button
           onClick={openComments}
-          className="flex lg:cursor-pointer items-center gap-1.5  px-4 py-2.5 rounded-full border border-border text-xs font-semibold text-default transition-all active:scale-95"
+          className="flex w-full min-w-0 md:min-w-fit lg:cursor-pointer items-center justify-center gap-1 px-2 py-2 rounded-full border border-border text-[11px] font-semibold text-default transition-all active:scale-95 md:w-auto md:justify-start md:gap-1.5 md:px-4 md:py-2.5 md:text-xs"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -1762,7 +1821,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
             viewBox="0 0 24 24"
             strokeWidth={1.5}
             stroke="currentColor"
-            className="size-4"
+            className="size-3.5 shrink-0 md:size-4"
           >
             <path
               strokeLinecap="round"
@@ -1772,11 +1831,38 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
           </svg>
 
           {post?.stats.comments > 0 ? (
-            <span>{post?.stats.comments}</span>
+            <span className="truncate">{post?.stats.comments}</span>
           ) : (
-            <span>Comment</span>
+            <span className="truncate">Comment</span>
           )}
         </button>
+
+        {/* Call pill — outlined like Comment so Message stays the primary CTA.
+            Mobile: one tap dials, the pill always reads "Call". Desktop: the
+            tap swaps the label for the number, since there's no dialer. */}
+        {!isOwnPost && !phoneUnavailable && (
+          <button
+            onClick={handleCallPress}
+            // Once revealed on desktop there's no further action, so the pill
+            // stops presenting itself as a control and just displays the number.
+            disabled={phoneLoading || showNumber}
+            aria-label={showNumber ? undefined : "Call seller"}
+            className={cn(
+              "flex w-full min-w-0 md:min-w-fit items-center justify-center gap-1 px-2 py-2 rounded-full border border-border text-[11px] font-semibold text-default transition-all md:w-auto md:justify-start md:gap-1.5 md:px-4 md:py-2.5 md:text-xs",
+              showNumber
+                ? "disabled:opacity-100 select-text"
+                : "lg:cursor-pointer active:scale-95 disabled:opacity-60",
+            )}
+          >
+            <Phone
+              className="w-3.5 h-3.5 shrink-0 md:w-4 md:h-4"
+              strokeWidth={1.8}
+            />
+            <span className="truncate md:whitespace-nowrap">
+              {showNumber ? formatStoredPhone(phone!) : "Call"}
+            </span>
+          </button>
+        )}
 
         {!isOwnPost && (
           <Button
@@ -1803,10 +1889,9 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
               // so we never flash the inbox list.
               router.push(`/${lang}/notifications/${post.id}?source=content`);
             }}
-            className="flex-1 lg:flex-0 bg-primary lg:w-fit lg:px-8 lg:cursor-pointer flex items-center justify-center gap-1.5 py-2.5 rounded-full text-xs font-semibold text-white transition-all hover:bg-primary/90 active:scale-95"
+            className="h-auto w-full min-w-0 md:min-w-fit px-2 py-2 text-[11px] gap-1 [&_svg]:size-3.5 md:[&_svg]:size-4 md:h-10 md:flex-1 lg:flex-0 bg-primary lg:w-fit md:px-4 lg:px-8 md:py-2.5 md:text-xs md:gap-1.5 lg:cursor-pointer flex items-center justify-center rounded-full font-semibold text-white transition-all hover:bg-primary/90 active:scale-95"
           >
             <svg
-              className="w-4 h-4"
               fill="none"
               stroke="currentColor"
               strokeWidth={1.8}
@@ -1818,7 +1903,9 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
                 d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
               />
             </svg>
-            Message
+            {/* "Chat" on phones — "Message" doesn't fit a quarter-width cell. */}
+            <span className="truncate md:hidden">Chat</span>
+            <span className="hidden truncate md:inline">Message</span>
           </Button>
         )}
       </div>
@@ -1856,6 +1943,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
         contentCreatorId={creator?.id ?? post.creatorId}
         onClose={() => setShowComments(false)}
         open={showComments}
+        lang={lang}
       />
 
       {/* ── Full-screen media viewer — images swipe as a carousel and Mux

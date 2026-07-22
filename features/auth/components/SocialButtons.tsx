@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useOAuthMutation } from "@/features/auth/hooks/useOAuthMutation";
-import { AppleIcon, GoogleIcon } from "./AuthIcons";
+import { AppleIcon } from "./AuthIcons";
 
 /** True on iOS, iPadOS and macOS — the platforms where Sign in with Apple belongs. */
 function detectApplePlatform(): boolean {
@@ -24,9 +24,10 @@ interface Props {
 }
 
 export function SocialButtons({ lang, from, verb = "Continue" }: Props) {
-  const { triggerGoogle, triggerApple, loading, setLoading } =
+  const { renderGoogleButton, triggerApple, loading, setLoading } =
     useOAuthMutation(lang, from);
   const [error, setError] = useState<string | null>(null);
+  const googleButtonRef = useRef<HTMLDivElement>(null);
 
   // Sign in with Apple only renders on Apple platforms. Detection runs after
   // mount (UA isn't reliable during SSR), so the button appears post-hydration
@@ -34,16 +35,18 @@ export function SocialButtons({ lang, from, verb = "Continue" }: Props) {
   // render agree on "hidden".
   const [showApple, setShowApple] = useState(false);
   useEffect(() => {
-    setShowApple(detectApplePlatform());
+    const timer = window.setTimeout(
+      () => setShowApple(detectApplePlatform()),
+      0,
+    );
+    return () => window.clearTimeout(timer);
   }, []);
 
-  async function handleGoogle() {
-    setError(null);
-    setLoading(true);
-    const err = await triggerGoogle();
-    setLoading(false);
-    if (err) setError(err);
-  }
+  useEffect(() => {
+    const container = googleButtonRef.current;
+    if (!container) return;
+    void renderGoogleButton(container, setError);
+  }, [renderGoogleButton]);
 
   async function handleApple() {
     setError(null);
@@ -71,17 +74,21 @@ export function SocialButtons({ lang, from, verb = "Continue" }: Props) {
         </button>
       )}
 
-      {/* Google — dark pill */}
-      <button
-        type="button"
-        disabled={loading}
-        onClick={handleGoogle}
-        aria-label={`${verb} with Google`}
-        className="w-full flex items-center justify-center gap-3 h-13 rounded-2xl bg-elevated border border-border text-default font-semibold text-base active:opacity-80 transition-opacity disabled:opacity-50"
+      {/* This must be Google's real rendered button. Calling click() on a hidden
+          GIS button loses the trusted user gesture in standalone PWAs. */}
+      <div
+        aria-busy={loading}
+        className={`relative w-full rounded-2xl border border-border bg-transparent p-1.5 shadow-[0_8px_24px_rgb(15_15_20_/_0.06)] transition-all duration-200 ${loading ? "pointer-events-none opacity-50" : "hover:border-primary/35 hover:shadow-[0_10px_28px_rgb(216_20_112_/_0.12)]"}`}
       >
-        <GoogleIcon />
-        <span>{verb} with Google</span>
-      </button>
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-7 top-0 h-px bg-linear-to-r from-transparent via-primary/45 to-transparent"
+        />
+        <div
+          ref={googleButtonRef}
+          className="min-h-11 w-full overflow-hidden rounded-xl"
+        />
+      </div>
     </div>
   );
 }

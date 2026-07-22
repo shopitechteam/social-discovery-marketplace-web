@@ -113,101 +113,106 @@ export function useOAuthMutation(lang: string, from?: string) {
   }
 
   // ── Google Identity Services ───────────────────────────────────────────────
-  // Uses renderButton + programmatic click so a real popup fires every time.
-  // One Tap prompt() is avoided — it gets suppressed by the browser silently.
-
-  const triggerGoogle = useCallback((): Promise<string | null> => {
-    return new Promise((resolve) => {
+  // Installed PWAs are stricter about popup blockers. The old approach rendered
+  // a hidden GIS button after a Shopi click, then called `.click()` on it. That
+  // loses the trusted user gesture while the SDK is loading. Render Google's
+  // button directly instead, so the user's tap opens the GIS popup itself.
+  const renderGoogleButton = useCallback(
+    async (
+      container: HTMLElement,
+      onError: (message: string) => void,
+    ): Promise<void> => {
       const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-      if (!googleClientId) { resolve("Google client ID not configured."); return; }
+      if (!googleClientId) {
+        onError("Google client ID not configured.");
+        return;
+      }
 
       type GIS = {
         accounts: {
           id: {
-            initialize: (c: object) => void;
-            renderButton: (el: HTMLElement, opts: object) => void;
-            cancel: () => void;
+            initialize: (config: object) => void;
+            renderButton: (element: HTMLElement, options: object) => void;
           };
         };
       };
 
-      function doRenderAndClick() {
-        const g = (window as unknown as { google?: GIS }).google;
-        if (!g) { resolve("Google sign-in failed to load."); return; }
+      const getGoogle = (): Promise<GIS> =>
+        new Promise((resolve, reject) => {
+          const existing = (window as unknown as { google?: GIS }).google;
+          if (existing) {
+            resolve(existing);
+            return;
+          }
 
-        // Create a hidden container, render Google's button into it, click it.
-        // This triggers a real popup that always works regardless of dismissal history.
-        const container = document.createElement("div");
-        container.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;overflow:hidden;";
-        document.body.appendChild(container);
+          const selector = 'script[src="https://accounts.google.com/gsi/client"]';
+          const script = document.querySelector<HTMLScriptElement>(selector)
+            ?? document.createElement("script");
+          const resolveGoogle = () => {
+            const google = (window as unknown as { google?: GIS }).google;
+            if (google) resolve(google);
+            else reject(new Error("Google sign-in failed to load."));
+          };
 
-        const cleanup = () => {
-          try { document.body.removeChild(container); } catch { /* already removed */ }
-        };
+          if (!script.parentNode) {
+            script.src = "https://accounts.google.com/gsi/client";
+            script.async = true;
+            script.defer = true;
+            script.addEventListener("load", resolveGoogle, { once: true });
+            script.addEventListener(
+              "error",
+              () => reject(new Error("Failed to load Google sign-in.")),
+              { once: true },
+            );
+            document.head.appendChild(script);
+          } else {
+            script.addEventListener("load", resolveGoogle, { once: true });
+            script.addEventListener(
+              "error",
+              () => reject(new Error("Failed to load Google sign-in.")),
+              { once: true },
+            );
+          }
+        });
 
-        g.accounts.id.initialize({
+      try {
+        const google = await getGoogle();
+        container.replaceChildren();
+        google.accounts.id.initialize({
           client_id: googleClientId,
           callback: async (response: { credential?: string; error?: string }) => {
-            cleanup();
             if (!response.credential) {
-              resolve(response.error ?? "Google sign-in cancelled.");
+              onError(response.error ?? "Google sign-in cancelled.");
               return;
             }
-            const err = await loginWithGoogle(response.credential);
-            resolve(err);
+            setLoading(true);
+            const error = await loginWithGoogle(response.credential);
+            setLoading(false);
+            if (error) onError(error);
           },
           ux_mode: "popup",
           cancel_on_tap_outside: true,
+          use_fedcm_for_button: true,
         });
-
-        g.accounts.id.renderButton(container, {
+        google.accounts.id.renderButton(container, {
           type: "standard",
+          // Google's outline theme supplies the expected white surface in
+          // light mode; the Shopi wrapper provides the visible outer border.
+          theme: "outline",
           size: "large",
+          text: "continue_with",
+          shape: "pill",
+          logo_alignment: "left",
+          width: Math.max(260, Math.floor(container.getBoundingClientRect().width)),
         });
-
-        // Click the rendered button to open the popup
-        const btn = container.querySelector("div[role=button]") as HTMLElement | null;
-        if (btn) {
-          btn.click();
-        } else {
-          // Fallback: the button may not be immediately in the DOM, wait one frame
-          requestAnimationFrame(() => {
-            const b = container.querySelector("div[role=button]") as HTMLElement | null;
-            if (b) {
-              b.click();
-            } else {
-              cleanup();
-              resolve("Google sign-in could not open. Please try again.");
-            }
-          });
-        }
+      } catch (error) {
+        onError(error instanceof Error ? error.message : "Google sign-in failed to load.");
       }
-
-      const load = (cb: () => void) => {
-        if ((window as Window & { google?: unknown }).google) { cb(); return; }
-        if (!document.querySelector('script[src="https://accounts.google.com/gsi/client"]')) {
-          const script = document.createElement("script");
-          script.src = "https://accounts.google.com/gsi/client";
-          script.async = true;
-          script.defer = true;
-          script.onload = cb;
-          script.onerror = () => resolve("Failed to load Google sign-in.");
-          document.head.appendChild(script);
-        } else {
-          const wait = setInterval(() => {
-            if ((window as Window & { google?: unknown }).google) {
-              clearInterval(wait);
-              cb();
-            }
-          }, 100);
-          setTimeout(() => { clearInterval(wait); resolve("Google sign-in timed out."); }, 5000);
-        }
-      };
-
-      load(doRenderAndClick);
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lang, from]);
+    },
+    // loginWithGoogle closes over the current locale/destination.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [lang, from],
+  );
 
   // ── Apple Sign In JS (CDN) ─────────────────────────────────────────────────
 
@@ -318,7 +323,7 @@ export function useOAuthMutation(lang: string, from?: string) {
     loginWithGoogle,
     loginWithApple,
     loginWithFacebook,
-    triggerGoogle,
+    renderGoogleButton,
     triggerApple,
     triggerFacebook,
     loading: loading || mutationLoading,

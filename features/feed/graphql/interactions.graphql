@@ -50,6 +50,10 @@ mutation TrackInteraction($contentId: String!, $type: InteractionType!, $watchDu
   trackInteraction(input: { contentId: $contentId, type: $type, watchDuration: $watchDuration, completionRate: $completionRate, feedType: $feedType, sessionId: $sessionId })
 }
 
+mutation DeleteComment($commentId: String!) {
+  deleteComment(commentId: $commentId)
+}
+
 mutation ToggleCommentLike($commentId: String!) {
   toggleCommentLike(commentId: $commentId) {
     liked

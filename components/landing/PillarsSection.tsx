@@ -43,7 +43,21 @@ export function PillarsSection({ dict }: { dict: Dictionary }) {
       id="features"
       className="px-(--landing-page-x) pb-18 md:pb-24"
     >
-      <div className="mx-auto grid max-w-(--landing-page-max) gap-5 md:grid-cols-3">
+      <div className="mx-auto max-w-(--landing-page-max)">
+        <div className="mb-8 max-w-3xl">
+          <p className="mb-3 text-xs font-bold uppercase tracking-normal text-primary md:text-sm">
+            Why Shopi
+          </p>
+          <h2 className="font-display text-[clamp(1.65rem,2.8vw,2.5rem)] font-bold leading-tight tracking-normal text-foreground">
+            A local marketplace feed for buyers and sellers in Kenya.
+          </h2>
+          <p className="mt-4 max-w-2xl text-base leading-normal text-muted">
+            Discover real items nearby, message sellers directly, and post what
+            you are selling without commission or checkout fees.
+          </p>
+        </div>
+
+        <div className="grid gap-5 md:grid-cols-3">
         {cards.map(({ key, title, tagline, icon: Icon, proof, tint }, i) => (
           <article
             key={key}
@@ -52,9 +66,9 @@ export function PillarsSection({ dict }: { dict: Dictionary }) {
             <span className="flex h-11 w-11 items-center justify-center rounded-full border border-default bg-elevated text-primary shadow-sm">
               <Icon size={20} />
             </span>
-            <h2 className="mt-7 font-display text-xl font-semibold text-default">
+            <h3 className="mt-7 font-display text-xl font-semibold text-default">
               {title}
-            </h2>
+            </h3>
             <p className="mt-2 text-base leading-snug text-muted">{tagline}</p>
             <div className="mt-6 border-t border-default pt-4">
               <p className="text-sm font-medium leading-normal text-default">
@@ -63,6 +77,7 @@ export function PillarsSection({ dict }: { dict: Dictionary }) {
             </div>
           </article>
         ))}
+        </div>
       </div>
     </section>
   );

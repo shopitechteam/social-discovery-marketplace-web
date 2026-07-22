@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { gql } from "@apollo/client";
 import { useMutation, useQuery } from "@apollo/client/react";
@@ -15,6 +15,13 @@ import {
 } from "@/types/__generated__/graphql";
 import type { VisibilityMode } from "@/types/__generated__/graphql";
 import { getMediaPreviewSrc } from "@/features/create/utils/mediaPreview";
+import {
+  awaitDraftAutosaves,
+  blockDraftAutosave,
+  isDraftAutosaveBlocked,
+  trackDraftAutosave,
+  unblockDraftAutosave,
+} from "@/features/create/utils/draftAutosave";
 import { Celebration, SuccessBadge } from "./Celebration";
 import celebrationStyles from "./Celebration.module.css";
 import { TikTokCreatePreview } from "./TikTokCreatePreview";
@@ -103,7 +110,6 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
   const [published, setPublished] = useState(false);
   const [tiktokReconnectNeeded, setTiktokReconnectNeeded] = useState(false);
   const [connectingTiktok, setConnectingTiktok] = useState(false);
-  const autosaveInFlightRef = useRef<Promise<unknown> | null>(null);
 
   const { data: meData, refetch: refetchMe } = useQuery(MeDocument, {
     fetchPolicy: "cache-and-network",
@@ -124,18 +130,15 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
       hdEnabled?: boolean;
     }) => {
       if (!draftId) return null;
-      const request = autosave({
-        variables: {
-          id: draftId,
-          input,
-        },
-      });
-      autosaveInFlightRef.current = request;
-      return request.finally(() => {
-        if (autosaveInFlightRef.current === request) {
-          autosaveInFlightRef.current = null;
-        }
-      });
+      return trackDraftAutosave(
+        draftId,
+        autosave({
+          variables: {
+            id: draftId,
+            input,
+          },
+        }),
+      );
     },
     [autosave, draftId],
   );
@@ -183,6 +186,9 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
     if (publishing || published) return;
 
     const timer = setTimeout(() => {
+      // Re-check at fire time: another component may have started a publish
+      // after this timer was scheduled.
+      if (isDraftAutosaveBlocked(draftId)) return;
       queueAutosave({
         visibilityMode: toVisibilityMode(visibilityMode),
         allowDownload,
@@ -211,10 +217,18 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
     setError(null);
     setPublishing(true);
 
+    // Stop every component's debounced autosave for this draft before anything
+    // else — publishing moves the draft out of ACTIVE, so a save that fires
+    // mid-publish would be rejected ("Cannot edit a non-active draft").
+    blockDraftAutosave(draftId);
+
     const parsedPrice = price ?? 0;
+    let didPublish = false;
 
     try {
-      await autosaveInFlightRef.current?.catch(() => undefined);
+      // Let saves that were already on the wire settle, so the publish reads a
+      // fully-written draft rather than racing the last edit.
+      await awaitDraftAutosaves(draftId);
 
       // 1. Autosave options
       const saveResult = await queueAutosave({
@@ -256,6 +270,7 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
       if (!pubData?.publishDraft) return;
 
       const contentId = pubData.publishDraft.id as string;
+      didPublish = true;
       setPublished(true);
 
       // 4. Optional TikTok cross-post
@@ -282,6 +297,9 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
       setError(String(err));
     } finally {
       setPublishing(false);
+      // Publish failed — the draft is still ACTIVE, so let autosave resume and
+      // keep the user's edits safe while they retry.
+      if (!didPublish) unblockDraftAutosave(draftId);
     }
   }
 

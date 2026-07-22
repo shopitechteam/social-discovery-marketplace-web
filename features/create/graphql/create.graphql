@@ -9,6 +9,7 @@ fragment DraftFields on DraftContent {
   categoryId
   mediaAssetIds
   visibilityMode
+  contactPhone
   allowDownload
   hdEnabled
   contentDeclarations
@@ -194,6 +195,13 @@ query SuggestedPostLocation {
     county
     subregion
   }
+}
+
+# The seller's saved contact number, used to pre-fill the composer so it is
+# only ever typed once. Its own query rather than a field on `me` because the
+# number is owner-only — see User.contactPhone in the API.
+query MyContactPhone {
+  myContactPhone
 }
 
 query GetDraft($id: String!) {

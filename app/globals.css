@@ -271,6 +271,112 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* ─── PWA launch screen ─────────────────────────────────────────── */
+#shopi-pwa-splash {
+  position: fixed;
+  z-index: 2147483647;
+  inset: 0;
+  /* Hidden by default: this prevents a reload flash before the tiny
+     sessionStorage script decides whether the current tab is a new session. */
+  display: none;
+  place-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 18% 15%, rgb(255 255 255 / 0.2), transparent 31%),
+    radial-gradient(circle at 82% 84%, rgb(255 188 218 / 0.32), transparent 36%),
+    #d81470;
+  color: #fff;
+  opacity: 1;
+  transition: opacity 220ms ease, visibility 220ms ease;
+}
+
+html.shopi-pwa-splash-pending #shopi-pwa-splash {
+  display: grid;
+}
+
+#shopi-pwa-splash.shopi-splash--ready {
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* Set by the tiny pre-hydration script. This keeps the server-rendered splash
+   hidden during same-tab refreshes until React removes it. */
+html.shopi-pwa-splash-seen #shopi-pwa-splash {
+  display: none;
+}
+
+.shopi-splash__glow {
+  position: absolute;
+  width: min(80vw, 450px);
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.12);
+  filter: blur(2px);
+  animation: shopi-splash-breathe 1.8s ease-in-out infinite alternate;
+}
+
+.shopi-splash__content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: max(24px, env(safe-area-inset-top)) 24px max(34px, env(safe-area-inset-bottom));
+  text-align: center;
+}
+
+.shopi-splash__logo {
+  border-radius: 27%;
+  box-shadow: 0 18px 42px rgb(91 0 42 / 0.32);
+  animation: shopi-splash-logo 620ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+
+.shopi-splash__name {
+  margin: 18px 0 0;
+  font-family: var(--font-display, var(--font-sans, Arial, sans-serif));
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.06em;
+  line-height: 1;
+}
+
+.shopi-splash__tagline {
+  margin: 9px 0 27px;
+  color: rgb(255 255 255 / 0.8);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.shopi-splash__loader {
+  width: 27px;
+  height: 27px;
+  border: 3px solid rgb(255 255 255 / 0.35);
+  border-top-color: #fff;
+  border-radius: 999px;
+  animation: shopi-splash-spin 720ms linear infinite;
+}
+
+@keyframes shopi-splash-logo {
+  from { opacity: 0; transform: scale(0.78) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes shopi-splash-spin { to { transform: rotate(360deg); } }
+
+@keyframes shopi-splash-breathe {
+  from { transform: scale(0.88); opacity: 0.55; }
+  to { transform: scale(1.08); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #shopi-pwa-splash,
+  .shopi-splash__glow,
+  .shopi-splash__logo,
+  .shopi-splash__loader {
+    animation: none;
+    transition: none;
+  }
+}
+
 /* ─── Utility classes (use these directly in JSX) ──────────────── */
 .bg-app {
   background-color: rgb(var(--color-bg));

@@ -10,6 +10,11 @@ import { useCreateStore } from "@/stores/create";
 import { PublishDraftDocument } from "@/types/__generated__/graphql";
 import { gql } from "@apollo/client";
 import { invalidatePublishedContentCache } from "@/lib/apollo/feedCache";
+import {
+  awaitDraftAutosaves,
+  blockDraftAutosave,
+  unblockDraftAutosave,
+} from "@/features/create/utils/draftAutosave";
 
 const POST_TO_TIKTOK = gql`
   mutation PostToTiktok($contentId: String!) {
@@ -147,7 +152,15 @@ export function StepReady({ lang }: StepReadyProps) {
     if (!draftId || publishing) return;
     setPublishing(true);
     setError(null);
+
+    // Publishing moves the draft out of ACTIVE — stop any debounced autosave
+    // from firing mid-publish, and let in-flight ones settle first.
+    blockDraftAutosave(draftId);
+    let didPublish = false;
+
     try {
+      await awaitDraftAutosaves(draftId);
+
       const { data, error: publishError } = await publishDraft({
         variables: { id: draftId },
       });
@@ -157,6 +170,7 @@ export function StepReady({ lang }: StepReadyProps) {
       }
       if (data?.publishDraft) {
         const contentId = data.publishDraft.id as string;
+        didPublish = true;
         setPublished(true);
 
         if (postOnTiktok && contentId) {
@@ -188,6 +202,8 @@ export function StepReady({ lang }: StepReadyProps) {
       setError(String(err));
     } finally {
       setPublishing(false);
+      // Publish failed — the draft is still ACTIVE, so let autosave resume.
+      if (!didPublish) unblockDraftAutosave(draftId);
     }
   }
 

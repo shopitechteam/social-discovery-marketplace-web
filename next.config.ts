@@ -73,7 +73,7 @@ const connectSrc = [
 const cspHeader = `
   default-src 'self';
   script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://accounts.google.com https://appleid.cdn-apple.com https://maps.googleapis.com https://*.mux.com;
-  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style;
   img-src 'self' blob: data: https: ;
   font-src 'self' data: https://fonts.gstatic.com;
   media-src 'self' blob: https://stream.mux.com https://*.mux.com;
@@ -105,6 +105,13 @@ const securityHeaders = [
   {
     key: "X-Frame-Options",
     value: "SAMEORIGIN",
+  },
+  {
+    // Google Identity Services needs an opener relationship to deliver the
+    // credential from its popup in browsers without FedCM (including many
+    // installed-PWA contexts).
+    key: "Cross-Origin-Opener-Policy",
+    value: "same-origin-allow-popups",
   },
   {
     key: "X-Content-Type-Options",

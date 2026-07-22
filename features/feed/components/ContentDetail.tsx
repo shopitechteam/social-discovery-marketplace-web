@@ -35,6 +35,8 @@ import {
 } from "@/types/__generated__/graphql";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { useAuthGuard } from "../hooks/useAuthGuard";
+import { useSellerPhone } from "../hooks/useSellerPhone";
+import { formatStoredPhone } from "@/lib/phone";
 import { useHlsVideo } from "@/lib/useHlsVideo";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BufferSpinner } from "./BufferSpinner";
@@ -625,6 +627,13 @@ export function ContentDetail({
   // ── Local state ────────────────────────────────────────────────────────────
   const post = data?.content;
   const resolvedContentId = post?.id ?? (isMongoObjectId(id) ? id : "");
+  const {
+    phone: sellerPhone,
+    reveal: revealSellerPhone,
+    dial: dialSeller,
+    loading: sellerPhoneLoading,
+    unavailable: sellerPhoneUnavailable,
+  } = useSellerPhone(resolvedContentId);
   const [menuOpen, setMenuOpen] = useState(false);
   const [imgIdx, setImgIdx] = useState(0);
   const [showMediaDialog, setShowMediaDialog] = useState(false);
@@ -661,6 +670,7 @@ export function ContentDetail({
   const mobileThread = useCommentThread({
     contentId: resolvedContentId,
     onCommentAdded: () => setCommentCountOverride(null),
+    lang,
   });
   const {
     text: mobileCommentText,
@@ -1562,6 +1572,7 @@ export function ContentDetail({
                 <CommentThread
                   contentId={resolvedContentId}
                   contentCreatorId={post.creatorId}
+                  lang={lang}
                 />
               )}
             </div>
@@ -1834,17 +1845,34 @@ export function ContentDetail({
                     <MessageCircle className="h-4 w-4" strokeWidth={2.2} />
                     Message
                   </button>
+                  {/* First tap reveals the number, second dials it — the
+                      number is fetched on demand so it never ships in the
+                      public PDP payload. See useSellerPhone. */}
                   <button
                     type="button"
-                    onClick={() => {
-                      // TODO: wire to a tel: link once the backend exposes a
-                      // seller phone number on the content/creator.
-                      toast("Calling coming soon");
+                    disabled={sellerPhoneLoading}
+                    onClick={async () => {
+                      if (!resolvedContentId) return;
+                      if (!requireAuth({ contentId: resolvedContentId })) return;
+                      if (sellerPhone) {
+                        dialSeller();
+                        return;
+                      }
+                      const revealed = await revealSellerPhone();
+                      if (!revealed) {
+                        toast("This seller hasn't added a phone number");
+                      }
                     }}
-                    className="flex items-center justify-center gap-2 rounded-full border border-default py-3 text-sm font-bold text-default transition-colors active:bg-surface"
+                    className="flex items-center justify-center gap-2 rounded-full border border-default py-3 text-sm font-bold text-default transition-colors active:bg-surface disabled:opacity-60"
                   >
                     <Phone className="h-4 w-4" strokeWidth={2.2} />
-                    Call
+                    {sellerPhoneLoading
+                      ? "Loading…"
+                      : sellerPhone
+                        ? formatStoredPhone(sellerPhone)
+                        : sellerPhoneUnavailable
+                          ? "No number"
+                          : "Show number"}
                   </button>
                 </div>
               )}

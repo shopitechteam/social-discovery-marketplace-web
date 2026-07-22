@@ -9,8 +9,10 @@ import {
   AdvanceDraftStepDocument,
   ExtractDraftDetailsDocument,
   SuggestedPostLocationDocument,
+  MyContactPhoneDocument,
 } from "@/types/__generated__/graphql";
 import { LocationPicker } from "./LocationPicker";
+import { PhoneInput } from "./PhoneInput";
 import { SpecsEditor } from "./SpecsEditor";
 import { MediaPicker } from "./MediaPicker";
 import { CategoryPickerDrawer } from "./CategoryPickerDrawer";
@@ -82,6 +84,7 @@ export function StepEdit({
     isExtracting,
     hasExtracted,
     location,
+    contactPhone,
     mediaItems,
     tiktokEmbed,
     contentType,
@@ -95,6 +98,7 @@ export function StepEdit({
     setIsExtracting,
     setHasExtracted,
     setLocation,
+    setContactPhone,
     setStep,
     setError,
     error,
@@ -117,6 +121,7 @@ export function StepEdit({
   const [titleValue, setTitleValue] = useState(title);
   const [titleError, setTitleError] = useState<string | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [categoryError, setCategoryError] = useState<string | null>(null);
   const [mediaError, setMediaError] = useState<string | null>(null);
   // Resize every rendered title textarea (mobile + desktop copies) whenever the
@@ -192,6 +197,24 @@ export function StepEdit({
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [suggestedLocationData, location]);
+
+  // Pre-fill the contact number from the seller's saved one, on exactly the
+  // same terms as the location above: once, and never over a value the draft
+  // or the user already has. That's what makes it "type it once, edit it any
+  // time" rather than a field that keeps snapping back to the old number.
+  const phoneAutofilledRef = useRef(false);
+  const { data: myPhoneData } = useQuery(MyContactPhoneDocument, {
+    fetchPolicy: "cache-first",
+  });
+  useEffect(() => {
+    if (phoneAutofilledRef.current) return;
+    if (contactPhone) return; // draft or user already set one
+    const saved = myPhoneData?.myContactPhone;
+    if (!saved) return;
+    phoneAutofilledRef.current = true;
+    setContactPhone(saved);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [myPhoneData, contactPhone]);
 
   // ── AI auto-fill: fills title, description, price and specs ─────────────────
   // The "killer feature". Whatever it returns is fully editable; the user can
@@ -385,6 +408,9 @@ export function StepEdit({
                     subregion: location.subregion,
                   }
                 : undefined,
+              // Already canonical `254XXXXXXXXX` (PhoneInput only ever emits
+              // that or null), so the server normalisation is a no-op here.
+              contactPhone: contactPhone ?? undefined,
             },
           },
         }),
@@ -392,7 +418,7 @@ export function StepEdit({
     }, 800);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [titleValue, watchCaption, tags, categoryId, location]);
+  }, [titleValue, watchCaption, tags, categoryId, location, contactPhone]);
 
   // ── Live-sync to store ─────────────────────────────────────────────────────
   // Mirror the local form state into the create store as the user types so the
@@ -429,6 +455,7 @@ export function StepEdit({
     !!draftId &&
     titleValue.trim().length > 0 &&
     !!location &&
+    !!contactPhone &&
     !!categoryId &&
     hasUsableMedia &&
     priceValid;
@@ -441,6 +468,7 @@ export function StepEdit({
     setError(null);
     setTitleError(null);
     setLocationError(null);
+    setPhoneError(null);
     setCategoryError(null);
     setMediaError(null);
 
@@ -489,6 +517,14 @@ export function StepEdit({
     if (!location) {
       setLocationError("Add a location before moving to settings.");
       scrollFieldIntoView("location");
+      return;
+    }
+
+    // Null here means either empty or not yet a complete 9-digit number —
+    // PhoneInput can't represent a half-typed number as valid.
+    if (!contactPhone) {
+      setPhoneError("Add a phone number so buyers can call you.");
+      scrollFieldIntoView("phone");
       return;
     }
 
@@ -803,6 +839,25 @@ export function StepEdit({
     </div>
   );
 
+  const phoneBlock = (
+    <div data-field="phone">
+      <label
+        htmlFor="contact-phone"
+        className="mb-1.5 block text-sm font-medium text-muted"
+      >
+        Phone number
+      </label>
+      <PhoneInput
+        value={contactPhone}
+        onChange={(stored) => {
+          setContactPhone(stored);
+          if (stored) setPhoneError(null);
+        }}
+        error={phoneError}
+      />
+    </div>
+  );
+
   const specsBlock = (
     <SpecsEditor specs={specs} onChange={setSpecs} aiGenerated={hasExtracted} />
   );
@@ -919,6 +974,12 @@ export function StepEdit({
 
           {/* Location */}
           <div className="mt-4">{locationBlock}</div>
+
+          <Divider className="mt-4" />
+
+          {/* Contact number — sits with Location as the "how buyers reach this
+              listing" pair, and last so the form still opens on the fun part. */}
+          <div className="mt-4">{phoneBlock}</div>
 
           {/* Error */}
           {error && <div className="mt-4">{errorBlock}</div>}

@@ -61,6 +61,20 @@ export function LandingFooter({
                 { label: "Open the feed", href: `/${lang}/feed` },
                 { label: "Explore listings", href: `/${lang}/explore` },
                 { label: "Search", href: `/${lang}/search` },
+                { label: "Sell in Kenya", href: `/${lang}/sell-in-kenya` },
+                { label: "Sell a car", href: `/${lang}/sell-car-kenya` },
+                {
+                  label: "Property",
+                  href: `/${lang}/property-for-sale-kenya`,
+                },
+                {
+                  label: "Beauty & cosmetics",
+                  href: `/${lang}/beauty-cosmetics-kenya`,
+                },
+                {
+                  label: "Phones & electronics",
+                  href: `/${lang}/phones-electronics-kenya`,
+                },
                 { label: "Start selling", href: `/${lang}/upload` },
               ],
             },
