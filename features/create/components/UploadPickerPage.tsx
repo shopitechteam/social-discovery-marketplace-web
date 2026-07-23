@@ -117,18 +117,12 @@ export function UploadPickerPage({ lang }: { lang: string }) {
   const showingManual =
     manualSelected ||
     creationMode === "manual" ||
-    (hasActiveDraft &&
-      creationMode !== "ai" &&
-      creationMode !== "choose");
+    (hasActiveDraft && creationMode !== "ai" && creationMode !== "choose");
 
   // A guided draft resumes in its dedicated route. A legacy persisted draft
   // has no creationMode, so it safely resumes in the established manual flow.
   useEffect(() => {
-    if (
-      storeHydrated &&
-      hasActiveDraft &&
-      creationMode === "ai"
-    ) {
+    if (storeHydrated && hasActiveDraft && creationMode === "ai") {
       router.replace(`/${lang}/upload/create-ai`);
     }
   }, [creationMode, hasActiveDraft, lang, router, storeHydrated]);
@@ -430,11 +424,17 @@ function CreationModeChooser({
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-soft text-primary">
               <Bot size={23} />
             </span>
+
             <span className="min-w-0 flex-1">
-              <span className="block text-base font-semibold text-foreground">
-                Shopi Agent
-              </span>
-              <span className="mt-1 block text-sm leading-relaxed text-muted">
+              <div className="flex items-center gap-2">
+                <span className="block text-base font-semibold text-foreground">
+                  Shopi Agent
+                </span>
+                <span className=" rounded-full  bg-primary/80 h-6 flex items-center justify-center text-white px-2.5 py-0.5 text-xs font-medium text-primary-foreground">
+                  <p className="-mt-0.5"> recommended</p>
+                </span>
+              </div>
+              <span className="mt-1 block text-sm leading-relaxed text-muted-foreground">
                 Recommended for a faster post. Shopi Agent prepares the details
                 with you.
               </span>
