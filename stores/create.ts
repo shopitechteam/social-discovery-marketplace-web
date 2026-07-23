@@ -2,6 +2,29 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
 export type CreateStep = "pick" | "media" | "edit" | "options" | "ready";
+export type CreationMode = "manual" | "ai" | "choose" | null;
+export type GuidedStage =
+  | "intro"
+  | "media"
+  | "analyzing"
+  | "insights"
+  | "description"
+  | "price"
+  | "location"
+  | "options"
+  | "publishing"
+  | "done";
+
+export type GuidedInsights = {
+  subcategory: string;
+  classificationConfidence: number | null;
+  detectedPrice: number | null;
+  suggestedPrice: number | null;
+  priceRangeLow: number | null;
+  priceRangeHigh: number | null;
+  pricingReason: string | null;
+  pricingConfidence: "high" | "medium" | "low" | null;
+};
 
 export type MediaItem = {
   id: string;
@@ -51,6 +74,10 @@ export type DraftLocation = {
 };
 
 export type CreateFlowState = {
+  creationMode: CreationMode;
+  guidedStage: GuidedStage;
+  guidedIntent: string;
+  guidedInsights: GuidedInsights | null;
   step: CreateStep;
   draftId: string | null;
   mediaItems: MediaItem[];
@@ -97,6 +124,10 @@ export type CreateFlowState = {
 };
 
 type CreateFlowActions = {
+  setCreationMode: (mode: CreationMode) => void;
+  setGuidedStage: (stage: GuidedStage) => void;
+  setGuidedIntent: (intent: string) => void;
+  setGuidedInsights: (insights: GuidedInsights | null) => void;
   setStep: (step: CreateStep) => void;
   setDraftId: (id: string) => void;
   addMediaItem: (item: MediaItem) => void;
@@ -133,6 +164,10 @@ type CreateFlowActions = {
 };
 
 const DEFAULT_STATE: CreateFlowState = {
+  creationMode: null,
+  guidedStage: "intro",
+  guidedIntent: "",
+  guidedInsights: null,
   step: "pick",
   draftId: null,
   mediaItems: [],
@@ -169,6 +204,10 @@ export const useCreateStore = create<CreateFlowState & CreateFlowActions>()(
     (set) => ({
       ...DEFAULT_STATE,
 
+      setCreationMode: (creationMode) => set({ creationMode }),
+      setGuidedStage: (guidedStage) => set({ guidedStage }),
+      setGuidedIntent: (guidedIntent) => set({ guidedIntent }),
+      setGuidedInsights: (guidedInsights) => set({ guidedInsights }),
       setStep: (step) => set({ step }),
       // Starting/switching a draft resets the one-shot AI auto-fill guard so the
       // new draft gets its own extraction pass.
@@ -231,6 +270,10 @@ export const useCreateStore = create<CreateFlowState & CreateFlowActions>()(
       name: "shopi-create-draft",
       storage: createJSONStorage(() => sessionStorage),
       partialize: (s) => ({
+        creationMode: s.creationMode,
+        guidedStage: s.guidedStage,
+        guidedIntent: s.guidedIntent,
+        guidedInsights: s.guidedInsights,
         draftId: s.draftId,
         step: s.step,
         contentType: s.contentType,
