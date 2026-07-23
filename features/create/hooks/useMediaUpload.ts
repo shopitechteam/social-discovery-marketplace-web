@@ -233,13 +233,19 @@ export function useMediaUpload() {
       addMediaItem({ id: tempId, localUri, type: "video", status: "uploading" });
 
       // Snapshot a few frames from the local file NOW (instant, no Mux wait) so
-      // the edit step can run AI auto-fill immediately. Cached by draftId and
-      // consumed once in StepEdit. Best-effort — never blocks the upload.
-      captureVideoFrames(file)
-        .then((frames) => {
-          if (frames.length > 0) setCachedVideoFrames(did, frames);
-        })
-        .catch(() => undefined);
+      // the AI-guided flow can extract immediately. Cached by draftId and
+      // consumed once. Best-effort — never blocks the upload.
+      //
+      // Skipped in manual mode: that composer is fully hand-written and never
+      // reads the cache, so decoding frames there is pure wasted work on the
+      // user's device (and on mobile, wasted memory) for a result nobody uses.
+      if (useCreateStore.getState().creationMode !== "manual") {
+        captureVideoFrames(file)
+          .then((frames) => {
+            if (frames.length > 0) setCachedVideoFrames(did, frames);
+          })
+          .catch(() => undefined);
+      }
 
       (async () => {
         let mediaAssetId: string | null = null;
