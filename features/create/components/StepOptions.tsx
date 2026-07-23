@@ -22,8 +22,11 @@ import {
   trackDraftAutosave,
   unblockDraftAutosave,
 } from "@/features/create/utils/draftAutosave";
-import { Celebration, SuccessBadge } from "./Celebration";
 import celebrationStyles from "./Celebration.module.css";
+import {
+  CreateSuccessPrimaryAction,
+  CreateSuccessScreen,
+} from "./CreateSuccessScreen";
 import { TikTokCreatePreview } from "./TikTokCreatePreview";
 
 const POST_TO_TIKTOK = gql`
@@ -334,80 +337,62 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
   // ── Published success ──────────────────────────────────────────────────────
   if (published) {
     return (
-      <div className="fixed inset-0 z-60 flex items-center justify-center bg-background">
-        <Celebration>
-          <div className="flex flex-col items-center justify-center gap-5 px-6 text-center max-w-sm mx-auto">
-            <SuccessBadge />
+      <CreateSuccessScreen>
+        {!tiktokReconnectNeeded && (
+          <CreateSuccessPrimaryAction
+            onClick={() => {
+              reset();
+              router.push(`/${lang}/feed`);
+            }}
+          >
+            Go to feed
+          </CreateSuccessPrimaryAction>
+        )}
 
-            <div className={celebrationStyles.celebrateText}>
-              <h2 className="mb-1.5 text-2xl font-extrabold text-foreground">
-                Posted! 🎉
-              </h2>
-              <p className="text-base text-muted">
-                It’s been submitted and is going through a quick automated
-                review to make sure it meets our guidelines. It’ll show up on
-                the feed as soon as it’s approved.
-              </p>
-            </div>
-
-            {!tiktokReconnectNeeded && (
-              <button
-                onClick={() => {
-                  reset();
-                  router.push(`/${lang}/feed`);
-                }}
-                className={`${celebrationStyles.celebrateCta} mt-1 h-11 rounded-full bg-primary px-6 text-base font-semibold text-white shadow-[0_8px_24px_rgb(var(--brand-primary)/0.4)] transition-transform active:scale-[0.97]`}
-              >
-                Go to feed
-              </button>
-            )}
-
-            {tiktokReconnectNeeded && (
-              <div
-                className={`${celebrationStyles.celebrateText} w-full max-w-xs rounded-2xl border border-border bg-elevated px-4 py-4 text-center shadow-(--shadow-sm)`}
-              >
-                <p className="mb-1 text-sm font-semibold text-foreground">
-                  TikTok cross-post needs reconnect
-                </p>
-                <p className="mb-3 text-xs text-muted">
-                  Your TikTok connection needs the posting permission. Reconnect
-                  once and it will work automatically next time.
-                </p>
-                <button
-                  onClick={async () => {
-                    try {
-                      const { data: urlData } = await getTiktokConnectUrl({
-                        variables: { returnUrl: undefined },
-                      });
-                      const url = urlData?.tiktokConnectUrl;
-                      if (url)
-                        window.open(
-                          url,
-                          "tiktok-connect",
-                          "width=520,height=680",
-                        );
-                    } catch {
-                      /* ignore */
-                    }
-                  }}
-                  className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-white"
-                >
-                  Reconnect TikTok
-                </button>
-                <button
-                  onClick={() => {
-                    reset();
-                    router.push(`/${lang}/feed`);
-                  }}
-                  className="mx-auto mt-2 block text-xs font-medium text-muted"
-                >
-                  Go to feed
-                </button>
-              </div>
-            )}
+        {tiktokReconnectNeeded && (
+          <div
+            className={`${celebrationStyles.celebrateText} w-full max-w-xs rounded-2xl border border-border bg-elevated px-4 py-4 text-center shadow-(--shadow-sm)`}
+          >
+            <p className="mb-1 text-sm font-semibold text-foreground">
+              TikTok cross-post needs reconnect
+            </p>
+            <p className="mb-3 text-xs text-muted">
+              Your TikTok connection needs the posting permission. Reconnect
+              once and it will work automatically next time.
+            </p>
+            <button
+              onClick={async () => {
+                try {
+                  const { data: urlData } = await getTiktokConnectUrl({
+                    variables: { returnUrl: undefined },
+                  });
+                  const url = urlData?.tiktokConnectUrl;
+                  if (url)
+                    window.open(
+                      url,
+                      "tiktok-connect",
+                      "width=520,height=680",
+                    );
+                } catch {
+                  /* ignore */
+                }
+              }}
+              className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-white"
+            >
+              Reconnect TikTok
+            </button>
+            <button
+              onClick={() => {
+                reset();
+                router.push(`/${lang}/feed`);
+              }}
+              className="mx-auto mt-2 block text-xs font-medium text-muted"
+            >
+              Go to feed
+            </button>
           </div>
-        </Celebration>
-      </div>
+        )}
+      </CreateSuccessScreen>
     );
   }
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@apollo/client/react";
+import { Bot, ChevronRight, PenLine } from "lucide-react";
 import { useCreateStore } from "@/stores/create";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { CreateDraftDocument } from "@/types/__generated__/graphql";
@@ -78,6 +79,8 @@ const ICON_TIKTOK = (
 export function UploadPickerPage({ lang }: { lang: string }) {
   const router = useRouter();
   const isDesktop = useIsDesktop();
+  const [storeHydrated, setStoreHydrated] = useState(false);
+  const [manualSelected, setManualSelected] = useState(false);
   const [creating, setCreating] = useState(false);
   // TikTok import renders in place on this page (same surface as the other
   // types — no route hop), then continues to /upload/create like they do.
@@ -87,22 +90,85 @@ export function UploadPickerPage({ lang }: { lang: string }) {
   // (Video, Photos, TikTok import).
   const [createError, setCreateError] = useState<string | null>(null);
 
-  const { setDraftId, setContentType, setStep, setError, draftId, step } =
-    useCreateStore();
+  const {
+    creationMode,
+    setCreationMode,
+    setDraftId,
+    setContentType,
+    setStep,
+    setError,
+    draftId,
+    step,
+  } = useCreateStore();
   const [createDraft] = useMutation(CreateDraftDocument);
+
+  useEffect(() => {
+    if (useCreateStore.persist.hasHydrated()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot external-store hydration latch
+      setStoreHydrated(true);
+      return;
+    }
+    return useCreateStore.persist.onFinishHydration(() =>
+      setStoreHydrated(true),
+    );
+  }, []);
+
+  const hasActiveDraft = !!draftId && step !== "pick";
+  const showingManual =
+    manualSelected ||
+    creationMode === "manual" ||
+    (hasActiveDraft &&
+      creationMode !== "ai" &&
+      creationMode !== "choose");
+
+  // A guided draft resumes in its dedicated route. A legacy persisted draft
+  // has no creationMode, so it safely resumes in the established manual flow.
+  useEffect(() => {
+    if (
+      storeHydrated &&
+      hasActiveDraft &&
+      creationMode === "ai"
+    ) {
+      router.replace(`/${lang}/upload/create-ai`);
+    }
+  }, [creationMode, hasActiveDraft, lang, router, storeHydrated]);
 
   // Mobile only: if a draft is already in progress, skip the picker and resume
   // it on the full-page flow. Desktop resumes inside the dialog instead.
   // Paused while the TikTok picker is up — its "Use This Video" handler
   // navigates explicitly once the draft is ready.
   useEffect(() => {
-    if (isDesktop === false && view === "pick" && draftId && step !== "pick") {
+    if (
+      showingManual &&
+      isDesktop === false &&
+      view === "pick" &&
+      draftId &&
+      step !== "pick"
+    ) {
       router.replace(`/${lang}/upload/create`);
     }
-  }, [isDesktop, view, draftId, step, lang, router]);
+  }, [isDesktop, view, draftId, step, lang, router, showingManual]);
 
   // Avoid a layout flash before the breakpoint is known.
-  if (isDesktop === null) return null;
+  if (isDesktop === null || !storeHydrated) return null;
+
+  if (hasActiveDraft && creationMode === "ai") return null;
+
+  if (!showingManual) {
+    return (
+      <CreationModeChooser
+        lang={lang}
+        onManual={() => {
+          setCreationMode("manual");
+          setManualSelected(true);
+        }}
+        onAgent={() => {
+          setCreationMode("ai");
+          router.push(`/${lang}/upload/create-ai`);
+        }}
+      />
+    );
+  }
 
   if (isDesktop) return <DesktopCreateFlow lang={lang} />;
 
@@ -134,6 +200,7 @@ export function UploadPickerPage({ lang }: { lang: string }) {
   }
 
   function closePicker() {
+    if (!draftId) setCreationMode(null);
     if (typeof window !== "undefined" && window.history.length > 1) {
       router.back();
       return;
@@ -307,6 +374,106 @@ export function UploadPickerPage({ lang }: { lang: string }) {
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+function CreationModeChooser({
+  lang,
+  onManual,
+  onAgent,
+}: {
+  lang: string;
+  onManual: () => void;
+  onAgent: () => void;
+}) {
+  const router = useRouter();
+
+  function close() {
+    router.replace(`/${lang}/feed`);
+  }
+
+  return (
+    <div className="min-h-svh bg-background">
+      <header className="border-b border-border bg-elevated">
+        <div className="mx-auto flex h-15 w-full max-w-2xl items-center gap-3 px-4 md:px-6">
+          <button
+            type="button"
+            onClick={close}
+            className="flex h-10 w-10 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface hover:text-foreground"
+            aria-label="Close create"
+          >
+            <span aria-hidden className="text-2xl font-light leading-none">
+              ×
+            </span>
+          </button>
+          <h1 className="text-base font-semibold text-foreground">
+            Create a post
+          </h1>
+        </div>
+      </header>
+
+      <main className="mx-auto w-full max-w-2xl px-4 py-8 md:px-6 md:py-14">
+        <h2 className="text-xl font-bold tracking-tight text-foreground md:text-2xl">
+          How would you like to create it?
+        </h2>
+        <p className="mt-1.5 text-sm leading-relaxed text-muted">
+          You can switch to the familiar editor at any time.
+        </p>
+
+        <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-elevated">
+          <button
+            type="button"
+            onClick={onAgent}
+            className="group flex min-h-24 w-full items-center gap-4 px-4 py-4 text-left transition-colors hover:bg-surface active:bg-primary-soft/50 md:px-5"
+          >
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-soft text-primary">
+              <Bot size={23} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-base font-semibold text-foreground">
+                Shopi Agent
+              </span>
+              <span className="mt-1 block text-sm leading-relaxed text-muted">
+                Recommended for a faster post. Shopi Agent prepares the details
+                with you.
+              </span>
+            </span>
+            <ChevronRight
+              size={20}
+              className="shrink-0 text-muted transition-transform group-hover:translate-x-0.5"
+            />
+          </button>
+
+          <div className="mx-4 h-px bg-border md:mx-5" />
+
+          <button
+            type="button"
+            onClick={onManual}
+            className="group flex min-h-24 w-full items-center gap-4 px-4 py-4 text-left transition-colors hover:bg-surface active:bg-surface md:px-5"
+          >
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-surface text-foreground">
+              <PenLine size={22} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-base font-semibold text-foreground">
+                Create manually
+              </span>
+              <span className="mt-1 block text-sm leading-relaxed text-muted">
+                Use the current form and enter the listing yourself.
+              </span>
+            </span>
+            <ChevronRight
+              size={20}
+              className="shrink-0 text-muted transition-transform group-hover:translate-x-0.5"
+            />
+          </button>
+        </div>
+
+        <p className="mt-4 px-1 text-xs leading-relaxed text-muted">
+          Nothing is posted until you review and confirm it.
+        </p>
+      </main>
     </div>
   );
 }
