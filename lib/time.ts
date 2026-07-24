@@ -2,9 +2,19 @@ import dayjs from "dayjs";
 import relativeTimePlugin from "dayjs/plugin/relativeTime";
 import updateLocale from "dayjs/plugin/updateLocale";
 
-// Compact relative-time labels (e.g. "5m", "2h", "3d") backed by dayjs.
-// The thresholds keep us in the right unit; the locale strings keep the output
-// terse to match the app's existing timestamp style (not dayjs's verbose default).
+// Compact relative-time labels (e.g. "5m", "2h", "3d", "2w", "3mo") backed by
+// dayjs. The thresholds keep us in the right unit; the locale strings keep the
+// output terse to match the app's existing timestamp style (not dayjs's verbose
+// default).
+//
+// Days roll into WEEKS after 6 days, so we show Facebook-style "1w".."3w"
+// instead of a hard-to-parse "29d", then months and years:
+//   6d → "6d" · 7d → "1w" · 14d → "2w" · 21d → "3w" · ~25d+ → "1mo" · 365d → "1y"
+//
+// dayjs has no native week unit in relativeTime; we add one by giving a
+// threshold `d: "week"` (dayjs computes fractional week diffs) plus custom
+// "w"/"ww" locale keys below. Each singular bridge entry (no `d`) is the label
+// used when the next plural unit rounds down to 1 — that's how "1w" is produced.
 dayjs.extend(relativeTimePlugin, {
   thresholds: [
     { l: "s", r: 59, d: "second" },
@@ -13,7 +23,9 @@ dayjs.extend(relativeTimePlugin, {
     { l: "h", r: 1 },
     { l: "hh", r: 23, d: "hour" },
     { l: "d", r: 1 },
-    { l: "dd", r: 29, d: "day" },
+    { l: "dd", r: 6, d: "day" },
+    { l: "w", r: 1 },
+    { l: "ww", r: 3, d: "week" },
     { l: "M", r: 1 },
     { l: "MM", r: 11, d: "month" },
     { l: "y", r: 1 },
@@ -33,6 +45,8 @@ dayjs.updateLocale("en", {
     hh: "%dh",
     d: "1d",
     dd: "%dd",
+    w: "1w",
+    ww: "%dw",
     M: "1mo",
     MM: "%dmo",
     y: "1y",
@@ -41,7 +55,7 @@ dayjs.updateLocale("en", {
 });
 
 /**
- * Compact relative time, e.g. "just now", "5m", "2h", "3d", "4mo".
+ * Compact relative time, e.g. "just now", "5m", "2h", "3d", "2w", "4mo", "1y".
  * No "ago" suffix. Returns "" for missing/invalid input.
  */
 export function timeAgo(value?: unknown): string {

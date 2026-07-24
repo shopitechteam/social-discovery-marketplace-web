@@ -11,6 +11,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useInboxUnreadCount } from "@/features/messaging/hooks/useUnreadCount";
+import { useUiStore } from "@/stores/ui";
 
 type Tab = {
   key: string;
@@ -65,13 +66,19 @@ export function shouldHideBottomNav(pathname: string) {
 export function BottomNav({ lang = "en" }: { lang: string }) {
   const pathname = usePathname();
   const unreadCount = useInboxUnreadCount();
+  // Screens that own the full viewport (e.g. the create-mode chooser) set this
+  // to hide the nav WITHOUT unmounting it — a class toggle, so there's no
+  // remount flash when they appear or leave.
+  const bottomNavHidden = useUiStore((s) => s.bottomNavHidden);
 
   // Hide on the full create flow, content detail, creator profile, and chat detail pages
   if (shouldHideBottomNav(pathname)) return null;
 
   return (
     <nav
-      className="bottom-nav fixed bottom-0 left-1/2 -translate-x-1/2 w-full z-50 md:hidden pb-(--safe-bottom) bg-[rgb(var(--color-bg-elevated)/0.92)] backdrop-blur-[16px] backdrop-saturate-[1.8]"
+      className={`bottom-nav fixed bottom-0 left-1/2 -translate-x-1/2 w-full z-50 md:hidden pb-(--safe-bottom) bg-[rgb(var(--color-bg-elevated)/0.92)] backdrop-blur-[16px] backdrop-saturate-[1.8] ${
+        bottomNavHidden ? "hidden" : ""
+      }`}
     >
       <div
         className="relative flex h-(--nav-height) items-center justify-between border-t border-border"
