@@ -5,6 +5,7 @@ import { Suspense, type ReactNode } from "react";
 import { BottomNav, shouldHideBottomNav } from "@/components/layout/BottomNav";
 import { RouteScrollRestoration } from "@/components/layout/RouteScrollRestoration";
 import { usePreloadInbox } from "@/features/notifications/hooks/usePreloadInbox";
+import { useUiStore } from "@/stores/ui";
 
 export function MainShell({
   children,
@@ -14,7 +15,11 @@ export function MainShell({
   lang: string;
 }) {
   const pathname = usePathname();
-  const hideBottomNav = shouldHideBottomNav(pathname);
+  const bottomNavHidden = useUiStore((s) => s.bottomNavHidden);
+  // Reserve no space for the nav when it's route-hidden OR class-hidden by a
+  // full-viewport screen (e.g. the create-mode chooser) — otherwise the hidden
+  // nav's padding leaves an empty gap under that screen's own footer.
+  const hideBottomNav = shouldHideBottomNav(pathname) || bottomNavHidden;
   const isImmersiveCreate =
     pathname.includes("/upload/create") ||
     pathname.includes("/upload/tiktok");

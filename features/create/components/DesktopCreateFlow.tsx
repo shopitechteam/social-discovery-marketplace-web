@@ -421,9 +421,10 @@ export function DesktopCreateFlow({ lang }: { lang: string }) {
 /**
  * Decorative banner behind the create dialog. Visible around the dialog edges
  * (through the dimmed overlay) and for the moment before the dialog paints —
- * gives /upload a branded feel instead of a blank page.
+ * gives /upload a branded feel instead of a blank page. Shared with the
+ * create-mode chooser so its desktop dialog sits on the same backdrop.
  */
-function CreateBanner() {
+export function CreateBanner() {
   return (
     <div
       className="relative hidden min-h-svh overflow-hidden md:block"

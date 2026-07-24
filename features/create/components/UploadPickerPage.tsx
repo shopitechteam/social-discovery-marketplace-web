@@ -1,15 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@apollo/client/react";
-import { Bot, ChevronRight, PenLine } from "lucide-react";
+import { Bot, PenLine } from "lucide-react";
 import { useCreateStore } from "@/stores/create";
+import { useUiStore } from "@/stores/ui";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { CreateDraftDocument } from "@/types/__generated__/graphql";
-import { DesktopCreateFlow } from "./DesktopCreateFlow";
+import { DesktopCreateFlow, CreateBanner } from "./DesktopCreateFlow";
 import { TikTokPicker } from "./TikTokPicker";
 import { CreateErrorDialog, createErrorMessage } from "./CreateErrorDialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { SHOW_TIKTOK_CREATE_OPTIONS } from "@/features/create/utils/tiktokAvailability";
 import { getSuspendedAccountMessage } from "@/lib/apollo/suspended-account";
 
@@ -152,6 +159,7 @@ export function UploadPickerPage({ lang }: { lang: string }) {
     return (
       <CreationModeChooser
         lang={lang}
+        isDesktop={isDesktop}
         onManual={() => {
           setCreationMode("manual");
           setManualSelected(true);
@@ -372,108 +380,238 @@ export function UploadPickerPage({ lang }: { lang: string }) {
   );
 }
 
+type CreationModeKey = "agent" | "manual";
+
+const CREATION_MODES = [
+  {
+    key: "agent" as const,
+    label: "Shopi Agent",
+    icon: Bot,
+    heading: "Guided setup",
+    recommended: true,
+    description:
+      "Shopi Agent reads your media and prepares the title, details and category with you — the fastest way to post.",
+  },
+  {
+    key: "manual" as const,
+    label: "Manual",
+    icon: PenLine,
+    heading: "Full control",
+    recommended: false,
+    description:
+      "Use the editor and enter every detail of your listing yourself.",
+  },
+];
+
+/** Ring + dot radio indicator matching the selected-card treatment. */
+function RadioDot({ selected, onDark }: { selected: boolean; onDark: boolean }) {
+  return (
+    <span
+      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+        onDark
+          ? "border-white"
+          : selected
+            ? "border-primary"
+            : "border-muted"
+      }`}
+    >
+      {selected && (
+        <span
+          className={`h-2.5 w-2.5 rounded-full ${
+            onDark ? "bg-white" : "bg-primary"
+          }`}
+        />
+      )}
+    </span>
+  );
+}
+
 function CreationModeChooser({
   lang,
+  isDesktop,
   onManual,
   onAgent,
 }: {
   lang: string;
+  isDesktop: boolean;
   onManual: () => void;
   onAgent: () => void;
 }) {
   const router = useRouter();
+  const setBottomNavHidden = useUiStore((s) => s.setBottomNavHidden);
+  // Recommended option is pre-selected, mirroring the "continue with the
+  // suggested plan" pattern.
+  const [selected, setSelected] = useState<CreationModeKey>("agent");
+
+  // Hide the mobile bottom nav while choosing. It stays mounted and only gains
+  // a `hidden` class (see useUiStore) — no unmount, so no remount flicker.
+  // Layout effect so the class lands before the browser paints this screen,
+  // avoiding a one-frame flash of the nav on entry. Safe on the server: the
+  // parent gates this subtree to client-only, so it never renders during SSR.
+  // (No-op visual on desktop, where the nav is already md:hidden.)
+  useLayoutEffect(() => {
+    setBottomNavHidden(true);
+    return () => setBottomNavHidden(false);
+  }, [setBottomNavHidden]);
 
   function close() {
     router.replace(`/${lang}/feed`);
   }
 
+  function handleContinue() {
+    if (selected === "agent") onAgent();
+    else onManual();
+  }
+
+  // Shared between the mobile full-screen layout and the desktop dialog.
+  const modeCards = (
+    <div
+      role="radiogroup"
+      aria-label="How would you like to create your post?"
+      className="flex flex-col gap-4"
+    >
+      {CREATION_MODES.map((mode) => {
+        const isSelected = selected === mode.key;
+        const Icon = mode.icon;
+        return (
+          <button
+            key={mode.key}
+            type="button"
+            role="radio"
+            aria-checked={isSelected}
+            onClick={() => setSelected(mode.key)}
+            className={`overflow-hidden rounded-2xl text-left transition-all outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
+              isSelected
+                ? "border-2 border-primary shadow-sm"
+                : "border border-border"
+            }`}
+          >
+            <div
+              className={`flex items-center justify-between px-5 py-3.5 transition-colors ${
+                isSelected ? "bg-primary text-white" : "bg-surface text-primary"
+              }`}
+            >
+              <span className="flex items-center gap-2.5">
+                <Icon size={18} strokeWidth={2.2} />
+                <span className="text-sm font-bold uppercase tracking-wide">
+                  {mode.label}
+                </span>
+              </span>
+              <RadioDot selected={isSelected} onDark={isSelected} />
+            </div>
+
+            <div className="bg-elevated px-5 py-4">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <span className="text-xl font-bold text-foreground">
+                  {mode.heading}
+                </span>
+                {mode.recommended && (
+                  <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700 dark:bg-green-500/15 dark:text-green-300">
+                    Recommended
+                  </span>
+                )}
+              </div>
+              <p className="mt-2 text-sm leading-relaxed text-muted">
+                {mode.description}
+              </p>
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  const continueButton = (
+    <button
+      type="button"
+      onClick={handleContinue}
+      className="flex h-11 w-full items-center justify-center rounded-xl bg-primary text-sm font-semibold text-white transition-transform active:scale-[0.99]"
+    >
+      Continue
+    </button>
+  );
+
+  // ── Desktop: a centred dialog on the branded backdrop, matching the manual
+  // create flow (DesktopCreateFlow) so both entry surfaces feel the same. ──
+  if (isDesktop) {
+    return (
+      <>
+        <CreateBanner />
+        <Dialog
+          open
+          onOpenChange={(open) => {
+            if (!open) close();
+          }}
+        >
+          <DialogContent className="w-[min(94vw,460px)] max-w-none gap-0 overflow-hidden rounded-3xl border border-default bg-app p-0">
+            <DialogTitle className="sr-only">Create a post</DialogTitle>
+            <DialogDescription className="sr-only">
+              Choose how you&apos;d like to create your post.
+            </DialogDescription>
+
+            <div className="px-6 pt-6 pb-6">
+              {/* pr-8 keeps the heading clear of the dialog's built-in ✕. */}
+              <div className="pr-8">
+                <h1 className="text-lg font-bold text-foreground">
+                  Create a post
+                </h1>
+                <p className="mt-0.5 text-sm text-muted">
+                  Select how you&apos;d like to continue
+                </p>
+              </div>
+
+              <div className="mt-5">{modeCards}</div>
+              <div className="mt-6">{continueButton}</div>
+
+              <p className="mt-4 text-center text-xs leading-relaxed text-muted">
+                Nothing is posted until you review and confirm it.
+              </p>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </>
+    );
+  }
+
+  // ── Mobile: full-screen (unchanged). ──
   return (
-    <div className="min-h-svh bg-background">
+    <div className="flex min-h-svh flex-col bg-background">
       <header className="border-b border-border bg-elevated">
-        <div className="mx-auto flex h-15 w-full max-w-2xl items-center gap-3 px-4 md:px-6">
+        <div className="mx-auto flex h-14 w-full max-w-2xl items-center px-4 md:px-6">
           <button
             type="button"
             onClick={close}
-            className="flex h-10 w-10 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface hover:text-foreground"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface hover:text-foreground"
             aria-label="Close create"
           >
             <span aria-hidden className="text-2xl font-light leading-none">
               ×
             </span>
           </button>
-          <h1 className="text-base font-semibold text-foreground">
-            Create a post
-          </h1>
+          <div className="flex-1 text-center">
+            <h1 className="text-base font-semibold text-foreground">
+              Create a post
+            </h1>
+            <p className="text-xs leading-tight text-muted">
+              Select how you&apos;d like to continue
+            </p>
+          </div>
+          {/* Balances the close button so the title stays centred. */}
+          <span aria-hidden className="h-10 w-10 shrink-0" />
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-2xl px-4 py-8 md:px-6 md:py-14">
-        <h2 className="text-xl font-bold tracking-tight text-foreground md:text-2xl">
-          How would you like to create it?
-        </h2>
-        <p className="mt-1.5 text-sm leading-relaxed text-muted">
-          You can switch to the familiar editor at any time.
-        </p>
-
-        <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-elevated">
-          <button
-            type="button"
-            onClick={onAgent}
-            className="group flex min-h-24 w-full items-center gap-4 px-4 py-4 text-left transition-colors hover:bg-surface active:bg-primary-soft/50 md:px-5"
-          >
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-soft text-primary">
-              <Bot size={23} />
-            </span>
-
-            <span className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <span className="block text-base font-semibold text-foreground">
-                  Shopi Agent
-                </span>
-                <span className=" rounded-full  bg-primary/80 h-6 flex items-center justify-center text-white px-2.5 py-0.5 text-xs font-medium text-primary-foreground">
-                  <p className="-mt-0.5"> recommended</p>
-                </span>
-              </div>
-              <span className="mt-1 block text-sm leading-relaxed text-muted-foreground">
-                Recommended for a faster post. Shopi Agent prepares the details
-                with you.
-              </span>
-            </span>
-            <ChevronRight
-              size={20}
-              className="shrink-0 text-muted transition-transform group-hover:translate-x-0.5"
-            />
-          </button>
-
-          <div className="mx-4 h-px bg-border md:mx-5" />
-
-          <button
-            type="button"
-            onClick={onManual}
-            className="group flex min-h-24 w-full items-center gap-4 px-4 py-4 text-left transition-colors hover:bg-surface active:bg-surface md:px-5"
-          >
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-surface text-foreground">
-              <PenLine size={22} />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-base font-semibold text-foreground">
-                Create manually
-              </span>
-              <span className="mt-1 block text-sm leading-relaxed text-muted">
-                Use the current form and enter the listing yourself.
-              </span>
-            </span>
-            <ChevronRight
-              size={20}
-              className="shrink-0 text-muted transition-transform group-hover:translate-x-0.5"
-            />
-          </button>
-        </div>
+      <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 md:px-6 md:py-10">
+        {modeCards}
 
         <p className="mt-4 px-1 text-xs leading-relaxed text-muted">
           Nothing is posted until you review and confirm it.
         </p>
       </main>
+
+      <footer className="border-t border-border bg-elevated px-4 py-4 pb-[calc(1rem+var(--safe-bottom,0px))] md:px-6">
+        <div className="mx-auto w-full max-w-2xl">{continueButton}</div>
+      </footer>
     </div>
   );
 }
