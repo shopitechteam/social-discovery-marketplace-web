@@ -8,9 +8,15 @@ import { useCreateStore } from "@/stores/create";
 import { useUiStore } from "@/stores/ui";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { CreateDraftDocument } from "@/types/__generated__/graphql";
-import { DesktopCreateFlow } from "./DesktopCreateFlow";
+import { DesktopCreateFlow, CreateBanner } from "./DesktopCreateFlow";
 import { TikTokPicker } from "./TikTokPicker";
 import { CreateErrorDialog, createErrorMessage } from "./CreateErrorDialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { SHOW_TIKTOK_CREATE_OPTIONS } from "@/features/create/utils/tiktokAvailability";
 import { getSuspendedAccountMessage } from "@/lib/apollo/suspended-account";
 
@@ -153,6 +159,7 @@ export function UploadPickerPage({ lang }: { lang: string }) {
     return (
       <CreationModeChooser
         lang={lang}
+        isDesktop={isDesktop}
         onManual={() => {
           setCreationMode("manual");
           setManualSelected(true);
@@ -421,10 +428,12 @@ function RadioDot({ selected, onDark }: { selected: boolean; onDark: boolean }) 
 
 function CreationModeChooser({
   lang,
+  isDesktop,
   onManual,
   onAgent,
 }: {
   lang: string;
+  isDesktop: boolean;
   onManual: () => void;
   onAgent: () => void;
 }) {
@@ -439,6 +448,7 @@ function CreationModeChooser({
   // Layout effect so the class lands before the browser paints this screen,
   // avoiding a one-frame flash of the nav on entry. Safe on the server: the
   // parent gates this subtree to client-only, so it never renders during SSR.
+  // (No-op visual on desktop, where the nav is already md:hidden.)
   useLayoutEffect(() => {
     setBottomNavHidden(true);
     return () => setBottomNavHidden(false);
@@ -453,6 +463,117 @@ function CreationModeChooser({
     else onManual();
   }
 
+  // Shared between the mobile full-screen layout and the desktop dialog.
+  const modeCards = (
+    <div
+      role="radiogroup"
+      aria-label="How would you like to create your post?"
+      className="flex flex-col gap-4"
+    >
+      {CREATION_MODES.map((mode) => {
+        const isSelected = selected === mode.key;
+        const Icon = mode.icon;
+        return (
+          <button
+            key={mode.key}
+            type="button"
+            role="radio"
+            aria-checked={isSelected}
+            onClick={() => setSelected(mode.key)}
+            className={`overflow-hidden rounded-2xl text-left transition-all outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
+              isSelected
+                ? "border-2 border-primary shadow-sm"
+                : "border border-border"
+            }`}
+          >
+            <div
+              className={`flex items-center justify-between px-5 py-3.5 transition-colors ${
+                isSelected ? "bg-primary text-white" : "bg-surface text-primary"
+              }`}
+            >
+              <span className="flex items-center gap-2.5">
+                <Icon size={18} strokeWidth={2.2} />
+                <span className="text-sm font-bold uppercase tracking-wide">
+                  {mode.label}
+                </span>
+              </span>
+              <RadioDot selected={isSelected} onDark={isSelected} />
+            </div>
+
+            <div className="bg-elevated px-5 py-4">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <span className="text-xl font-bold text-foreground">
+                  {mode.heading}
+                </span>
+                {mode.recommended && (
+                  <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700 dark:bg-green-500/15 dark:text-green-300">
+                    Recommended
+                  </span>
+                )}
+              </div>
+              <p className="mt-2 text-sm leading-relaxed text-muted">
+                {mode.description}
+              </p>
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  const continueButton = (
+    <button
+      type="button"
+      onClick={handleContinue}
+      className="flex h-11 w-full items-center justify-center rounded-xl bg-primary text-sm font-semibold text-white transition-transform active:scale-[0.99]"
+    >
+      Continue
+    </button>
+  );
+
+  // ── Desktop: a centred dialog on the branded backdrop, matching the manual
+  // create flow (DesktopCreateFlow) so both entry surfaces feel the same. ──
+  if (isDesktop) {
+    return (
+      <>
+        <CreateBanner />
+        <Dialog
+          open
+          onOpenChange={(open) => {
+            if (!open) close();
+          }}
+        >
+          <DialogContent className="w-[min(94vw,460px)] max-w-none gap-0 overflow-hidden rounded-3xl border border-default bg-app p-0">
+            <DialogTitle className="sr-only">Create a post</DialogTitle>
+            <DialogDescription className="sr-only">
+              Choose how you&apos;d like to create your post.
+            </DialogDescription>
+
+            <div className="px-6 pt-6 pb-6">
+              {/* pr-8 keeps the heading clear of the dialog's built-in ✕. */}
+              <div className="pr-8">
+                <h1 className="text-lg font-bold text-foreground">
+                  Create a post
+                </h1>
+                <p className="mt-0.5 text-sm text-muted">
+                  Select how you&apos;d like to continue
+                </p>
+              </div>
+
+              <div className="mt-5">{modeCards}</div>
+              <div className="mt-6">{continueButton}</div>
+
+              <p className="mt-4 text-center text-xs leading-relaxed text-muted">
+                Nothing is posted until you review and confirm it.
+              </p>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </>
+    );
+  }
+
+  // ── Mobile: full-screen (unchanged). ──
   return (
     <div className="flex min-h-svh flex-col bg-background">
       <header className="border-b border-border bg-elevated">
@@ -481,62 +602,7 @@ function CreationModeChooser({
       </header>
 
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 md:px-6 md:py-10">
-        <div
-          role="radiogroup"
-          aria-label="How would you like to create your post?"
-          className="flex flex-col gap-4"
-        >
-          {CREATION_MODES.map((mode) => {
-            const isSelected = selected === mode.key;
-            const Icon = mode.icon;
-            return (
-              <button
-                key={mode.key}
-                type="button"
-                role="radio"
-                aria-checked={isSelected}
-                onClick={() => setSelected(mode.key)}
-                className={`overflow-hidden rounded-2xl text-left transition-all outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
-                  isSelected
-                    ? "border-2 border-primary shadow-sm"
-                    : "border border-border"
-                }`}
-              >
-                <div
-                  className={`flex items-center justify-between px-5 py-3.5 transition-colors ${
-                    isSelected
-                      ? "bg-primary text-white"
-                      : "bg-surface text-primary"
-                  }`}
-                >
-                  <span className="flex items-center gap-2.5">
-                    <Icon size={18} strokeWidth={2.2} />
-                    <span className="text-sm font-bold uppercase tracking-wide">
-                      {mode.label}
-                    </span>
-                  </span>
-                  <RadioDot selected={isSelected} onDark={isSelected} />
-                </div>
-
-                <div className="bg-elevated px-5 py-4">
-                  <div className="flex flex-wrap items-center gap-2.5">
-                    <span className="text-xl font-bold text-foreground">
-                      {mode.heading}
-                    </span>
-                    {mode.recommended && (
-                      <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700 dark:bg-green-500/15 dark:text-green-300">
-                        Recommended
-                      </span>
-                    )}
-                  </div>
-                  <p className="mt-2 text-sm leading-relaxed text-muted">
-                    {mode.description}
-                  </p>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+        {modeCards}
 
         <p className="mt-4 px-1 text-xs leading-relaxed text-muted">
           Nothing is posted until you review and confirm it.
@@ -544,15 +610,7 @@ function CreationModeChooser({
       </main>
 
       <footer className="border-t border-border bg-elevated px-4 py-4 pb-[calc(1rem+var(--safe-bottom,0px))] md:px-6">
-        <div className="mx-auto w-full max-w-2xl">
-          <button
-            type="button"
-            onClick={handleContinue}
-            className="flex h-11 w-full items-center justify-center rounded-xl bg-primary text-sm font-semibold text-white transition-transform active:scale-[0.99]"
-          >
-            Continue
-          </button>
-        </div>
+        <div className="mx-auto w-full max-w-2xl">{continueButton}</div>
       </footer>
     </div>
   );

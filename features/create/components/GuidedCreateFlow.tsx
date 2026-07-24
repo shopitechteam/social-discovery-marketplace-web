@@ -61,6 +61,14 @@ import { PhoneInput } from "./PhoneInput";
 import { SpecsEditor } from "./SpecsEditor";
 import { Switch } from "@/components/ui/switch";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useIsDesktop } from "@/hooks/useIsDesktop";
+import { CreateBanner } from "./DesktopCreateFlow";
+import {
   CreateSuccessPrimaryAction,
   CreateSuccessScreen,
 } from "./CreateSuccessScreen";
@@ -138,6 +146,7 @@ function visibilityToApi(
 
 export function GuidedCreateFlow({ lang }: { lang: string }) {
   const router = useRouter();
+  const isDesktop = useIsDesktop();
   const apolloClient = useApolloClient();
   const { user } = useAuthSession();
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -913,7 +922,10 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
     router.push(`/${lang}/upload/create`);
   }
 
-  if (!hydrated) {
+  // Wait for the breakpoint too: on desktop the flow renders inside a dialog,
+  // on mobile full-screen. Deciding before `isDesktop` resolves would flash the
+  // wrong layout for a frame.
+  if (!hydrated || isDesktop === null) {
     return (
       <div className="flex min-h-svh items-center justify-center bg-background">
         <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
@@ -933,10 +945,18 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
     );
   }
 
-  return (
-    <div className="flex h-svh flex-col overflow-hidden bg-background">
+  const flow = (
+    <div
+      className={`flex flex-col overflow-hidden bg-background ${
+        isDesktop ? "h-full" : "h-svh"
+      }`}
+    >
       <header className="z-20 shrink-0 border-b border-border bg-elevated/95 backdrop-blur">
-        <div className="mx-auto flex h-16 w-full max-w-4xl items-center gap-3 px-3 md:px-6">
+        <div
+          className={`mx-auto flex h-16 w-full max-w-4xl items-center gap-3 px-3 md:px-6 ${
+            isDesktop ? "pr-12 md:pr-14" : ""
+          }`}
+        >
           <button
             type="button"
             onClick={closeFlow}
@@ -1464,6 +1484,34 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
       ) : null}
     </div>
   );
+
+  // ── Desktop: host the flow in a centred dialog on the branded backdrop, so
+  // the Shopi Agent surface matches the manual create flow and mode chooser. ──
+  if (isDesktop) {
+    return (
+      <>
+        <CreateBanner />
+        <Dialog
+          open
+          onOpenChange={(open) => {
+            if (!open) closeFlow();
+          }}
+        >
+          <DialogContent className="flex h-[min(92vh,820px)] w-[min(96vw,720px)] max-w-none flex-col gap-0 overflow-hidden rounded-3xl border border-default bg-app p-0">
+            <DialogTitle className="sr-only">Post with Shopi Agent</DialogTitle>
+            <DialogDescription className="sr-only">
+              Shopi Agent guides you through creating a post; you review every
+              detail before publishing.
+            </DialogDescription>
+            {flow}
+          </DialogContent>
+        </Dialog>
+      </>
+    );
+  }
+
+  // ── Mobile: full-screen (unchanged). ──
+  return flow;
 }
 
 function AgentBubble({ children }: { children: ReactNode }) {
