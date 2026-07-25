@@ -50,7 +50,14 @@ export function DesktopCreateFlow({ lang }: { lang: string }) {
   // mid-draft flashes the picker before jumping to the details step.
   const [hydrated, setHydrated] = useState(false);
 
-  const { step, setDraftId, setContentType, setStep, setError } =
+  const {
+    step,
+    setCreationMode,
+    setDraftId,
+    setContentType,
+    setStep,
+    setError,
+  } =
     useCreateStore();
   const [createDraft] = useMutation(CreateDraftDocument);
 
@@ -89,10 +96,12 @@ export function DesktopCreateFlow({ lang }: { lang: string }) {
   function goHome() {
     // Keep the draft — it's autosaved and session-persisted, so coming back to
     // /upload resumes exactly where the user left off.
+    if (step === "pick") setCreationMode(null);
     router.push(`/${lang}/feed`);
   }
 
   function closeDialog() {
+    if (step === "pick") setCreationMode(null);
     if (typeof window !== "undefined" && window.history.length > 1) {
       router.back();
       return;
@@ -412,9 +421,10 @@ export function DesktopCreateFlow({ lang }: { lang: string }) {
 /**
  * Decorative banner behind the create dialog. Visible around the dialog edges
  * (through the dimmed overlay) and for the moment before the dialog paints —
- * gives /upload a branded feel instead of a blank page.
+ * gives /upload a branded feel instead of a blank page. Shared with the
+ * create-mode chooser so its desktop dialog sits on the same backdrop.
  */
-function CreateBanner() {
+export function CreateBanner() {
   return (
     <div
       className="relative hidden min-h-svh overflow-hidden md:block"

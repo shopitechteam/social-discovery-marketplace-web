@@ -1,14 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@apollo/client/react";
+import { Bot, PenLine } from "lucide-react";
 import { useCreateStore } from "@/stores/create";
+import { useUiStore } from "@/stores/ui";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { CreateDraftDocument } from "@/types/__generated__/graphql";
-import { DesktopCreateFlow } from "./DesktopCreateFlow";
+import { DesktopCreateFlow, CreateBanner } from "./DesktopCreateFlow";
 import { TikTokPicker } from "./TikTokPicker";
 import { CreateErrorDialog, createErrorMessage } from "./CreateErrorDialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { SHOW_TIKTOK_CREATE_OPTIONS } from "@/features/create/utils/tiktokAvailability";
 import { getSuspendedAccountMessage } from "@/lib/apollo/suspended-account";
 
@@ -78,6 +86,8 @@ const ICON_TIKTOK = (
 export function UploadPickerPage({ lang }: { lang: string }) {
   const router = useRouter();
   const isDesktop = useIsDesktop();
+  const [storeHydrated, setStoreHydrated] = useState(false);
+  const [manualSelected, setManualSelected] = useState(false);
   const [creating, setCreating] = useState(false);
   // TikTok import renders in place on this page (same surface as the other
   // types — no route hop), then continues to /upload/create like they do.
@@ -87,22 +97,80 @@ export function UploadPickerPage({ lang }: { lang: string }) {
   // (Video, Photos, TikTok import).
   const [createError, setCreateError] = useState<string | null>(null);
 
-  const { setDraftId, setContentType, setStep, setError, draftId, step } =
-    useCreateStore();
+  const {
+    creationMode,
+    setCreationMode,
+    setDraftId,
+    setContentType,
+    setStep,
+    setError,
+    draftId,
+    step,
+  } = useCreateStore();
   const [createDraft] = useMutation(CreateDraftDocument);
+
+  useEffect(() => {
+    if (useCreateStore.persist.hasHydrated()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot external-store hydration latch
+      setStoreHydrated(true);
+      return;
+    }
+    return useCreateStore.persist.onFinishHydration(() =>
+      setStoreHydrated(true),
+    );
+  }, []);
+
+  const hasActiveDraft = !!draftId && step !== "pick";
+  const showingManual =
+    manualSelected ||
+    creationMode === "manual" ||
+    (hasActiveDraft && creationMode !== "ai" && creationMode !== "choose");
+
+  // A guided draft resumes in its dedicated route. A legacy persisted draft
+  // has no creationMode, so it safely resumes in the established manual flow.
+  useEffect(() => {
+    if (storeHydrated && hasActiveDraft && creationMode === "ai") {
+      router.replace(`/${lang}/upload/create-ai`);
+    }
+  }, [creationMode, hasActiveDraft, lang, router, storeHydrated]);
 
   // Mobile only: if a draft is already in progress, skip the picker and resume
   // it on the full-page flow. Desktop resumes inside the dialog instead.
   // Paused while the TikTok picker is up — its "Use This Video" handler
   // navigates explicitly once the draft is ready.
   useEffect(() => {
-    if (isDesktop === false && view === "pick" && draftId && step !== "pick") {
+    if (
+      showingManual &&
+      isDesktop === false &&
+      view === "pick" &&
+      draftId &&
+      step !== "pick"
+    ) {
       router.replace(`/${lang}/upload/create`);
     }
-  }, [isDesktop, view, draftId, step, lang, router]);
+  }, [isDesktop, view, draftId, step, lang, router, showingManual]);
 
   // Avoid a layout flash before the breakpoint is known.
-  if (isDesktop === null) return null;
+  if (isDesktop === null || !storeHydrated) return null;
+
+  if (hasActiveDraft && creationMode === "ai") return null;
+
+  if (!showingManual) {
+    return (
+      <CreationModeChooser
+        lang={lang}
+        isDesktop={isDesktop}
+        onManual={() => {
+          setCreationMode("manual");
+          setManualSelected(true);
+        }}
+        onAgent={() => {
+          setCreationMode("ai");
+          router.push(`/${lang}/upload/create-ai`);
+        }}
+      />
+    );
+  }
 
   if (isDesktop) return <DesktopCreateFlow lang={lang} />;
 
@@ -134,6 +202,7 @@ export function UploadPickerPage({ lang }: { lang: string }) {
   }
 
   function closePicker() {
+    if (!draftId) setCreationMode(null);
     if (typeof window !== "undefined" && window.history.length > 1) {
       router.back();
       return;
@@ -307,6 +376,242 @@ export function UploadPickerPage({ lang }: { lang: string }) {
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+type CreationModeKey = "agent" | "manual";
+
+const CREATION_MODES = [
+  {
+    key: "agent" as const,
+    label: "Shopi Agent",
+    icon: Bot,
+    heading: "Guided setup",
+    recommended: true,
+    description:
+      "Shopi Agent reads your media and prepares the title, details and category with you — the fastest way to post.",
+  },
+  {
+    key: "manual" as const,
+    label: "Manual",
+    icon: PenLine,
+    heading: "Full control",
+    recommended: false,
+    description:
+      "Use the editor and enter every detail of your listing yourself.",
+  },
+];
+
+/** Ring + dot radio indicator matching the selected-card treatment. */
+function RadioDot({ selected, onDark }: { selected: boolean; onDark: boolean }) {
+  return (
+    <span
+      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+        onDark
+          ? "border-white"
+          : selected
+            ? "border-primary"
+            : "border-muted"
+      }`}
+    >
+      {selected && (
+        <span
+          className={`h-2.5 w-2.5 rounded-full ${
+            onDark ? "bg-white" : "bg-primary"
+          }`}
+        />
+      )}
+    </span>
+  );
+}
+
+function CreationModeChooser({
+  lang,
+  isDesktop,
+  onManual,
+  onAgent,
+}: {
+  lang: string;
+  isDesktop: boolean;
+  onManual: () => void;
+  onAgent: () => void;
+}) {
+  const router = useRouter();
+  const setBottomNavHidden = useUiStore((s) => s.setBottomNavHidden);
+  // Recommended option is pre-selected, mirroring the "continue with the
+  // suggested plan" pattern.
+  const [selected, setSelected] = useState<CreationModeKey>("agent");
+
+  // Hide the mobile bottom nav while choosing. It stays mounted and only gains
+  // a `hidden` class (see useUiStore) — no unmount, so no remount flicker.
+  // Layout effect so the class lands before the browser paints this screen,
+  // avoiding a one-frame flash of the nav on entry. Safe on the server: the
+  // parent gates this subtree to client-only, so it never renders during SSR.
+  // (No-op visual on desktop, where the nav is already md:hidden.)
+  useLayoutEffect(() => {
+    setBottomNavHidden(true);
+    return () => setBottomNavHidden(false);
+  }, [setBottomNavHidden]);
+
+  function close() {
+    router.replace(`/${lang}/feed`);
+  }
+
+  function handleContinue() {
+    if (selected === "agent") onAgent();
+    else onManual();
+  }
+
+  // Shared between the mobile full-screen layout and the desktop dialog.
+  const modeCards = (
+    <div
+      role="radiogroup"
+      aria-label="How would you like to create your post?"
+      className="flex flex-col gap-4"
+    >
+      {CREATION_MODES.map((mode) => {
+        const isSelected = selected === mode.key;
+        const Icon = mode.icon;
+        return (
+          <button
+            key={mode.key}
+            type="button"
+            role="radio"
+            aria-checked={isSelected}
+            onClick={() => setSelected(mode.key)}
+            className={`overflow-hidden rounded-2xl text-left transition-all outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
+              isSelected
+                ? "border-2 border-primary shadow-sm"
+                : "border border-border"
+            }`}
+          >
+            <div
+              className={`flex items-center justify-between px-5 py-3.5 transition-colors ${
+                isSelected ? "bg-primary text-white" : "bg-surface text-primary"
+              }`}
+            >
+              <span className="flex items-center gap-2.5">
+                <Icon size={18} strokeWidth={2.2} />
+                <span className="text-sm font-bold uppercase tracking-wide">
+                  {mode.label}
+                </span>
+              </span>
+              <RadioDot selected={isSelected} onDark={isSelected} />
+            </div>
+
+            <div className="bg-elevated px-5 py-4">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <span className="text-xl font-bold text-foreground">
+                  {mode.heading}
+                </span>
+                {mode.recommended && (
+                  <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700 dark:bg-green-500/15 dark:text-green-300">
+                    Recommended
+                  </span>
+                )}
+              </div>
+              <p className="mt-2 text-sm leading-relaxed text-muted">
+                {mode.description}
+              </p>
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  const continueButton = (
+    <button
+      type="button"
+      onClick={handleContinue}
+      className="flex h-11 w-full items-center justify-center rounded-xl bg-primary text-sm font-semibold text-white transition-transform active:scale-[0.99]"
+    >
+      Continue
+    </button>
+  );
+
+  // ── Desktop: a centred dialog on the branded backdrop, matching the manual
+  // create flow (DesktopCreateFlow) so both entry surfaces feel the same. ──
+  if (isDesktop) {
+    return (
+      <>
+        <CreateBanner />
+        <Dialog
+          open
+          onOpenChange={(open) => {
+            if (!open) close();
+          }}
+        >
+          <DialogContent className="w-[min(94vw,460px)] max-w-none gap-0 overflow-hidden rounded-3xl border border-default bg-app p-0">
+            <DialogTitle className="sr-only">Create a post</DialogTitle>
+            <DialogDescription className="sr-only">
+              Choose how you&apos;d like to create your post.
+            </DialogDescription>
+
+            <div className="px-6 pt-6 pb-6">
+              {/* pr-8 keeps the heading clear of the dialog's built-in ✕. */}
+              <div className="pr-8">
+                <h1 className="text-lg font-bold text-foreground">
+                  Create a post
+                </h1>
+                <p className="mt-0.5 text-sm text-muted">
+                  Select how you&apos;d like to continue
+                </p>
+              </div>
+
+              <div className="mt-5">{modeCards}</div>
+              <div className="mt-6">{continueButton}</div>
+
+              <p className="mt-4 text-center text-xs leading-relaxed text-muted">
+                Nothing is posted until you review and confirm it.
+              </p>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </>
+    );
+  }
+
+  // ── Mobile: full-screen (unchanged). ──
+  return (
+    <div className="flex min-h-svh flex-col bg-background">
+      <header className="border-b border-border bg-elevated">
+        <div className="mx-auto flex h-14 w-full max-w-2xl items-center px-4 md:px-6">
+          <button
+            type="button"
+            onClick={close}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface hover:text-foreground"
+            aria-label="Close create"
+          >
+            <span aria-hidden className="text-2xl font-light leading-none">
+              ×
+            </span>
+          </button>
+          <div className="flex-1 text-center">
+            <h1 className="text-base font-semibold text-foreground">
+              Create a post
+            </h1>
+            <p className="text-xs leading-tight text-muted">
+              Select how you&apos;d like to continue
+            </p>
+          </div>
+          {/* Balances the close button so the title stays centred. */}
+          <span aria-hidden className="h-10 w-10 shrink-0" />
+        </div>
+      </header>
+
+      <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 md:px-6 md:py-10">
+        {modeCards}
+
+        <p className="mt-4 px-1 text-xs leading-relaxed text-muted">
+          Nothing is posted until you review and confirm it.
+        </p>
+      </main>
+
+      <footer className="border-t border-border bg-elevated px-4 py-4 pb-[calc(1rem+var(--safe-bottom,0px))] md:px-6">
+        <div className="mx-auto w-full max-w-2xl">{continueButton}</div>
+      </footer>
     </div>
   );
 }
