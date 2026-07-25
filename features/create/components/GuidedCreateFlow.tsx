@@ -3,7 +3,6 @@
 
 import {
   useEffect,
-  useMemo,
   useRef,
   useState,
   type ChangeEvent,
@@ -21,7 +20,6 @@ import {
   LoaderCircle,
   LockKeyhole,
   MapPin,
-  MessageCircleMore,
   Send,
   Upload,
   Users,
@@ -52,6 +50,9 @@ import {
   GUIDED_AUTOSAVE_DRAFT,
   GUIDED_EXTRACT_FROM_DRAFT,
   GUIDED_EXTRACT_FROM_FRAMES,
+  SHOPI_AGENT_TURN,
+  type AgentAsk,
+  type AgentFieldTarget,
   type GuidedAutosaveInput,
   type GuidedExtractDetails,
 } from "@/features/create/graphql/guided";
@@ -82,13 +83,18 @@ const STAGE_ORDER: GuidedStage[] = [
   "media",
   "analyzing",
   "insights",
-  "description",
-  "price",
-  "location",
+  "conversation",
   "options",
   "publishing",
   "done",
 ];
+
+/** Stable-ish id for chat messages (no external dep). */
+let messageSeq = 0;
+function messageId(): string {
+  messageSeq += 1;
+  return `m${Date.now().toString(36)}-${messageSeq}`;
+}
 
 const QUICK_INTENTS = [
   "A phone I want to sell",
@@ -162,6 +168,9 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
     guidedStage,
     guidedIntent,
     guidedInsights,
+    agentMessages,
+    agentAsk,
+    agentReady,
     draftId,
     mediaItems,
     title,
@@ -181,6 +190,9 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
     setGuidedStage,
     setGuidedIntent,
     setGuidedInsights,
+    addAgentMessage,
+    setAgentAsk,
+    setAgentReady,
     setDraftId,
     setContentType,
     setStep,
@@ -216,8 +228,12 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
   const [autosaveDraft] = useMutation(GUIDED_AUTOSAVE_DRAFT);
   const [extractFromFrames] = useMutation(GUIDED_EXTRACT_FROM_FRAMES);
   const [extractFromDraft] = useMutation(GUIDED_EXTRACT_FROM_DRAFT);
+  const [shopiAgentTurn] = useMutation(SHOPI_AGENT_TURN);
   const [advanceDraft] = useMutation(AdvanceDraftStepDocument);
   const [publishDraft] = useMutation(PublishDraftDocument);
+
+  const [agentThinking, setAgentThinking] = useState(false);
+  const agentTurnInFlightRef = useRef(false);
   const { startImageUpload, startVideoUpload } = useMediaUpload();
 
   const { data: suggestedLocationData } = useQuery(
@@ -299,21 +315,22 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [guidedStage, mediaItems.length]);
+  }, [guidedStage, mediaItems.length, agentMessages.length, agentAsk, agentThinking]);
+
+  // Legacy resilience: a session persisted mid-flow under the old fixed stages
+  // ("description"/"price"/"location") resumes in the new conversation stage.
+  useEffect(() => {
+    if (!hydrated) return;
+    const legacy = ["description", "price", "location"];
+    if (legacy.includes(guidedStage as string)) {
+      setGuidedStage("conversation");
+    }
+  }, [hydrated, guidedStage, setGuidedStage]);
 
   const firstName =
     user?.profile?.firstName?.trim() ||
     user?.email?.split("@")[0]?.trim() ||
     "there";
-
-  const progress = useMemo(() => {
-    if (guidedStage === "intro" || guidedStage === "media") return 1;
-    if (guidedStage === "analyzing" || guidedStage === "insights") return 2;
-    if (guidedStage === "description") return 3;
-    if (guidedStage === "price") return 4;
-    if (guidedStage === "location") return 5;
-    return 6;
-  }, [guidedStage]);
 
   async function saveDraft(
     id: string,
@@ -550,6 +567,25 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftId, guidedStage, hydrated]);
 
+  // Resume the conversation after a refresh: if we're in the conversation stage
+  // with no pending question and nothing in flight, ask the agent for the next
+  // step from the current draft state.
+  useEffect(() => {
+    if (
+      !hydrated ||
+      guidedStage !== "conversation" ||
+      !draftId ||
+      agentReady ||
+      agentAsk ||
+      agentThinking ||
+      agentTurnInFlightRef.current
+    ) {
+      return;
+    }
+    void runAgentTurn();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftId, guidedStage, hydrated, agentReady, agentAsk, agentThinking]);
+
   async function applyAnalysis(
     id: string,
     result: GuidedExtractDetails | null,
@@ -704,68 +740,303 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
           confidence: guidedInsights?.classificationConfidence ?? undefined,
         },
       });
-      setGuidedStage("description");
+      await startConversation();
     } catch (error) {
       setFormError(error instanceof Error ? error.message : String(error));
     }
   }
 
-  async function confirmDescription() {
-    if (!draftId) return;
-    if (!caption.trim()) {
-      setFormError(
-        "Add a short description so buyers know the condition and what is included.",
-      );
-      return;
-    }
-    setFormError(null);
-    try {
-      await saveDraft(draftId, { caption: caption.trim() });
-      setGuidedStage("price");
-    } catch (error) {
-      setFormError(error instanceof Error ? error.message : String(error));
-    }
+  // ── Shopi Agent conversation ────────────────────────────────────────────────
+  //
+  // After the seller confirms what the media analysis found, the agent runs a
+  // dynamic, category-aware interview: it asks only for the details THIS item
+  // still needs (land → size; car → mileage; …), then moves through the
+  // essentials and hands off to the publish options. The number of questions is
+  // decided per item by the API. If the turn mutation is unreachable, a local
+  // deterministic planner keeps the exact same essentials flow going so nothing
+  // ever dead-ends.
+
+  function buildTranscript() {
+    return useCreateStore.getState().agentMessages.map((m) => ({
+      role: (m.role === "agent" ? "AGENT" : "USER") as "AGENT" | "USER",
+      text: m.text,
+    }));
   }
 
-  async function confirmPrice() {
-    if (!draftId) return;
-    const parsed = priceInput.trim() ? Number(priceInput) : 0;
-    if (!Number.isFinite(parsed) || parsed < 0) {
-      setFormError("Enter a valid price of 0 or more.");
+  async function startConversation() {
+    setGuidedStage("conversation");
+    const state = useCreateStore.getState();
+    // Resume: if we already have a conversation (e.g. after a refresh), don't
+    // restart it — just keep showing where the seller left off.
+    if (state.agentMessages.length > 0 || state.agentReady || state.agentAsk) {
       return;
     }
+    await runAgentTurn();
+  }
+
+  async function runAgentTurn(answered?: {
+    answer?: string;
+    answeredTarget?: AgentFieldTarget;
+    answeredSpecKey?: string;
+  }) {
+    const id = useCreateStore.getState().draftId;
+    if (!id || agentTurnInFlightRef.current) return;
+    agentTurnInFlightRef.current = true;
+    setAgentThinking(true);
     setFormError(null);
-    setPrice(parsed, parsed === 0);
     try {
-      await saveDraft(draftId, {
-        price: { amount: parsed, currency, negotiable },
+      const { data, error } = await shopiAgentTurn({
+        variables: {
+          id,
+          input: {
+            transcript: buildTranscript(),
+            answer: answered?.answer,
+            answeredTarget: answered?.answeredTarget,
+            answeredSpecKey: answered?.answeredSpecKey,
+            suggestedPrice:
+              useCreateStore.getState().guidedInsights?.suggestedPrice ??
+              undefined,
+          },
+        },
       });
-      setGuidedStage("location");
-    } catch (error) {
-      setFormError(error instanceof Error ? error.message : String(error));
+      const turn = data?.shopiAgentTurn;
+      if (error || !turn) {
+        throw new Error(error?.message ?? "Shopi Agent is unavailable");
+      }
+
+      // Keep local specs in sync with anything the server upserted.
+      if (Array.isArray(turn.specs)) {
+        setSpecs(
+          turn.specs
+            .map((s) => ({ key: s.key.trim(), value: s.value.trim() }))
+            .filter((s) => s.key && s.value),
+        );
+      }
+      if (turn.message.trim()) {
+        addAgentMessage({
+          id: messageId(),
+          role: "agent",
+          text: turn.message.trim(),
+        });
+      }
+      if (turn.readyToPublish || !turn.ask) {
+        setAgentAsk(null);
+        setAgentReady(true);
+        setGuidedStage("options");
+      } else {
+        setAgentAsk(turn.ask);
+      }
+    } catch {
+      // The mutation itself failed (network / not deployed). Persist any pending
+      // scalar answer ourselves, then continue with the deterministic essentials
+      // flow so the seller can still finish the post.
+      if (answered && answered.answer !== undefined) {
+        await persistScalarAnswer(answered).catch(() => undefined);
+      }
+      applyClientFallbackTurn();
+    } finally {
+      agentTurnInFlightRef.current = false;
+      setAgentThinking(false);
     }
   }
 
-  async function confirmLocation() {
-    if (!draftId) return;
-    if (!location) {
+  async function persistScalarAnswer(answered: {
+    answer?: string;
+    answeredTarget?: AgentFieldTarget;
+    answeredSpecKey?: string;
+  }) {
+    const id = useCreateStore.getState().draftId;
+    if (!id) return;
+    const s = useCreateStore.getState();
+    const patch: GuidedAutosaveInput = {};
+    if (answered.answeredTarget === "TITLE") patch.title = s.title.trim();
+    else if (answered.answeredTarget === "DESCRIPTION")
+      patch.caption = s.caption.trim();
+    else if (answered.answeredTarget === "SPEC")
+      patch.specs = s.specs
+        .map((spec) => ({ key: spec.key.trim(), value: spec.value.trim() }))
+        .filter((spec) => spec.key && spec.value);
+    else return;
+    await saveDraft(id, patch);
+  }
+
+  /** Local mirror of the server's deterministic planner (used only if the turn mutation fails). */
+  function clientFallbackAsk(): AgentAsk | null {
+    const s = useCreateStore.getState();
+    if (!s.title.trim()) {
+      return {
+        target: "TITLE",
+        kind: "TEXT",
+        specKey: null,
+        label: "What are you selling?",
+        helper: "A short, specific title works best.",
+        placeholder: "e.g. Mazda CX-5 2018, Petrol",
+        options: [],
+        prefill: null,
+        required: true,
+      };
+    }
+    if (!s.caption.trim()) {
+      return {
+        target: "DESCRIPTION",
+        kind: "LONGTEXT",
+        specKey: null,
+        label: "Describe your item",
+        helper: "Condition, useful features and what comes with it.",
+        placeholder: "Describe the condition, features and what is included.",
+        options: [],
+        prefill: null,
+        required: true,
+      };
+    }
+    if (s.price == null) {
+      return {
+        target: "PRICE",
+        kind: "PRICE",
+        specKey: null,
+        label: "Your price",
+        helper: "Enter 0 if you’d rather buyers ask.",
+        placeholder: "Enter your price",
+        options: [],
+        prefill:
+          s.guidedInsights?.suggestedPrice != null
+            ? String(s.guidedInsights.suggestedPrice)
+            : null,
+        required: true,
+      };
+    }
+    if (!s.location) {
+      return {
+        target: "LOCATION",
+        kind: "LOCATION",
+        specKey: null,
+        label: "Where can buyers find this item?",
+        helper: null,
+        placeholder: null,
+        options: [],
+        prefill: null,
+        required: true,
+      };
+    }
+    if (!s.contactPhone) {
+      return {
+        target: "CONTACT_PHONE",
+        kind: "PHONE",
+        specKey: null,
+        label: "A phone number so buyers can reach you",
+        helper: "Shown only when a signed-in buyer asks to call.",
+        placeholder: null,
+        options: [],
+        prefill: null,
+        required: true,
+      };
+    }
+    return null;
+  }
+
+  function applyClientFallbackTurn() {
+    const ask = clientFallbackAsk();
+    if (!ask) {
+      setAgentAsk(null);
+      setAgentReady(true);
+      setGuidedStage("options");
+      return;
+    }
+    setAgentAsk(ask);
+  }
+
+  // ── Answer handlers (one per input kind) ────────────────────────────────────
+
+  async function answerScalar(ask: AgentAsk, rawValue: string) {
+    const value = rawValue.trim();
+    if (ask.required && !value) {
+      setFormError("This one’s needed to keep your listing clear.");
+      return;
+    }
+
+    // Apply locally so the live preview and any fallback stay accurate.
+    if (ask.target === "TITLE") setTitle(value);
+    else if (ask.target === "DESCRIPTION") setCaption(value);
+    else if (ask.target === "SPEC" && ask.specKey) {
+      const key = ask.specKey;
+      const next = useCreateStore
+        .getState()
+        .specs.filter((s) => s.key.toLowerCase() !== key.toLowerCase());
+      if (value) next.push({ key, value });
+      setSpecs(next);
+    }
+
+    addAgentMessage({ id: messageId(), role: "user", text: value || "Skipped" });
+    setAgentAsk(null);
+    await runAgentTurn({
+      answer: value,
+      answeredTarget: ask.target,
+      answeredSpecKey: ask.specKey ?? undefined,
+    });
+  }
+
+  async function answerPrice(amount: number, isNegotiable: boolean) {
+    const id = useCreateStore.getState().draftId;
+    if (!id) return;
+    setPrice(amount, amount === 0);
+    setNegotiable(isNegotiable);
+    setPriceInput(String(amount));
+    // Persist before advancing so the next turn reads the confirmed price.
+    try {
+      await saveDraft(id, {
+        price: { amount, currency, negotiable: isNegotiable },
+      });
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : String(error));
+      return;
+    }
+    addAgentMessage({
+      id: messageId(),
+      role: "user",
+      text: `${currency} ${amount.toLocaleString()}${
+        isNegotiable ? " · negotiable" : ""
+      }`,
+    });
+    setAgentAsk(null);
+    await runAgentTurn({ answeredTarget: "PRICE" });
+  }
+
+  async function answerLocation() {
+    const id = useCreateStore.getState().draftId;
+    const loc = useCreateStore.getState().location;
+    if (!id || !loc) {
       setFormError("Choose a location so nearby buyers can find your listing.");
       return;
     }
-    if (!contactPhone) {
+    try {
+      await saveDraft(id, { location: locationInput(loc) });
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : String(error));
+      return;
+    }
+    addAgentMessage({ id: messageId(), role: "user", text: loc.placeName });
+    setAgentAsk(null);
+    await runAgentTurn({ answeredTarget: "LOCATION" });
+  }
+
+  async function answerPhone() {
+    const id = useCreateStore.getState().draftId;
+    const phone = useCreateStore.getState().contactPhone;
+    if (!id || !phone) {
       setFormError("Add a valid phone number so interested buyers can call.");
       return;
     }
-    setFormError(null);
+    // The server normalises/validates the number — keep the seller on this
+    // question if it's rejected, so they can correct it.
     try {
-      await saveDraft(draftId, {
-        location: locationInput(location),
-        contactPhone,
-      });
-      setGuidedStage("options");
+      await saveDraft(id, { contactPhone: phone });
     } catch (error) {
       setFormError(error instanceof Error ? error.message : String(error));
+      return;
     }
+    addAgentMessage({ id: messageId(), role: "user", text: phone });
+    setAgentAsk(null);
+    await runAgentTurn({ answeredTarget: "CONTACT_PHONE" });
   }
 
   async function waitForMediaAttachment(): Promise<void> {
@@ -907,11 +1178,6 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
     }
   }
 
-  function goBack(stage: GuidedStage) {
-    setFormError(null);
-    setGuidedStage(stage);
-  }
-
   function closeFlow() {
     setCreationMode("choose");
     router.push(`/${lang}/upload`);
@@ -987,20 +1253,10 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
         </div>
       </header>
 
-      <div className="shrink-0 border-b border-border bg-background px-4 py-2.5 md:px-6">
-        <div className="mx-auto flex max-w-[820px] items-center gap-2">
-          <span className="mr-1 text-[11px] font-semibold tabular-nums text-muted">
-            {progress}/6
-          </span>
-          {Array.from({ length: 6 }, (_, index) => (
-            <span
-              key={index}
-              className={`h-1 flex-1 rounded-full transition-colors ${
-                index < progress ? "bg-primary" : "bg-border"
-              }`}
-            />
-          ))}
-        </div>
+      <div className="h-0.5 shrink-0 overflow-hidden bg-border">
+        {agentThinking || guidedStage === "analyzing" ? (
+          <div className="h-full w-full animate-pulse bg-primary" />
+        ) : null}
       </div>
 
       <main className="min-h-0 flex-1 overflow-y-auto bg-surface/30">
@@ -1119,181 +1375,36 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
             </>
           ) : null}
 
-          {stageReached(guidedStage, "description") ? (
+          {stageReached(guidedStage, "conversation") ? (
             <>
-              <AgentBubble>
-                {caption.trim() ? (
-                  <p>
-                    Here’s a buyer-friendly description designed to answer the
-                    first questions people usually ask.
-                  </p>
+              {agentMessages.map((message) =>
+                message.role === "agent" ? (
+                  <AgentBubble key={message.id}>
+                    <p className="whitespace-pre-wrap">{message.text}</p>
+                  </AgentBubble>
                 ) : (
-                  <>
-                    <p>I need a little help with the description.</p>
-                    <p className="mt-1 text-sm text-muted">
-                      Add the condition, useful features and what comes with the
-                      item.
-                    </p>
-                  </>
-                )}
-              </AgentBubble>
-              <AssistantCard>
-                <div className="flex items-center gap-2">
-                  <MessageCircleMore size={18} className="text-primary" />
-                  <h2 className="font-black text-foreground">Description</h2>
-                </div>
-                <textarea
-                  value={caption}
-                  maxLength={2000}
-                  onChange={(event) => setCaption(event.target.value)}
-                  rows={6}
-                  placeholder="Describe the condition, useful features and what is included."
-                  className="w-full resize-y rounded-xl border border-border bg-surface px-3 py-3 text-base leading-relaxed text-foreground outline-none focus:border-primary"
+                  <UserBubble key={message.id}>{message.text}</UserBubble>
+                ),
+              )}
+
+              {agentThinking ? (
+                <AgentBubble>
+                  <AgentTyping />
+                </AgentBubble>
+              ) : null}
+
+              {guidedStage === "conversation" && agentAsk && !agentThinking ? (
+                <AgentAskControl
+                  key={`${agentAsk.target}:${agentAsk.specKey ?? ""}:${agentAsk.label}`}
+                  ask={agentAsk}
+                  onScalar={(value) => void answerScalar(agentAsk, value)}
+                  onPrice={(amount, isNegotiable) =>
+                    void answerPrice(amount, isNegotiable)
+                  }
+                  onLocation={() => void answerLocation()}
+                  onPhone={() => void answerPhone()}
                 />
-                <p className="text-right text-xs text-muted">
-                  {caption.length}/2000
-                </p>
-                {guidedStage === "description" ? (
-                  <CardActions
-                    primaryLabel="Use this description"
-                    onPrimary={confirmDescription}
-                    onBack={() => goBack("insights")}
-                  />
-                ) : (
-                  <ConfirmedLabel />
-                )}
-              </AssistantCard>
-            </>
-          ) : null}
-
-          {stageReached(guidedStage, "price") ? (
-            <>
-              <AgentBubble>
-                <PriceGuidance insights={guidedInsights} />
-              </AgentBubble>
-              <AssistantCard>
-                <div className="flex items-center gap-2">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary-soft text-sm font-black text-primary-strong">
-                    KSh
-                  </span>
-                  <h2 className="font-black text-foreground">Your price</h2>
-                </div>
-                <div className="flex h-13 items-center rounded-xl border border-border bg-surface px-3 focus-within:border-primary">
-                  <span className="mr-2 text-sm font-bold text-muted">
-                    {currency}
-                  </span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={priceInput}
-                    onChange={(event) => {
-                      setPriceInput(event.target.value);
-                      const parsed = Number(event.target.value);
-                      if (Number.isFinite(parsed) && parsed >= 0) {
-                        setPrice(parsed, parsed === 0);
-                      }
-                    }}
-                    placeholder="Enter your price"
-                    className="min-w-0 flex-1 bg-transparent text-lg font-bold text-foreground outline-none"
-                  />
-                </div>
-                {guidedInsights?.suggestedPrice != null &&
-                Number(priceInput) !== guidedInsights.suggestedPrice ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const value = guidedInsights.suggestedPrice!;
-                      setPriceInput(String(value));
-                      setPrice(value, false);
-                    }}
-                    className="self-start rounded-full bg-primary-soft px-3 py-1.5 text-xs font-bold text-primary-strong"
-                  >
-                    Use suggested price: KES{" "}
-                    {guidedInsights.suggestedPrice.toLocaleString()}
-                  </button>
-                ) : null}
-                <div className="flex items-center justify-between rounded-xl border border-border bg-elevated px-3 py-3">
-                  <div className="pr-4">
-                    <p className="text-sm font-semibold text-foreground">
-                      Price is negotiable
-                    </p>
-                    <p className="text-xs text-muted">
-                      Let buyers make reasonable offers
-                    </p>
-                  </div>
-                  <Switch
-                    checked={negotiable}
-                    onCheckedChange={setNegotiable}
-                    aria-label="Mark price as negotiable"
-                  />
-                </div>
-                <p className="text-xs leading-relaxed text-muted">
-                  Price guidance is a starting estimate, not a live valuation.
-                  Condition, exact model and local demand can change the final
-                  price.
-                </p>
-                {guidedStage === "price" ? (
-                  <CardActions
-                    primaryLabel="Confirm price"
-                    onPrimary={confirmPrice}
-                    onBack={() => goBack("description")}
-                  />
-                ) : (
-                  <ConfirmedLabel />
-                )}
-              </AssistantCard>
-            </>
-          ) : null}
-
-          {stageReached(guidedStage, "location") ? (
-            <>
-              <AgentBubble>
-                <p>Where should buyers find this item?</p>
-                {location ? (
-                  <p className="mt-1 text-sm text-muted">
-                    I used your recent location. Change it if this item is
-                    somewhere else.
-                  </p>
-                ) : (
-                  <p className="mt-1 text-sm text-muted">
-                    You can use your current location or search anywhere in
-                    Kenya.
-                  </p>
-                )}
-              </AgentBubble>
-              <AssistantCard>
-                <div className="flex items-center gap-2">
-                  <MapPin size={18} className="text-primary" />
-                  <h2 className="font-black text-foreground">Buyer details</h2>
-                </div>
-                <Field label="Listing location">
-                  <LocationPicker
-                    value={location}
-                    onSelect={setLocation}
-                    onClear={() => setLocation(null)}
-                  />
-                </Field>
-                <Field
-                  label="Contact phone"
-                  hint="Shown only when a signed-in buyer asks to call"
-                >
-                  <PhoneInput
-                    value={contactPhone}
-                    onChange={setContactPhone}
-                    error={null}
-                  />
-                </Field>
-                {guidedStage === "location" ? (
-                  <CardActions
-                    primaryLabel="Continue"
-                    onPrimary={confirmLocation}
-                    onBack={() => goBack("price")}
-                  />
-                ) : (
-                  <ConfirmedLabel />
-                )}
-              </AssistantCard>
+              ) : null}
             </>
           ) : null}
 
@@ -1678,63 +1789,313 @@ function MediaStrip() {
   );
 }
 
-function PriceGuidance({
-  insights,
-}: {
-  insights: ReturnType<typeof useCreateStore.getState>["guidedInsights"];
-}) {
-  if (insights?.detectedPrice != null) {
-    return (
-      <>
-        <p>
-          I found a price of{" "}
-          <strong>KES {insights.detectedPrice.toLocaleString()}</strong> in the
-          media or your message.
-        </p>
-        <p className="mt-1 text-sm text-muted">
-          Keep it or enter the amount you want buyers to see.
-        </p>
-      </>
-    );
-  }
-
-  if (insights?.suggestedPrice != null) {
-    const hasRange =
-      insights.priceRangeLow != null && insights.priceRangeHigh != null;
-    return (
-      <>
-        <p>
-          Similar items of this type in Kenya may list{" "}
-          {hasRange ? (
-            <>
-              around{" "}
-              <strong>
-                KES {insights.priceRangeLow!.toLocaleString()}–
-                {insights.priceRangeHigh!.toLocaleString()}
-              </strong>
-            </>
-          ) : (
-            <>
-              near{" "}
-              <strong>KES {insights.suggestedPrice.toLocaleString()}</strong>
-            </>
-          )}
-          .
-        </p>
-        {insights.pricingReason ? (
-          <p className="mt-1 text-sm text-muted">{insights.pricingReason}</p>
-        ) : null}
-      </>
-    );
-  }
-
+function AgentTyping() {
   return (
-    <>
-      <p>I can’t estimate this one reliably from the media alone.</p>
-      <p className="mt-1 text-sm text-muted">
-        Enter the price you want, or use 0 if buyers should ask.
-      </p>
-    </>
+    <div className="flex items-center gap-3">
+      <span className="flex gap-1">
+        {[0, 1, 2].map((index) => (
+          <span
+            key={index}
+            className="h-2 w-2 animate-bounce rounded-full bg-primary"
+            style={{ animationDelay: `${index * 120}ms` }}
+          />
+        ))}
+      </span>
+      <p className="text-sm text-muted">Thinking…</p>
+    </div>
+  );
+}
+
+function AskHeader({ ask, icon }: { ask: AgentAsk; icon?: ReactNode }) {
+  const heading =
+    ask.target === "SPEC" && ask.specKey ? ask.specKey : ask.label;
+  return (
+    <div>
+      <div className="flex items-center gap-2">
+        {icon ?? <WandSparkles size={18} className="text-primary" />}
+        <h2 className="font-black text-foreground">{heading}</h2>
+      </div>
+      {ask.helper ? (
+        <p className="mt-1 text-sm text-muted">{ask.helper}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function AskPrimaryButton({
+  label,
+  onClick,
+  disabled,
+  inline,
+}: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  inline?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white transition-transform active:scale-[0.98] disabled:opacity-40 ${
+        inline ? "" : "w-full"
+      }`}
+    >
+      {label}
+      <ArrowRight size={16} />
+    </button>
+  );
+}
+
+/**
+ * Renders the inline input for the agent's current question. The control shape
+ * is chosen from `ask.kind`, so the same conversation surface handles a chip
+ * choice (transmission), a number (mileage), a price, the location picker, the
+ * phone input or free text — whatever THIS listing needs next.
+ */
+function AgentAskControl({
+  ask,
+  onScalar,
+  onPrice,
+  onLocation,
+  onPhone,
+}: {
+  ask: AgentAsk;
+  onScalar: (value: string) => void;
+  onPrice: (amount: number, negotiable: boolean) => void;
+  onLocation: () => void;
+  onPhone: () => void;
+}) {
+  const {
+    currency,
+    negotiable,
+    setNegotiable,
+    price,
+    setPrice,
+    location,
+    setLocation,
+    contactPhone,
+    setContactPhone,
+    guidedInsights,
+  } = useCreateStore();
+
+  const [text, setText] = useState(ask.prefill ?? "");
+  const [priceText, setPriceText] = useState(
+    ask.kind === "PRICE"
+      ? (ask.prefill ?? (price != null ? String(price) : ""))
+      : "",
+  );
+
+  const suggested = guidedInsights?.suggestedPrice ?? null;
+
+  if (ask.kind === "CHOICE" || ask.kind === "CONFIRM") {
+    return (
+      <AssistantCard>
+        <AskHeader ask={ask} />
+        <div className="flex flex-wrap gap-2">
+          {ask.options.map((option) => (
+            <button
+              key={option}
+              type="button"
+              onClick={() => onScalar(option)}
+              className="rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:text-primary-strong"
+            >
+              {option}
+            </button>
+          ))}
+          {!ask.required ? (
+            <button
+              type="button"
+              onClick={() => onScalar("")}
+              className="rounded-full px-3 py-2 text-sm font-semibold text-muted hover:text-foreground"
+            >
+              Skip
+            </button>
+          ) : null}
+        </div>
+      </AssistantCard>
+    );
+  }
+
+  if (ask.kind === "PRICE") {
+    return (
+      <AssistantCard>
+        <AskHeader
+          ask={ask}
+          icon={
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary-soft text-sm font-black text-primary-strong">
+              KSh
+            </span>
+          }
+        />
+        <div className="flex h-13 items-center rounded-xl border border-border bg-surface px-3 focus-within:border-primary">
+          <span className="mr-2 text-sm font-bold text-muted">{currency}</span>
+          <input
+            type="number"
+            min="0"
+            step="1"
+            value={priceText}
+            autoFocus
+            onChange={(event) => {
+              setPriceText(event.target.value);
+              const parsed = Number(event.target.value);
+              if (Number.isFinite(parsed) && parsed >= 0) {
+                setPrice(parsed, parsed === 0);
+              }
+            }}
+            placeholder={ask.placeholder ?? "Enter your price"}
+            className="min-w-0 flex-1 bg-transparent text-lg font-bold text-foreground outline-none"
+          />
+        </div>
+        {suggested != null && Number(priceText) !== suggested ? (
+          <button
+            type="button"
+            onClick={() => {
+              setPriceText(String(suggested));
+              setPrice(suggested, false);
+            }}
+            className="self-start rounded-full bg-primary-soft px-3 py-1.5 text-xs font-bold text-primary-strong"
+          >
+            Use suggested: {currency} {suggested.toLocaleString()}
+          </button>
+        ) : null}
+        <div className="flex items-center justify-between rounded-xl border border-border bg-elevated px-3 py-3">
+          <div className="pr-4">
+            <p className="text-sm font-semibold text-foreground">
+              Price is negotiable
+            </p>
+            <p className="text-xs text-muted">
+              Let buyers make reasonable offers
+            </p>
+          </div>
+          <Switch
+            checked={negotiable}
+            onCheckedChange={setNegotiable}
+            aria-label="Mark price as negotiable"
+          />
+        </div>
+        <AskPrimaryButton
+          label="Confirm price"
+          onClick={() => {
+            const parsed = priceText.trim() ? Number(priceText) : 0;
+            if (!Number.isFinite(parsed) || parsed < 0) return;
+            onPrice(parsed, negotiable);
+          }}
+        />
+      </AssistantCard>
+    );
+  }
+
+  if (ask.kind === "LOCATION") {
+    return (
+      <AssistantCard>
+        <AskHeader
+          ask={ask}
+          icon={<MapPin size={18} className="text-primary" />}
+        />
+        <LocationPicker
+          value={location}
+          onSelect={setLocation}
+          onClear={() => setLocation(null)}
+        />
+        <AskPrimaryButton
+          label="Continue"
+          disabled={!location}
+          onClick={onLocation}
+        />
+      </AssistantCard>
+    );
+  }
+
+  if (ask.kind === "PHONE") {
+    return (
+      <AssistantCard>
+        <AskHeader ask={ask} />
+        <PhoneInput value={contactPhone} onChange={setContactPhone} error={null} />
+        <AskPrimaryButton
+          label="Continue"
+          disabled={!contactPhone}
+          onClick={onPhone}
+        />
+      </AssistantCard>
+    );
+  }
+
+  if (ask.kind === "LONGTEXT") {
+    return (
+      <AssistantCard>
+        <AskHeader ask={ask} />
+        <textarea
+          value={text}
+          maxLength={2000}
+          rows={6}
+          autoFocus
+          onChange={(event) => setText(event.target.value)}
+          placeholder={ask.placeholder ?? "Type your answer…"}
+          className="w-full resize-y rounded-xl border border-border bg-surface px-3 py-3 text-base leading-relaxed text-foreground outline-none focus:border-primary"
+        />
+        <div className="flex items-center justify-between gap-2">
+          {!ask.required ? (
+            <button
+              type="button"
+              onClick={() => onScalar("")}
+              className="text-sm font-semibold text-muted hover:text-foreground"
+            >
+              Skip
+            </button>
+          ) : (
+            <span />
+          )}
+          <AskPrimaryButton
+            label="Send"
+            inline
+            disabled={ask.required && !text.trim()}
+            onClick={() => onScalar(text)}
+          />
+        </div>
+      </AssistantCard>
+    );
+  }
+
+  // TEXT / NUMBER
+  return (
+    <AssistantCard>
+      <AskHeader ask={ask} />
+      <form
+        className="flex items-end gap-2"
+        onSubmit={(event) => {
+          event.preventDefault();
+          onScalar(text);
+        }}
+      >
+        <input
+          type={ask.kind === "NUMBER" ? "number" : "text"}
+          value={text}
+          autoFocus
+          onChange={(event) => setText(event.target.value)}
+          placeholder={ask.placeholder ?? "Type your answer…"}
+          className="h-12 min-w-0 flex-1 rounded-xl border border-border bg-surface px-3 text-base text-foreground outline-none focus:border-primary"
+        />
+        <button
+          type="submit"
+          disabled={ask.required && !text.trim()}
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary text-white disabled:opacity-40"
+          aria-label="Send"
+        >
+          <Send size={18} />
+        </button>
+      </form>
+      {!ask.required ? (
+        <button
+          type="button"
+          onClick={() => onScalar("")}
+          className="self-start text-sm font-semibold text-muted hover:text-foreground"
+        >
+          Skip
+        </button>
+      ) : null}
+    </AssistantCard>
   );
 }
 
