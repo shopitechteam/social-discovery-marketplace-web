@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import type { AgentAsk } from "@/features/create/graphql/guided";
 
 export type CreateStep = "pick" | "media" | "edit" | "options" | "ready";
 export type CreationMode = "manual" | "ai" | "choose" | null;
@@ -8,12 +9,20 @@ export type GuidedStage =
   | "media"
   | "analyzing"
   | "insights"
-  | "description"
-  | "price"
-  | "location"
+  // The dynamic, human-like interview (missing specs → description → price →
+  // location → contact). Replaces the old fixed "description"/"price"/"location"
+  // steps: the agent decides how many questions THIS item needs.
+  | "conversation"
   | "options"
   | "publishing"
   | "done";
+
+/** One line in the Shopi Agent chat log. */
+export type AgentMessage = {
+  id: string;
+  role: "agent" | "user";
+  text: string;
+};
 
 export type GuidedInsights = {
   subcategory: string;
@@ -78,6 +87,12 @@ export type CreateFlowState = {
   guidedStage: GuidedStage;
   guidedIntent: string;
   guidedInsights: GuidedInsights | null;
+  /** Chat log for the dynamic Shopi Agent conversation stage. */
+  agentMessages: AgentMessage[];
+  /** The question the agent is currently waiting on, or null. */
+  agentAsk: AgentAsk | null;
+  /** True once the agent has declared the listing ready to publish. */
+  agentReady: boolean;
   step: CreateStep;
   draftId: string | null;
   mediaItems: MediaItem[];
@@ -128,6 +143,10 @@ type CreateFlowActions = {
   setGuidedStage: (stage: GuidedStage) => void;
   setGuidedIntent: (intent: string) => void;
   setGuidedInsights: (insights: GuidedInsights | null) => void;
+  addAgentMessage: (message: AgentMessage) => void;
+  setAgentMessages: (messages: AgentMessage[]) => void;
+  setAgentAsk: (ask: AgentAsk | null) => void;
+  setAgentReady: (ready: boolean) => void;
   setStep: (step: CreateStep) => void;
   setDraftId: (id: string) => void;
   addMediaItem: (item: MediaItem) => void;
@@ -168,6 +187,9 @@ const DEFAULT_STATE: CreateFlowState = {
   guidedStage: "intro",
   guidedIntent: "",
   guidedInsights: null,
+  agentMessages: [],
+  agentAsk: null,
+  agentReady: false,
   step: "pick",
   draftId: null,
   mediaItems: [],
@@ -208,6 +230,11 @@ export const useCreateStore = create<CreateFlowState & CreateFlowActions>()(
       setGuidedStage: (guidedStage) => set({ guidedStage }),
       setGuidedIntent: (guidedIntent) => set({ guidedIntent }),
       setGuidedInsights: (guidedInsights) => set({ guidedInsights }),
+      addAgentMessage: (message) =>
+        set((s) => ({ agentMessages: [...s.agentMessages, message] })),
+      setAgentMessages: (agentMessages) => set({ agentMessages }),
+      setAgentAsk: (agentAsk) => set({ agentAsk }),
+      setAgentReady: (agentReady) => set({ agentReady }),
       setStep: (step) => set({ step }),
       // Starting/switching a draft resets the one-shot AI auto-fill guard so the
       // new draft gets its own extraction pass.
@@ -215,7 +242,15 @@ export const useCreateStore = create<CreateFlowState & CreateFlowActions>()(
         set((s) =>
           s.draftId === draftId
             ? { draftId }
-            : { draftId, hasExtracted: false, isExtracting: false },
+            : {
+                draftId,
+                hasExtracted: false,
+                isExtracting: false,
+                // A new draft starts a fresh conversation.
+                agentMessages: [],
+                agentAsk: null,
+                agentReady: false,
+              },
         ),
 
       addMediaItem: (item) =>
@@ -274,6 +309,9 @@ export const useCreateStore = create<CreateFlowState & CreateFlowActions>()(
         guidedStage: s.guidedStage,
         guidedIntent: s.guidedIntent,
         guidedInsights: s.guidedInsights,
+        agentMessages: s.agentMessages,
+        agentAsk: s.agentAsk,
+        agentReady: s.agentReady,
         draftId: s.draftId,
         step: s.step,
         contentType: s.contentType,

@@ -113,6 +113,91 @@ export const GUIDED_EXTRACT_FROM_DRAFT = gql`
   GuidedExtractDraftVariables
 >;
 
+// ─── Shopi Agent conversation (shopiAgentTurn) ───────────────────────────────
+//
+// TypeGraphQL serialises enums as their TS KEYS over the wire, so these are the
+// uppercase key names (SPEC, CONTACT_PHONE, …), not the lowercase values.
+
+export type AgentAskKind =
+  | "TEXT"
+  | "LONGTEXT"
+  | "NUMBER"
+  | "PRICE"
+  | "CHOICE"
+  | "LOCATION"
+  | "PHONE"
+  | "CONFIRM";
+
+export type AgentFieldTarget =
+  | "TITLE"
+  | "DESCRIPTION"
+  | "CATEGORY"
+  | "SPEC"
+  | "PRICE"
+  | "LOCATION"
+  | "CONTACT_PHONE"
+  | "NONE";
+
+export type AgentRole = "AGENT" | "USER";
+
+export type AgentAsk = {
+  target: AgentFieldTarget;
+  kind: AgentAskKind;
+  specKey: string | null;
+  label: string;
+  helper: string | null;
+  placeholder: string | null;
+  options: string[];
+  prefill: string | null;
+  required: boolean;
+};
+
+export type AgentTurnResult = {
+  message: string;
+  ask: AgentAsk | null;
+  readyToPublish: boolean;
+  aiUsed: boolean;
+  specs: Array<{ key: string; value: string }>;
+};
+
+export type AgentTranscriptEntry = { role: AgentRole; text: string };
+
+export type AgentTurnInput = {
+  transcript?: AgentTranscriptEntry[];
+  answer?: string;
+  answeredTarget?: AgentFieldTarget;
+  answeredSpecKey?: string;
+  suggestedPrice?: number | null;
+};
+
+export const SHOPI_AGENT_TURN = gql`
+  mutation ShopiAgentTurn($id: String!, $input: AgentTurnInput!) {
+    shopiAgentTurn(id: $id, input: $input) {
+      message
+      readyToPublish
+      aiUsed
+      specs {
+        key
+        value
+      }
+      ask {
+        target
+        kind
+        specKey
+        label
+        helper
+        placeholder
+        options
+        prefill
+        required
+      }
+    }
+  }
+` as unknown as TypedDocumentNode<
+  { shopiAgentTurn: AgentTurnResult },
+  { id: string; input: AgentTurnInput }
+>;
+
 export const GUIDED_AUTOSAVE_DRAFT = gql`
   mutation GuidedAutosaveDraft($id: String!, $input: AutosaveDraftInput!) {
     autosaveDraft(id: $id, input: $input) {
