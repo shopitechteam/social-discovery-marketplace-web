@@ -59,6 +59,11 @@ const MediaCarouselDialog = dynamic(() =>
 type DetailPost = ContentCardFieldsFragment & {
   slug?: string | null;
   categoryId?: string | null;
+  category?: {
+    id?: string | null;
+    name?: string | null;
+    slug?: string | null;
+  } | null;
   specs?: Array<{ key: string; value: string }>;
   aiClassification?: {
     categoryId?: string | null;
@@ -97,6 +102,11 @@ const ContentDetailDocument = gql`
       hashtags
       creatorId
       categoryId
+      category {
+        id
+        name
+        slug
+      }
       allowDownload
       hdEnabled
       createdAt
@@ -1228,13 +1238,18 @@ export function ContentDetail({
     </div>
   );
 
-  const categoryPath = [
-    post.aiClassification?.level1,
-    post.aiClassification?.level2,
-    post.aiClassification?.level3,
-  ]
-    .filter(Boolean)
-    .join(" / ");
+  // Prefer the AI-classified hierarchy, then the resolved category name.
+  // Never fall back to `categoryId` — it is a raw ObjectId, not a label.
+  const categoryLabel =
+    [
+      post.aiClassification?.level1,
+      post.aiClassification?.level2,
+      post.aiClassification?.level3,
+    ]
+      .filter(Boolean)
+      .join(" / ") ||
+    post.category?.name ||
+    "";
   const specs = (post.specs ?? []).filter((spec) => spec.key && spec.value);
   const fullLocation = [
     post.location?.placeName,
@@ -1245,8 +1260,7 @@ export function ContentDetail({
     .filter(Boolean)
     .join(", ");
 
-  const DetailMeta = (categoryPath ||
-    post.categoryId ||
+  const DetailMeta = (categoryLabel ||
     fullLocation ||
     specs.length > 0) && (
     <div className="border-b border-default px-4 py-4">
@@ -1254,14 +1268,12 @@ export function ContentDetail({
         Details
       </h2>
       <div className="grid gap-3 text-sm">
-        {(categoryPath || post.categoryId) && (
+        {categoryLabel && (
           <div>
             <p className="text-xs font-semibold text-muted-foreground">
               Category
             </p>
-            <p className="mt-0.5 text-default">
-              {categoryPath || post.categoryId}
-            </p>
+            <p className="mt-0.5 text-default">{categoryLabel}</p>
           </div>
         )}
         {fullLocation && (

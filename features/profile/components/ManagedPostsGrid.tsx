@@ -41,6 +41,13 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { CategoryPickerDrawer } from "@/features/create/components/CategoryPickerDrawer";
 import { contentPath } from "@/lib/content-url";
 import {
@@ -393,6 +400,43 @@ type EditFormState = {
   categoryLabel: string | null;
 };
 
+type StatusFilter = "all" | "active" | "review" | "attention" | "hidden";
+type SortKey = "recent" | "priceHigh" | "views";
+
+function matchesStatusFilter(post: ManagedPost, filter: StatusFilter) {
+  switch (filter) {
+    case "active":
+      return post.status === "ACTIVE";
+    case "review":
+      return (
+        post.status === "PENDING_REVIEW" ||
+        post.status === "UNDER_REVIEW" ||
+        post.status === "PROCESSING"
+      );
+    case "attention":
+      return post.status === "REJECTED" || post.status === "FAILED";
+    case "hidden":
+      return post.visibility !== "PUBLIC";
+    default:
+      return true;
+  }
+}
+
+function sortPosts(posts: ManagedPost[], sortBy: SortKey) {
+  const copy = [...posts];
+  switch (sortBy) {
+    case "priceHigh":
+      return copy.sort((a, b) => b.price.amount - a.price.amount);
+    case "views":
+      return copy.sort((a, b) => b.stats.views - a.stats.views);
+    default:
+      return copy.sort(
+        (a, b) =>
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+      );
+  }
+}
+
 export function ManagedPostsGrid({
   posts,
   hasMore,
@@ -408,6 +452,7 @@ export function ManagedPostsGrid({
   const [editingPost, setEditingPost] = useState<ManagedPost | null>(null);
   const [deletePost, setDeletePost] = useState<ManagedPost | null>(null);
   const [editState, setEditState] = useState<EditFormState | null>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const {
     updatePost,
     setHidden,
@@ -419,17 +464,12 @@ export function ManagedPostsGrid({
     onLoadMoreRef.current = onLoadMore;
   }, [onLoadMore]);
 
+  // Eagerly load the full inventory so the status filter counts and the
+  // filtered results reflect every post — not just the first page. Without
+  // this, statuses further down the paginated list (e.g. "Needs attention")
+  // read 0 until more pages happen to load in.
   useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el || !hasMore || loading) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) onLoadMoreRef.current();
-      },
-      { rootMargin: "400px" },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
+    if (hasMore && !loading) onLoadMoreRef.current();
   }, [hasMore, loading, posts.length]);
 
   const openEdit = (post: ManagedPost) => {
@@ -516,6 +556,42 @@ export function ManagedPostsGrid({
     posts.length === 1
       ? "1 post in your inventory"
       : `${posts.length} posts in your inventory`;
+
+  const filterChips = useMemo(
+    () => [
+      { key: "all" as StatusFilter, label: "All", count: posts.length },
+      {
+        key: "active" as StatusFilter,
+        label: "Active",
+        count: posts.filter((p) => matchesStatusFilter(p, "active")).length,
+      },
+      {
+        key: "review" as StatusFilter,
+        label: "In review",
+        count: posts.filter((p) => matchesStatusFilter(p, "review")).length,
+      },
+      {
+        key: "attention" as StatusFilter,
+        label: "Needs attention",
+        count: posts.filter((p) => matchesStatusFilter(p, "attention")).length,
+      },
+      {
+        key: "hidden" as StatusFilter,
+        label: "Hidden",
+        count: posts.filter((p) => matchesStatusFilter(p, "hidden")).length,
+      },
+    ],
+    [posts],
+  );
+
+  const visiblePosts = useMemo(
+    () =>
+      sortPosts(
+        posts.filter((post) => matchesStatusFilter(post, statusFilter)),
+        "recent",
+      ),
+    [posts, statusFilter],
+  );
 
   const actionItems = useMemo(() => {
     if (!actionsPost) return [];
@@ -636,17 +712,45 @@ export function ManagedPostsGrid({
           </Link>
         }
       >
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3 xl:grid-cols-4 2xl:grid-cols-5 2xl:gap-4">
-          {posts.map((post, index) => (
-            <InventoryCard
-              key={post.id}
-              post={post}
-              lang={lang}
-              priority={index < 6}
-              onOpenActions={setActionsPost}
-            />
-          ))}
-        </div>
+        <InventoryToolbar
+          chips={filterChips}
+          activeFilter={statusFilter}
+          onFilterChange={setStatusFilter}
+        />
+
+        {visiblePosts.length === 0 ? (
+          <div
+            className="flex flex-col items-center justify-center rounded-[20px] border border-dashed px-6 py-14 text-center"
+            style={{ borderColor: "rgb(var(--color-border))" }}
+          >
+            <p className="text-sm font-semibold text-foreground">
+              Nothing in this view
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              No posts match this filter yet.
+            </p>
+            <button
+              type="button"
+              onClick={() => setStatusFilter("all")}
+              className="mt-4 rounded-full border px-4 py-1.5 text-sm font-semibold transition-colors hover:bg-surface"
+              style={{ borderColor: "rgb(var(--color-border))" }}
+            >
+              Show all posts
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3 xl:grid-cols-4 2xl:grid-cols-5 2xl:gap-4">
+            {visiblePosts.map((post, index) => (
+              <InventoryCard
+                key={post.id}
+                post={post}
+                lang={lang}
+                priority={index < 6}
+                onOpenActions={setActionsPost}
+              />
+            ))}
+          </div>
+        )}
 
         <div ref={sentinelRef} className="h-px" />
         {hasMore && loading && (
@@ -842,6 +946,44 @@ export function ManagedPostsGrid({
         )}
       </DeleteSurface>
     </>
+  );
+}
+
+function InventoryToolbar({
+  chips,
+  activeFilter,
+  onFilterChange,
+}: {
+  chips: { key: StatusFilter; label: string; count: number }[];
+  activeFilter: StatusFilter;
+  onFilterChange: (key: StatusFilter) => void;
+}) {
+  const activeChip =
+    chips.find((chip) => chip.key === activeFilter) ?? chips[0];
+
+  return (
+    <div className="mb-4 flex items-center justify-between gap-3">
+      <p className="text-sm text-muted-foreground">
+        {activeChip.count === 1
+          ? "1 post"
+          : `${activeChip.count} posts`}
+      </p>
+      <Select
+        value={activeFilter}
+        onValueChange={(value) => onFilterChange(value as StatusFilter)}
+      >
+        <SelectTrigger className="h-9 w-44 rounded-full">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {chips.map((chip) => (
+            <SelectItem key={chip.key} value={chip.key}>
+              {chip.label} ({chip.count})
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }
 
