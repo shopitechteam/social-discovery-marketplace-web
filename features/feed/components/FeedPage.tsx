@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { FeedHeader } from "./FeedHeader";
 import FeedGrid from "./FeedGrid";
 import { FeedSkeleton } from "./FeedSkeleton";
+import { useUiStore } from "@/stores/ui";
 
 const FollowingGrid = dynamic(() =>
   import("./FollowingGrid").then((mod) => mod.FollowingGrid),
@@ -40,6 +41,7 @@ const isMobileViewport = () =>
 
 export function FeedPage({ lang, visible = true }: Props) {
   const searchParams = useSearchParams();
+  const setBottomNavHidden = useUiStore((s) => s.setBottomNavHidden);
   // Only mount the feed tree that can actually be displayed. CSS-hidden client
   // components still execute, query, observe layout, and download all of their
   // dependencies; mounting both variants made mobile load the desktop Mux/HLS
@@ -78,6 +80,14 @@ export function FeedPage({ lang, visible = true }: Props) {
     "ask-shopi": 0,
   });
   const prevTab = useRef<Tab>(initialTab);
+
+  // Ask Shopi owns the bottom edge of the mobile viewport, so remove both the
+  // fixed nav and the space MainShell reserves for it while this tab is active.
+  // `visible` prevents a persistently mounted feed from affecting other routes.
+  useLayoutEffect(() => {
+    setBottomNavHidden(visible && tab === "ask-shopi");
+    return () => setBottomNavHidden(false);
+  }, [setBottomNavHidden, tab, visible]);
 
   // Restore the incoming tab's scroll AFTER the show/hide classes apply but
   // before paint, so there's no flash at the wrong offset. Layout effects run
