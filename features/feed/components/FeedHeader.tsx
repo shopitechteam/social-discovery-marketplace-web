@@ -1,6 +1,6 @@
 "use client";
 
-type Tab = "for-you" | "following" | "nearby";
+type Tab = "for-you" | "following" | "nearby" | "ask-shopi";
 
 interface Props {
   activeTab: Tab;
@@ -12,7 +12,7 @@ export function FeedHeader({ activeTab, onTabChange }: Props) {
     { id: "for-you", label: "For You" },
     { id: "following", label: "Following" },
     { id: "nearby", label: "Nearby" },
-    // { id: "ask-shopi", label: "Ask Shopi" },
+    { id: "ask-shopi", label: "Ask Shopi" },
   ];
 
   return (

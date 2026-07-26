@@ -68,6 +68,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
+import { useSocket } from "@/hooks/useSocket";
+import {
+  WS_EVENTS,
+  type AgentStreamDeltaPayload,
+  type AgentStreamDonePayload,
+} from "@/lib/socket/socket-events";
 import { CreateBanner } from "./DesktopCreateFlow";
 import {
   CreateSuccessPrimaryAction,
@@ -235,6 +241,44 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
   const [agentThinking, setAgentThinking] = useState(false);
   const agentTurnInFlightRef = useRef(false);
   const { startImageUpload, startVideoUpload } = useMediaUpload();
+
+  // Live streamed assistant message for the in-flight turn. The server streams
+  // the reply over the socket as Gemini generates it, so the seller sees text
+  // appear immediately instead of waiting for the whole turn to resolve. The
+  // authoritative message still arrives with the mutation and replaces this.
+  const { on: onSocketEvent } = useSocket();
+  const [streamingText, setStreamingText] = useState("");
+  const streamingTextRef = useRef("");
+
+  useEffect(() => {
+    const isCurrentDraft = (draftIdOfEvent: string) =>
+      draftIdOfEvent === useCreateStore.getState().draftId;
+
+    const offDelta = onSocketEvent<AgentStreamDeltaPayload>(
+      WS_EVENTS.AGENT_STREAM_DELTA,
+      (payload) => {
+        if (payload.channel !== "seller" || !isCurrentDraft(payload.draftId)) return;
+        streamingTextRef.current += payload.delta;
+        setStreamingText(streamingTextRef.current);
+      },
+    );
+    const offDone = onSocketEvent<AgentStreamDonePayload>(
+      WS_EVENTS.AGENT_STREAM_DONE,
+      () => {
+        // The final message arrives with the mutation result, which clears the
+        // streaming preview; nothing to do here beyond letting it settle.
+      },
+    );
+    return () => {
+      offDelta();
+      offDone();
+    };
+  }, [onSocketEvent]);
+
+  const resetStreamingText = () => {
+    streamingTextRef.current = "";
+    setStreamingText("");
+  };
 
   const { data: suggestedLocationData } = useQuery(
     SuggestedPostLocationDocument,
@@ -782,6 +826,7 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
     const id = useCreateStore.getState().draftId;
     if (!id || agentTurnInFlightRef.current) return;
     agentTurnInFlightRef.current = true;
+    resetStreamingText();
     setAgentThinking(true);
     setFormError(null);
     try {
@@ -837,6 +882,7 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
     } finally {
       agentTurnInFlightRef.current = false;
       setAgentThinking(false);
+      resetStreamingText();
     }
   }
 
@@ -1389,7 +1435,14 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
 
               {agentThinking ? (
                 <AgentBubble>
-                  <AgentTyping />
+                  {streamingText ? (
+                    <p className="whitespace-pre-wrap">
+                      {streamingText}
+                      <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-primary align-middle" />
+                    </p>
+                  ) : (
+                    <AgentTyping />
+                  )}
                 </AgentBubble>
               ) : null}
 
