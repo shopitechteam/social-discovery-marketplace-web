@@ -6,12 +6,16 @@ import { useSearchParams } from "next/navigation";
 import { FeedHeader } from "./FeedHeader";
 import FeedGrid from "./FeedGrid";
 import { FeedSkeleton } from "./FeedSkeleton";
+import { useUiStore } from "@/stores/ui";
 
 const FollowingGrid = dynamic(() =>
   import("./FollowingGrid").then((mod) => mod.FollowingGrid),
 );
 const NearbyGrid = dynamic(() =>
   import("./NearbyGrid").then((mod) => mod.NearbyGrid),
+);
+const AskShopiGrid = dynamic(() =>
+  import("./AskShopiGrid").then((mod) => mod.AskShopiGrid),
 );
 const DesktopFeed = dynamic(() => import("./DesktopFeed"), {
   // Show the desktop-shaped skeleton while the chunk downloads, so the
@@ -24,10 +28,10 @@ interface Props {
   visible?: boolean;
 }
 
-type Tab = "for-you" | "following" | "nearby";
+type Tab = "for-you" | "following" | "nearby" | "ask-shopi";
 
 const isTab = (v: string | null): v is Tab =>
-  v === "for-you" || v === "following" || v === "nearby";
+  v === "for-you" || v === "following" || v === "nearby" || v === "ask-shopi";
 
 /** The mobile card feed is hidden on md+ (DesktopFeed owns the window scroll
  *  there), so its save/restore must not fire on desktop viewports. */
@@ -37,6 +41,7 @@ const isMobileViewport = () =>
 
 export function FeedPage({ lang, visible = true }: Props) {
   const searchParams = useSearchParams();
+  const setBottomNavHidden = useUiStore((s) => s.setBottomNavHidden);
   // Only mount the feed tree that can actually be displayed. CSS-hidden client
   // components still execute, query, observe layout, and download all of their
   // dependencies; mounting both variants made mobile load the desktop Mux/HLS
@@ -72,8 +77,17 @@ export function FeedPage({ lang, visible = true }: Props) {
     "for-you": 0,
     following: 0,
     nearby: 0,
+    "ask-shopi": 0,
   });
   const prevTab = useRef<Tab>(initialTab);
+
+  // Ask Shopi owns the bottom edge of the mobile viewport, so remove both the
+  // fixed nav and the space MainShell reserves for it while this tab is active.
+  // `visible` prevents a persistently mounted feed from affecting other routes.
+  useLayoutEffect(() => {
+    setBottomNavHidden(visible && tab === "ask-shopi");
+    return () => setBottomNavHidden(false);
+  }, [setBottomNavHidden, tab, visible]);
 
   // Restore the incoming tab's scroll AFTER the show/hide classes apply but
   // before paint, so there's no flash at the wrong offset. Layout effects run
@@ -164,6 +178,13 @@ export function FeedPage({ lang, visible = true }: Props) {
             {openedTabs.has("nearby") ? (
               <div className={tab === "nearby" ? undefined : "hidden"}>
                 <NearbyGrid lang={lang} active={visible && tab === "nearby"} />
+              </div>
+            ) : null}
+
+            {/* Ask Shopi — conversational buyer search. Mounts on first open. */}
+            {openedTabs.has("ask-shopi") ? (
+              <div className={tab === "ask-shopi" ? undefined : "hidden"}>
+                <AskShopiGrid lang={lang} active={visible && tab === "ask-shopi"} />
               </div>
             ) : null}
           </div>

@@ -20,6 +20,8 @@ export const WS_EVENTS = {
   DM_CONVERSATION_REMOVED: 'dm:conversation:removed',
   DM_PRESENCE_UPDATED: 'dm:presence:updated',
   DM_TYPING_UPDATED: 'dm:typing:updated',
+  AGENT_STREAM_DELTA: 'agent:stream:delta',
+  AGENT_STREAM_DONE: 'agent:stream:done',
 } as const;
 
 export const WS_CLIENT_EVENTS = {
@@ -186,4 +188,16 @@ export interface NotificationUpdatedPayload {
   action: 'upserted' | 'read' | 'read_all';
   notification?: NotificationPayload;
   unreadCount: number;
+}
+
+export interface AgentStreamDeltaPayload {
+  draftId: string;
+  channel: 'seller';
+  delta: string;
+}
+
+export interface AgentStreamDonePayload {
+  draftId: string;
+  channel: 'seller';
+  empty: boolean;
 }

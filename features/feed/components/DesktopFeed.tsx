@@ -35,13 +35,18 @@ const InlineChatPanel = dynamic(() =>
   ),
 );
 
-type Tab = "for-you" | "following" | "nearby";
+type Tab = "for-you" | "following" | "nearby" | "ask-shopi";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "for-you", label: "For You" },
   { id: "following", label: "Following" },
   { id: "nearby", label: "Nearby" },
+  { id: "ask-shopi", label: "Ask Shopi" },
 ];
+
+const AskShopiGrid = dynamic(() =>
+  import("./AskShopiGrid").then((mod) => mod.AskShopiGrid),
+);
 
 // ── Shared column chrome ─────────────────────────────────────────────────────
 
@@ -229,7 +234,7 @@ function FollowingColumn({ lang }: { lang: string }) {
 // ── Main DesktopFeed ─────────────────────────────────────────────────────────
 
 const isTab = (v: string | null): v is Tab =>
-  v === "for-you" || v === "following" || v === "nearby";
+  v === "for-you" || v === "following" || v === "nearby" || v === "ask-shopi";
 
 /** True when the desktop (md+) layout is the visible one. The mobile FeedPage
  *  shares the document with us; only the visible layout may drive scroll. */
@@ -264,6 +269,7 @@ export default function DesktopFeed({
     "for-you": 0,
     following: 0,
     nearby: 0,
+    "ask-shopi": 0,
   });
   const prevTab = useRef<Tab>(initialTab);
 
@@ -421,6 +427,11 @@ export default function DesktopFeed({
               {openedTabs.has("nearby") ? (
                 <div className={tab === "nearby" ? undefined : "hidden"}>
                   <DesktopNearbyColumn lang={lang} />
+                </div>
+              ) : null}
+              {openedTabs.has("ask-shopi") ? (
+                <div className={tab === "ask-shopi" ? undefined : "hidden"}>
+                  <AskShopiGrid lang={lang} active={tab === "ask-shopi"} />
                 </div>
               ) : null}
             </div>
