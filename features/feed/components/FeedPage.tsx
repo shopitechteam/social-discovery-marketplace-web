@@ -7,6 +7,7 @@ import { FeedHeader } from "./FeedHeader";
 import FeedGrid from "./FeedGrid";
 import { FeedSkeleton } from "./FeedSkeleton";
 import { useUiStore } from "@/stores/ui";
+import { SHOW_ASK_SHOPI } from "@/features/feed/utils/askShopiAvailability";
 
 const FollowingGrid = dynamic(() =>
   import("./FollowingGrid").then((mod) => mod.FollowingGrid),
@@ -31,7 +32,10 @@ interface Props {
 type Tab = "for-you" | "following" | "nearby" | "ask-shopi";
 
 const isTab = (v: string | null): v is Tab =>
-  v === "for-you" || v === "following" || v === "nearby" || v === "ask-shopi";
+  v === "for-you" ||
+  v === "following" ||
+  v === "nearby" ||
+  (SHOW_ASK_SHOPI && v === "ask-shopi");
 
 /** The mobile card feed is hidden on md+ (DesktopFeed owns the window scroll
  *  there), so its save/restore must not fire on desktop viewports. */
@@ -182,7 +186,7 @@ export function FeedPage({ lang, visible = true }: Props) {
             ) : null}
 
             {/* Ask Shopi — conversational buyer search. Mounts on first open. */}
-            {openedTabs.has("ask-shopi") ? (
+            {SHOW_ASK_SHOPI && openedTabs.has("ask-shopi") ? (
               <div className={tab === "ask-shopi" ? undefined : "hidden"}>
                 <AskShopiGrid lang={lang} active={visible && tab === "ask-shopi"} />
               </div>
