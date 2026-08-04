@@ -28,6 +28,7 @@ import { DesktopTrendingRail } from "./DesktopTrendingRail";
 import { TrendingStrip } from "./TrendingStrip";
 import { DesktopNearbyColumn } from "./DesktopNearbyColumn";
 import { FeedChatProvider } from "./FeedChatContext";
+import { SHOW_ASK_SHOPI } from "@/features/feed/utils/askShopiAvailability";
 
 const InlineChatPanel = dynamic(() =>
   import("@/features/messaging/components/InlineChatPanel").then(
@@ -41,7 +42,9 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "for-you", label: "For You" },
   { id: "following", label: "Following" },
   { id: "nearby", label: "Nearby" },
-  { id: "ask-shopi", label: "Ask Shopi" },
+  ...(SHOW_ASK_SHOPI
+    ? [{ id: "ask-shopi" as const, label: "Ask Shopi" }]
+    : []),
 ];
 
 const AskShopiGrid = dynamic(() =>
@@ -234,7 +237,10 @@ function FollowingColumn({ lang }: { lang: string }) {
 // ── Main DesktopFeed ─────────────────────────────────────────────────────────
 
 const isTab = (v: string | null): v is Tab =>
-  v === "for-you" || v === "following" || v === "nearby" || v === "ask-shopi";
+  v === "for-you" ||
+  v === "following" ||
+  v === "nearby" ||
+  (SHOW_ASK_SHOPI && v === "ask-shopi");
 
 /** True when the desktop (md+) layout is the visible one. The mobile FeedPage
  *  shares the document with us; only the visible layout may drive scroll. */
@@ -429,7 +435,7 @@ export default function DesktopFeed({
                   <DesktopNearbyColumn lang={lang} />
                 </div>
               ) : null}
-              {openedTabs.has("ask-shopi") ? (
+              {SHOW_ASK_SHOPI && openedTabs.has("ask-shopi") ? (
                 <div className={tab === "ask-shopi" ? undefined : "hidden"}>
                   <AskShopiGrid lang={lang} active={tab === "ask-shopi"} />
                 </div>

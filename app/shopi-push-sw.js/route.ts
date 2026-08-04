@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-const FALLBACK_FRONTEND_URL = "https://shopi.co.ke";
+const FALLBACK_FRONTEND_URL = "https://www.shopi.co.ke";
 
 function frontendUrl(): string {
   const value =

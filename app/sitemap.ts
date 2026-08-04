@@ -3,6 +3,7 @@ import { siteConfig } from "@/config/site";
 import { blogPosts } from "@/lib/blog";
 import { locales } from "@/i18n/config";
 import { contentPath } from "@/lib/content-url";
+import { COUNTIES } from "@/lib/counties";
 
 /**
  * The app is served under /[lang]. Every public page exists per-locale, so each
@@ -17,7 +18,17 @@ import { contentPath } from "@/lib/content-url";
 
 // The API caps discoveryFeed's `limit` at 50, so page through with cursors.
 const LISTING_SITEMAP_PAGE = 50;
-const LISTING_SITEMAP_MAX = 300;
+
+// A single sitemap may hold 50,000 URLs, so the old 300 ceiling — not the
+// format — was what capped indexable inventory. Listings are the marketplace's
+// highest-value SEO surface and, being discovered mainly through JS-driven
+// browse surfaces, the sitemap is how engines find most of them.
+const LISTING_SITEMAP_MAX = 5000;
+
+// …but each page is a sequential round trip, so bound the walk by wall clock
+// too. Whatever has been collected when the budget runs out still ships; the
+// next hourly revalidate picks up from a fresh NEWEST ordering.
+const LISTING_FETCH_BUDGET_MS = 20_000;
 
 type SitemapListing = {
   id: string;
@@ -31,10 +42,12 @@ async function fetchRecentListings(): Promise<SitemapListing[]> {
   if (!api) return [];
 
   const listings: SitemapListing[] = [];
+  const seen = new Set<string>();
+  const deadline = Date.now() + LISTING_FETCH_BUDGET_MS;
   let after: string | null = null;
 
   try {
-    while (listings.length < LISTING_SITEMAP_MAX) {
+    while (listings.length < LISTING_SITEMAP_MAX && Date.now() < deadline) {
       const res: Response = await fetch(`${api}/graphql`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -65,7 +78,14 @@ async function fetchRecentListings(): Promise<SitemapListing[]> {
       const page = json.data?.discoveryFeed;
       if (!page?.items?.length) break;
 
-      listings.push(...page.items.filter((i) => i?.id));
+      // A feed reordered mid-walk can repeat an item across cursor pages; a
+      // sitemap listing the same URL twice is a validation warning.
+      for (const item of page.items) {
+        if (!item?.id || seen.has(item.id)) continue;
+        seen.add(item.id);
+        listings.push(item);
+      }
+
       if (!page.pageInfo?.hasNextPage || !page.pageInfo.endCursor) break;
       after = page.pageInfo.endCursor;
     }
@@ -93,6 +113,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }[] = [
     { path: "", changeFrequency: "weekly", priority: 1 },
     { path: "/blog", changeFrequency: "weekly", priority: 0.85 },
+    { path: "/faq", changeFrequency: "monthly", priority: 0.8 },
+    { path: "/shopi-agent", changeFrequency: "monthly", priority: 0.9 },
+    {
+      path: "/marketplace-alternatives-kenya",
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
     { path: "/about", changeFrequency: "monthly", priority: 0.7 },
     { path: "/careers", changeFrequency: "monthly", priority: 0.5 },
     { path: "/feed", changeFrequency: "always", priority: 0.9 },
@@ -132,6 +159,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     alternates: alternates(p.path),
   }));
 
+  const countyEntries: MetadataRoute.Sitemap = COUNTIES.map((county) => ({
+    url: langs("en", `/marketplace/${county.slug}`),
+    lastModified: now,
+    changeFrequency: "daily",
+    priority: 0.85,
+    alternates: alternates(`/marketplace/${county.slug}`),
+  }));
+
   const blogEntries: MetadataRoute.Sitemap = blogPosts.map((post) => ({
     url: langs("en", `/blog/${post.slug}`),
     lastModified: new Date(post.publishedAt),
@@ -152,5 +187,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     };
   });
 
-  return [...staticEntries, ...blogEntries, ...listingEntries];
+  return [
+    ...staticEntries,
+    ...countyEntries,
+    ...blogEntries,
+    ...listingEntries,
+  ];
 }

@@ -2,22 +2,34 @@
 
 import { useQuery } from "@apollo/client/react";
 import { GetUserProfileDocument } from "@/types/__generated__/graphql";
+import type { ProfileUserFieldsFragment } from "@/types/__generated__/graphql";
 import { useAuthStore } from "@/stores/auth";
 import { CreatorProfileView } from "./CreatorProfileView";
 
 interface Props {
   username: string;
   lang: string;
+  /**
+   * Server-fetched profile used for the first render. The route already loads
+   * this for the page's metadata and JSON-LD; passing it down means the seller's
+   * name, bio and listings are in the crawled HTML rather than behind a client
+   * query that non-JS crawlers never run.
+   */
+  initialProfile?: ProfileUserFieldsFragment | null;
 }
 
-export function CreatorProfilePage({ username, lang }: Props) {
+export function CreatorProfilePage({ username, lang, initialProfile }: Props) {
   const currentUserId = useAuthStore((s) => s.user?.id);
 
   const { data, loading } = useQuery(GetUserProfileDocument, {
     variables: { username },
   });
 
-  if (loading) {
+  const profile = data?.userProfile ?? initialProfile;
+
+  // Skeleton only when there is genuinely nothing to show — with a server-
+  // supplied profile the first paint is the real page.
+  if (loading && !profile) {
     return (
       <div
         className="min-h-screen"
@@ -45,9 +57,7 @@ export function CreatorProfilePage({ username, lang }: Props) {
                 />
               </div>
             </div>
-            <div
-              className="rounded-[28px] lg:border lg:border-[rgb(229_231_235)] lg:bg-[rgb(var(--color-bg-elevated)/0.72)] lg:p-6"
-            >
+            <div className="rounded-[28px] lg:border lg:border-[rgb(229_231_235)] lg:bg-[rgb(var(--color-bg-elevated)/0.72)] lg:p-6">
               <div
                 className="h-5 w-28 animate-pulse rounded-lg"
                 style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
@@ -90,7 +100,7 @@ export function CreatorProfilePage({ username, lang }: Props) {
     );
   }
 
-  if (!data?.userProfile) {
+  if (!profile) {
     return (
       <div
         className="flex min-h-screen items-center justify-center"
@@ -108,13 +118,11 @@ export function CreatorProfilePage({ username, lang }: Props) {
     );
   }
 
-  const isOwnProfile = Boolean(
-    currentUserId && currentUserId === data.userProfile.id,
-  );
+  const isOwnProfile = Boolean(currentUserId && currentUserId === profile.id);
 
   return (
     <CreatorProfileView
-      user={data.userProfile}
+      user={profile}
       lang={lang}
       isOwnProfile={isOwnProfile}
     />
