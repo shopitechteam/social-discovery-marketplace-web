@@ -7,6 +7,7 @@ import { GetUserProfileDocument } from "@/types/__generated__/graphql";
 import type { ProfileUserFieldsFragment } from "@/types/__generated__/graphql";
 import { siteConfig } from "@/config/site";
 import { profilePageSchema, jsonLd } from "@/lib/structured-data";
+import { localeAlternates } from "@/lib/metadata";
 
 interface Props {
   params: Promise<{ lang: string; username: string }>;
@@ -46,7 +47,9 @@ function buildDescription(p: Profile): string {
     stats.push(`${p.postCount} listing${p.postCount === 1 ? "" : "s"}`);
   }
   if (typeof p.followerCount === "number") {
-    stats.push(`${p.followerCount} follower${p.followerCount === 1 ? "" : "s"}`);
+    stats.push(
+      `${p.followerCount} follower${p.followerCount === 1 ? "" : "s"}`,
+    );
   }
   const tail = stats.length ? ` · ${stats.join(" · ")}` : "";
   return `${name} on ${siteConfig.name}, Kenya's social marketplace${tail}. Browse their listings and message them directly.`;
@@ -83,7 +86,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       "Shopi seller",
       "Kenya marketplace seller",
     ].filter(Boolean) as string[],
-    alternates: { canonical },
+    alternates: {
+      canonical,
+      ...localeAlternates(`/profile/${username}`),
+    },
     openGraph: {
       type: "profile",
       url: canonical,
@@ -131,7 +137,11 @@ export default async function Page({ params }: Props) {
           }}
         />
       )}
-      <CreatorProfilePage username={username} lang={lang} />
+      <CreatorProfilePage
+        username={username}
+        lang={lang}
+        initialProfile={profile}
+      />
     </>
   );
 }

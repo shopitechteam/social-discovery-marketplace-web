@@ -9,7 +9,7 @@ import { Analytics } from "@vercel/analytics/next";
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
   title: {
-    default: `${siteConfig.name} — ${siteConfig.tagline}`,
+    default: siteConfig.metaTitle,
     template: `%s | ${siteConfig.name}`,
   },
   description: siteConfig.description,
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     locale: "en_KE",
     url: siteConfig.url,
     siteName: siteConfig.name,
-    title: `${siteConfig.name} — ${siteConfig.tagline}`,
+    title: siteConfig.metaTitle,
     description: siteConfig.description,
     // OG/Twitter images are supplied by the sibling opengraph-image route
     // (app/[lang]/opengraph-image.tsx), so they resolve under the locale prefix.
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     site: siteConfig.twitterHandle,
     creator: siteConfig.twitterHandle,
-    title: `${siteConfig.name} — ${siteConfig.tagline}`,
+    title: siteConfig.metaTitle,
     description: siteConfig.description,
   },
   manifest: "/manifest.json",

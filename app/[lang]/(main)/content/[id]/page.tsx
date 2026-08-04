@@ -1,16 +1,13 @@
 import type { Metadata } from "next";
 import { ContentDetail } from "@/features/feed/components/ContentDetail";
 import { query } from "@/lib/apollo/ApolloClient";
-import { GetContentDocument } from "@/types/__generated__/graphql";
+import { ContentDetailDocument } from "@/features/feed/queries/contentDetail";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { siteConfig } from "@/config/site";
 import { permanentRedirect } from "next/navigation";
-import {
-  productSchema,
-  breadcrumbSchema,
-  jsonLd,
-} from "@/lib/structured-data";
+import { productSchema, breadcrumbSchema, jsonLd } from "@/lib/structured-data";
 import { contentPath } from "@/lib/content-url";
+import { localeAlternates } from "@/lib/metadata";
 
 type Props = { params: Promise<{ lang: string; id: string }> };
 
@@ -22,13 +19,21 @@ export const revalidate = 3600;
 
 type Post = ContentCardFieldsFragment & { slug?: string | null };
 
+// The full PDP query — the same document ContentDetail runs on the client, so
+// one server fetch feeds the metadata, the JSON-LD *and* the first render of
+// the page itself (passed down as `initialPost`). Fetching the narrower
+// GetContent document here would leave the rendered listing waiting on a
+// client round trip, which is what kept listings out of non-JS crawlers.
 async function getPost(id: string): Promise<Post | null> {
   try {
     const { data } = await query({
-      query: GetContentDocument,
+      query: ContentDetailDocument,
       variables: { id },
     });
-    return (data?.content as Post | undefined) ?? null;
+    return (
+      ((data as { content?: Post | null } | undefined)?.content as
+        Post | undefined) ?? null
+    );
   } catch {
     return null;
   }
@@ -123,7 +128,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       siteConfig.name,
       "Kenya marketplace",
     ].filter(Boolean) as string[],
-    alternates: { canonical },
+    // contentPath() is locale-prefixed; strip it back to the bare path so the
+    // same listing is declared under both /en and /sw.
+    alternates: {
+      canonical,
+      ...localeAlternates(contentPath(lang, post).replace(`/${lang}`, "")),
+    },
     openGraph: {
       type: "website",
       url: canonical,
@@ -174,6 +184,9 @@ export default async function ContentDetailPage({ params }: Props) {
                 currency: post.price?.currency,
                 negotiable: post.price?.negotiable,
                 sellerName: sellerName(post),
+                sellerUrl: post.creator?.username
+                  ? `${siteConfig.url}/${lang}/profile/${post.creator.username}`
+                  : null,
                 locationName: locationName(post),
                 category: post.hashtags?.[0] ?? null,
                 createdAt: post.createdAt
@@ -189,7 +202,12 @@ export default async function ContentDetailPage({ params }: Props) {
           }}
         />
       )}
-      <ContentDetail id={id} lang={lang} desktopMode="page" />
+      <ContentDetail
+        id={id}
+        lang={lang}
+        desktopMode="page"
+        initialPost={post}
+      />
     </>
   );
 }

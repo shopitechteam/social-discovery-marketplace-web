@@ -18,114 +18,33 @@ import { getDictionary } from "@/i18n/getDictionary";
 import { isValidLocale, locales, type Locale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import { siteConfig } from "@/config/site";
+import { HOME_FAQ, type FaqItem } from "@/lib/faq";
 import {
   organizationSchema,
   websiteSchema,
   marketplaceSchema,
+  agentSchema,
   faqSchema,
   jsonLd,
 } from "@/lib/structured-data";
-
-type FaqItem = { q: string; a: string };
-
-const HOME_FAQ_EN: FaqItem[] = [
-  {
-    q: "What is Shopi?",
-    a: "Shopi is a social discovery classifieds marketplace for Kenya. Sellers post what they are selling, buyers discover items in a nearby feed, and both sides message each other directly to agree on price, pickup, delivery and payment.",
-  },
-  {
-    q: "Does Shopi handle payments or delivery?",
-    a: "No. Shopi does not process payments, hold money, arrange delivery or take commission. The app helps buyers and sellers find each other, then they agree on the deal directly.",
-  },
-  {
-    q: "How is Shopi different from normal classified ads sites?",
-    a: "Most classifieds start with search filters. Shopi starts with discovery: short posts from nearby sellers appear in a feed, so buyers can find useful items even when they did not know exactly what to search for.",
-  },
-  {
-    q: "How does Shopi personalize my feed?",
-    a: "Shopi learns from what you open, like, save and message about. If you keep engaging with cars, your feed can show more cars. If your interest moves to fashion, furniture, phones or farm produce, the feed can adjust.",
-  },
-  {
-    q: "What can I buy and sell on Shopi?",
-    a: "Shopi is built for everyday local selling: cars, phones, electronics, fashion, furniture, home items, farm produce, livestock and other goods that people in Kenya already buy and sell.",
-  },
-  {
-    q: "Does Shopi work across Kenya?",
-    a: "Yes. Shopi is built for local discovery across Kenya, including Nairobi, Mombasa, Kisumu, Nakuru, Meru and smaller towns. Nearby posts are prioritized, but buyers and sellers can still connect across locations.",
-  },
-  {
-    q: "How do I create a Shopi account?",
-    a: "Go to shopi.co.ke and tap Sign in, then create an account with Google or with your email address and a password. Sign in with Apple is available on Apple devices. You do not need a registered business or phone-number verification to join.",
-  },
-  {
-    q: "How do I post something for sale on Shopi?",
-    a: "Sign in and tap Create, then add a video or photos of your item, a title, a description, a price in Kenyan Shillings, a category, and your location. Publishing is free and the listing goes live in the local feed immediately.",
-  },
-  {
-    q: "How do buyers and sellers communicate on Shopi?",
-    a: "Through Shopi's built-in chat. Open a listing and tap Message — the conversation happens inside Shopi, not on WhatsApp. Buyer and seller then agree on price, payment, and pickup or delivery directly.",
-  },
-];
-
-const HOME_FAQ: Record<Locale, FaqItem[]> = {
-  en: HOME_FAQ_EN,
-  sw: [
-    {
-      q: "Shopi ni nini?",
-      a: "Shopi ni soko la matangazo ya bidhaa la kijamii nchini Kenya. Wauzaji huweka bidhaa zao, wanunuzi huzigundua kwenye feed ya karibu, kisha pande zote mbili huwasiliana moja kwa moja kukubaliana bei, mahali pa kuchukua, usafirishaji na malipo.",
-    },
-    {
-      q: "Je, Shopi inashughulikia malipo au usafirishaji?",
-      a: "Hapana. Shopi haichakati wala kushikilia malipo, haipangi usafirishaji, na haichukui commission. Inawasaidia wanunuzi na wauzaji kupatana; wao hukamilisha makubaliano moja kwa moja.",
-    },
-    {
-      q: "Shopi ni tofauti vipi na tovuti za kawaida za matangazo?",
-      a: "Tovuti nyingi za matangazo huanza na vichujio vya utafutaji. Shopi huanza na ugunduzi: post fupi za wauzaji wa karibu huonekana kwenye feed, kwa hivyo unaweza kupata kitu muhimu hata kama hukujua neno kamili la kutafuta.",
-    },
-    {
-      q: "Shopi hupangaje feed yangu?",
-      a: "Shopi hujifunza kutokana na vitu unavyofungua, kupenda, kuhifadhi na kutuma ujumbe kuvihusu. Ukivutiwa zaidi na magari, feed inaweza kuonyesha magari zaidi; ukihamia fashion, samani, simu au mazao, nayo hubadilika.",
-    },
-    {
-      q: "Ninaweza kununua na kuuza nini kwenye Shopi?",
-      a: "Shopi imejengwa kwa biashara za kila siku nchini Kenya: magari, simu, vifaa vya elektroniki, fashion, samani, bidhaa za nyumbani, mazao, mifugo na bidhaa nyingine halali.",
-    },
-    {
-      q: "Je, Shopi inafanya kazi kote Kenya?",
-      a: "Ndiyo. Shopi imejengwa kwa ugunduzi wa karibu kote Kenya, ikiwemo Nairobi, Mombasa, Kisumu, Nakuru, Meru na miji midogo. Post za karibu hupewa kipaumbele, lakini wanunuzi na wauzaji wanaweza kuwasiliana kutoka maeneo tofauti.",
-    },
-    {
-      q: "Ninafunguaje akaunti ya Shopi?",
-      a: "Nenda shopi.co.ke, gusa Sign in, kisha ufungue akaunti kwa Google au kwa barua pepe na nenosiri. Kuingia kwa Apple kunapatikana kwenye vifaa vya Apple. Huhitaji biashara iliyosajiliwa wala uthibitisho wa nambari ya simu ili kujiunga.",
-    },
-    {
-      q: "Ninawezaje kuweka bidhaa ya kuuza kwenye Shopi?",
-      a: "Ingia kisha ugonge Create, kisha ongeza video au picha za bidhaa yako, kichwa, maelezo, bei kwa Shilingi za Kenya, kategoria, na mahali ulipo. Kuchapisha ni bure na tangazo linaonekana kwenye feed ya karibu mara moja.",
-    },
-    {
-      q: "Wanunuzi na wauzaji huwasilianaje kwenye Shopi?",
-      a: "Kupitia chat iliyojengwa ndani ya Shopi. Fungua tangazo kisha ugonge Message — mazungumzo hufanyika ndani ya Shopi, si kwenye WhatsApp. Kisha mnunuzi na muuzaji hukubaliana bei, malipo, na kuchukua au usafirishaji moja kwa moja.",
-    },
-  ],
-};
 
 const HOME_META: Record<
   Locale,
   { title: string; description: string; ogLocale: string }
 > = {
-  // Brand-first titles: Google associates "Shopi" / "Shopi Kenya" queries with
-  // the homepage entity, which is what unlocks sitelinks for brand searches.
-  // Descriptions stay under ~160 chars so they aren't truncated in results.
+  // Titles lead with the commercial intent ("sell online in Kenya") rather than
+  // the brand positioning — the brand term already ranks unaided, so the title
+  // is spent on the query people actually type.
   en: {
-    title: `${siteConfig.name} — Buy & Sell Locally | Kenya Social Marketplace Feed`,
+    title: `${siteConfig.name} — Sell Online in Kenya | Buy & Sell Locally`,
     description:
-      "Shopi is Kenya's social marketplace. Discover cars, phones, fashion, furniture and farm produce from sellers near you, then message them directly. Free, no commission.",
+      "Sell online in Kenya for free with Shopi. Use Shopi Agent to create listings with AI, discover local buyers, and connect directly with buyers and sellers. Zero commission.",
     ogLocale: "en_KE",
   },
   sw: {
-    title: `${siteConfig.name} — Nunua na Uuze Karibu Nawe | Soko la Kijamii la Kenya`,
+    title: `${siteConfig.name} — Uza Mtandaoni Kenya | Nunua na Uuze Karibu Nawe`,
     description:
-      "Shopi ni soko la kijamii la Kenya. Gundua magari, simu, fashion, samani na mazao kutoka kwa wauzaji karibu nawe, kisha uwatumie ujumbe moja kwa moja. Bila commission.",
+      "Uza mtandaoni Kenya bure ukitumia Shopi. Tumia Shopi Agent kuunda matangazo kwa AI, pata wanunuzi wa karibu, na wasiliana moja kwa moja na wanunuzi na wauzaji. Hakuna commission.",
     ogLocale: "sw_KE",
   },
 };
@@ -223,7 +142,8 @@ export default async function Rootpage({ params }: PageProps<"/[lang]">) {
         // outside this wrapper (below) to avoid doubling the lg inset.
         className="lg:px-30 [--landing-page-max:1400px] [--landing-page-x:clamp(0.875rem,1.2vw,1.25rem)]"
       >
-        {/* Structured data — Organization, WebSite (+search), marketplace app, FAQ */}
+        {/* Structured data — Organization, WebSite (+search), marketplace app,
+            Shopi Agent, popular categories, FAQ */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -231,6 +151,7 @@ export default async function Rootpage({ params }: PageProps<"/[lang]">) {
               organizationSchema,
               websiteSchema,
               marketplaceSchema,
+              agentSchema,
               homepageCategorySchema,
               faqSchema(faq),
             ),

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getBlogPost, getAllSlugs, blogPosts } from "@/lib/blog";
 import { siteConfig } from "@/config/site";
+import { localeAlternates } from "@/lib/metadata";
 import { LegalNav } from "@/components/legal/LegalNav";
 import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import { LandingFooter } from "@/components/landing/LandingFooter";
@@ -27,7 +28,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description: post.description,
     keywords: post.keywords,
     authors: [{ name: post.author.name }],
-    alternates: { canonical: url },
+    alternates: {
+      canonical: url,
+      ...localeAlternates(`/blog/${post.slug}`),
+    },
     openGraph: {
       type: "article",
       url,
