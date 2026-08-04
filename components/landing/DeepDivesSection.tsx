@@ -42,7 +42,9 @@ export function DeepDivesSection({
       mockup: <SellMockup />,
       tint: "bg-[rgb(var(--brand-secondary)/0.10)]",
       primaryHref: `/${lang}/upload`,
-      secondaryHref: "#how-it-works",
+      // This row is the Shopi Agent pitch, so "Learn more" should go to the
+      // Shopi Agent page rather than back to a section on this same page.
+      secondaryHref: `/${lang}/shopi-agent`,
     },
   ];
 

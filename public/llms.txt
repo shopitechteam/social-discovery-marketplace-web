@@ -8,6 +8,10 @@
 - [Marketplace feed](https://www.shopi.co.ke/en/feed): Current product and classified listings.
 - [Explore](https://www.shopi.co.ke/en/explore): Browse listings by category and discovery filters.
 - [Search](https://www.shopi.co.ke/en/search): Search cars, phones, fashion, furniture, farm produce, livestock, and other local listings.
+- [FAQ](https://www.shopi.co.ke/en/faq): Fees, Shopi Agent, messaging, safety and coverage — the canonical answers.
+- [Shopi Agent](https://www.shopi.co.ke/en/shopi-agent): What the AI assistant does for sellers and buyers, and what it does not do.
+- [Marketplace alternatives in Kenya](https://www.shopi.co.ke/en/marketplace-alternatives-kenya): How Shopi compares to classifieds sites, Facebook Marketplace, WhatsApp groups and TikTok selling.
+- County pages: https://www.shopi.co.ke/en/marketplace/{county} for nairobi, mombasa, kisumu, nakuru, nyandarua, meru, nyeri, kiambu, uasin-gishu, laikipia.
 - [About Shopi](https://www.shopi.co.ke/en/about): Company mission and marketplace model.
 - [Safety Centre](https://www.shopi.co.ke/en/safety-centre): Guidance for safe local buying and selling.
 - [Prohibited Items](https://www.shopi.co.ke/en/prohibited-items): Items that may not be listed.

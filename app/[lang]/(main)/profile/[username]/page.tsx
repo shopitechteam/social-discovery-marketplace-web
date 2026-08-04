@@ -7,6 +7,7 @@ import { GetUserProfileDocument } from "@/types/__generated__/graphql";
 import type { ProfileUserFieldsFragment } from "@/types/__generated__/graphql";
 import { siteConfig } from "@/config/site";
 import { profilePageSchema, jsonLd } from "@/lib/structured-data";
+import { localeAlternates } from "@/lib/metadata";
 
 interface Props {
   params: Promise<{ lang: string; username: string }>;
@@ -85,7 +86,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       "Shopi seller",
       "Kenya marketplace seller",
     ].filter(Boolean) as string[],
-    alternates: { canonical },
+    alternates: {
+      canonical,
+      ...localeAlternates(`/profile/${username}`),
+    },
     openGraph: {
       type: "profile",
       url: canonical,

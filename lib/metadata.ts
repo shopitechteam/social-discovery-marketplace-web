@@ -1,6 +1,25 @@
 import type { Metadata } from "next";
 import { siteConfig } from "@/config/site";
-import { isValidLocale } from "@/i18n/config";
+import { isValidLocale, locales } from "@/i18n/config";
+
+/**
+ * hreflang alternates for a locale-agnostic path (e.g. "/about", "/blog/x").
+ *
+ * Every public page exists at both /en and /sw. Without these the two copies
+ * compete as near-duplicates and engines pick the language themselves, which
+ * for a Kenyan marketplace means Kiswahili speakers routinely getting the
+ * English page. x-default points at /en as the fallback for unmatched locales.
+ */
+export function localeAlternates(path: string) {
+  return {
+    languages: {
+      ...Object.fromEntries(
+        locales.map((l) => [l, `${siteConfig.url}/${l}${path}`]),
+      ),
+      "x-default": `${siteConfig.url}/en${path}`,
+    },
+  };
+}
 
 /**
  * Metadata for private, personalized, or not-yet-built pages. Keeps them out
@@ -25,7 +44,7 @@ export function publicPageMetadata(input: {
   return {
     title: input.title,
     description: input.description,
-    alternates: { canonical },
+    alternates: { canonical, ...localeAlternates(input.path) },
     openGraph: {
       type: "website",
       url: canonical,

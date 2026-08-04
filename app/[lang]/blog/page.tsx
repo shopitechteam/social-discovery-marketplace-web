@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { blogPosts } from "@/lib/blog";
 import { siteConfig } from "@/config/site";
+import { localeAlternates } from "@/lib/metadata";
 import { LegalNav } from "@/components/legal/LegalNav";
 import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import { LandingFooter } from "@/components/landing/LandingFooter";
@@ -25,7 +26,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       "sell online Kenya guide",
       "video commerce Africa",
     ],
-    alternates: { canonical },
+    alternates: { canonical, ...localeAlternates("/blog") },
     openGraph: {
       title: `Shopi ${title}`,
       description,

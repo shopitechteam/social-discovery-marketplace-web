@@ -7,6 +7,7 @@ import { siteConfig } from "@/config/site";
 import { permanentRedirect } from "next/navigation";
 import { productSchema, breadcrumbSchema, jsonLd } from "@/lib/structured-data";
 import { contentPath } from "@/lib/content-url";
+import { localeAlternates } from "@/lib/metadata";
 
 type Props = { params: Promise<{ lang: string; id: string }> };
 
@@ -127,7 +128,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       siteConfig.name,
       "Kenya marketplace",
     ].filter(Boolean) as string[],
-    alternates: { canonical },
+    // contentPath() is locale-prefixed; strip it back to the bare path so the
+    // same listing is declared under both /en and /sw.
+    alternates: {
+      canonical,
+      ...localeAlternates(contentPath(lang, post).replace(`/${lang}`, "")),
+    },
     openGraph: {
       type: "website",
       url: canonical,
@@ -178,6 +184,9 @@ export default async function ContentDetailPage({ params }: Props) {
                 currency: post.price?.currency,
                 negotiable: post.price?.negotiable,
                 sellerName: sellerName(post),
+                sellerUrl: post.creator?.username
+                  ? `${siteConfig.url}/${lang}/profile/${post.creator.username}`
+                  : null,
                 locationName: locationName(post),
                 category: post.hashtags?.[0] ?? null,
                 createdAt: post.createdAt

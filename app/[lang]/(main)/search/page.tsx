@@ -4,6 +4,7 @@ import { siteConfig } from "@/config/site";
 import { locales, isValidLocale } from "@/i18n/config";
 import { DiscoverPage } from "@/features/discover/components/DiscoverPage";
 import { publicPageMetadata } from "@/lib/metadata";
+import { BrowseHub } from "@/components/seo/BrowseHub";
 
 type Props = {
   params: Promise<{ lang: string }>;
@@ -54,9 +55,18 @@ export async function generateMetadata({
 export default async function SearchPage({ params }: Props) {
   const { lang } = await params;
   // Suspense boundary: DiscoverPage reads useSearchParams() (?q=, ?category=),
-  // which requires one during prerender.
+  // which requires one during prerender. The fallback is what the server
+  // actually emits, so it carries the crawlable hub rather than null.
   return (
-    <Suspense fallback={null}>
+    <Suspense
+      fallback={
+        <BrowseHub
+          lang={lang}
+          heading="Search local listings across Kenya"
+          intro="Search cars, phones, fashion, furniture, farm produce, livestock and thousands of other listings from sellers near you. Message any seller directly to agree on price, payment and delivery."
+        />
+      }
+    >
       <DiscoverPage lang={lang} />
     </Suspense>
   );

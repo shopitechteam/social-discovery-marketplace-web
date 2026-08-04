@@ -1321,7 +1321,14 @@ export function ContentDetail({
       {/* Pre-measurement render (server + hydration): the crawlable listing.
           Replaced by one of the two layouts below as soon as useIsDesktop()
           resolves. See ListingSeoSummary for why this exists. */}
-      {isDesktop === null && <ListingSeoSummary post={post} lang={lang} />}
+      {/* Gated on `initialPost`, not just the null viewport: only the
+          server-rendered listing route supplies it. Client-side entries (the
+          feed's intercepted sheet, in-app navigation) render from cache and
+          would otherwise flash this summary for a frame before the viewport
+          resolves. */}
+      {isDesktop === null && initialPost && (
+        <ListingSeoSummary post={post} lang={lang} />
+      )}
 
       {/* ════════════════════════════════════════════════════════
           DESKTOP LAYOUT  (md+)

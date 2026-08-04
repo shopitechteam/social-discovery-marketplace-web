@@ -2,6 +2,7 @@ import Link from "next/link";
 //import { siteConfig } from "@/config/site";
 import type { Dictionary } from "@/i18n/getDictionary";
 import { ShopiLogo } from "@/features/auth/components/AuthIcons";
+import { COUNTIES } from "@/lib/counties";
 
 export function LandingFooter({
   dict,
@@ -15,7 +16,10 @@ export function LandingFooter({
     // landing wrapper still get the same inset and --landing-page-* values.
     <div className="lg:px-30 [--landing-page-max:1400px] [--landing-page-x:clamp(0.875rem,1.2vw,1.25rem)]">
       <footer className="mb-8 rounded-md border-t border-border bg-surface px-(--landing-page-x) pt-12 pb-8">
-        <div className="mx-auto mb-12 grid max-w-(--landing-page-max) grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr_1fr] lg:gap-12">
+        {/* Brand column + five link columns. Keep the track count in step with
+            the array below — adding a column without widening this template
+            silently wraps it onto a second row. */}
+        <div className="mx-auto mb-12 grid max-w-(--landing-page-max) grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-[1.7fr_1fr_1fr_1fr_1fr_1fr] lg:gap-10">
           {/* Brand */}
           <div>
             <div className="mb-4 flex items-center gap-2">
@@ -52,6 +56,7 @@ export function LandingFooter({
                 { label: "Features", href: `/${lang}#features` },
                 { label: "How It Works", href: `/${lang}#how-it-works` },
                 { label: "The Feed", href: `/${lang}#dive-feed` },
+                { label: "Shopi Agent", href: `/${lang}/shopi-agent` },
                 { label: "Sell on Shopi", href: `/${lang}#creators` },
               ],
             },
@@ -79,9 +84,25 @@ export function LandingFooter({
               ],
             },
             {
+              // County pages earn local-intent traffic ("… for sale in
+              // Nakuru"), but a page reachable only from the sitemap is treated
+              // as low-importance and passes no link equity. The footer is the
+              // one block that appears on every page, so it's where they go.
+              heading: "Counties",
+              links: COUNTIES.slice(0, 6).map((county) => ({
+                label: county.name,
+                href: `/${lang}/marketplace/${county.slug}`,
+              })),
+            },
+            {
               heading: "Company",
               links: [
                 { label: "About", href: `/${lang}/about` },
+                { label: "FAQ", href: `/${lang}/faq` },
+                {
+                  label: "Compare marketplaces",
+                  href: `/${lang}/marketplace-alternatives-kenya`,
+                },
                 { label: "Blog", href: `/${lang}/blog` },
                 { label: "Careers", href: `/${lang}/careers` },
               ],
