@@ -467,7 +467,7 @@ function CreationModeChooser({
   const modeCards = (
     <div
       role="radiogroup"
-      aria-label="How would you like to create your post?"
+      aria-label="How would you like to create your listing?"
       className="flex flex-col gap-4"
     >
       {CREATION_MODES.map((mode) => {
@@ -544,16 +544,16 @@ function CreationModeChooser({
           }}
         >
           <DialogContent className="w-[min(94vw,460px)] max-w-none gap-0 overflow-hidden rounded-3xl border border-default bg-app p-0">
-            <DialogTitle className="sr-only">Create a post</DialogTitle>
+            <DialogTitle className="sr-only">Create a listing</DialogTitle>
             <DialogDescription className="sr-only">
-              Choose how you&apos;d like to create your post.
+              Choose how you&apos;d like to create your listing.
             </DialogDescription>
 
             <div className="px-6 pt-6 pb-6">
               {/* pr-8 keeps the heading clear of the dialog's built-in ✕. */}
               <div className="pr-8">
                 <h1 className="text-lg font-bold text-foreground">
-                  Create a post
+                  Create a listing
                 </h1>
                 <p className="mt-0.5 text-sm text-muted">
                   Select how you&apos;d like to continue
@@ -590,7 +590,7 @@ function CreationModeChooser({
           </button>
           <div className="flex-1 text-center">
             <h1 className="text-base font-semibold text-foreground">
-              Create a post
+              Create a listing
             </h1>
             <p className="text-xs leading-tight text-muted">
               Select how you&apos;d like to continue

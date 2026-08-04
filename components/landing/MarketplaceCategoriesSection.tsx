@@ -54,13 +54,14 @@ export function MarketplaceCategoriesSection({ lang }: { lang: string }) {
             Start selling
           </p>
           <h2 className="font-display text-[clamp(1.65rem,2.8vw,2.5rem)] font-bold leading-tight tracking-normal text-foreground">
-            Whatever you have to sell, post it today.
+            Selling should be as easy as having a conversation.
           </h2>
           <p className="mt-4 max-w-2xl text-base leading-normal text-muted">
-            Posting on Shopi is free and we take no commission. You do not need
-            a shop, a website or a bank account — photos or a short video, a
-            price in shillings and your location are enough. Buyers message you
-            directly and you agree on payment and delivery between yourselves.
+            Create listings the way that works for you. Post manually or chat
+            with Shopi Agent, which can turn a photo into a complete listing
+            with a title, description, category and product details. It&apos;s
+            free to post, there&apos;s no commission on your sales, and you deal
+            directly with buyers from first message to final payment.
           </p>
         </div>
 

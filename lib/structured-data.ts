@@ -13,7 +13,7 @@ const { url, name } = siteConfig;
 
 export const organizationSchema = {
   "@context": "https://schema.org",
-  "@type": "Organization",
+  "@type": "OnlineBusiness",
   "@id": `${url}/#organization`,
   name,
   url,
@@ -72,6 +72,29 @@ export const marketplaceSchema = {
   publisher: { "@id": `${url}/#organization` },
 };
 
+/**
+ * The AI assistant as its own application, so engines can surface Shopi Agent
+ * separately from the marketplace it sits inside.
+ */
+export const agentSchema = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "@id": `${url}/#agent`,
+  name: "Shopi Agent",
+  url,
+  applicationCategory: "ArtificialIntelligenceApplication",
+  operatingSystem: "Any",
+  description:
+    "AI assistant that helps users buy and sell on Shopi by generating listings and finding products.",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "KES",
+  },
+  isPartOf: { "@id": `${url}/#app` },
+  publisher: { "@id": `${url}/#organization` },
+};
+
 export function faqSchema(faq: { q: string; a: string }[]) {
   return {
     "@context": "https://schema.org",
@@ -97,14 +120,6 @@ export function breadcrumbSchema(items: { name: string; url: string }[]) {
   };
 }
 
-/**
- * A single marketplace listing as a schema.org Product with an Offer. This is
- * what powers rich product results in Google and lets answer/generative engines
- * (AEO/GEO) understand the item — what it is, its price, where it's sold, and by
- * whom. Listings without a real numeric price omit `Offer` rather than claiming
- * the item is free; accurate partial data is preferable to invented rich-result
- * fields.
- */
 export function productSchema(input: {
   id: string;
   url: string;

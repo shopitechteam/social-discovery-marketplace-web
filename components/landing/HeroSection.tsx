@@ -16,9 +16,9 @@ export function HeroSection({
   return (
     <section
       id="hero"
-      className="relative overflow-hidden px-[var(--landing-page-x)] pb-12 pt-28 md:pb-20 md:pt-36"
+      className="relative overflow-hidden px-(--landing-page-x) pb-12 pt-28 md:pb-20 md:pt-36"
     >
-      <div className="mx-auto grid max-w-[var(--landing-page-max)] items-center gap-10 lg:grid-cols-[1fr_0.78fr]">
+      <div className="mx-auto grid max-w-(--landing-page-max) items-center gap-10 lg:grid-cols-[1fr_0.78fr]">
         <div>
           <h1 className="max-w-4xl text-balance font-display text-[clamp(2.45rem,5.2vw,4.85rem)] font-semibold leading-[1.02] tracking-normal text-default">
             {t.headline}
@@ -67,7 +67,7 @@ export function HeroSection({
 function FocusedListing() {
   return (
     <article className="landing-hero-board mx-auto max-w-md overflow-hidden rounded-[1.4rem] border border-default bg-elevated shadow-lg">
-      <div className="relative aspect-[4/3] overflow-hidden">
+      <div className="relative aspect-4/3 overflow-hidden">
         <Image
           src={landingPhotos.sofa}
           alt="Sofa listing in a living room"
@@ -76,7 +76,7 @@ function FocusedListing() {
           sizes="(max-width: 768px) 92vw, 420px"
           className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/5 to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/5 to-transparent" />
         <span className="absolute bottom-4 left-4 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-black shadow-sm">
           KES 45,000
         </span>
