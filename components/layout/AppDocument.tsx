@@ -2,6 +2,7 @@ import { GoogleTagManager } from "@next/third-parties/google";
 import { Bricolage_Grotesque, JetBrains_Mono, Manrope } from "next/font/google";
 import { PwaSplash } from "@/components/layout/PwaSplash";
 import { RouteProviders } from "@/components/providers/RouteProviders";
+import { cultureCode } from "@/i18n/config";
 
 const gtmId = process.env.NEXT_PUBLIC_GTM_ID;
 
@@ -54,7 +55,7 @@ export function AppDocument({
 }) {
   return (
     <html
-      lang={lang}
+      lang={cultureCode(lang)}
       suppressHydrationWarning
       className={`${manrope.variable} ${bricolage.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
