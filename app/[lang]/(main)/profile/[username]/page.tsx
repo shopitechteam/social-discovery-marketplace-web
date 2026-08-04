@@ -46,7 +46,9 @@ function buildDescription(p: Profile): string {
     stats.push(`${p.postCount} listing${p.postCount === 1 ? "" : "s"}`);
   }
   if (typeof p.followerCount === "number") {
-    stats.push(`${p.followerCount} follower${p.followerCount === 1 ? "" : "s"}`);
+    stats.push(
+      `${p.followerCount} follower${p.followerCount === 1 ? "" : "s"}`,
+    );
   }
   const tail = stats.length ? ` · ${stats.join(" · ")}` : "";
   return `${name} on ${siteConfig.name}, Kenya's social marketplace${tail}. Browse their listings and message them directly.`;
@@ -131,7 +133,11 @@ export default async function Page({ params }: Props) {
           }}
         />
       )}
-      <CreatorProfilePage username={username} lang={lang} />
+      <CreatorProfilePage
+        username={username}
+        lang={lang}
+        initialProfile={profile}
+      />
     </>
   );
 }

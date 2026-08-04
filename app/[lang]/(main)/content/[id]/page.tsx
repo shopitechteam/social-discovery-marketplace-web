@@ -1,15 +1,11 @@
 import type { Metadata } from "next";
 import { ContentDetail } from "@/features/feed/components/ContentDetail";
 import { query } from "@/lib/apollo/ApolloClient";
-import { GetContentDocument } from "@/types/__generated__/graphql";
+import { ContentDetailDocument } from "@/features/feed/queries/contentDetail";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { siteConfig } from "@/config/site";
 import { permanentRedirect } from "next/navigation";
-import {
-  productSchema,
-  breadcrumbSchema,
-  jsonLd,
-} from "@/lib/structured-data";
+import { productSchema, breadcrumbSchema, jsonLd } from "@/lib/structured-data";
 import { contentPath } from "@/lib/content-url";
 
 type Props = { params: Promise<{ lang: string; id: string }> };
@@ -22,13 +18,21 @@ export const revalidate = 3600;
 
 type Post = ContentCardFieldsFragment & { slug?: string | null };
 
+// The full PDP query — the same document ContentDetail runs on the client, so
+// one server fetch feeds the metadata, the JSON-LD *and* the first render of
+// the page itself (passed down as `initialPost`). Fetching the narrower
+// GetContent document here would leave the rendered listing waiting on a
+// client round trip, which is what kept listings out of non-JS crawlers.
 async function getPost(id: string): Promise<Post | null> {
   try {
     const { data } = await query({
-      query: GetContentDocument,
+      query: ContentDetailDocument,
       variables: { id },
     });
-    return (data?.content as Post | undefined) ?? null;
+    return (
+      ((data as { content?: Post | null } | undefined)?.content as
+        Post | undefined) ?? null
+    );
   } catch {
     return null;
   }
@@ -189,7 +193,12 @@ export default async function ContentDetailPage({ params }: Props) {
           }}
         />
       )}
-      <ContentDetail id={id} lang={lang} desktopMode="page" />
+      <ContentDetail
+        id={id}
+        lang={lang}
+        desktopMode="page"
+        initialPost={post}
+      />
     </>
   );
 }

@@ -3,8 +3,22 @@ import type { NextRequest } from "next/server";
 import { locales, defaultLocale } from "@/i18n/config";
 
 // Routes that require a valid accessToken cookie.
-// Matched after locale prefix is stripped, so "/profile" covers "/{locale}/profile".
-const PROTECTED_PATHS = ["/profile", "/upload", "/notifications", "/settings"];
+// Matched after locale prefix is stripped, so "/upload" covers "/{locale}/upload".
+const PROTECTED_PATHS = ["/upload", "/notifications", "/settings"];
+
+// "/profile" needs finer treatment than the list above. The viewer's own
+// profile and its management screens are private, but "/profile/{username}" is
+// a public seller page — it carries a canonical, ProfilePage JSON-LD and its
+// own OG image route, and robots.ts deliberately leaves it crawlable.
+// Protecting the whole prefix redirected every crawler (and every logged-out
+// visitor following a shared seller link) to the auth screen, which made those
+// pages impossible to index.
+const PRIVATE_PROFILE_PATHS = [
+  "/profile/edit",
+  "/profile/followers",
+  "/profile/visitors",
+  "/profile/posts",
+];
 
 // Routes a logged-in user shouldn't see — the auth flows. They're redirected
 // straight to the feed instead. The landing root stays accessible to everyone.
@@ -23,12 +37,22 @@ function getBarePath(pathname: string): string {
 
 function isProtected(pathname: string): boolean {
   const bare = getBarePath(pathname);
-  return PROTECTED_PATHS.some((p) => bare === p || bare.startsWith(`${p}/`));
+  if (PROTECTED_PATHS.some((p) => bare === p || bare.startsWith(`${p}/`))) {
+    return true;
+  }
+  // Bare "/profile" is the viewer's own profile; the named subpaths are its
+  // management screens. Anything else under /profile/ is a public username.
+  if (bare === "/profile") return true;
+  return PRIVATE_PROFILE_PATHS.some(
+    (p) => bare === p || bare.startsWith(`${p}/`),
+  );
 }
 
 function isGuestOnly(pathname: string): boolean {
   const bare = getBarePath(pathname);
-  if (GUEST_ONLY_EXCEPTIONS.some((p) => bare === p || bare.startsWith(`${p}/`))) {
+  if (
+    GUEST_ONLY_EXCEPTIONS.some((p) => bare === p || bare.startsWith(`${p}/`))
+  ) {
     return false;
   }
   return GUEST_ONLY_PATHS.some((p) => bare === p || bare.startsWith(`${p}/`));

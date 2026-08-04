@@ -170,6 +170,16 @@ const nextConfig: NextConfig = {
       "safety-centre",
     ];
     return [
+      // Host consolidation. www is the canonical host (siteConfig.url), so the
+      // apex must 301 to it — otherwise both hosts serve the full site and the
+      // duplicate signals split ranking equity. Kept first so it resolves
+      // before any path-level rule.
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "shopi.co.ke" }],
+        destination: "https://www.shopi.co.ke/:path*",
+        permanent: true,
+      },
       { source: "/", destination: "/en", permanent: true },
       ...paths.map((p) => ({
         source: `/${p}`,

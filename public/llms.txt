@@ -1,6 +1,6 @@
 # Shopi
 
-> Shopi is Kenya's social discovery classifieds marketplace. Buyers browse real items in a local feed and message sellers through Shopi's built-in chat. Shopi does not process payments, hold money, arrange delivery, or charge commission.
+> Shopi is Kenya's social discovery classifieds marketplace. Buyers browse real items in a local feed and message sellers through Shopi's built-in chat. Shopi Agent, the built-in AI assistant, creates listings from a photo and helps buyers find products by description. Shopi does not process payments, hold money, arrange delivery, or charge commission.
 
 ## Primary pages
 
@@ -21,6 +21,16 @@
 - Transactions: buyers and sellers agree directly on price, payment, collection, or delivery.
 - Fees: free to browse and post; Shopi takes no commission and no listing fees.
 - Languages: English and Kiswahili routes are available under `/en` and `/sw`.
+- AI: Shopi Agent is included free for both buyers and sellers. It is not a paid add-on or a separate product.
+
+## Shopi Agent (AI assistant)
+
+Shopi Agent is Shopi's built-in AI assistant. It does two things:
+
+1. For sellers — listing creation from a photo. Upload a photo of the item and Shopi Agent writes the listing: title, description and specifications. The seller reviews and edits everything before publishing; nothing is posted automatically.
+2. For buyers — product discovery by description. Describe what you are looking for in plain language ("a used fridge in Nakuru under 30,000") instead of building search filters, and Shopi Agent finds matching nearby listings.
+
+Shopi Agent does not negotiate, transact, or message sellers on a user's behalf. Buyer–seller conversations are always between the two people.
 
 ## How to create an account
 
@@ -46,7 +56,8 @@
 - Buyer–seller chat happens inside the Shopi app/site, NOT on WhatsApp. Shopi does not link or require WhatsApp accounts.
 - Shopi has no checkout, cart, or escrow. It never holds money or processes payments.
 - Shopi charges no commission and no listing fees; posting and browsing are free.
-- Shopi is a web app at shopi.co.ke; sellers do not need a registered business to sell.
+- Shopi is a web app at www.shopi.co.ke; sellers do not need a registered business to sell.
+- Shopi Agent assists with writing listings and finding products. It does not chat with sellers, negotiate prices, or complete purchases for a user.
 
 ## Contact
 

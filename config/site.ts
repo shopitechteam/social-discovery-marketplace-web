@@ -1,15 +1,26 @@
 export const siteConfig = {
   name: "Shopi",
 
-  // Short brand positioning used across the app.
+  // Short brand positioning, rendered as display copy (e.g. inside the OG card
+  // image). Kept prose-shaped — the keyword-led form belongs in metaTitle.
   tagline: "Kenya's social marketplace for buying and selling locally",
+
+  // The <title> / og:title / twitter:title for the site root. Leads with the
+  // primary commercial query ("sell online in Kenya") rather than the brand
+  // positioning, since the brand term already ranks on its own.
+  metaTitle: "Shopi — Sell Online in Kenya | Buy & Sell Locally",
 
   // Primary brand description used for SEO, Open Graph and structured data.
   description:
-    "Shopi is Kenya's free social marketplace where people discover, buy and sell locally. Browse a personalized feed of nearby products, use Shopi Agent to create listings or find products with AI, and connect directly with buyers and sellers. No commission. No middleman.",
+    "Sell online in Kenya for free with Shopi. Use Shopi Agent to create listings with AI, discover local buyers, and connect directly with buyers and sellers. Zero commission.",
 
   // Default canonical domain. Override per-environment with NEXT_PUBLIC_APP_URL.
-  url: process.env.NEXT_PUBLIC_APP_URL || "https://shopi.co.ke",
+  //
+  // The production site is served from the www host and the apex redirects to
+  // it (see next.config.ts). Canonicals, sitemap URLs, JSON-LD @ids and OG
+  // urls all derive from this value, so it must match the host that actually
+  // serves pages — pointing it at the apex makes every canonical a redirect.
+  url: process.env.NEXT_PUBLIC_APP_URL || "https://www.shopi.co.ke",
 
   // The site-wide OG card is rendered by app/[lang]/opengraph-image.tsx.
   ogImage: "/en/opengraph-image",

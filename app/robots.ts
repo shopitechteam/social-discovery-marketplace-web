@@ -13,6 +13,12 @@ export default function robots(): MetadataRoute.Robots {
         "/*/notifications",
         "/*/upload",
         "/*/auth/",
+        // Public seller pages (/{lang}/profile/{username}) stay crawlable —
+        // only the viewer's own profile and its management screens are private.
+        "/*/profile/edit",
+        "/*/profile/followers",
+        "/*/profile/visitors",
+        "/*/profile/posts",
       ],
     },
     sitemap: `${siteConfig.url}/sitemap.xml`,

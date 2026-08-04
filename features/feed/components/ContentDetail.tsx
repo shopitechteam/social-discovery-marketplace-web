@@ -51,6 +51,8 @@ import { usePageFocused } from "../hooks/usePageFocused";
 import { shouldFire } from "@/lib/interactionDedup";
 import { timeAgoLong as timeAgo } from "@/lib/time";
 import { absoluteContentUrl } from "@/lib/content-url";
+import { ContentDetailDocument } from "../queries/contentDetail";
+import { ListingSeoSummary } from "./ListingSeoSummary";
 
 const MediaCarouselDialog = dynamic(() =>
   import("./MediaCarouselDialog").then((mod) => mod.MediaCarouselDialog),
@@ -79,112 +81,6 @@ type DetailPost = ContentCardFieldsFragment & {
       })
     | null;
 };
-
-const ContentDetailDocument = gql`
-  query ContentDetailPdp($id: String!) {
-    content(id: $id) {
-      id
-      slug
-      type
-      source
-      isLive
-      tiktokEmbed {
-        videoId
-        shareUrl
-        coverImageUrl
-        authorUsername
-        authorName
-        title
-        duration
-      }
-      title
-      caption
-      hashtags
-      creatorId
-      categoryId
-      category {
-        id
-        name
-        slug
-      }
-      allowDownload
-      hdEnabled
-      createdAt
-      creator {
-        id
-        username
-        isVerified
-        isFollowedByMe
-        followerCount
-        profile {
-          firstName
-          lastName
-          avatar
-        }
-      }
-      media {
-        mediaType
-        url
-        imageUrl
-        thumbnailUrl
-        sortOrder
-        displayWidth
-        displayHeight
-        muxMeta {
-          playbackId
-          duration
-          aspectRatio
-          thumbnailUrl
-          animatedThumbnailUrl
-        }
-        r2Variants {
-          url
-          variant
-          width
-          height
-        }
-      }
-      price {
-        amount
-        currency
-        negotiable
-      }
-      specs {
-        key
-        value
-      }
-      aiClassification {
-        categoryId
-        confidence
-        level1
-        level2
-        level3
-        rawLabel
-      }
-      stats {
-        views
-        likes
-        shares
-        saves
-        comments
-      }
-      location {
-        country
-        county
-        subregion
-        placeName
-        formattedAddress
-      }
-      ranking {
-        rankScore
-        trendingScore
-      }
-      isLikedByMe
-      isSavedByMe
-      isMyContent
-    }
-  }
-`;
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 // Shared utilities (fmt, avatarColors/initials, useIsDesktop) now live in
@@ -561,6 +457,17 @@ interface Props {
   onRequestClose?: () => void;
   /** Sheet mode: notifies the host so it can widen the panel for the chat column. */
   onChatOpenChange?: (open: boolean) => void;
+  /**
+   * Server-fetched listing used for the very first render.
+   *
+   * The listing route runs the same PDP query on the server and passes the
+   * result here. Without it the first render (server HTML *and* the client's
+   * hydration render) is the loading skeleton, so crawlers that don't execute
+   * JavaScript — every AI/answer engine, and Bing to a large extent — see a
+   * page with no title, price, description or images. It also removes a
+   * client round trip from LCP.
+   */
+  initialPost?: DetailPost | null;
 }
 
 export function ContentDetail({
@@ -569,6 +476,7 @@ export function ContentDetail({
   desktopMode = "page",
   onRequestClose,
   onChatOpenChange,
+  initialPost,
 }: Props) {
   const router = useRouter();
   const goBack = onRequestClose ?? (() => router.back());
@@ -635,7 +543,12 @@ export function ContentDetail({
   `);
 
   // ── Local state ────────────────────────────────────────────────────────────
-  const post = data?.content;
+  // `initialPost` covers the window before the client query resolves — on the
+  // server, and on the client's hydration render — so the listing renders as
+  // real HTML instead of a skeleton. Once the query has data it wins, since it
+  // carries the viewer-specific fields (isLikedByMe, isFollowedByMe,
+  // isMyContent) that the unauthenticated server fetch cannot see.
+  const post = data?.content ?? initialPost ?? undefined;
   const resolvedContentId = post?.id ?? (isMongoObjectId(id) ? id : "");
   const {
     phone: sellerPhone,
@@ -795,9 +708,7 @@ export function ContentDetail({
     }
     if (navigator.share && post) {
       const url = absoluteContentUrl(window.location.origin, lang, post);
-      navigator
-        .share({ title: post.title, url })
-        .catch(() => {});
+      navigator.share({ title: post.title, url }).catch(() => {});
     }
   }
 
@@ -1034,7 +945,10 @@ export function ContentDetail({
   const displayCaption =
     isLongCaption && !captionExpanded ? caption.slice(0, 180) + "…" : caption;
   // Use the creator returned with the post; it includes follow state.
-  const postCreator = data?.content?.creator;
+  // Reads through `post` (not `data`) so the seller's name and avatar render
+  // from the server-supplied listing too — otherwise the crawled HTML would
+  // carry the item but not who is selling it.
+  const postCreator = post.creator;
   const creatorName = postCreator?.profile?.firstName
     ? `${postCreator.profile.firstName} ${postCreator.profile.lastName ?? ""}`.trim()
     : postCreator === null
@@ -1260,9 +1174,7 @@ export function ContentDetail({
     .filter(Boolean)
     .join(", ");
 
-  const DetailMeta = (categoryLabel ||
-    fullLocation ||
-    specs.length > 0) && (
+  const DetailMeta = (categoryLabel || fullLocation || specs.length > 0) && (
     <div className="border-b border-default px-4 py-4">
       <h2 className="mb-3 text-xs font-bold uppercase tracking-normal text-muted-foreground">
         Details
@@ -1406,6 +1318,11 @@ export function ContentDetail({
         isSheet ? "h-full min-h-0" : "min-h-svh",
       ].join(" ")}
     >
+      {/* Pre-measurement render (server + hydration): the crawlable listing.
+          Replaced by one of the two layouts below as soon as useIsDesktop()
+          resolves. See ListingSeoSummary for why this exists. */}
+      {isDesktop === null && <ListingSeoSummary post={post} lang={lang} />}
+
       {/* ════════════════════════════════════════════════════════
           DESKTOP LAYOUT  (md+)
           Left col: media (sticky)   Right col: info + comments
@@ -1849,7 +1766,8 @@ export function ContentDetail({
                     type="button"
                     onClick={() => {
                       if (!resolvedContentId) return;
-                      if (!requireAuth({ contentId: resolvedContentId })) return;
+                      if (!requireAuth({ contentId: resolvedContentId }))
+                        return;
                       openMessageRoute();
                     }}
                     className="flex items-center justify-center gap-2 rounded-full bg-primary py-3 text-sm font-bold text-white transition-transform active:scale-[0.98]"
@@ -1865,7 +1783,8 @@ export function ContentDetail({
                     disabled={sellerPhoneLoading}
                     onClick={async () => {
                       if (!resolvedContentId) return;
-                      if (!requireAuth({ contentId: resolvedContentId })) return;
+                      if (!requireAuth({ contentId: resolvedContentId }))
+                        return;
                       if (sellerPhone) {
                         dialSeller();
                         return;

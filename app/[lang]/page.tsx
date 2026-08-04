@@ -22,6 +22,7 @@ import {
   organizationSchema,
   websiteSchema,
   marketplaceSchema,
+  agentSchema,
   faqSchema,
   jsonLd,
 } from "@/lib/structured-data";
@@ -125,16 +126,19 @@ const HOME_META: Record<
   Locale,
   { title: string; description: string; ogLocale: string }
 > = {
+  // Titles lead with the commercial intent ("sell online in Kenya") rather than
+  // the brand positioning — the brand term already ranks unaided, so the title
+  // is spent on the query people actually type.
   en: {
-    title: `${siteConfig.name} — Kenya's Social Marketplace | Buy & Sell Locally`,
+    title: `${siteConfig.name} — Sell Online in Kenya | Buy & Sell Locally`,
     description:
-      "Discover and sell locally with Shopi. Browse a personalized feed, chat directly with buyers and sellers, or let Shopi Agent create listings and help you find products. Free to use with zero commission.",
+      "Sell online in Kenya for free with Shopi. Use Shopi Agent to create listings with AI, discover local buyers, and connect directly with buyers and sellers. Zero commission.",
     ogLocale: "en_KE",
   },
   sw: {
-    title: `${siteConfig.name} — Soko la Kijamii la Kenya | Nunua na Uuze Karibu Nawe`,
+    title: `${siteConfig.name} — Uza Mtandaoni Kenya | Nunua na Uuze Karibu Nawe`,
     description:
-      "Gundua na uuze bidhaa karibu nawe ukitumia Shopi. Vinjari feed iliyobinafsishwa, wasiliana moja kwa moja na wanunuzi na wauzaji, au tumia Shopi Agent kuunda matangazo na kukusaidia kupata bidhaa. Ni bure kutumia na hakuna commission.",
+      "Uza mtandaoni Kenya bure ukitumia Shopi. Tumia Shopi Agent kuunda matangazo kwa AI, pata wanunuzi wa karibu, na wasiliana moja kwa moja na wanunuzi na wauzaji. Hakuna commission.",
     ogLocale: "sw_KE",
   },
 };
@@ -232,7 +236,8 @@ export default async function Rootpage({ params }: PageProps<"/[lang]">) {
         // outside this wrapper (below) to avoid doubling the lg inset.
         className="lg:px-30 [--landing-page-max:1400px] [--landing-page-x:clamp(0.875rem,1.2vw,1.25rem)]"
       >
-        {/* Structured data — Organization, WebSite (+search), marketplace app, FAQ */}
+        {/* Structured data — Organization, WebSite (+search), marketplace app,
+            Shopi Agent, popular categories, FAQ */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -240,6 +245,7 @@ export default async function Rootpage({ params }: PageProps<"/[lang]">) {
               organizationSchema,
               websiteSchema,
               marketplaceSchema,
+              agentSchema,
               homepageCategorySchema,
               faqSchema(faq),
             ),
