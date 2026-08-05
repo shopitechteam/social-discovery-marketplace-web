@@ -202,45 +202,74 @@ html.theme-switching *::after {
   transition: none !important;
 }
 
-@keyframes shopi-save-burst-pop {
+/* Save = Facebook-style heart burst. The centre heart pops once; the ring of
+   small hearts travels outward on a straight line at constant speed (linear),
+   which is what makes it read as smooth rather than easing/stuttering. */
+@keyframes shopi-heart-pop {
   0% {
     opacity: 0;
-    transform: translate(-50%, 10%) scale(0.45) rotate(-14deg);
+    transform: translate3d(0, 0, 0) scale(0.2);
   }
-  18% {
+  30% {
     opacity: 1;
-    transform: translate(-50%, -18%) scale(1.08) rotate(5deg);
+    transform: translate3d(0, -4px, 0) scale(1.15);
   }
-  52% {
+  55% {
     opacity: 1;
-    transform: translate(-50%, -34%) scale(0.98) rotate(-3deg);
+    transform: translate3d(0, -10px, 0) scale(0.95);
   }
   100% {
     opacity: 0;
-    transform: translate(-50%, -92%) scale(1.42) rotate(10deg);
+    transform: translate3d(0, -34px, 0) scale(1.1);
   }
 }
 
-@keyframes shopi-save-spark {
+@keyframes shopi-heart-fly {
   0% {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.4);
+    transform: translate3d(0, 0, 0) scale(0.25) rotate(0deg);
   }
-  25% {
+  12% {
     opacity: 1;
+    transform: translate3d(
+        calc(var(--heart-x) * 0.12),
+        calc(var(--heart-y) * 0.12),
+        0
+      )
+      scale(1) rotate(0deg);
+  }
+  75% {
+    opacity: 1;
+    transform: translate3d(
+        calc(var(--heart-x) * 0.75),
+        calc(var(--heart-y) * 0.75),
+        0
+      )
+      scale(1) rotate(calc(var(--heart-rotate) * 0.75));
   }
   100% {
     opacity: 0;
-    transform: translate(var(--spark-x), var(--spark-y)) scale(0.05);
+    transform: translate3d(var(--heart-x), var(--heart-y), 0) scale(0.85)
+      rotate(var(--heart-rotate));
   }
 }
 
-.shopi-save-burst {
-  animation: shopi-save-burst-pop 760ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+.shopi-heart-pop {
+  animation: shopi-heart-pop 700ms linear both;
+  will-change: transform, opacity;
 }
 
-.shopi-save-spark {
-  animation: shopi-save-spark 720ms cubic-bezier(0.16, 1, 0.3, 1) both;
+.shopi-heart-fly {
+  animation: shopi-heart-fly 800ms linear both;
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shopi-heart-pop,
+  .shopi-heart-fly {
+    animation-duration: 1ms;
+    animation-iteration-count: 1;
+  }
 }
 
 html {

@@ -72,6 +72,8 @@ export function StepEdit({
     hashtags,
     categoryId,
     categoryName,
+    subcategoryId,
+    subcategoryName,
     price,
     currency,
     isFree,
@@ -84,6 +86,7 @@ export function StepEdit({
     setCaption,
     setHashtags,
     setCategory,
+    setSubcategory,
     setPrice,
     setNegotiable,
     setSpecs,
@@ -218,6 +221,9 @@ export function StepEdit({
               caption: watchCaption || undefined,
               hashtags: tags.length ? tags : undefined,
               categoryId: categoryId ?? undefined,
+              aiClassification: subcategoryName
+                ? { level1: categoryName ?? undefined, level2: subcategoryName }
+                : undefined,
               specs: specs.length
                 ? specs
                     .filter((s) => s.key.trim() && s.value.trim())
@@ -244,7 +250,7 @@ export function StepEdit({
     }, 800);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [titleValue, watchCaption, tags, categoryId, location, contactPhone]);
+  }, [titleValue, watchCaption, tags, categoryId, subcategoryName, location, contactPhone]);
 
   // ── Live-sync to store ─────────────────────────────────────────────────────
   // Mirror the local form state into the create store as the user types so the
@@ -280,6 +286,7 @@ export function StepEdit({
     !!location &&
     !!contactPhone &&
     !!categoryId &&
+    !!subcategoryId &&
     hasUsableMedia &&
     priceValid;
 
@@ -357,6 +364,12 @@ export function StepEdit({
       return;
     }
 
+    if (!subcategoryId) {
+      setCategoryError("Choose a subcategory before moving to settings.");
+      scrollFieldIntoView("category");
+      return;
+    }
+
     const parsedPrice = priceInput.trim() ? Number(priceInput) : 0;
     if (!Number.isFinite(parsedPrice) || parsedPrice < 0) {
       setError("Price must be 0 or more.");
@@ -376,6 +389,9 @@ export function StepEdit({
             caption: values.caption,
             hashtags: tags,
             categoryId: categoryId ?? undefined,
+            aiClassification: subcategoryName
+              ? { level1: categoryName ?? undefined, level2: subcategoryName }
+              : undefined,
             specs: specs
               .filter((s) => s.key.trim() && s.value.trim())
               .map((s) => ({ key: s.key.trim(), value: s.value.trim() })),
@@ -563,6 +579,21 @@ export function StepEdit({
         fallbackLabel={categoryName}
         onChange={(id, name) => {
           setCategory(id, name, "manual");
+          setCategoryError(null);
+        }}
+      />
+      <label className="mb-1.5 mt-3 block text-sm font-medium text-muted">
+        Subcategory
+      </label>
+      <CategoryPickerDrawer
+        value={subcategoryId}
+        fallbackLabel={subcategoryName}
+        parentId={categoryId}
+        title="Subcategory"
+        placeholderLabel="Choose subcategory"
+        emptyLabel="No subcategories yet for this category."
+        onChange={(id, name) => {
+          setSubcategory(id, name);
           setCategoryError(null);
         }}
       />
