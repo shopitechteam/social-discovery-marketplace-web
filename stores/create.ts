@@ -102,6 +102,15 @@ export type CreateFlowState = {
   categoryId: string | null;
   categoryName: string | null;
   categorySource: "ai" | "manual" | null;
+  /**
+   * Subcategory is always a real seeded Category doc (depth 1, child of
+   * categoryId) once picked manually — see CategoryPickerDrawer with a
+   * `parentId`. `subcategoryName` alone (no id) covers the case where the AI
+   * proposed a free-form label the seller hasn't confirmed against the seeded
+   * list yet; it still counts as "selected" for gating purposes.
+   */
+  subcategoryId: string | null;
+  subcategoryName: string | null;
   contentType: "image" | "video" | null;
   /** Set when the draft embeds a TikTok video instead of uploaded media. */
   tiktokEmbed: TiktokEmbed | null;
@@ -161,6 +170,7 @@ type CreateFlowActions = {
     name?: string | null,
     source?: "ai" | "manual" | null,
   ) => void;
+  setSubcategory: (id: string | null, name?: string | null) => void;
   setContentType: (type: "image" | "video" | null) => void;
   setTiktokEmbed: (embed: TiktokEmbed | null) => void;
   setPrice: (price: number | null, isFree: boolean) => void;
@@ -199,6 +209,8 @@ const DEFAULT_STATE: CreateFlowState = {
   categoryId: null,
   categoryName: null,
   categorySource: null,
+  subcategoryId: null,
+  subcategoryName: null,
   contentType: null,
   tiktokEmbed: null,
   price: null,
@@ -279,7 +291,18 @@ export const useCreateStore = create<CreateFlowState & CreateFlowActions>()(
       setCaption: (caption) => set({ caption }),
       setHashtags: (hashtags) => set({ hashtags }),
       setCategory: (categoryId, categoryName = null, categorySource = null) =>
-        set({ categoryId, categoryName, categorySource }),
+        set((s) => ({
+          categoryId,
+          categoryName,
+          categorySource,
+          // A subcategory belongs to exactly one category — picking a
+          // different category invalidates whatever was chosen before.
+          ...(categoryId !== s.categoryId
+            ? { subcategoryId: null, subcategoryName: null }
+            : {}),
+        })),
+      setSubcategory: (subcategoryId, subcategoryName = null) =>
+        set({ subcategoryId, subcategoryName }),
       setContentType: (contentType) => set({ contentType }),
       setTiktokEmbed: (tiktokEmbed) => set({ tiktokEmbed }),
       setPrice: (price, isFree) => set({ price, isFree }),
@@ -328,6 +351,8 @@ export const useCreateStore = create<CreateFlowState & CreateFlowActions>()(
         categoryId: s.categoryId,
         categoryName: s.categoryName,
         categorySource: s.categorySource,
+        subcategoryId: s.subcategoryId,
+        subcategoryName: s.subcategoryName,
         price: s.price,
         currency: s.currency,
         isFree: s.isFree,

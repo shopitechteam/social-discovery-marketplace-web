@@ -183,6 +183,8 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
     caption,
     categoryId,
     categoryName,
+    subcategoryId,
+    subcategoryName,
     specs,
     price,
     currency,
@@ -205,6 +207,7 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
     setTitle,
     setCaption,
     setCategory,
+    setSubcategory,
     setSpecs,
     setPrice,
     setNegotiable,
@@ -239,6 +242,13 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
   const [publishDraft] = useMutation(PublishDraftDocument);
 
   const [agentThinking, setAgentThinking] = useState(false);
+  // True when the current question came from the deterministic fallback
+  // planner rather than the AI (server returned `aiUsed: false`, or the
+  // mutation itself failed and we dropped to the client-side planner). Either
+  // way only generic/essential questions are asked — never a guessed
+  // category-specific field — so this only needs to inform the seller, not
+  // change what's rendered.
+  const [aiDegraded, setAiDegraded] = useState(false);
   const agentTurnInFlightRef = useRef(false);
   const { startImageUpload, startVideoUpload } = useMediaUpload();
 
@@ -780,7 +790,7 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
           .filter((spec) => spec.key && spec.value),
         aiClassification: {
           level1: categoryName ?? undefined,
-          level2: guidedInsights?.subcategory || undefined,
+          level2: subcategoryName || guidedInsights?.subcategory || undefined,
           confidence: guidedInsights?.classificationConfidence ?? undefined,
         },
       });
@@ -868,8 +878,15 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
         setAgentAsk(null);
         setAgentReady(true);
         setGuidedStage("options");
+        setAiDegraded(false);
       } else {
         setAgentAsk(turn.ask);
+        // `aiUsed: false` means the server itself fell back to the
+        // deterministic listing-requirements planner (AI call failed or
+        // timed out) — it still only asks generic/essential questions, never
+        // a guessed category-specific one, but the seller should know why the
+        // question feels more basic than usual.
+        setAiDegraded(!turn.aiUsed);
       }
     } catch {
       // The mutation itself failed (network / not deployed). Persist any pending
@@ -878,6 +895,7 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
       if (answered && answered.answer !== undefined) {
         await persistScalarAnswer(answered).catch(() => undefined);
       }
+      setAiDegraded(true);
       applyClientFallbackTurn();
     } finally {
       agentTurnInFlightRef.current = false;
@@ -1112,6 +1130,11 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
       );
       return;
     }
+    if (!subcategoryId) {
+      setFormError("Choose a subcategory before posting.");
+      setGuidedStage("options");
+      return;
+    }
     const parsedPrice = priceInput.trim() ? Number(priceInput) : (price ?? 0);
     if (!Number.isFinite(parsedPrice) || parsedPrice < 0) {
       setFormError("Enter a valid price before posting.");
@@ -1134,7 +1157,7 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
           .filter((spec) => spec.key && spec.value),
         aiClassification: {
           level1: categoryName ?? undefined,
-          level2: guidedInsights?.subcategory || undefined,
+          level2: subcategoryName || guidedInsights?.subcategory || undefined,
           confidence: guidedInsights?.classificationConfidence ?? undefined,
         },
         price: {
@@ -1200,7 +1223,7 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
           .filter((spec) => spec.key && spec.value),
         aiClassification: {
           level1: categoryName ?? undefined,
-          level2: guidedInsights?.subcategory || undefined,
+          level2: subcategoryName || guidedInsights?.subcategory || undefined,
           confidence: guidedInsights?.classificationConfidence ?? undefined,
         },
         price: {
@@ -1383,27 +1406,16 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
 
                 <Field
                   label="Subcategory"
-                  hint="A broad group buyers may search for"
+                  hint="Pinpoints what buyers see this as, once you've picked a category"
                 >
-                  <input
-                    value={guidedInsights?.subcategory ?? ""}
-                    maxLength={120}
-                    onChange={(event) =>
-                      setGuidedInsights({
-                        ...(guidedInsights ?? {
-                          classificationConfidence: null,
-                          detectedPrice: null,
-                          suggestedPrice: null,
-                          priceRangeLow: null,
-                          priceRangeHigh: null,
-                          pricingReason: null,
-                          pricingConfidence: null,
-                        }),
-                        subcategory: event.target.value,
-                      })
-                    }
-                    placeholder="e.g. Phones, Cars, Sofas"
-                    className="h-12 w-full rounded-xl border border-border bg-surface px-3 text-base text-foreground outline-none focus:border-primary"
+                  <CategoryPickerDrawer
+                    value={subcategoryId}
+                    fallbackLabel={subcategoryName ?? guidedInsights?.subcategory}
+                    parentId={categoryId}
+                    title="Subcategory"
+                    placeholderLabel="Choose subcategory"
+                    emptyLabel="No subcategories yet for this category."
+                    onChange={(id, name) => setSubcategory(id, name)}
                   />
                 </Field>
 
@@ -1447,16 +1459,24 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
               ) : null}
 
               {guidedStage === "conversation" && agentAsk && !agentThinking ? (
-                <AgentAskControl
-                  key={`${agentAsk.target}:${agentAsk.specKey ?? ""}:${agentAsk.label}`}
-                  ask={agentAsk}
-                  onScalar={(value) => void answerScalar(agentAsk, value)}
-                  onPrice={(amount, isNegotiable) =>
-                    void answerPrice(amount, isNegotiable)
-                  }
-                  onLocation={() => void answerLocation()}
-                  onPhone={() => void answerPhone()}
-                />
+                <>
+                  {aiDegraded ? (
+                    <p className="px-1 text-xs text-muted">
+                      AI assist is temporarily unavailable — showing standard
+                      questions for now.
+                    </p>
+                  ) : null}
+                  <AgentAskControl
+                    key={`${agentAsk.target}:${agentAsk.specKey ?? ""}:${agentAsk.label}`}
+                    ask={agentAsk}
+                    onScalar={(value) => void answerScalar(agentAsk, value)}
+                    onPrice={(amount, isNegotiable) =>
+                      void answerPrice(amount, isNegotiable)
+                    }
+                    onLocation={() => void answerLocation()}
+                    onPhone={() => void answerPhone()}
+                  />
+                </>
               ) : null}
             </>
           ) : null}
