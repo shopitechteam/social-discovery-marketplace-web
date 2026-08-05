@@ -30,25 +30,50 @@ type CategoryPickerDrawerProps = {
   value: string | null;
   fallbackLabel?: string | null;
   onChange: (id: string, name: string) => void;
+  /**
+   * When omitted, this pickers the fixed Level-1 roots (depth 0). Pass a
+   * category id to pick its Level-2 children instead (depth 1) — e.g. the
+   * subcategory step right after a category is chosen. `null`/`undefined`
+   * with this prop *present* (subcategory mode) means "no parent chosen yet",
+   * which the caller should handle by disabling the trigger rather than
+   * relying on this component to guess.
+   */
+  parentId?: string | null;
+  title?: string;
+  placeholderLabel?: string;
+  emptyLabel?: string;
 };
 
 export function CategoryPickerDrawer({
   value,
   fallbackLabel,
   onChange,
+  parentId,
+  title = "Category",
+  placeholderLabel = "Choose category",
+  emptyLabel = "No active categories available right now.",
 }: CategoryPickerDrawerProps) {
   const [open, setOpen] = useState(false);
   const isDesktop = useIsDesktop({ ssrDefault: false });
+  const isSubcategoryMode = parentId !== undefined;
   const { data, loading } = useQuery(CategoriesDocument, {
     fetchPolicy: "cache-and-network",
   });
 
-  const categories = useMemo(() => data?.categories ?? [], [data?.categories]);
+  const categories = useMemo(() => {
+    const all = data?.categories ?? [];
+    // The flat `categories` query returns every active category regardless
+    // of depth, so the root picker must filter to depth 0 itself — without
+    // this, every seeded subcategory would show up mixed into the top-level
+    // list too.
+    return isSubcategoryMode
+      ? all.filter((category) => category.parentId === parentId)
+      : all.filter((category) => category.depth === 0);
+  }, [data?.categories, isSubcategoryMode, parentId]);
+
   const selected = categories.find((category) => category.id === value);
   const selectedLabel =
-    selected?.name ??
-    fallbackLabel ??
-    (value ? "Selected category" : "Choose category");
+    selected?.name ?? fallbackLabel ?? (value ? "Selected" : placeholderLabel);
 
   function selectCategory(id: string) {
     const category = categories.find((item) => item.id === id);
@@ -57,10 +82,13 @@ export function CategoryPickerDrawer({
     setOpen(false);
   }
 
+  const disabled = isSubcategoryMode && !parentId;
+
   const triggerButton = (
     <button
       type="button"
-      className="flex min-h-13 w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left outline-none transition-colors"
+      disabled={disabled}
+      className="flex min-h-13 w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left outline-none transition-colors disabled:cursor-not-allowed disabled:opacity-50"
       style={{
         backgroundColor: "rgb(var(--color-bg-subtle))",
         border: "1px solid rgb(var(--color-border))",
@@ -76,7 +104,7 @@ export function CategoryPickerDrawer({
             fontSize: "var(--text-base)",
           }}
         >
-          {selectedLabel}
+          {disabled ? "Choose a category first" : selectedLabel}
         </span>
         {value && (
           <span
@@ -117,12 +145,12 @@ export function CategoryPickerDrawer({
           fontSize: "var(--text-sm)",
         }}
       >
-        No active categories available right now.
+        {emptyLabel}
       </div>
     ) : (
       <div
         role="radiogroup"
-        aria-label="Category"
+        aria-label={title}
         className="flex flex-col gap-2 pb-2"
       >
         {categories.map((category) => {
@@ -193,10 +221,10 @@ export function CategoryPickerDrawer({
                 fontSize: "var(--text-lg)",
               }}
             >
-              Category
+              {title}
             </DialogTitle>
             <DialogDescription className="sr-only">
-              Select a post category.
+              Select a post {title.toLowerCase()}.
             </DialogDescription>
           </DialogHeader>
 
@@ -237,10 +265,10 @@ export function CategoryPickerDrawer({
               fontSize: "var(--text-lg)",
             }}
           >
-            Category
+            {title}
           </DrawerTitle>
           <DrawerDescription className="sr-only">
-            Select a post category.
+            Select a post {title.toLowerCase()}.
           </DrawerDescription>
         </DrawerHeader>
 

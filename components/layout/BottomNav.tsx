@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   House,
   Inbox,
+  InboxIcon,
   Plus,
   Search,
   UserRound,
@@ -43,12 +44,12 @@ const tabs: Tab[] = [
     key: "notifications",
     path: "notifications",
     label: "Inbox",
-    icon: Inbox,
+    icon: InboxIcon,
   },
   {
     key: "profile",
     path: "profile",
-    label: "Me",
+    label: "Profile",
     icon: UserRound,
   },
 ];
@@ -59,7 +60,7 @@ export function shouldHideBottomNav(pathname: string) {
     pathname.includes("/upload/tiktok") ||
     pathname.includes("/content/") ||
     /\/profile\/[^/]+$/.test(pathname) ||
-    /\/notifications\/[^/]+/.test(pathname) 
+    /\/notifications\/[^/]+/.test(pathname)
   );
 }
 
@@ -80,9 +81,7 @@ export function BottomNav({ lang = "en" }: { lang: string }) {
         bottomNavHidden ? "hidden" : ""
       }`}
     >
-      <div
-        className="relative flex h-(--nav-height) items-center justify-between border-t border-border"
-      >
+      <div className="relative flex h-(--nav-height) items-center justify-between border-t border-border">
         {tabs.map((tab) => {
           const href = `/${lang}/${tab.path}`;
           const Icon = tab.icon;
