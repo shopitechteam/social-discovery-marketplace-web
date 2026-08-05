@@ -15,6 +15,7 @@ import {
   Download,
   MapPin,
   Bookmark,
+  Heart,
   Link2,
   Flag,
   Share2,
@@ -240,35 +241,71 @@ function MiniAvatar({ user, index }: { user: FeedSocialUser; index: number }) {
   );
 }
 
+/* Facebook-style heart burst: one heart pops at the icon, a ring of smaller
+   hearts flies outward along straight (linear) paths and fades. */
+const HEART_BURST = [
+  { x: -34, y: -46, size: 14, rotate: -18, delay: 0 },
+  { x: 30, y: -52, size: 16, rotate: 14, delay: 40 },
+  { x: -48, y: -14, size: 11, rotate: -26, delay: 80 },
+  { x: 46, y: -18, size: 12, rotate: 22, delay: 60 },
+  { x: -14, y: -62, size: 10, rotate: 6, delay: 100 },
+  { x: 12, y: -66, size: 13, rotate: -8, delay: 20 },
+];
+
+const HEART_BURST_MS = 900;
+
 function SaveBurst({ burstKey }: { burstKey: number }) {
-  if (burstKey === 0) return null;
+  // Unmount the whole burst once it has played, so nothing can be left behind
+  // on screen if an animationend event is missed (background tab, etc.).
+  const [playedKey, setPlayedKey] = useState(0);
+
+  useEffect(() => {
+    if (burstKey === 0) return;
+    const timer = window.setTimeout(
+      () => setPlayedKey(burstKey),
+      HEART_BURST_MS,
+    );
+    return () => window.clearTimeout(timer);
+  }, [burstKey]);
+
+  if (burstKey === 0 || playedKey === burstKey) return null;
 
   return (
     <span
-      key={burstKey}
-      className="pointer-events-none absolute left-1/2 top-0 z-20"
+      className="pointer-events-none absolute left-1/2 top-1/2 z-20 h-0 w-0"
       aria-hidden
     >
-      <span className="shopi-save-burst flex h-12 w-12 items-center justify-center rounded-full bg-[rgb(var(--brand-primary))] text-white shadow-[0_16px_38px_rgb(var(--brand-primary)/0.34)]">
-        <Bookmark className="h-6 w-6" fill="currentColor" strokeWidth={2} />
+      {/* Centring wrapper — the animated child then uses a plain translate,
+          so the keyframes never fight a -50%/-50% offset. */}
+      <span className="absolute left-0 top-0 block -translate-x-1/2 -translate-y-1/2">
+        <span className="shopi-heart-pop block text-[rgb(var(--brand-primary))]">
+          <Heart className="h-7 w-7" fill="currentColor" strokeWidth={0} />
+        </span>
       </span>
-      {[
-        ["-24px", "-30px"],
-        ["28px", "-26px"],
-        ["-18px", "14px"],
-        ["24px", "16px"],
-      ].map(([x, y], index) => (
+
+      {HEART_BURST.map((heart, index) => (
         <span
-          key={`${x}-${y}`}
-          className="shopi-save-spark absolute left-1/2 top-1/2 h-1.5 w-1.5 rounded-full bg-[rgb(var(--brand-secondary))]"
-          style={
-            {
-              "--spark-x": x,
-              "--spark-y": y,
-              animationDelay: `${index * 36}ms`,
-            } as CSSProperties
-          }
-        />
+          key={index}
+          className="absolute left-0 top-0 block -translate-x-1/2 -translate-y-1/2"
+        >
+          <span
+            className="shopi-heart-fly block text-[rgb(var(--brand-primary))]"
+            style={
+              {
+                "--heart-x": `${heart.x}px`,
+                "--heart-y": `${heart.y}px`,
+                "--heart-rotate": `${heart.rotate}deg`,
+                animationDelay: `${heart.delay}ms`,
+              } as CSSProperties
+            }
+          >
+            <Heart
+              style={{ width: heart.size, height: heart.size }}
+              fill="currentColor"
+              strokeWidth={0}
+            />
+          </span>
+        </span>
       ))}
     </span>
   );
@@ -1796,7 +1833,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
               : "transparent",
           }}
         >
-          <SaveBurst burstKey={saveBurstKey} />
+          <SaveBurst key={saveBurstKey} burstKey={saveBurstKey} />
           <Bookmark
             className={cn(
               "w-3.5 h-3.5 shrink-0 transition-transform duration-300 md:w-4 md:h-4",
