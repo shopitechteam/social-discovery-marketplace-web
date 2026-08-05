@@ -126,6 +126,17 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/** How long the "thinking" indicator stays up for a turn that didn't actually
+ *  wait on the AI (deterministic fallback, either client- or server-side).
+ *  Keeps the pacing consistent — a question that shows up instantly right
+ *  after one that took a couple of seconds reads as a glitch, not as "fast". */
+const SIMULATED_THINKING_MS = 2000;
+
+async function ensureMinElapsed(since: number, minMs: number): Promise<void> {
+  const remaining = minMs - (Date.now() - since);
+  if (remaining > 0) await delay(remaining);
+}
+
 function blobToDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -839,6 +850,7 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
     resetStreamingText();
     setAgentThinking(true);
     setFormError(null);
+    const turnStartedAt = Date.now();
     try {
       const { data, error } = await shopiAgentTurn({
         variables: {
@@ -888,15 +900,19 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
         // question feels more basic than usual.
         setAiDegraded(!turn.aiUsed);
       }
+      // No real model call behind this turn — hold the "thinking" beat so it
+      // doesn't feel like a different (broken) UI from the AI-driven turns.
+      if (!turn.aiUsed) await ensureMinElapsed(turnStartedAt, SIMULATED_THINKING_MS);
     } catch {
       // The mutation itself failed (network / not deployed). Persist any pending
       // scalar answer ourselves, then continue with the deterministic essentials
-      // flow so the seller can still finish the post.
+      // flow so the seller can still finish the listing.
       if (answered && answered.answer !== undefined) {
         await persistScalarAnswer(answered).catch(() => undefined);
       }
       setAiDegraded(true);
       applyClientFallbackTurn();
+      await ensureMinElapsed(turnStartedAt, SIMULATED_THINKING_MS);
     } finally {
       agentTurnInFlightRef.current = false;
       setAgentThinking(false);
@@ -1334,16 +1350,16 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
             <p className="font-semibold">
               {greetingForNow()}, {firstName} 👋
             </p>
-            <p className="mt-1">What would you like to post today?</p>
+            <p className="mt-1">What are you selling today?</p>
           </AgentBubble>
 
           {guidedIntent ? <UserBubble>{guidedIntent}</UserBubble> : null}
 
           {stageReached(guidedStage, "media") ? (
             <AgentBubble>
-              <p>Great. Add clear photos or one short video of it.</p>
+              <p>Nice — pop in a few clear photos or a quick video of it.</p>
               <p className="mt-1 text-sm text-muted">
-                I’ll look at the media and prepare the listing details for you.
+                I’ll take a look and get the details ready for you.
               </p>
             </AgentBubble>
           ) : null}
@@ -1365,17 +1381,17 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
               <AgentBubble>
                 {analysisError ? (
                   <>
-                    <p>I couldn’t confidently read every detail.</p>
+                    <p>Hmm, I couldn’t quite make out every detail there.</p>
                     <p className="mt-1 text-sm text-muted">
-                      No problem—fill in or adjust anything below and I’ll keep
-                      guiding you.
+                      No worries — just fill in or tweak anything below and
+                      we’ll keep going.
                     </p>
                   </>
                 ) : (
                   <>
-                    <p>Nice item. I found the details below from your media.</p>
+                    <p>Nice one — here’s what I picked up from your photos.</p>
                     <p className="mt-1 text-sm text-muted">
-                      Check them carefully—you can edit, remove or add anything.
+                      Have a look and change anything that’s not quite right.
                     </p>
                   </>
                 )}
@@ -1484,7 +1500,7 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
           {stageReached(guidedStage, "options") ? (
             <>
               <AgentBubble>
-                <p>Last step—choose who can see and save your post.</p>
+                <p>Almost there — choose who gets to see this listing.</p>
               </AgentBubble>
               <AssistantCard>
                 <div className="flex items-center gap-2">
@@ -1520,9 +1536,9 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
               <div className="flex items-center gap-3">
                 <LoaderCircle className="h-5 w-5 animate-spin text-primary" />
                 <div>
-                  <p className="font-semibold">Creating your post…</p>
+                  <p className="font-semibold">Getting your listing live…</p>
                   <p className="mt-0.5 text-sm text-muted">
-                    I’m saving the final details and preparing the media.
+                    Just saving the final details and preparing the media.
                   </p>
                 </div>
               </div>
