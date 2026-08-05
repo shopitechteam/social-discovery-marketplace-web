@@ -27,6 +27,7 @@ import { PostCardSkeleton, FeedPaginationSkeleton } from "./FeedSkeleton";
 import { DesktopTrendingRail } from "./DesktopTrendingRail";
 import { TrendingStrip } from "./TrendingStrip";
 import { DesktopNearbyColumn } from "./DesktopNearbyColumn";
+import { LocationPermissionBanner } from "./LocationPermissionBanner";
 import { FeedChatProvider } from "./FeedChatContext";
 import { SHOW_ASK_SHOPI } from "@/features/feed/utils/askShopiAvailability";
 
@@ -136,6 +137,7 @@ function ForYouColumn({ lang }: { lang: string }) {
 
   return (
     <div className="flex flex-col gap-4">
+      <LocationPermissionBanner />
       {items.map((post, i) => (
         <DesktopPostCard
           key={post.id}
