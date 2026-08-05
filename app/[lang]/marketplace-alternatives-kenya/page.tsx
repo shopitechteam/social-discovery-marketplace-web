@@ -137,7 +137,7 @@ export default async function AlternativesPage({ params }: Props) {
           <h1 className="mb-5 font-display text-[clamp(2rem,5vw,3rem)] font-bold leading-[1.1] tracking-[-0.03em] text-foreground">
             How Kenyans buy and sell online — and where Shopi fits
           </h1>
-          <p className="mb-12 max-w-[46rem] text-[1.1rem] leading-[1.7] text-muted">
+          <p className="mb-12 max-w-184 text-[1.1rem] leading-[1.7] text-muted">
             {DESCRIPTION}
           </p>
 
