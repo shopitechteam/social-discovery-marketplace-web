@@ -17,17 +17,21 @@ type FeedPreferencesState = {
   nearbyLocation: NearbyLocation | null;
   nearbyRadiusKm: number;
   videoMuted: boolean;
+  /** When the "enable location" feed banner was last dismissed, or null if never. */
+  locationBannerDismissedAt: number | null;
   setNearbyLocation: (location: NearbyLocationInput) => void;
   clearNearbyLocation: () => void;
   setNearbyRadiusKm: (radiusKm: number) => void;
   setVideoMuted: (muted: boolean) => void;
   toggleVideoMuted: () => void;
+  dismissLocationBanner: () => void;
 };
 
 type PersistedFeedPreferencesState = {
   nearbyLocation?: NearbyLocation | null;
   nearbyRadiusKm?: number;
   videoMuted?: boolean;
+  locationBannerDismissedAt?: number | null;
 };
 
 const DEFAULT_NEARBY_RADIUS_KM = 50;
@@ -38,6 +42,7 @@ export const useFeedPreferencesStore = create<FeedPreferencesState>()(
       nearbyLocation: null,
       nearbyRadiusKm: DEFAULT_NEARBY_RADIUS_KM,
       videoMuted: true,
+      locationBannerDismissedAt: null,
 
       setNearbyLocation: (location) =>
         set({
@@ -55,6 +60,7 @@ export const useFeedPreferencesStore = create<FeedPreferencesState>()(
       setVideoMuted: (videoMuted) => set({ videoMuted }),
       toggleVideoMuted: () =>
         set((state) => ({ videoMuted: !state.videoMuted })),
+      dismissLocationBanner: () => set({ locationBannerDismissedAt: Date.now() }),
     }),
     {
       name: "shopi-feed-preferences",
@@ -63,6 +69,7 @@ export const useFeedPreferencesStore = create<FeedPreferencesState>()(
         nearbyLocation: state.nearbyLocation,
         nearbyRadiusKm: state.nearbyRadiusKm,
         videoMuted: state.videoMuted,
+        locationBannerDismissedAt: state.locationBannerDismissedAt,
       }),
       merge: (persisted, current) => {
         const persistedState = persisted as PersistedFeedPreferencesState | null;
@@ -85,6 +92,10 @@ export const useFeedPreferencesStore = create<FeedPreferencesState>()(
             typeof persistedState?.videoMuted === "boolean"
               ? persistedState.videoMuted
               : true,
+          locationBannerDismissedAt:
+            typeof persistedState?.locationBannerDismissedAt === "number"
+              ? persistedState.locationBannerDismissedAt
+              : null,
         };
       },
     },

@@ -4,6 +4,7 @@ import { PostCard } from "./PostCard";
 import { useForYouFeed } from "../hooks/useFeed";
 import { FeedPaginationSkeleton, FeedSkeleton } from "./FeedSkeleton";
 import { TrendingStrip } from "./TrendingStrip";
+import { LocationPermissionBanner } from "./LocationPermissionBanner";
 //import { StoriesBar } from "@/features/stories/components/StoriesBar";
 import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
 import { memo } from "react";
@@ -48,6 +49,9 @@ function FeedGrid({ lang, active = true }: Props) {
       <div className="pt-2 pb-1">
         <TrendingStrip lang={lang} />
       </div>
+
+      {/* ── Location permission nudge ────────────────────────────────── */}
+      <LocationPermissionBanner />
 
       {/* ── Post cards ───────────────────────────────────────────────── */}
       <div className="flex flex-col gap-2">

@@ -15,6 +15,7 @@ import {
   LocalFeedDocument,
 } from "@/types/__generated__/graphql";
 import { FEED_PAGE_SIZE } from "@/features/feed/constants";
+import { useNearbyLocation } from "@/features/feed/hooks/useNearbyLocation";
 
 const PAGE_SIZE = FEED_PAGE_SIZE;
 
@@ -65,10 +66,21 @@ export function usePaginationGuard(currentCount: number) {
 }
 
 export function useForYouFeed() {
+  // Reuse the same permission/caching flow the Nearby tab already owns: this
+  // never itself prompts for permission (no `requestLocation()` call here) —
+  // it only picks up a fix the user already granted elsewhere, so ranking
+  // reflects where they actually are right now instead of their saved
+  // profile/listing address, without ambushing Home with a permission popup.
+  const { location } = useNearbyLocation();
+
   const { data, error, fetchMore } = useSuspenseQuery(
     ForYouFeedDocument,
     {
-      variables: { limit: PAGE_SIZE },
+      variables: {
+        limit: PAGE_SIZE,
+        latitude: location?.latitude,
+        longitude: location?.longitude,
+      },
       // Preserve the accumulated window on bottom-tab navigation. Freshly
       // published content invalidates this field explicitly (see feedCache.ts);
       // otherwise revisiting Home should show the same 30+ cached items, not a
