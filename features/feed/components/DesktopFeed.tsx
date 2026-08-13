@@ -434,7 +434,10 @@ export default function DesktopFeed({
               ) : null}
               {openedTabs.has("nearby") ? (
                 <div className={tab === "nearby" ? undefined : "hidden"}>
-                  <DesktopNearbyColumn lang={lang} />
+                  <DesktopNearbyColumn
+                    lang={lang}
+                    active={visible && tab === "nearby"}
+                  />
                 </div>
               ) : null}
               {SHOW_ASK_SHOPI && openedTabs.has("ask-shopi") ? (

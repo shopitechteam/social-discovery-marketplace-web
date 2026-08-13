@@ -46,13 +46,22 @@ function DesktopPostCard({
   );
 }
 
-export function DesktopNearbyColumn({ lang }: { lang: string }) {
+export function DesktopNearbyColumn({
+  lang,
+  active = true,
+}: {
+  lang: string;
+  active?: boolean;
+}) {
   const {
     location: effectiveLocation,
     permState: effectivePermState,
     geoError,
     requestLocation,
-  } = useNearbyLocation();
+  } = useNearbyLocation({
+    requireLiveLocation: active,
+    useCachedLocation: false,
+  });
   const nearbyRadiusKm = useFeedPreferencesStore((s) => s.nearbyRadiusKm);
   const setNearbyRadiusKm = useFeedPreferencesStore(
     (s) => s.setNearbyRadiusKm,

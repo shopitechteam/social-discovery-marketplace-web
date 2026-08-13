@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useFeedPreferencesStore } from "@/stores/feedPreferences";
 
 export type NearbyPermissionState =
@@ -18,12 +18,27 @@ export interface NearbyCoords {
   label?: string | null;
 }
 
+type UseNearbyLocationOptions = {
+  /**
+   * The actual Nearby feed must be keyed by the device's current fix, not the
+   * persisted seed from an earlier city. For You can still use the seed because
+   * it only gives ranking a soft local hint and must not surprise users with a
+   * location prompt.
+   */
+  requireLiveLocation?: boolean;
+  useCachedLocation?: boolean;
+};
+
 /**
  * The persisted location is a render seed, not a source of truth. Anything
  * older than this triggers a silent GPS re-read so a user who travelled
  * (Nyahururu → Nanyuki) is not pinned to where they last opened the tab.
  */
 const STALE_AFTER_MS = 10 * 60_000;
+const DEFAULT_BROWSER_LOCATION_MAX_AGE_MS = 5 * 60_000;
+const LIVE_BROWSER_LOCATION_MAX_AGE_MS = 10 * 60_000;
+const DEFAULT_LOCATION_TIMEOUT_MS = 10_000;
+const LIVE_LOCATION_TIMEOUT_MS = 3_000;
 
 /**
  * Below this, a new fix is treated as GPS jitter and the previous coordinates
@@ -49,7 +64,10 @@ function metersBetween(a: NearbyCoords, b: NearbyCoords): number {
  * Owns the geolocation permission flow and the persisted "nearby" position,
  * shared by the mobile NearbyGrid and the DesktopNearbyColumn.
  */
-export function useNearbyLocation() {
+export function useNearbyLocation({
+  requireLiveLocation = false,
+  useCachedLocation = true,
+}: UseNearbyLocationOptions = {}) {
   const [permState, setPermState] = useState<NearbyPermissionState>("checking");
   const [location, setLocation] = useState<NearbyCoords | null>(null);
   const [geoError, setGeoError] = useState<string | null>(null);
@@ -65,13 +83,14 @@ export function useNearbyLocation() {
   const [prefsHydrated, setPrefsHydrated] = useState(() =>
     useFeedPreferencesStore.persist.hasHydrated(),
   );
+  const requestIdRef = useRef(0);
 
   // Read the stored position inside callbacks without making them depend on
   // (and re-run for) every coordinate change.
   const readCached = () => useFeedPreferencesStore.getState().nearbyLocation;
 
   const effectiveLocation: NearbyCoords | null =
-    location ?? (prefsHydrated ? cachedLocation : null);
+    location ?? (useCachedLocation && prefsHydrated ? cachedLocation : null);
 
   // A cached position means we can render the feed immediately; a background
   // refresh must never drop the UI back to a spinner.
@@ -79,52 +98,100 @@ export function useNearbyLocation() {
     ? "granted"
     : permState;
 
+  const clearPendingLocationRequest = useCallback(() => {
+    requestIdRef.current += 1;
+  }, []);
+
   const requestLocation = useCallback(
     ({ silent = false }: { silent?: boolean } = {}) => {
       if (!navigator.geolocation) {
         setPermState("unavailable");
         return;
       }
-      if (!silent) setPermState("requesting");
+      clearPendingLocationRequest();
+      const requestId = requestIdRef.current;
+      const isCurrentRequest = () => requestIdRef.current === requestId;
+
+      if (!silent) {
+        if (requireLiveLocation) setLocation(null);
+        setPermState("requesting");
+      }
       setGeoError(null);
 
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const next: NearbyCoords = {
-            latitude: pos.coords.latitude,
-            longitude: pos.coords.longitude,
-            accuracyMeters: pos.coords.accuracy,
-            label: "your current location",
-          };
-          const previous = readCached();
-          const moved =
-            !previous || metersBetween(previous, next) >= SIGNIFICANT_MOVE_METERS;
+      const handlePosition = (pos: GeolocationPosition) => {
+        if (!isCurrentRequest()) return;
 
-          if (moved) {
-            setLocation(next);
-            setCachedNearbyLocation(next);
-          } else {
-            // Same place: refresh the stored timestamp so we stop re-polling,
-            // but keep the exact coordinates the feed query is already keyed by.
-            setCachedNearbyLocation(previous);
-          }
-          setPermState("granted");
-        },
-        (err) => {
-          if (err.code === err.PERMISSION_DENIED) {
-            clearCachedNearbyLocation();
-            setLocation(null);
-            setPermState("denied");
-          } else {
-            setGeoError("Couldn't get your location.");
-            setPermState("granted");
-          }
-        },
-        { timeout: 10_000, maximumAge: 5 * 60_000 },
-      );
+        const next: NearbyCoords = {
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+          accuracyMeters: pos.coords.accuracy,
+          label: "your current location",
+        };
+        const previous = readCached();
+        const moved =
+          !previous || metersBetween(previous, next) >= SIGNIFICANT_MOVE_METERS;
+
+        if (moved) {
+          setLocation(next);
+          setCachedNearbyLocation(next);
+        } else {
+          // Same place: refresh the stored timestamp so we stop re-polling,
+          // but keep the exact coordinates the feed query is already keyed by.
+          setLocation(previous);
+          setCachedNearbyLocation(previous);
+        }
+        setPermState("granted");
+      };
+
+      const failLocationRequest = (err: GeolocationPositionError) => {
+        if (!isCurrentRequest()) return;
+
+        const message =
+          err.code === err.TIMEOUT
+            ? "Location took too long. Tap Refresh and try again."
+            : "Couldn't get your location. Check that location services are enabled for this browser.";
+        setGeoError(message);
+        if (requireLiveLocation) setLocation(null);
+        setPermState("granted");
+      };
+
+      const handleError = (err: GeolocationPositionError) => {
+        if (!isCurrentRequest()) return;
+
+        if (err.code === err.PERMISSION_DENIED) {
+          clearCachedNearbyLocation();
+          setLocation(null);
+          setPermState("denied");
+          return;
+        }
+
+        failLocationRequest(err);
+      };
+
+      navigator.geolocation.getCurrentPosition(handlePosition, handleError, {
+        enableHighAccuracy: false,
+        timeout: requireLiveLocation
+          ? LIVE_LOCATION_TIMEOUT_MS
+          : DEFAULT_LOCATION_TIMEOUT_MS,
+        maximumAge: requireLiveLocation
+          ? LIVE_BROWSER_LOCATION_MAX_AGE_MS
+          : DEFAULT_BROWSER_LOCATION_MAX_AGE_MS,
+      });
     },
-    [clearCachedNearbyLocation, setCachedNearbyLocation],
+    [
+      clearCachedNearbyLocation,
+      clearPendingLocationRequest,
+      requireLiveLocation,
+      setCachedNearbyLocation,
+    ],
   );
+
+  useEffect(() => {
+    return () => {
+      requestIdRef.current += 1;
+      clearPendingLocationRequest();
+    };
+  }, [clearPendingLocationRequest]);
 
   useEffect(() => {
     if (prefsHydrated) return;
@@ -146,15 +213,20 @@ export function useNearbyLocation() {
 
     const resolve = () => {
       const current = readCached();
-      const isStale =
-        !current || Date.now() - current.updatedAt > STALE_AFTER_MS;
-      if (!isStale) return;
+      const needsFreshFix =
+        requireLiveLocation ||
+        !current ||
+        Date.now() - current.updatedAt > STALE_AFTER_MS;
+      if (!needsFreshFix) return;
 
       if (!navigator.permissions?.query) {
         // No Permissions API (older Safari): with nothing cached we must wait
-        // for a tap, otherwise refresh silently behind the rendered feed.
-        if (current) requestLocation({ silent: true });
-        else setPermState("idle");
+        // for a tap unless this caller explicitly needs live Nearby results.
+        if (current || requireLiveLocation) {
+          requestLocation({ silent: Boolean(current && useCachedLocation) });
+        } else {
+          setPermState("idle");
+        }
         return;
       }
 
@@ -162,15 +234,20 @@ export function useNearbyLocation() {
         .query({ name: "geolocation" })
         .then((result) => {
           if (result.state === "granted") {
-            requestLocation({ silent: Boolean(current) });
+            requestLocation({ silent: Boolean(current && useCachedLocation) });
           } else if (result.state === "denied") {
             clearCachedNearbyLocation();
             setPermState("denied");
+          } else if (requireLiveLocation) {
+            requestLocation();
           } else {
-            setPermState(current ? "granted" : "idle");
+            setPermState(current && useCachedLocation ? "granted" : "idle");
           }
         })
-        .catch(() => setPermState(current ? "granted" : "idle"));
+        .catch(() => {
+          if (requireLiveLocation) requestLocation();
+          else setPermState(current && useCachedLocation ? "granted" : "idle");
+        });
     };
 
     // A fresh stored position short-circuits this; `effectivePermState`
@@ -183,7 +260,13 @@ export function useNearbyLocation() {
     };
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
-  }, [prefsHydrated, requestLocation, clearCachedNearbyLocation]);
+  }, [
+    clearCachedNearbyLocation,
+    prefsHydrated,
+    requestLocation,
+    requireLiveLocation,
+    useCachedLocation,
+  ]);
 
   const refreshLocation = useCallback(
     () => requestLocation({ silent: true }),
