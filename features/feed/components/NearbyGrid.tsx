@@ -27,7 +27,10 @@ export function NearbyGrid({ lang, active = true }: Props) {
     permState: effectivePermState,
     geoError,
     requestLocation,
-  } = useNearbyLocation();
+  } = useNearbyLocation({
+    requireLiveLocation: active,
+    useCachedLocation: false,
+  });
   const nearbyRadiusKm = useFeedPreferencesStore((s) => s.nearbyRadiusKm);
   const setNearbyRadiusKm = useFeedPreferencesStore(
     (s) => s.setNearbyRadiusKm,
