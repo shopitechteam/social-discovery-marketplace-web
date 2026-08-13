@@ -6,11 +6,11 @@
  * desktop-styled cards and states (no full-screen fixed overlays).
  */
 
-import { useState, useEffect, useCallback } from "react";
 import { PostCard } from "./PostCard";
 import { PostCardSkeleton } from "./FeedSkeleton";
 import { useNearbyFeed } from "../hooks/useFeed";
 import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
+import { useNearbyLocation } from "../hooks/useNearbyLocation";
 import { useFeedPreferencesStore } from "@/stores/feedPreferences";
 import {
   Select,
@@ -19,21 +19,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-type PermissionState =
-  | "checking"
-  | "idle"
-  | "requesting"
-  | "granted"
-  | "denied"
-  | "unavailable";
-
-interface Location {
-  latitude: number;
-  longitude: number;
-  accuracyMeters?: number | null;
-  label?: string | null;
-}
 
 const RADIUS_OPTIONS = [1, 2, 3, 5, 10, 25, 50, 100, 200] as const;
 
@@ -61,29 +46,26 @@ function DesktopPostCard({
   );
 }
 
-export function DesktopNearbyColumn({ lang }: { lang: string }) {
-  const [permState, setPermState] = useState<PermissionState>("checking");
-  const [location, setLocation] = useState<Location | null>(null);
-  const [geoError, setGeoError] = useState<string | null>(null);
-  const cachedLocation = useFeedPreferencesStore((s) => s.nearbyLocation);
+export function DesktopNearbyColumn({
+  lang,
+  active = true,
+}: {
+  lang: string;
+  active?: boolean;
+}) {
+  const {
+    location: effectiveLocation,
+    permState: effectivePermState,
+    geoError,
+    requestLocation,
+  } = useNearbyLocation({
+    requireLiveLocation: active,
+    useCachedLocation: false,
+  });
   const nearbyRadiusKm = useFeedPreferencesStore((s) => s.nearbyRadiusKm);
   const setNearbyRadiusKm = useFeedPreferencesStore(
     (s) => s.setNearbyRadiusKm,
   );
-  const setCachedNearbyLocation = useFeedPreferencesStore(
-    (s) => s.setNearbyLocation,
-  );
-  const clearCachedNearbyLocation = useFeedPreferencesStore(
-    (s) => s.clearNearbyLocation,
-  );
-  const [prefsHydrated, setPrefsHydrated] = useState(() =>
-    useFeedPreferencesStore.persist.hasHydrated(),
-  );
-  const effectiveLocation: Location | null =
-    location ?? (prefsHydrated ? cachedLocation : null);
-  const effectivePermState: PermissionState = effectiveLocation
-    ? "granted"
-    : permState;
 
   const { items, loading, loadingMore, hasMore, loadMore } = useNearbyFeed(
     effectiveLocation,
@@ -95,73 +77,6 @@ export function DesktopNearbyColumn({ lang }: { lang: string }) {
     loading: loading || loadingMore,
     onLoadMore: loadMore,
   });
-
-  const requestLocation = useCallback(() => {
-    if (!navigator.geolocation) {
-      setPermState("unavailable");
-      return;
-    }
-    setPermState("requesting");
-    setGeoError(null);
-
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude: lat, longitude: lng } = pos.coords;
-        const nextLocation = {
-          latitude: lat,
-          longitude: lng,
-          accuracyMeters: pos.coords.accuracy,
-          label: "your current location",
-        };
-        setLocation(nextLocation);
-        setCachedNearbyLocation(nextLocation);
-        setPermState("granted");
-      },
-      (err) => {
-        if (err.code === err.PERMISSION_DENIED) {
-          clearCachedNearbyLocation();
-          setLocation(null);
-          setPermState("denied");
-        } else {
-          setGeoError("Couldn't get your location.");
-          setPermState("granted");
-        }
-      },
-      { timeout: 10_000, maximumAge: 5 * 60_000 },
-    );
-  }, [clearCachedNearbyLocation, setCachedNearbyLocation]);
-
-  useEffect(() => {
-    if (prefsHydrated) return;
-    const unsubscribe = useFeedPreferencesStore.persist.onFinishHydration(
-      () => setPrefsHydrated(true),
-    );
-    return unsubscribe;
-  }, [prefsHydrated]);
-
-  useEffect(() => {
-    if (!prefsHydrated) return;
-    if (cachedLocation) return;
-
-    if (!navigator.geolocation) {
-      queueMicrotask(() => setPermState("unavailable"));
-      return;
-    }
-    if (!navigator.permissions?.query) {
-      queueMicrotask(() => setPermState("idle"));
-      return;
-    }
-    navigator.permissions
-      .query({ name: "geolocation" })
-      .then((result) => {
-        if (result.state === "granted") {
-          requestLocation();
-        } else {
-          setPermState(result.state === "denied" ? "denied" : "idle");
-        }
-      })
-      .catch(() => setPermState("idle"));
-  }, [cachedLocation, prefsHydrated, requestLocation]);
 
   const pinIcon = (
     <svg
@@ -204,7 +119,7 @@ export function DesktopNearbyColumn({ lang }: { lang: string }) {
           </p>
         </div>
         <button
-          onClick={requestLocation}
+          onClick={() => requestLocation()}
           className="rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-sm transition-transform active:scale-95"
           style={{ backgroundColor: "rgb(var(--brand-primary))" }}
         >
@@ -264,13 +179,13 @@ export function DesktopNearbyColumn({ lang }: { lang: string }) {
     );
   }
 
-  if (geoError && !location) {
+  if (geoError && !effectiveLocation) {
     return (
       <Panel>
         <div className="text-4xl">⚠️</div>
         <p className="text-sm text-muted-foreground">{geoError}</p>
         <button
-          onClick={requestLocation}
+          onClick={() => requestLocation()}
           className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white"
           style={{ backgroundColor: "rgb(var(--brand-primary))" }}
         >
@@ -343,7 +258,7 @@ export function DesktopNearbyColumn({ lang }: { lang: string }) {
           </Select>
 
           <button
-            onClick={requestLocation}
+            onClick={() => requestLocation()}
             className="text-sm font-medium text-primary"
             style={{ color: "rgb(var(--brand-primary))" }}
           >

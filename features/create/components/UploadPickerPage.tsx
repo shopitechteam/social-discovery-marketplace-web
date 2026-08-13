@@ -390,7 +390,7 @@ const CREATION_MODES = [
     heading: "Guided setup",
     recommended: true,
     description:
-      "Shopi Agent reads your media and prepares the title, details and category with you — the fastest way to post.",
+      "Shopi Agent looks at your media and works out the title, details and category with you — the fastest way to sell.",
   },
   {
     key: "manual" as const,

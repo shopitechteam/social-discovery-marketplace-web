@@ -34,12 +34,6 @@ export const metadata: Metadata = {
     title: siteConfig.metaTitle,
     description: siteConfig.description,
   },
-  manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: siteConfig.name,
-  },
   robots: {
     index: true,
     follow: true,
