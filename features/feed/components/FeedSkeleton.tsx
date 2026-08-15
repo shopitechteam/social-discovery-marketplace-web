@@ -153,9 +153,16 @@ export function FeedSkeleton() {
 
 export function FeedPaginationSkeleton() {
   return (
-    <div className="flex flex-col gap-2 md:gap-4" aria-hidden>
-      <div className="md:overflow-hidden md:rounded-3xl md:border md:border-default md:bg-elevated">
-        <PostCardSkeleton />
+    <div
+      className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+4.75rem)] z-40 flex justify-center px-4 md:bottom-6 md:left-[var(--sidebar-width,0px)]"
+      aria-hidden
+    >
+      <div className="flex h-12 w-full max-w-xs items-center gap-3 rounded-full border border-default bg-elevated/95 px-4 shadow-lg shadow-black/10 backdrop-blur dark:shadow-black/30">
+        <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
+        <div className="min-w-0 flex-1 space-y-2">
+          <Skeleton className="h-2.5 w-3/4 rounded-full" />
+          <Skeleton className="h-2 w-1/2 rounded-full" />
+        </div>
       </div>
     </div>
   );

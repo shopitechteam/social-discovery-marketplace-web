@@ -66,6 +66,7 @@ import {
 import { toast } from "sonner";
 import { absoluteContentUrl, contentPath } from "@/lib/content-url";
 import { Button } from "@/components/ui/button";
+import { rememberScrollBeforeNavigation } from "@/components/layout/RouteScrollRestoration";
 
 const CommentsDrawer = dynamic(() =>
   import("./CommentsDrawer").then((mod) => mod.CommentsDrawer),
@@ -1380,6 +1381,16 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
     setShowComments(true);
   }
 
+  function openCreatorProfile() {
+    if (!creator?.id) {
+      handleOpen();
+      return;
+    }
+
+    rememberScrollBeforeNavigation();
+    router.push(`/${lang}/profile/${creator.id}`, { scroll: false });
+  }
+
   useLayoutEffect(() => {
     const el = captionRef.current;
     if (!el) {
@@ -1484,11 +1495,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
       <div className="flex items-center gap-3 px-4 pt-3.5 pb-2.5">
         <button
           className="lg:cursor-pointer"
-          onClick={() =>
-            creator?.id
-              ? router.push(`/${lang}/profile/${creator.id}`)
-              : handleOpen()
-          }
+          onClick={openCreatorProfile}
         >
           <Avatar
             creatorId={post.creatorId}
@@ -1503,11 +1510,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
         <div className="flex-1 min-w-0">
           {creatorName ? (
             <button
-              onClick={() =>
-                creator?.id
-                  ? router.push(`/${lang}/profile/${creator.id}`)
-                  : handleOpen()
-              }
+              onClick={openCreatorProfile}
               className="font-bold text-base leading-tight hover:underline block"
             >
               {creatorName}
