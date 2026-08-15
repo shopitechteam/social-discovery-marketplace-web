@@ -36,12 +36,21 @@ const feedFieldPolicy = {
     if (!args?.after) {
       if (existingItems.length === 0) return { ...incoming, items: incomingItems };
 
-      const incomingKeys = new Set(incomingItems.map(itemKey));
-      const tail = existingItems.filter(
-        (item) => !incomingKeys.has(itemKey(item)),
-      );
+      if (existingItems.length <= incomingItems.length) {
+        return { ...incoming, items: incomingItems };
+      }
 
-      return { ...incoming, items: [...incomingItems, ...tail] };
+      const existingKeys = new Set(existingItems.map(itemKey));
+      const newItems = incomingItems.filter((item) => {
+        const key = itemKey(item);
+        return !key || !existingKeys.has(key);
+      });
+
+      return {
+        ...incoming,
+        pageInfo: existing?.pageInfo ?? incoming.pageInfo,
+        items: [...existingItems, ...newItems],
+      };
     }
 
     const existingKeys = new Set(existingItems.map(itemKey));
