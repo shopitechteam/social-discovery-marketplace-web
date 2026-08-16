@@ -7,9 +7,9 @@ import {
   useMemo,
   useRef,
   useState,
+  type ReactNode,
 } from "react";
 import { Loader2 } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
 import type { Message } from "../types";
 import { dayKey, dayLabel } from "../lib/dateHeaders";
 import { MessageBubble } from "./MessageBubble";
@@ -24,6 +24,7 @@ interface Props {
   hasMoreOlder: boolean;
   /** Incremented by the parent on send to force a scroll-to-bottom. */
   scrollToBottomSignal?: number;
+  emptyState?: ReactNode;
   onLoadOlder: () => Promise<number>;
   onRetryMessage: (message: Message) => void;
   onDiscardMessage: (message: Message) => void;
@@ -63,6 +64,7 @@ export function MessageList({
   loadingOlder,
   hasMoreOlder,
   scrollToBottomSignal,
+  emptyState,
   onLoadOlder,
   onRetryMessage,
   onDiscardMessage,
@@ -229,7 +231,7 @@ export function MessageList({
 
   if (initialLoading && messages.length === 0) {
     return (
-      <div className="flex-1 overflow-y-auto bg-[rgb(var(--color-bg-subtle)/0.35)] px-4 py-4">
+      <div className="shopi-chat-wallpaper flex-1 overflow-y-auto px-4 py-4">
         <div className="flex h-[60vh] items-center justify-center">
           <Loader2 size={40} className="animate-spin text-primary opacity-60" />
         </div>
@@ -259,13 +261,19 @@ export function MessageList({
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="h-full overflow-y-auto overflow-x-hidden overscroll-contain bg-[rgb(var(--color-bg-subtle)/0.35)] px-4 py-4"
+        className="shopi-chat-wallpaper h-full overflow-y-auto overflow-x-hidden overscroll-contain px-4 py-4"
       >
         {/* Top sentinel + older-loading spinner */}
         <div ref={topSentinelRef} className="h-px" />
         {loadingOlder ? (
           <div className="flex justify-center py-2">
             <Loader2 size={18} className="animate-spin opacity-60" />
+          </div>
+        ) : null}
+
+        {messages.length === 0 && emptyState ? (
+          <div className="flex min-h-full items-center justify-center py-10">
+            {emptyState}
           </div>
         ) : null}
 

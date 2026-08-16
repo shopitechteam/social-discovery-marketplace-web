@@ -18,7 +18,9 @@ import { telHref } from "@/lib/phone";
 export function useSellerPhone(contentId: string | null | undefined) {
   const [phone, setPhone] = useState<string | null>(null);
   const [unavailable, setUnavailable] = useState(false);
-  const [fetchPhone, { loading }] = useLazyQuery(SellerContactPhoneDocument);
+  const [fetchPhone, { loading }] = useLazyQuery(SellerContactPhoneDocument, {
+    fetchPolicy: "network-only",
+  });
 
   /**
    * Returns the revealed number, or null when it couldn't be shown. Callers
