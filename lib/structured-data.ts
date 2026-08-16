@@ -10,15 +10,32 @@ import { siteConfig } from "@/config/site";
  */
 
 const { url, name } = siteConfig;
+const marketplaceTopics = [
+  "Kenya classifieds",
+  "social commerce in Kenya",
+  "local marketplace Kenya",
+  "buy and sell locally",
+  "AI shopping assistant",
+  "AI listing assistant",
+  "photo and video product discovery",
+  "cars for sale Kenya",
+  "phones for sale Kenya",
+  "beauty products Kenya",
+  "property for sale Kenya",
+];
 
 export const organizationSchema = {
   "@context": "https://schema.org",
   "@type": "OnlineBusiness",
   "@id": `${url}/#organization`,
   name,
+  alternateName: ["Shopi Kenya", "Shopi Marketplace", "Shopi Agent"],
   url,
   logo: `${url}/assets/shopi-logo.png`,
   description: siteConfig.description,
+  slogan: siteConfig.tagline,
+  keywords: siteConfig.keywords.join(", "),
+  knowsAbout: marketplaceTopics,
   foundingDate: "2025",
   areaServed: {
     "@type": "Country",
@@ -29,6 +46,13 @@ export const organizationSchema = {
     "https://twitter.com/shopiapp",
     "https://www.instagram.com/shopiapp",
   ],
+  contactPoint: {
+    "@type": "ContactPoint",
+    contactType: "customer support",
+    url: `${url}/en/contact`,
+    areaServed: "KE",
+    availableLanguage: ["English", "Kiswahili"],
+  },
 };
 
 export const websiteSchema = {
@@ -36,9 +60,15 @@ export const websiteSchema = {
   "@type": "WebSite",
   "@id": `${url}/#website`,
   name,
+  alternateName: ["Shopi Kenya marketplace", "Shopi social marketplace"],
   url,
   description: siteConfig.description,
-  inLanguage: "en-KE",
+  inLanguage: ["en-KE", "sw-KE"],
+  keywords: siteConfig.keywords.join(", "),
+  about: marketplaceTopics.map((topic) => ({
+    "@type": "Thing",
+    name: topic,
+  })),
   publisher: { "@id": `${url}/#organization` },
   potentialAction: {
     "@type": "SearchAction",
@@ -63,6 +93,19 @@ export const marketplaceSchema = {
   applicationCategory: "ShoppingApplication",
   operatingSystem: "Any",
   description: siteConfig.description,
+  keywords: siteConfig.keywords.join(", "),
+  featureList: [
+    "Free product listing creation",
+    "Photo and video marketplace posts",
+    "Built-in buyer and seller messaging",
+    "AI-assisted listing creation",
+    "AI-assisted product discovery",
+    "Local discovery across Kenya",
+  ],
+  areaServed: {
+    "@type": "Country",
+    name: "Kenya",
+  },
   offers: {
     "@type": "Offer",
     price: "0",
@@ -86,6 +129,14 @@ export const agentSchema = {
   operatingSystem: "Any",
   description:
     "AI assistant that helps users buy and sell on Shopi by generating listings and finding products.",
+  featureList: [
+    "Turns product photos into listing drafts",
+    "Suggests titles, descriptions, categories and specifications",
+    "Helps buyers find products from plain-language requests",
+    "Uses product photos to understand buyer searches",
+  ],
+  keywords:
+    "Shopi Agent, AI marketplace Kenya, AI shopping assistant, AI listing assistant, photo to listing AI",
   offers: {
     "@type": "Offer",
     price: "0",
@@ -134,6 +185,7 @@ export function productSchema(input: {
   sellerUrl?: string | null;
   locationName?: string | null;
   category?: string | null;
+  specs?: { key?: string | null; value?: string | null }[];
   createdAt?: string | null;
 }) {
   // A free item is still an offer — the previous `> 0` test dropped the Offer
@@ -159,6 +211,7 @@ export function productSchema(input: {
         availability: "https://schema.org/InStock",
         itemCondition: condition,
         priceValidUntil,
+        ...(input.createdAt ? { validFrom: input.createdAt } : {}),
         ...(input.sellerName
           ? {
               seller: {
@@ -189,11 +242,59 @@ export function productSchema(input: {
     "@id": `${input.url}#product`,
     name: input.title,
     sku: input.id,
+    mainEntityOfPage: input.url,
     ...(input.description ? { description: input.description } : {}),
     ...(input.images.length ? { image: input.images } : {}),
     ...(input.category ? { category: input.category } : {}),
+    keywords: [
+      input.title,
+      input.category,
+      input.locationName,
+      "for sale in Kenya",
+      "Shopi Kenya",
+    ]
+      .filter(Boolean)
+      .join(", "),
+    ...(input.specs?.length
+      ? {
+          additionalProperty: input.specs
+            .filter((spec) => spec.key?.trim() && spec.value?.trim())
+            .slice(0, 20)
+            .map((spec) => ({
+              "@type": "PropertyValue",
+              name: spec.key!.trim(),
+              value: spec.value!.trim(),
+            })),
+        }
+      : {}),
     ...(offer ? { offers: offer } : {}),
     isRelatedTo: { "@id": `${url}/#app` },
+  };
+}
+
+export function marketplaceWebPageSchema(input: {
+  url: string;
+  name: string;
+  description: string;
+  keywords?: string[];
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": `${input.url}#webpage`,
+    url: input.url,
+    name: input.name,
+    description: input.description,
+    inLanguage: "en-KE",
+    isPartOf: { "@id": `${url}/#website` },
+    about: [
+      { "@id": `${url}/#app` },
+      ...(input.keywords ?? []).map((keyword) => ({
+        "@type": "Thing",
+        name: keyword,
+      })),
+    ],
+    publisher: { "@id": `${url}/#organization` },
   };
 }
 

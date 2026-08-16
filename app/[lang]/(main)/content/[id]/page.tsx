@@ -17,7 +17,19 @@ export const revalidate = 3600;
 
 // ── Server-side fetch + SEO field derivation ────────────────────────────────
 
-type Post = ContentCardFieldsFragment & { slug?: string | null };
+type Post = ContentCardFieldsFragment & {
+  categoryId?: string | null;
+  category?: { id: string; name: string; slug: string } | null;
+  specs?: { key: string; value: string }[];
+  aiClassification?: {
+    categoryId?: string | null;
+    confidence?: number | null;
+    level1?: string | null;
+    level2?: string | null;
+    level3?: string | null;
+    rawLabel?: string | null;
+  } | null;
+};
 
 // The full PDP query — the same document ContentDetail runs on the client, so
 // one server fetch feeds the metadata, the JSON-LD *and* the first render of
@@ -75,6 +87,17 @@ function priceLabel(post: Post): string | null {
   return `${price.currency} ${price.amount.toLocaleString()}`;
 }
 
+function categoryLabel(post: Post): string | null {
+  return (
+    post.category?.name ||
+    post.aiClassification?.level3 ||
+    post.aiClassification?.level2 ||
+    post.aiClassification?.level1 ||
+    post.hashtags?.[0] ||
+    null
+  );
+}
+
 /** A concise, human + engine-friendly description for the listing. */
 function buildDescription(post: Post): string {
   const bits: string[] = [];
@@ -113,6 +136,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = titleParts.join(" · ");
   const shareTitle = `${title} | ${siteConfig.name}`;
   const description = buildDescription(post);
+  const category = categoryLabel(post);
   // Per-listing OG image (rendered by the sibling opengraph-image route).
   const ogImage = `${canonical}/opengraph-image`;
 
@@ -123,10 +147,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       post.title,
       ...(post.hashtags ?? []),
       loc,
+      category,
+      sellerName(post),
+      price ? `${post.title} ${price}` : null,
+      loc ? `${post.title} in ${loc}` : null,
+      category ? `${category} for sale Kenya` : null,
       "buy",
       "sell",
+      "for sale",
       siteConfig.name,
       "Kenya marketplace",
+      "local seller",
     ].filter(Boolean) as string[],
     // contentPath() is locale-prefixed; strip it back to the bare path so the
     // same listing is declared under both /en and /sw.
@@ -188,7 +219,8 @@ export default async function ContentDetailPage({ params }: Props) {
                   ? `${siteConfig.url}/${lang}/profile/${post.creator.username}`
                   : null,
                 locationName: locationName(post),
-                category: post.hashtags?.[0] ?? null,
+                category: categoryLabel(post),
+                specs: post.specs,
                 createdAt: post.createdAt
                   ? new Date(post.createdAt as string).toISOString()
                   : null,

@@ -69,9 +69,11 @@ const nextId = () => `am${Date.now().toString(36)}-${(msgSeq += 1)}`;
 const STORAGE_KEY = "shopi-ask-shopi-conversations";
 const MAX_CONVERSATIONS = 16;
 const MAX_CHAT_IMAGE_BYTES = 6 * 1024 * 1024;
+const NEW_CONVERSATION_TITLE = "New product search";
+const LEGACY_NEW_CONVERSATION_TITLE = "New search";
 
 const GREETING =
-  "Hi. Tell me what you want to buy, where to search, and the budget if you have one. I will ask only what I need, then show matches.";
+  "Hi, I'm your Shopi buyer agent. Describe what you want, add a photo if you have one, and share the location or budget. I'll ask only what's needed, then bring back matching products.";
 const AGENT_TECHNICAL_ISSUE_MESSAGE =
   "Our agent is experiencing technical issues right now. Please try again in a moment.";
 const MAX_TEXTAREA_HEIGHT = 120;
@@ -86,7 +88,7 @@ function createConversation(): AskShopiConversation {
   return {
     id: `asc-${now.toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
     serverId: null,
-    title: "New search",
+    title: NEW_CONVERSATION_TITLE,
     messages: [{ id: nextId(), role: "agent", text: GREETING }],
     criteria: undefined,
     results: [],
@@ -100,8 +102,17 @@ function createConversation(): AskShopiConversation {
 
 function conversationTitle(text: string): string {
   const clean = text.replace(/\s+/g, " ").trim();
-  if (!clean) return "New search";
+  if (!clean) return NEW_CONVERSATION_TITLE;
   return clean.length > 48 ? `${clean.slice(0, 45)}...` : clean;
+}
+
+function isNewConversationTitle(title: string): boolean {
+  return title === NEW_CONVERSATION_TITLE || title === LEGACY_NEW_CONVERSATION_TITLE;
+}
+
+function savedConversationTitle(title: string | null | undefined): string {
+  if (!title || isNewConversationTitle(title)) return NEW_CONVERSATION_TITLE;
+  return title;
 }
 
 function parseStoredConversations(raw: string | null): AskShopiConversation[] {
@@ -125,7 +136,7 @@ function parseStoredConversations(raw: string | null): AskShopiConversation[] {
         return {
           id: item.id!,
           serverId: item.serverId ?? null,
-          title: item.title || "New search",
+          title: savedConversationTitle(item.title),
           messages,
           criteria: item.criteria,
           results: Array.isArray(item.results) ? item.results : [],
@@ -158,7 +169,7 @@ function fromServerConversation(
   return {
     id: conversation.id,
     serverId: conversation.id,
-    title: conversation.title || "New search",
+    title: savedConversationTitle(conversation.title),
     messages:
       conversation.messages.length > 0
         ? conversation.messages.map((message, index) => ({
@@ -379,8 +390,8 @@ export function AskShopiGrid({ lang, active = true }: Props) {
     };
     const history = [...current.messages, userMessage];
     const title =
-      current.title === "New search"
-        ? conversationTitle(text || imageForTurn?.name || "Image search")
+      isNewConversationTitle(current.title)
+        ? conversationTitle(text || imageForTurn?.name || "Photo search")
         : current.title;
 
     updateConversation(current.id, (conversation) => ({
@@ -479,7 +490,7 @@ export function AskShopiGrid({ lang, active = true }: Props) {
   const placeholder =
     activeConversation?.ask?.placeholder ||
     activeConversation?.ask?.label ||
-    "Ask Shopi to find anything...";
+    "Describe the item or attach a photo...";
   const messages = activeConversation?.messages ?? [];
   const results = activeConversation?.results ?? [];
   const hasSearched = Boolean(activeConversation?.hasSearched);
@@ -503,7 +514,7 @@ export function AskShopiGrid({ lang, active = true }: Props) {
               <span className="truncate">{activeConversation?.title ?? "Ask Shopi"}</span>
             </div>
             <p className="truncate text-xs text-muted-foreground">
-              Buyer agent for product discovery
+              Chat or send a photo. Shopi will find matching products.
             </p>
           </div>
           <button
@@ -545,7 +556,7 @@ export function AskShopiGrid({ lang, active = true }: Props) {
 
           {lastTurnReadyToSearch && hasSearched && results.length === 0 && !loading ? (
             <div className="ml-9 rounded-2xl border border-default bg-app px-4 py-3 text-sm text-muted-foreground">
-              No matching listings yet. Try a wider location, a different budget, or describe the item another way.
+              No matching listings yet. Try a wider location, a different budget, or send a clearer photo.
             </div>
           ) : null}
 
