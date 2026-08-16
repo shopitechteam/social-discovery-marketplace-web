@@ -105,7 +105,7 @@ export function LoginForm({ from, lang }: LoginFormProps) {
           autoCapitalize="none"
           inputMode="email"
           placeholder="you@example.com"
-          className={`h-12 rounded-xl border px-4 text-base bg-elevated text-default placeholder:text-placeholder outline-none transition-all
+          className={`h-12 rounded-xl border bg-app px-4 text-base text-default placeholder:text-placeholder outline-none transition-all
             focus:border-primary focus:ring-2 focus:ring-primary/20
             ${errors.email ? "border-error" : "border-border"}`}
           {...register("email", {
@@ -140,7 +140,7 @@ export function LoginForm({ from, lang }: LoginFormProps) {
             type={showPassword ? "text" : "password"}
             autoComplete="current-password"
             placeholder="••••••••"
-            className={`h-12 w-full rounded-xl border px-4 pr-12 text-base bg-elevated text-default placeholder:text-placeholder outline-none transition-all
+            className={`h-12 w-full rounded-xl border bg-app px-4 pr-12 text-base text-default placeholder:text-placeholder outline-none transition-all
               focus:border-primary focus:ring-2 focus:ring-primary/20
               ${errors.password ? "border-error" : "border-border"}`}
             {...register("password", { required: "Password is required" })}

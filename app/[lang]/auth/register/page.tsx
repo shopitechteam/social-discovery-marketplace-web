@@ -24,7 +24,7 @@ export default async function RegisterPage({
     : `/${lang}/auth/login`;
 
   const SocialTop = (
-    <div className="flex flex-col gap-3 mb-5">
+    <div className="mb-5 flex flex-col gap-4">
       <SocialButtons lang={lang} from={from} verb="Sign up" />
       <Divider label="or use email" />
     </div>
@@ -61,48 +61,37 @@ export default async function RegisterPage({
   return (
     <AuthDesktopShell lang={lang}>
       {/* ── Mobile layout ─────────────────────────────────────── */}
-      <div
-        className="relative mx-auto flex h-svh max-w-107.5 flex-col overflow-hidden bg-app lg:hidden"
-      >
+      <div className="relative mx-auto flex min-h-svh max-w-107.5 flex-col bg-app px-4 pb-6 pt-4 lg:hidden">
         <div className="flex items-center justify-between">
           <Link
             href={`/${lang}/auth/auth-welcome`}
             aria-label="Back"
-            className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-surface text-muted active:opacity-70 transition-opacity"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-elevated text-muted shadow-sm transition-opacity active:opacity-70"
           >
-            <ChevronLeftIcon />
+            <ChevronLeftIcon className="h-5 w-5" />
           </Link>
           <Link
             href={`/${lang}`}
-            className="inline-flex items-center gap-2 rounded-full bg-surface px-3 py-2 text-sm font-medium text-muted transition-opacity active:opacity-70"
+            className="inline-flex h-10 items-center gap-2 rounded-full border border-border bg-elevated px-3 text-sm font-semibold text-muted shadow-sm transition-opacity active:opacity-70"
           >
             <HomeIcon className="h-4 w-4" />
             Home
           </Link>
         </div>
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -top-20 -right-20 w-64 h-64 rounded-full blur-3xl bg-[rgb(var(--brand-primary)/0.07)]"
-        />
 
-        {/* Top bar */}
-
-        <div className="flex w-full justify-center items-center  px-5  pb-1 shrink-0">
-          <ShopiLogo height={76} />
-        </div>
-
-        {/* Heading */}
-        <div className="px-6 pt-4 pb-3 shrink-0 text-center">
-          <h1 className="text-2xl font-bold leading-[1.2] text-default font-display tracking-tight">
+        <div className="flex shrink-0 flex-col items-center px-4 pb-5 pt-8 text-center">
+          <Link href={`/${lang}`} className="mb-5 inline-flex">
+            <ShopiLogo height={76} />
+          </Link>
+          <h1 className="font-display text-3xl font-bold leading-tight tracking-tight text-default">
             Create your account
           </h1>
-          <p className="mt-1 text-sm text-muted">
+          <p className="mt-2 text-sm leading-6 text-muted">
             Takes less than a minute.
           </p>
         </div>
 
-        {/* Scrollable area */}
-        <div className="flex-1 overflow-y-auto px-6 pb-6">
+        <div className="rounded-2xl border border-border bg-elevated p-5 shadow-lg">
           {SocialTop}
           <RegisterForm from={from} lang={lang} footer={Footer} />
         </div>
