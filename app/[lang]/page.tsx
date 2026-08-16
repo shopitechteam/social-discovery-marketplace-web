@@ -25,6 +25,7 @@ import {
   marketplaceSchema,
   agentSchema,
   faqSchema,
+  marketplaceWebPageSchema,
   jsonLd,
 } from "@/lib/structured-data";
 
@@ -152,6 +153,18 @@ export default async function Rootpage({ params }: PageProps<"/[lang]">) {
               websiteSchema,
               marketplaceSchema,
               agentSchema,
+              marketplaceWebPageSchema({
+                url: `${siteConfig.url}/${lang}`,
+                name: HOME_META[lang].title,
+                description: HOME_META[lang].description,
+                keywords: [
+                  "sell online in Kenya",
+                  "buy and sell locally",
+                  "AI marketplace Kenya",
+                  "free marketplace Kenya",
+                  "Shopi Agent",
+                ],
+              }),
               homepageCategorySchema,
               faqSchema(faq),
             ),

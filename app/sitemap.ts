@@ -35,7 +35,29 @@ type SitemapListing = {
   slug?: string | null;
   title?: string | null;
   createdAt?: string | null;
+  media?: {
+    imageUrl?: string | null;
+    thumbnailUrl?: string | null;
+    sortOrder?: number | null;
+    muxMeta?: { thumbnailUrl?: string | null } | null;
+    r2Variants?: { url?: string | null; variant?: string | null }[] | null;
+  }[];
 };
+
+function listingImages(item: SitemapListing): string[] {
+  return (item.media ?? [])
+    .slice()
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+    .flatMap((media) => [
+      media.r2Variants?.find((variant) => variant.variant === "large")?.url,
+      media.r2Variants?.[0]?.url,
+      media.imageUrl,
+      media.muxMeta?.thumbnailUrl,
+      media.thumbnailUrl,
+    ])
+    .filter((url): url is string => Boolean(url?.trim()))
+    .slice(0, 6);
+}
 
 async function fetchRecentListings(): Promise<SitemapListing[]> {
   const api = process.env.NEXT_PUBLIC_API_URL;
@@ -55,7 +77,19 @@ async function fetchRecentListings(): Promise<SitemapListing[]> {
           query: `
             query SitemapListings($limit: Int, $after: String) {
               discoveryFeed(sort: NEWEST, limit: $limit, after: $after) {
-                items { id slug title createdAt }
+                items {
+                  id
+                  slug
+                  title
+                  createdAt
+                  media {
+                    imageUrl
+                    thumbnailUrl
+                    sortOrder
+                    muxMeta { thumbnailUrl }
+                    r2Variants { url variant }
+                  }
+                }
                 pageInfo { hasNextPage endCursor }
               }
             }
@@ -183,6 +217,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: item.createdAt ? new Date(item.createdAt) : now,
       changeFrequency: "daily",
       priority: 0.65,
+      images: listingImages(item),
       alternates: alternates(path),
     };
   });

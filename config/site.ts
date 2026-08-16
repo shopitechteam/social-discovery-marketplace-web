@@ -14,6 +14,9 @@ export const siteConfig = {
   description:
     "Sell online in Kenya for free with Shopi. Use Shopi Agent to create listings with AI, discover local buyers, and connect directly with buyers and sellers. Zero commission.",
 
+  answerEngineSummary:
+    "Shopi is a free Kenyan social commerce marketplace where people buy and sell locally through photo and video listings, direct in-app messaging, and Shopi Agent, an AI assistant for creating listings and finding products.",
+
   // Default canonical domain. Override per-environment with NEXT_PUBLIC_APP_URL.
   //
   // The production site is served from the www host and the apex redirects to
@@ -35,8 +38,12 @@ export const siteConfig = {
     "Shopi",
     "Shopi Kenya",
     "Shopi Agent",
+    "Shopi marketplace",
+    "Shopi app",
 
     // Marketplace
+    "classifieds Kenya",
+    "Kenya classifieds",
     "social marketplace Kenya",
     "local marketplace Kenya",
     "online marketplace Kenya",
@@ -47,8 +54,15 @@ export const siteConfig = {
     "local buying and selling",
     "discover products near me",
     "nearby marketplace Kenya",
+    "free online selling platform Kenya",
+    "post items for sale Kenya",
+    "sell second hand items Kenya",
+    "used items for sale Kenya",
 
     // AI
+    "Shopi AI agent",
+    "AI buyer agent Kenya",
+    "AI seller agent Kenya",
     "AI marketplace Kenya",
     "AI shopping assistant",
     "AI selling assistant",
@@ -56,6 +70,8 @@ export const siteConfig = {
     "AI classifieds",
     "sell with AI",
     "buy with AI",
+    "photo to listing AI",
+    "find products with AI",
 
     // Categories
     "cars for sale Kenya",
@@ -73,6 +89,8 @@ export const siteConfig = {
     "home items Kenya",
     "beauty products Kenya",
     "cosmetics Kenya",
+    "body lotion Kenya",
+    "body oils Kenya",
     "skincare products Kenya",
     "hair products Kenya",
     "farm produce Kenya",

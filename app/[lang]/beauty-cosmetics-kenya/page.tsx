@@ -7,7 +7,12 @@ import { CategoryCrossLinks } from "@/components/seo/CategoryCrossLinks";
 import { siteConfig } from "@/config/site";
 import { isValidLocale } from "@/i18n/config";
 import { publicPageMetadata } from "@/lib/metadata";
-import { faqSchema, jsonLd, marketplaceSchema } from "@/lib/structured-data";
+import {
+  faqSchema,
+  jsonLd,
+  marketplaceSchema,
+  marketplaceWebPageSchema,
+} from "@/lib/structured-data";
 
 type Props = { params: Promise<{ lang: string }> };
 
@@ -81,7 +86,25 @@ export default async function BeautyCosmeticsKenyaPage({ params }: Props) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: jsonLd(marketplaceSchema, howToSchema, faqSchema(faq)),
+          __html: jsonLd(
+            marketplaceSchema,
+            marketplaceWebPageSchema({
+              url: pageUrl,
+              name: "Beauty and Cosmetics Marketplace in Kenya",
+              description:
+                "Buy and sell beauty products, skincare, hair products, makeup, perfumes and cosmetics in Kenya on Shopi.",
+              keywords: [
+                "beauty products Kenya",
+                "cosmetics Kenya",
+                "skincare products Kenya",
+                "body lotion Kenya",
+                "hair products Kenya",
+                "perfumes Kenya",
+              ],
+            }),
+            howToSchema,
+            faqSchema(faq),
+          ),
         }}
       />
       <LegalNav lang={safeLang} />

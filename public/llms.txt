@@ -17,6 +17,7 @@
 - [Prohibited Items](https://www.shopi.co.ke/en/prohibited-items): Items that may not be listed.
 - [Community Guidelines](https://www.shopi.co.ke/en/community-guidelines): Marketplace participation rules.
 - [Blog](https://www.shopi.co.ke/en/blog): Guides and insights for Kenyan buyers and sellers.
+- [Full LLM reference](https://www.shopi.co.ke/llms-full.txt): Expanded canonical facts, product surfaces, buyer/seller flows, safety boundaries and priority crawl targets.
 
 ## Key facts
 
