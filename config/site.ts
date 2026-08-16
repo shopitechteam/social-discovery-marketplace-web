@@ -74,6 +74,10 @@ export const siteConfig = {
     "find products with AI",
 
     // Categories
+    "Mazda Atenza for sale Kenya",
+    "Toyota Premio for sale Kenya",
+    "Toyota Harrier for sale Kenya",
+    "Probox for sale Kenya",
     "cars for sale Kenya",
     "used cars for sale Kenya",
     "phones for sale Kenya",
@@ -86,6 +90,8 @@ export const siteConfig = {
     "phone accessories Kenya",
     "fashion marketplace Kenya",
     "furniture for sale Kenya",
+    "sofas for sale Kenya",
+    "beds for sale Kenya",
     "home items Kenya",
     "beauty products Kenya",
     "cosmetics Kenya",
@@ -99,6 +105,7 @@ export const siteConfig = {
 
     // Property
     "land for sale Kenya",
+    "land for sale in Kenya",
     "plots for sale Kenya",
     "houses for sale Kenya",
     "houses for rent Kenya",

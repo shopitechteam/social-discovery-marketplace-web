@@ -1,10 +1,20 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ChevronLeft, Handshake, MessageCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  ChevronLeft,
+  Handshake,
+  Loader2,
+  MessageCircle,
+} from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { absoluteContentUrl } from "@/lib/content-url";
+import { whatsappHref } from "@/lib/phone";
+import { useSellerPhone } from "@/features/feed/hooks/useSellerPhone";
 import type { Conversation, Message, StagedMedia, UserLite } from "../types";
 import {
   avatarGradient,
@@ -16,6 +26,17 @@ import {
 import { MessageList } from "./MessageList";
 import { Composer } from "./Composer";
 import { ConversationActionsDrawer } from "./ConversationActionsDrawer";
+
+function WhatsAppIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
+      <path
+        fill="currentColor"
+        d="M12.04 2a9.94 9.94 0 0 0-8.5 15.1L2.3 21.7l4.72-1.24A9.95 9.95 0 1 0 12.04 2Zm0 1.8a8.15 8.15 0 0 1 6.92 12.45 8.13 8.13 0 0 1-10.98 2.66l-.34-.2-2.8.74.75-2.72-.22-.36A8.14 8.14 0 0 1 12.04 3.8Zm-3.48 4.35c-.18 0-.48.07-.73.34-.25.28-.96.94-.96 2.28 0 1.35.98 2.65 1.12 2.84.14.18 1.9 3.04 4.72 4.14 2.35.93 2.83.74 3.34.7.51-.05 1.66-.68 1.9-1.34.23-.66.23-1.22.16-1.34-.07-.12-.25-.19-.53-.33-.27-.14-1.65-.82-1.9-.91-.26-.1-.44-.14-.63.14-.18.27-.72.91-.88 1.1-.16.18-.32.2-.6.06-.27-.14-1.16-.43-2.2-1.36-.82-.73-1.37-1.63-1.53-1.9-.16-.28-.02-.43.12-.57.12-.12.27-.32.41-.48.14-.16.18-.28.28-.46.09-.19.04-.35-.03-.49-.07-.14-.62-1.5-.85-2.06-.22-.53-.45-.46-.62-.47h-.53Z"
+      />
+    </svg>
+  );
+}
 
 interface Props {
   lang: string;
@@ -115,6 +136,11 @@ export function ChatDetail({
 }: Props) {
   const router = useRouter();
   const contentSummary = selectedConversation?.content;
+  const {
+    reveal: revealSellerPhone,
+    loading: sellerPhoneLoading,
+    unavailable: sellerPhoneUnavailable,
+  } = useSellerPhone(contentSummary?.id);
   const otherParticipant: UserLite | null | undefined =
     selectedConversation?.otherParticipant;
   const conversationNotReady =
@@ -129,12 +155,35 @@ export function ChatDetail({
   const myReplyIsPending =
     Boolean(selectedConversation?.myUnreadCount) &&
     selectedConversation?.lastMessageSenderId !== currentUserId;
+  const [now, setNow] = useState(() => new Date().getTime());
+  useEffect(() => {
+    const interval = window.setInterval(
+      () => setNow(new Date().getTime()),
+      60_000,
+    );
+    return () => window.clearInterval(interval);
+  }, []);
   const lastMessageAgeMinutes = selectedConversation?.lastMessageAt
     ? Math.floor(
-        (Date.now() - new Date(selectedConversation.lastMessageAt).getTime()) /
+        (now - new Date(selectedConversation.lastMessageAt).getTime()) /
           (60 * 1000),
       )
     : 0;
+  const canAttemptWhatsAppSeller = Boolean(
+    contentSummary &&
+      selectedConversation &&
+      currentUserId &&
+      selectedConversation.sellerId !== currentUserId &&
+      !sellerPhoneUnavailable,
+  );
+  const isEmptyConversationBody = Boolean(
+    selectedConversation &&
+      contentSummary &&
+      messages.length === 0 &&
+      !conversationNotReady,
+  );
+  const showHeaderWhatsApp =
+    canAttemptWhatsAppSeller && !isEmptyConversationBody;
 
   const conversationNudge = (() => {
     if (!selectedConversation || selectedConversation.dealClosedAt) {
@@ -207,6 +256,33 @@ export function ChatDetail({
     },
     [onShareLocation],
   );
+
+  const handleWhatsAppSeller = useCallback(async () => {
+    if (!contentSummary) return;
+    if (!requireAuth()) return;
+
+    const phone =
+      selectedConversation?.contactPhone ?? (await revealSellerPhone());
+    if (!phone) {
+      toast("This seller hasn't added a WhatsApp number");
+      return;
+    }
+
+    const url = absoluteContentUrl(window.location.origin, lang, contentSummary);
+    const message = [
+      `Hi, I saw "${contentSummary.title}" on Shopi and I'm interested.`,
+      "Is it still available?",
+      "",
+      url,
+    ].join("\n");
+    window.location.href = whatsappHref(phone, message);
+  }, [
+    contentSummary,
+    lang,
+    requireAuth,
+    revealSellerPhone,
+    selectedConversation?.contactPhone,
+  ]);
 
   // The chat is "open" once a conversation is selected OR while we're resolving
   // one from a content id. In the pending case we render the shell immediately
@@ -350,6 +426,23 @@ export function ChatDetail({
               </div>
 
               <div className="flex items-center gap-2">
+                {showHeaderWhatsApp ? (
+                  <button
+                    type="button"
+                    onClick={handleWhatsAppSeller}
+                    disabled={sellerPhoneLoading}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-emerald-500/25 bg-emerald-500/10 text-emerald-600 transition-colors hover:bg-emerald-500/15 dark:text-emerald-400"
+                    aria-label="Ask seller on WhatsApp"
+                    title="Ask seller on WhatsApp"
+                  >
+                    {sellerPhoneLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <WhatsAppIcon className="h-4 w-4" />
+                    )}
+                  </button>
+                ) : null}
+
                 {contentSummary ? (
                   <button
                     type="button"
@@ -460,6 +553,36 @@ export function ChatDetail({
             loadingOlder={loadingOlder}
             hasMoreOlder={hasMoreOlder}
             scrollToBottomSignal={scrollSignal}
+            emptyState={
+              isEmptyConversationBody && canAttemptWhatsAppSeller ? (
+                <div className="mx-auto flex w-full max-w-sm flex-col items-center rounded-3xl border border-emerald-500/20 bg-elevated/90 px-5 py-6 text-center shadow-sm backdrop-blur">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500 text-white">
+                    <WhatsAppIcon className="h-6 w-6" />
+                  </div>
+                  <h3 className="mt-4 text-base font-bold text-foreground">
+                    Ask on WhatsApp
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-muted">
+                    Optional shortcut: send a friendly WhatsApp inquiry with the
+                    listing title and Shopi link, or keep chatting here in
+                    Shopi.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleWhatsAppSeller}
+                    disabled={sellerPhoneLoading}
+                    className="mt-5 inline-flex items-center justify-center gap-2 rounded-full bg-emerald-500 px-5 py-3 text-sm font-bold text-white transition-transform active:scale-[0.98]"
+                  >
+                    {sellerPhoneLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <WhatsAppIcon className="h-4 w-4" />
+                    )}
+                    Message seller
+                  </button>
+                </div>
+              ) : undefined
+            }
             onLoadOlder={onLoadOlder}
             onRetryMessage={onRetryMessage}
             onDiscardMessage={onDiscardMessage}

@@ -8,8 +8,8 @@ import { query } from "@/lib/apollo/ApolloClient";
  * browse routes crawlable content and outbound links, not to render media.
  */
 const RECENT_LISTINGS = gql`
-  query SeoRecentListings($limit: Int, $county: String) {
-    discoveryFeed(sort: NEWEST, limit: $limit, county: $county) {
+  query SeoRecentListings($limit: Int, $county: String, $query: String) {
+    discoveryFeed(sort: NEWEST, limit: $limit, county: $county, query: $query) {
       items {
         id
         slug
@@ -42,11 +42,12 @@ export type RecentListing = {
 export async function fetchRecentListings(
   limit = 24,
   county?: string,
+  searchQuery?: string,
 ): Promise<RecentListing[]> {
   try {
     const { data } = await query({
       query: RECENT_LISTINGS,
-      variables: { limit, county: county ?? null },
+      variables: { limit, county: county ?? null, query: searchQuery ?? null },
     });
     const items = (
       data as { discoveryFeed?: { items?: RecentListing[] } } | undefined

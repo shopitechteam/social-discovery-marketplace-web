@@ -13,6 +13,7 @@ import { gql } from "@apollo/client";
 const CONVERSATION_CONTENT_FIELDS = gql`
   fragment ConversationContentFields on Content {
     id
+    slug
     title
     price {
       amount
@@ -75,6 +76,7 @@ export const MY_DIRECT_CONVERSATIONS = gql`
     buyerFirstResponseMinutes
     dealClosedAt
     dealClosedByUserId
+    contactPhone
     otherParticipant {
         id
         username
@@ -116,6 +118,7 @@ export const DIRECT_CONVERSATION = gql`
       buyerFirstResponseMinutes
       dealClosedAt
       dealClosedByUserId
+      contactPhone
       otherParticipant {
         id
         username
@@ -271,6 +274,7 @@ export const BLOCK_DIRECT_CONVERSATION = gql`
       buyerFirstResponseMinutes
       dealClosedAt
       dealClosedByUserId
+      contactPhone
       otherParticipantOnline
       otherParticipantLastSeenAt
       otherParticipant {
@@ -312,6 +316,7 @@ export const UNBLOCK_DIRECT_CONVERSATION = gql`
       buyerFirstResponseMinutes
       dealClosedAt
       dealClosedByUserId
+      contactPhone
       otherParticipantOnline
       otherParticipantLastSeenAt
       otherParticipant {
@@ -353,6 +358,7 @@ export const MARK_DIRECT_CONVERSATION_DEAL = gql`
       buyerFirstResponseMinutes
       dealClosedAt
       dealClosedByUserId
+      contactPhone
       otherParticipantOnline
       otherParticipantLastSeenAt
       otherParticipant {

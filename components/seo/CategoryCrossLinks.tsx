@@ -1,4 +1,8 @@
 import Link from "next/link";
+import {
+  searchIntentPath,
+  topSearchIntentPages,
+} from "@/lib/seo/search-intent-pages";
 
 /**
  * Cross-links between the category landing pages.
@@ -45,6 +49,9 @@ export function CategoryCrossLinks({
   currentPath: string;
 }) {
   const others = categoryPages.filter((page) => page.path !== currentPath);
+  const popularSearches = topSearchIntentPages.filter(
+    (page) => searchIntentPath(page.slug) !== currentPath,
+  );
 
   return (
     <section className="bg-surface px-5 py-16">
@@ -65,6 +72,20 @@ export function CategoryCrossLinks({
               <p className="mt-2 text-[0.9rem] leading-[1.7] text-muted">
                 {body}
               </p>
+            </Link>
+          ))}
+        </div>
+        <h2 className="mt-12 mb-5 font-display text-[clamp(1.25rem,2.4vw,1.7rem)] font-bold tracking-normal text-foreground">
+          Popular product searches
+        </h2>
+        <div className="flex flex-wrap gap-3">
+          {popularSearches.map((page) => (
+            <Link
+              key={page.slug}
+              href={`/${lang}${searchIntentPath(page.slug)}`}
+              className="rounded-full border border-border bg-elevated px-4 py-2 text-sm font-semibold text-foreground no-underline transition-colors hover:border-[rgb(var(--color-border-strong))]"
+            >
+              {page.label} for sale
             </Link>
           ))}
         </div>

@@ -130,6 +130,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   }
 
+  const isIndexable = post.isLive !== false;
   const price = priceLabel(post);
   const loc = locationName(post);
   const titleParts = [post.title, price, loc].filter(Boolean);
@@ -164,6 +165,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     alternates: {
       canonical,
       ...localeAlternates(contentPath(lang, post).replace(`/${lang}`, "")),
+    },
+    robots: {
+      index: isIndexable,
+      follow: true,
+      googleBot: {
+        index: isIndexable,
+        follow: true,
+        "max-snippet": -1,
+        "max-image-preview": "large",
+        "max-video-preview": -1,
+      },
     },
     openGraph: {
       type: "website",
