@@ -79,22 +79,12 @@ export function AuthDesktopShell({
       <div className="lg:hidden">{children}</div>
 
       {/* ── Desktop split ── */}
-      <div className="hidden lg:flex min-h-svh">
+      <div className="hidden min-h-svh lg:flex">
         {/* Left panel — branded.
             Gradient + glows use Tailwind theme utilities (from-primary / to-secondary
             map to the @theme color tokens). Inline-style gradients are NOT used here —
             they don't reach the DOM in this build, leaving the panel transparent. */}
-        <div className="relative flex flex-col w-[52%] xl:w-[55%] overflow-hidden px-12 py-10 bg-linear-150 from-primary from-10% via-primary via-45% to-secondary text-white">
-          {/* Depth glows */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -top-32 -left-32 w-96 h-96 rounded-full blur-3xl bg-accent/25"
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -bottom-24 -right-24 w-80 h-80 rounded-full blur-3xl bg-white/15"
-          />
-
+        <div className="relative flex w-[52%] flex-col overflow-hidden bg-linear-150 from-primary from-10% via-primary via-45% to-secondary px-12 py-10 text-white xl:w-[55%]">
           {/* Logo — top */}
           <div className="relative z-10 flex justify-center">
             <Link href={`/${lang}`} className="inline-block">
@@ -103,17 +93,17 @@ export function AuthDesktopShell({
           </div>
 
           {/* Center content — vertically + horizontally centered */}
-          <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center gap-9">
+          <div className="relative z-10 flex flex-1 flex-col items-center justify-center gap-9 text-center">
             {/* CardStack is internally left-biased; nudge to optically center it */}
             <div className="pl-6">
               <CardStack />
             </div>
 
             <div className="max-w-md flex flex-col items-center">
-              <h2 className="mt-6 text-[40px] xl:text-[50px] font-bold leading-[1.05] tracking-tight font-display text-balance">
+              <h2 className="mt-6 text-[40px] font-bold leading-[1.05] tracking-tight text-balance font-display xl:text-[50px]">
                 Everything for sale near you, in one feed.
               </h2>
-              <p className="mt-4 text-lg text-white/80 leading-relaxed text-pretty">
+              <p className="mt-4 text-lg leading-relaxed text-white/80 text-pretty">
                 Scroll your local feed, message the seller, agree on a price —
                 done. No checkout, no fees, no middleman.
               </p>
@@ -163,13 +153,13 @@ export function AuthDesktopShell({
         </div>
 
         {/* Right panel — form */}
-        <div className="flex-1 flex items-center justify-center p-8 xl:p-16 overflow-y-auto bg-app">
+        <div className="flex flex-1 items-center justify-center overflow-y-auto bg-app p-8 xl:p-16">
           {/* Card container — lifted surface on large screens */}
-          <div className="relative w-full max-w-110 rounded-3xl p-8 xl:p-10 bg-elevated border border-border shadow-(--shadow-lg)">
+          <div className="relative w-full max-w-110 rounded-2xl border border-border bg-elevated p-8 shadow-(--shadow-lg) xl:p-10">
             <div className="mb-6 flex justify-end">
               <Link
                 href={`/${lang}`}
-                className="inline-flex items-center gap-2 rounded-full bg-surface px-3 py-2 text-sm font-medium text-muted transition-opacity hover:opacity-80"
+                className="inline-flex items-center gap-2 rounded-full border border-border bg-app px-3 py-2 text-sm font-semibold text-muted transition-colors hover:text-default"
               >
                 <svg
                   width="16"

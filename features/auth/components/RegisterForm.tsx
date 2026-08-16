@@ -35,7 +35,7 @@ interface RegisterFormProps {
 
 function inputCls(hasError: boolean) {
   return [
-    "h-12 w-full rounded-2xl border px-4 text-base bg-elevated text-default",
+    "h-12 w-full rounded-xl border bg-app px-4 text-base text-default",
     "placeholder:text-placeholder outline-none transition-all",
     "focus:border-primary focus:ring-2 focus:ring-primary/20",
     hasError ? "border-error" : "border-border",
@@ -193,7 +193,7 @@ export function RegisterForm({ from, lang, footer }: RegisterFormProps) {
         className="flex flex-col gap-4"
       >
         {/* Info banner */}
-        <div className="rounded-2xl bg-primary/8 border border-primary/20 px-4 py-3 flex flex-col gap-1">
+        <div className="flex flex-col gap-1 rounded-xl border border-primary/20 bg-primary/8 px-4 py-3">
           <p className="text-sm font-semibold text-primary">
             This email is linked to {existingList}
           </p>
@@ -265,7 +265,7 @@ export function RegisterForm({ from, lang, footer }: RegisterFormProps) {
 
         {/* Server error */}
         {serverError && (
-          <div className="rounded-2xl bg-error/10 border border-error/20 px-4 py-3 text-sm text-error">
+          <div className="rounded-xl border border-error/20 bg-error/10 px-4 py-3 text-sm text-error">
             {serverError}
           </div>
         )}
@@ -274,7 +274,7 @@ export function RegisterForm({ from, lang, footer }: RegisterFormProps) {
         <button
           type="submit"
           disabled={isStep2Loading}
-          className="h-14 rounded-2xl bg-primary text-white font-semibold text-base transition-all disabled:opacity-60 active:scale-[0.98]"
+          className="h-12 rounded-xl bg-primary text-base font-semibold text-white transition-all disabled:opacity-60 active:scale-[0.98]"
         >
           {isStep2Loading ? (
             <span className="flex items-center justify-center gap-2">
@@ -403,7 +403,7 @@ export function RegisterForm({ from, lang, footer }: RegisterFormProps) {
 
       {/* Server error */}
       {serverError && (
-        <div className="rounded-2xl bg-error/10 border border-error/20 px-4 py-3 text-sm text-error">
+        <div className="rounded-xl border border-error/20 bg-error/10 px-4 py-3 text-sm text-error">
           {serverError}
         </div>
       )}
@@ -431,7 +431,7 @@ export function RegisterForm({ from, lang, footer }: RegisterFormProps) {
       <button
         type="submit"
         disabled={isStep1Loading}
-        className="h-14 rounded-2xl bg-primary text-white font-semibold text-base transition-all disabled:opacity-60 active:scale-[0.98]"
+        className="h-12 rounded-xl bg-primary text-base font-semibold text-white transition-all disabled:opacity-60 active:scale-[0.98]"
       >
         {isStep1Loading ? (
           <span className="flex items-center justify-center gap-2">
