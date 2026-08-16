@@ -231,7 +231,7 @@ export function MessageList({
 
   if (initialLoading && messages.length === 0) {
     return (
-      <div className="shopi-chat-wallpaper flex-1 overflow-y-auto px-4 py-4">
+      <div className="flex-1 overflow-y-auto bg-[rgb(var(--color-bg-subtle)/0.35)] px-4 py-4">
         <div className="flex h-[60vh] items-center justify-center">
           <Loader2 size={40} className="animate-spin text-primary opacity-60" />
         </div>
@@ -261,7 +261,7 @@ export function MessageList({
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="shopi-chat-wallpaper h-full overflow-y-auto overflow-x-hidden overscroll-contain px-4 py-4"
+        className="h-full overflow-y-auto overflow-x-hidden overscroll-contain bg-[rgb(var(--color-bg-subtle)/0.35)] px-4 py-4"
       >
         {/* Top sentinel + older-loading spinner */}
         <div ref={topSentinelRef} className="h-px" />
