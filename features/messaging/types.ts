@@ -28,6 +28,7 @@ export type ContentMedia = {
 
 export type ContentLite = {
   id: string;
+  slug?: string | null;
   title: string;
   price?: {
     amount?: number | null;
@@ -57,6 +58,7 @@ export type Conversation = {
   otherParticipant?: UserLite | null;
   otherParticipantOnline?: boolean | null;
   otherParticipantLastSeenAt?: string | null;
+  contactPhone?: string | null;
   blockedByMe?: boolean | null;
   blockedByOther?: boolean | null;
   canSendMessages?: boolean | null;

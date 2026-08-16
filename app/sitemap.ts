@@ -4,6 +4,10 @@ import { blogPosts } from "@/lib/blog";
 import { locales } from "@/i18n/config";
 import { contentPath } from "@/lib/content-url";
 import { COUNTIES } from "@/lib/counties";
+import {
+  searchIntentPages,
+  searchIntentPath,
+} from "@/lib/seo/search-intent-pages";
 
 /**
  * The app is served under /[lang]. Every public page exists per-locale, so each
@@ -201,6 +205,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     alternates: alternates(`/marketplace/${county.slug}`),
   }));
 
+  const searchIntentEntries: MetadataRoute.Sitemap = searchIntentPages.map(
+    (page) => {
+      const path = searchIntentPath(page.slug);
+      return {
+        url: langs("en", path),
+        lastModified: now,
+        changeFrequency: "daily",
+        priority: 0.82,
+        alternates: alternates(path),
+      };
+    },
+  );
+
   const blogEntries: MetadataRoute.Sitemap = blogPosts.map((post) => ({
     url: langs("en", `/blog/${post.slug}`),
     lastModified: new Date(post.publishedAt),
@@ -225,6 +242,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     ...staticEntries,
     ...countyEntries,
+    ...searchIntentEntries,
     ...blogEntries,
     ...listingEntries,
   ];

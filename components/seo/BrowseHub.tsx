@@ -8,6 +8,10 @@ import {
 import { siteConfig } from "@/config/site";
 import { COUNTIES } from "@/lib/counties";
 import { listingItemListSchema, jsonLd } from "@/lib/structured-data";
+import {
+  searchIntentPath,
+  topSearchIntentPages,
+} from "@/lib/seo/search-intent-pages";
 
 /**
  * The server-rendered form of /explore and /search.
@@ -87,6 +91,22 @@ export async function BrowseHub({
               {c.title}
             </Link>
             <span className="text-muted"> — {c.body}</span>
+          </li>
+        ))}
+      </ul>
+
+      <h2 className="mt-8 text-lg font-bold text-default">
+        Popular product searches
+      </h2>
+      <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-2">
+        {topSearchIntentPages.map((page) => (
+          <li key={page.slug}>
+            <Link
+              href={`/${lang}${searchIntentPath(page.slug)}`}
+              className="text-primary underline"
+            >
+              {page.label} for sale
+            </Link>
           </li>
         ))}
       </ul>

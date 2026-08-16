@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * TrendingStrip — horizontal scrolling strip of 5-6 trending posts.
+ * TrendingStrip — horizontal scrolling strip of trending posts.
  * Shown at the top of the feed. Hot items get a fire badge.
  * Video listings use their lightweight poster plus a play indicator here; the
  * full player loads only after opening the listing.
@@ -149,7 +149,7 @@ export function TrendingStrip({ lang, county }: Props) {
         className="flex gap-2.5 mx-4 overflow-x-auto scrollbar-none pb-0.5"
         style={{ scrollSnapType: "x proximity" }}
       >
-        {items.slice(0, 8).map((post, i) => (
+        {items.slice(0, 14).map((post, i) => (
           <div key={post.id} style={{ scrollSnapAlign: "start" }}>
             <TrendingItem post={post} lang={lang} rank={i + 1} />
           </div>

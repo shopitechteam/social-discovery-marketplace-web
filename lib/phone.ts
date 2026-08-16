@@ -57,3 +57,9 @@ export function formatStoredPhone(stored: string | null | undefined): string {
 export function telHref(stored: string): string {
   return `tel:+${stored.replace(/\D/g, "")}`;
 }
+
+/** WhatsApp deep link for a stored phone number. */
+export function whatsappHref(stored: string, text: string): string {
+  const digits = stored.replace(/\D/g, "");
+  return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
+}
