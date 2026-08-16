@@ -39,11 +39,12 @@ function makeClient() {
  *   background `cache-and-network` refetch when revisiting the screen (tab away →
  *   back). We must NOT blindly replace the window here: if we did, a single
  *   page-1 refetch would collapse an accumulated 200-item window down to 10 and
- *   snap scroll to the top. Instead we splice the fresh page-1 over the head of
- *   the existing list (so newly-published posts appear at the top and updated
- *   fields refresh) while KEEPING the accumulated tail the user already scrolled
- *   through. Only when there is no existing window do we take the incoming page
- *   verbatim.
+ *   snap scroll to the top. Instead we keep the existing list order intact.
+ *   The incoming page still refreshes the
+ *   normalized Content records, but the list itself must not be reordered while
+ *   the user is away: inserting page-1 at the head moves every scroll anchor and
+ *   can leave the cursor pointing at a different ordered stream. Only when
+ *   there is no existing window do we take the incoming page verbatim.
  */
 type FeedItem = Reference | { __ref?: string; id?: string };
 type FeedPage = { items?: FeedItem[] } & Record<string, unknown>;
@@ -89,25 +90,28 @@ function mergeFeedPage(
   // First page on a fresh cache → nothing to preserve, take it as-is.
   if (prevItems.length === 0) return { ...incoming, items: incomingItems };
 
-  // First page on a populated cache (background refresh). Keep the accumulated
-  // window intact: put the refreshed page-1 items first, then everything from
-  // the old window that isn't in page-1 (i.e. the scrolled-past tail).
-  const incomingKeys = keyedSet(incomingItems, readField);
-  const tail = prevItems.filter((it) => {
+  // First page on a populated cache (background refresh / route preload).
+  // Preserve the exact visible order so returning from Profile does not jump
+  // from item 60 back to a re-spliced page 1. Apollo already writes incoming
+  // entities into the normalized cache before/while this merge runs, so fields
+  // on overlapping Content records still refresh without moving the list.
+  if (prevItems.length <= incomingItems.length) {
+    return { ...incoming, items: incomingItems };
+  }
+
+  const prevKeys = keyedSet(prevItems, readField);
+  const newItems = incomingItems.filter((it) => {
     const key = itemKey(it, readField);
-    return !key || !incomingKeys.has(key);
+    return !key || !prevKeys.has(key);
   });
-  // pageInfo: if the user had scrolled past page 1 (there's a tail), keep the
-  // EXISTING cursor — it points at the end of the accumulated window, so the
-  // next `loadMore` continues forward instead of re-requesting page 2 (which
-  // would refetch posts already shown and stall pagination). If there's NO tail
-  // (the window was just page 1), take the fresh incoming pageInfo so a shifted
-  // page-1 cursor stays valid.
+  // pageInfo: keep the EXISTING cursor — it points at the end of the
+  // accumulated window, so the next `loadMore` continues forward instead of
+  // re-requesting page 2 (which would refetch posts already shown and stall
+  // pagination).
   return {
     ...incoming,
-    pageInfo:
-      tail.length > 0 ? (existing?.pageInfo ?? incoming.pageInfo) : incoming.pageInfo,
-    items: [...incomingItems, ...tail],
+    pageInfo: existing?.pageInfo ?? incoming.pageInfo,
+    items: [...prevItems, ...newItems],
   };
 }
 
@@ -190,7 +194,10 @@ function createClient() {
         Query: {
           fields: {
             forYouFeed: {
-              keyArgs: [],
+              // For You can be ranked with a soft location hint. A no-location
+              // window and a location-ranked window have different cursor
+              // streams, so they must not share the same cached list.
+              keyArgs: ["latitude", "longitude"],
               merge: mergeFeedPage,
             },
             followingFeed: {

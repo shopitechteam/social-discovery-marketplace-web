@@ -13,6 +13,7 @@ import {
   faqSchema,
   breadcrumbSchema,
   agentSchema,
+  marketplaceWebPageSchema,
   jsonLd,
 } from "@/lib/structured-data";
 
@@ -75,6 +76,18 @@ export default async function FaqPage({ params }: Props) {
           __html: jsonLd(
             faqSchema(faq),
             agentSchema,
+            marketplaceWebPageSchema({
+              url: `${siteConfig.url}/${lang}/faq`,
+              name: copy.title,
+              description: copy.description,
+              keywords: [
+                "Shopi FAQ",
+                "sell online Kenya",
+                "Shopi Agent",
+                "buy and sell Kenya",
+                "Kenya marketplace safety",
+              ],
+            }),
             breadcrumbSchema([
               { name: "Home", url: `${siteConfig.url}/${lang}` },
               { name: "FAQ", url: `${siteConfig.url}/${lang}/faq` },

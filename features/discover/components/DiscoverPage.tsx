@@ -422,6 +422,23 @@ function DiscoverFeedSkeleton() {
   );
 }
 
+function DiscoverPaginationSkeleton() {
+  return (
+    <div
+      className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+4.75rem)] z-40 flex justify-center px-4 lg:bottom-6"
+      aria-hidden
+    >
+      <div className="flex h-12 w-full max-w-xs items-center gap-3 rounded-full border border-default bg-app/95 px-4 shadow-lg shadow-black/10 backdrop-blur dark:shadow-black/30">
+        <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
+        <div className="min-w-0 flex-1 space-y-2">
+          <Skeleton className="h-2.5 w-3/4 rounded-full" />
+          <Skeleton className="h-2 w-1/2 rounded-full" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function EmptyState({ title, body }: { title: string; body: string }) {
   return (
     <div className="px-6 py-16 text-center">
@@ -1309,13 +1326,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
 
               <div ref={sentinelRef} className="h-2" />
 
-              {isFetchingMore ? (
-                <div className="grid grid-cols-2 gap-2 pt-3 md:grid-cols-3 md:gap-3 xl:grid-cols-4 min-[90rem]:grid-cols-5">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <Skeleton key={i} className="aspect-3/4 rounded-2xl md:aspect-4/5" />
-                  ))}
-                </div>
-              ) : null}
+              {isFetchingMore ? <DiscoverPaginationSkeleton /> : null}
 
               {!pageInfo?.hasNextPage ? (
                 <p className="py-6 text-center text-xs text-muted-foreground">
