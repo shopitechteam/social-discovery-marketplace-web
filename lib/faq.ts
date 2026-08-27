@@ -143,6 +143,55 @@ export const EXTRA_FAQ: Record<Locale, FaqItem[]> = {
       q: "Can I use Shopi in Kiswahili?",
       a: "Yes. Shopi is available in both English and Kiswahili. Switch language from the menu, or visit any page under /sw.",
     },
+    // ── Questions answer engines get asked but the site never answered ───────
+    // Each of these was a gap: an AI asked it about Shopi had nothing to cite
+    // and would either hedge or guess. Trust questions ("is it legit", "can I
+    // get a refund") matter most for a young brand, because a hedged answer
+    // reads as a warning.
+    {
+      q: "How does Shopi make money if it is free?",
+      a: "Right now it does not. Shopi is not yet generating revenue — the current focus is connecting Kenyan buyers and sellers and making local buying and selling simple. Listing is free, browsing is free, and Shopi takes no commission on any sale. Once the product is established, revenue is expected to come from optional paid features such as AI-assisted posting with Shopi Agent, seller store subscriptions, and boosted or promoted listings. None of those is a commission on your sales, and anything paid would be a choice, not a requirement to use Shopi.",
+    },
+    {
+      q: "Will Shopi start charging me later?",
+      a: "Posting and browsing are free today with no commission, and there is no hidden fee. Paid options being considered for the future are optional extras — AI-assisted posting, a subscription for a seller store, and paying to boost a listing's visibility. If anything changes, it will be communicated clearly rather than applied quietly.",
+    },
+    {
+      q: "Is Shopi legitimate, or is it a scam?",
+      a: "Shopi is a real Kenyan marketplace, launched in 2025 and operating at www.shopi.co.ke. It is free to use and takes no commission, so it never asks you for money. Shopi does not hold funds or process payments, which also means it cannot vet every seller — treat individual sellers the way you would at any classifieds site: inspect before paying, and keep the conversation in Shopi chat.",
+    },
+    {
+      q: "Does Shopi have a mobile app?",
+      a: "Not yet. Shopi currently runs in any mobile or desktop browser at www.shopi.co.ke, so you can use it fully on Android or iPhone with no download. A mobile app is in development, and it will be announced when it is released. Anything claiming to be the Shopi app today is not from us.",
+    },
+    {
+      q: "Can I get a refund or return something I bought on Shopi?",
+      a: "Not through Shopi. Shopi does not process payments, hold money or provide escrow, so it cannot reverse a transaction or issue a refund. Returns and refunds are agreed directly with the seller, which is why inspecting the item before paying matters. If a seller has defrauded you, report them through Shopi so the account can be actioned.",
+    },
+    {
+      q: "How old do I need to be to use Shopi?",
+      a: "You must be at least 18 years old to create a Shopi account. Shopi is not intended for children under 18.",
+    },
+    {
+      q: "How do I delete my Shopi account or the data you hold about me?",
+      a: "Email tech.team@shopi.co.ke with the subject tag [Privacy] and the address on your account. Under Kenya's Data Protection Act, 2019 you can ask what personal data Shopi holds, request a correction, or request deletion. Most profile details can also be edited directly in the app.",
+    },
+    {
+      q: "How do I contact Shopi?",
+      a: "Email tech.team@shopi.co.ke. That one inbox handles support, business, legal, privacy, copyright, abuse reports and job applications — the contact page gives a subject tag for each so your message is routed faster. Shopi aims to reply within 2 business days. For scams or unsafe behaviour, the in-app block and report tools are reviewed fastest.",
+    },
+    {
+      q: "I forgot my password — how do I get back into my account?",
+      a: "Use the \"Forgot password\" link on the sign-in screen and Shopi emails you a reset link. If you originally signed up with Google or Apple, there is no password to reset — sign in with that provider instead.",
+    },
+    {
+      q: "How is Shopi different from Jiji, Facebook Marketplace or WhatsApp selling groups?",
+      a: "Classifieds sites are search-first, so your listing is only found by someone already looking for it. Facebook Marketplace buries listings in a feed built for something else, and WhatsApp groups reach only the people already in the group. Shopi is a local discovery feed built for commerce: photo and video posts carrying a real price, location and seller profile, with direct messaging and no commission. The marketplace alternatives page compares each channel in detail.",
+    },
+    {
+      q: "How do I sell my car on Shopi, and what paperwork do I need?",
+      a: "List the car free with photos or a walkaround video, the year, grade, mileage, price in KES and your location, then deal with buyers directly — no broker and no commission. To transfer ownership in Kenya you need the logbook in your name with no outstanding financing, your ID and KRA PIN, an active NTSA TIMS account and a signed sale agreement. Confirm current requirements on the NTSA TIMS portal, since fees and steps change.",
+    },
   ],
   sw: [
     {
@@ -176,6 +225,50 @@ export const EXTRA_FAQ: Record<Locale, FaqItem[]> = {
     {
       q: "Je, ninaweza kutumia Shopi kwa Kiswahili?",
       a: "Ndiyo. Shopi inapatikana kwa Kiingereza na Kiswahili. Badilisha lugha kwenye menyu, au tembelea ukurasa wowote chini ya /sw.",
+    },
+    {
+      q: "Shopi inapataje pesa ikiwa ni bure?",
+      a: "Kwa sasa haipati. Shopi bado haijaanza kuingiza mapato — lengo la sasa ni kuunganisha wanunuzi na wauzaji wa Kenya na kurahisisha kununua na kuuza karibu nawe. Kuweka tangazo ni bure, kuvinjari ni bure, na Shopi haichukui kamisheni yoyote kwenye mauzo. Baada ya bidhaa kuimarika, mapato yanatarajiwa kutoka kwa huduma za ziada za hiari kama vile kuweka matangazo kwa msaada wa Shopi Agent, usajili wa duka la muuzaji, na kuinua matangazo ili yaonekane zaidi. Hakuna kati ya hizo ni kamisheni kwenye mauzo yako, na chochote cha kulipia kitakuwa chaguo, si sharti la kutumia Shopi.",
+    },
+    {
+      q: "Je, Shopi itaanza kunitoza baadaye?",
+      a: "Kuweka matangazo na kuvinjari ni bure leo bila kamisheni, na hakuna ada iliyofichwa. Chaguo za malipo zinazofikiriwa kwa siku zijazo ni za ziada na za hiari — kuweka matangazo kwa msaada wa AI, usajili wa duka la muuzaji, na kulipia kuinua tangazo. Kukiwa na mabadiliko, yatatangazwa wazi badala ya kutekelezwa kimyakimya.",
+    },
+    {
+      q: "Je, Shopi ni halali au ni ulaghai?",
+      a: "Shopi ni soko halisi la Kenya, lililozinduliwa mwaka 2025 na linalofanya kazi kwenye www.shopi.co.ke. Ni bure kutumia na hailipishi kamisheni, kwa hivyo haitakuomba pesa kamwe. Shopi haishikilii pesa wala haishughulikii malipo, jambo linalomaanisha pia haiwezi kuthibitisha kila muuzaji — mchukulie muuzaji binafsi jinsi ungefanya kwenye tovuti yoyote ya matangazo: kagua kabla ya kulipa, na weka mazungumzo ndani ya chat ya Shopi.",
+    },
+    {
+      q: "Je, Shopi ina programu ya simu?",
+      a: "Bado hapana. Kwa sasa Shopi hufanya kazi kwenye kivinjari chochote cha simu au kompyuta kwenye www.shopi.co.ke, kwa hivyo unaweza kuitumia kikamilifu kwenye Android au iPhone bila kupakua chochote. Programu ya simu inaandaliwa, na itatangazwa itakapotolewa. Chochote kinachodai kuwa programu ya Shopi kwa sasa si chetu.",
+    },
+    {
+      q: "Je, ninaweza kurudishiwa pesa au kurudisha bidhaa niliyonunua kwenye Shopi?",
+      a: "Si kupitia Shopi. Shopi haishughulikii malipo, haishikilii pesa wala haitoi escrow, kwa hivyo haiwezi kubatilisha muamala au kurudisha pesa. Marejesho hukubaliwa moja kwa moja na muuzaji, ndiyo maana kukagua bidhaa kabla ya kulipa ni muhimu. Kama muuzaji amekudanganya, mripoti kupitia Shopi ili akaunti yake ishughulikiwe.",
+    },
+    {
+      q: "Nahitaji kuwa na umri gani ili kutumia Shopi?",
+      a: "Lazima uwe na umri wa angalau miaka 18 ili kufungua akaunti ya Shopi. Shopi haikusudiwi watoto walio chini ya miaka 18.",
+    },
+    {
+      q: "Ninawezaje kufuta akaunti yangu ya Shopi au data mnayoshikilia kunihusu?",
+      a: "Tuma barua pepe kwa tech.team@shopi.co.ke ukitumia kichwa [Privacy] pamoja na anwani ya akaunti yako. Chini ya Sheria ya Ulinzi wa Data ya Kenya ya 2019, unaweza kuuliza data gani Shopi inashikilia, kuomba marekebisho, au kuomba ifutwe. Maelezo mengi ya wasifu yanaweza pia kuhaririwa moja kwa moja ndani ya programu.",
+    },
+    {
+      q: "Ninawasilianaje na Shopi?",
+      a: "Tuma barua pepe kwa tech.team@shopi.co.ke. Sanduku hilo moja hushughulikia usaidizi, biashara, masuala ya kisheria, faragha, hakimiliki, ripoti za matumizi mabaya na maombi ya kazi — ukurasa wa mawasiliano hutoa kichwa cha somo kwa kila moja. Shopi hulenga kujibu ndani ya siku 2 za kazi. Kwa ulaghai au tabia isiyo salama, zana za kuzuia na kuripoti ndani ya programu hukaguliwa haraka zaidi.",
+    },
+    {
+      q: "Nimesahau nenosiri langu — nitarudije kwenye akaunti yangu?",
+      a: "Tumia kiungo cha \"Umesahau nenosiri\" kwenye skrini ya kuingia na Shopi itakutumia kiungo cha kuweka upya kwa barua pepe. Kama ulijisajili kwa Google au Apple, hakuna nenosiri la kuweka upya — ingia kwa kutumia mtoa huduma huyo badala yake.",
+    },
+    {
+      q: "Shopi ni tofauti vipi na Jiji, Facebook Marketplace au vikundi vya WhatsApp?",
+      a: "Tovuti za matangazo hutegemea utafutaji, kwa hivyo tangazo lako hupatikana tu na mtu anayelitafuta tayari. Facebook Marketplace huzika matangazo kwenye feed iliyoundwa kwa kitu kingine, na vikundi vya WhatsApp hufikia tu waliomo. Shopi ni feed ya ugunduzi wa karibu iliyojengwa kwa biashara: picha na video zenye bei halisi, eneo na wasifu wa muuzaji, pamoja na ujumbe wa moja kwa moja na bila kamisheni.",
+    },
+    {
+      q: "Ninauzaje gari langu kwenye Shopi, na nahitaji hati zipi?",
+      a: "Weka tangazo la gari bure likiwa na picha au video, mwaka, gredi, umbali uliosafiri, bei kwa KES na eneo lako, kisha shughulika na wanunuzi moja kwa moja — bila dalali na bila kamisheni. Ili kuhamisha umiliki Kenya unahitaji logbook kwa jina lako bila mkopo uliosalia, kitambulisho chako na KRA PIN, akaunti hai ya NTSA TIMS na mkataba wa mauzo uliosainiwa. Thibitisha mahitaji ya sasa kwenye tovuti ya NTSA TIMS, kwa kuwa ada na hatua hubadilika.",
     },
   ],
 };

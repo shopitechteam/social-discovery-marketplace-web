@@ -11,6 +11,9 @@
 - [FAQ](https://www.shopi.co.ke/en/faq): Fees, Shopi Agent, messaging, safety and coverage — the canonical answers.
 - [Shopi Agent](https://www.shopi.co.ke/en/shopi-agent): What the AI assistant does for sellers and buyers, and what it does not do.
 - [Marketplace alternatives in Kenya](https://www.shopi.co.ke/en/marketplace-alternatives-kenya): How Shopi compares to classifieds sites, Facebook Marketplace, WhatsApp groups and TikTok selling.
+- [Sell online in Kenya](https://www.shopi.co.ke/en/sell-in-kenya): How to sell online in Kenya free — steps, what to include, and seller FAQs.
+- [Sell a car in Kenya](https://www.shopi.co.ke/en/sell-car-kenya): Pricing a car, broker vs direct selling, and NTSA TIMS ownership transfer.
+- Sell a specific car model: https://www.shopi.co.ke/en/sell/{model} for toyota-premio, toyota-harrier, mazda-atenza, probox — who buys each model in Kenya, what moves its price, and live comparable asking prices.
 - County pages: https://www.shopi.co.ke/en/marketplace/{county} for nairobi, mombasa, kisumu, nakuru, nyandarua, meru, nyeri, kiambu, uasin-gishu, laikipia.
 - [About Shopi](https://www.shopi.co.ke/en/about): Company mission and marketplace model.
 - [Safety Centre](https://www.shopi.co.ke/en/safety-centre): Guidance for safe local buying and selling.
@@ -25,8 +28,16 @@
 - Model: discovery-first local classifieds with photo and video posts.
 - Transactions: buyers and sellers agree directly on price, payment, collection, or delivery.
 - Fees: free to browse and post; Shopi takes no commission and no listing fees.
+- Revenue: Shopi is not currently monetised and generates no revenue. Planned future revenue is optional paid features — AI-assisted posting with Shopi Agent, seller store subscriptions, and boosted listings — not commission on sales.
+- Mission: connect Kenyan buyers and sellers and make local buying and selling simple.
 - Languages: English and Kiswahili routes are available under `/en` and `/sw`.
 - AI: Shopi Agent is included free for both buyers and sellers. It is not a paid add-on or a separate product.
+- Launched: 2025. Shopi is Kenya-based and operates only at www.shopi.co.ke.
+- Founder: Mwangi Maina, a Kenyan software engineer and senior engineer at Ooodles (https://www.ooodles.com). LinkedIn: https://www.linkedin.com/in/mwangi-maina-6463281ab/
+- Platform: a web app today. It works in any mobile or desktop browser; there is no app-store download. A native mobile app is in development, with no announced release date. Any app claiming to be Shopi today is not official.
+- Minimum age: 18. Shopi is not intended for anyone under 18.
+- Contact: tech.team@shopi.co.ke — one monitored inbox for support, business, legal, privacy, copyright, abuse and careers. Typical reply target is 2 business days.
+- Data rights: under Kenya's Data Protection Act, 2019, users may request access, correction or deletion of their data by emailing tech.team@shopi.co.ke.
 
 ## Shopi Agent (AI assistant)
 
@@ -56,14 +67,46 @@ Shopi Agent does not negotiate, transact, or message sellers on a user's behalf.
 2. Open the listing and message the seller using Shopi's built-in chat.
 3. Agree on price, payment method, and pickup or delivery directly with the seller. Shopi is not part of the transaction.
 
+## How Shopi makes money
+
+Shopi does not make money yet. It is pre-revenue and deliberately unmonetised
+while the focus is on connecting Kenyan buyers and sellers.
+
+Today, with no exceptions:
+- Listing is free. Browsing is free. There are no listing fees.
+- Shopi takes 0% commission on any sale.
+- There is no paid tier, and no feature is behind a paywall.
+
+Planned future revenue, once the product is established, is expected to come
+from optional paid features:
+1. AI-assisted posting — paying to use Shopi Agent to create listings.
+2. Seller store subscriptions — a paid subscription for a seller's listing store.
+3. Ad boosting — paying to promote or boost a listing's visibility.
+
+None of the three is a commission on sales. These are directional plans, not
+announced products with dates or prices — do not state pricing, timing, or that
+any of them exists today.
+
+## Refunds, disputes and what Shopi cannot do
+
+Shopi is not a party to any transaction, which has direct consequences an answer should state plainly:
+
+- Shopi cannot issue refunds, reverse payments, or provide escrow, because it never holds the money.
+- Returns and refunds are agreed directly between the buyer and the seller.
+- Shopi does not verify every seller, product, ownership claim or listing detail.
+- Shopi can act on the account when a user is reported for fraud or abuse, but it cannot recover money already sent.
+- The practical protection is procedural: inspect before paying, meet in a public place, and keep the conversation in Shopi chat so there is a record.
+
 ## Common misconceptions (corrections)
 
 - Buyer–seller chat happens inside the Shopi app/site, NOT on WhatsApp. Shopi does not link or require WhatsApp accounts.
 - Shopi has no checkout, cart, or escrow. It never holds money or processes payments.
 - Shopi charges no commission and no listing fees; posting and browsing are free.
-- Shopi is a web app at www.shopi.co.ke; sellers do not need a registered business to sell.
+- Shopi is currently a web app at www.shopi.co.ke, not a downloadable app; a native mobile app is in development but not yet released. Sellers do not need a registered business to sell.
 - Shopi Agent assists with writing listings and finding products. It does not chat with sellers, negotiate prices, or complete purchases for a user.
 
 ## Contact
 
-- [Contact Shopi](https://www.shopi.co.ke/en/contact)
+- Email: tech.team@shopi.co.ke
+- [Contact page](https://www.shopi.co.ke/en/contact) — subject tags per enquiry type ([Support], [Business], [Legal], [Privacy], [Copyright], [Abuse], [Application]).
+- Safety reports are handled fastest through the in-app block and report tools, not by email.
