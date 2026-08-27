@@ -11,8 +11,19 @@ import { useAuthStore } from "@/stores/auth";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { getSuspendedAccountMessage } from "@/lib/apollo/suspended-account";
+import { trackAuthSuccess, trackSignup } from "@/lib/analytics";
+import { attributionInput } from "@/lib/attribution";
 
-export function useOAuthMutation(lang: string, from?: string) {
+export function useOAuthMutation(
+  lang: string,
+  from?: string,
+  /** Which auth screen the user was on. Recorded as attribution context and
+   *  used to label returning-user events; new-vs-returning itself now comes
+   *  from the server's `isNewUser`, not from guessing at this. */
+  surface: "register" | "welcome" | "login" | "unknown" = "unknown",
+) {
+  // AttributionInput.surface is a free-text hint; "unknown" carries nothing.
+  const surfaceForInput = surface === "unknown" ? undefined : surface;
   const router = useRouter();
   const setAuth = useAuthStore((s) => s.setAuth);
   const [loading, setLoading] = useState(false);
@@ -75,9 +86,15 @@ export function useOAuthMutation(lang: string, from?: string) {
 
   async function loginWithGoogle(idToken: string): Promise<string | null> {
     try {
-      const { data, error } = await googleMutation({ variables: { input: { idToken } } });
+      const { data, error } = await googleMutation({
+        variables: { input: { idToken, attribution: attributionInput(surfaceForInput) } },
+      });
       if (error) return extractError(error);
       if (!data?.loginWithGoogle) return "Something went wrong.";
+      // The server tells us whether it created the account, so social signups
+      // are no longer guessed from which screen the button was on.
+      if (data.loginWithGoogle.isNewUser) trackSignup("google");
+      else trackAuthSuccess("google", surface);
       setAuth(data.loginWithGoogle as Parameters<typeof setAuth>[0]);
       goToDestination();
       return null;
@@ -88,9 +105,15 @@ export function useOAuthMutation(lang: string, from?: string) {
 
   async function loginWithApple(idToken: string): Promise<string | null> {
     try {
-      const { data, error } = await appleMutation({ variables: { input: { idToken } } });
+      const { data, error } = await appleMutation({
+        variables: { input: { idToken, attribution: attributionInput(surfaceForInput) } },
+      });
       if (error) return extractError(error);
       if (!data?.loginWithApple) return "Something went wrong.";
+      // The server tells us whether it created the account, so social signups
+      // are no longer guessed from which screen the button was on.
+      if (data.loginWithApple.isNewUser) trackSignup("apple");
+      else trackAuthSuccess("apple", surface);
       setAuth(data.loginWithApple as Parameters<typeof setAuth>[0]);
       goToDestination();
       return null;
@@ -101,9 +124,15 @@ export function useOAuthMutation(lang: string, from?: string) {
 
   async function loginWithFacebook(idToken: string): Promise<string | null> {
     try {
-      const { data, error } = await facebookMutation({ variables: { input: { idToken } } });
+      const { data, error } = await facebookMutation({
+        variables: { input: { idToken, attribution: attributionInput(surfaceForInput) } },
+      });
       if (error) return extractError(error);
       if (!data?.loginWithFacebook) return "Something went wrong.";
+      // The server tells us whether it created the account, so social signups
+      // are no longer guessed from which screen the button was on.
+      if (data.loginWithFacebook.isNewUser) trackSignup("facebook");
+      else trackAuthSuccess("facebook", surface);
       setAuth(data.loginWithFacebook as Parameters<typeof setAuth>[0]);
       goToDestination();
       return null;

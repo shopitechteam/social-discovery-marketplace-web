@@ -13,6 +13,8 @@ import {
   type VerifyEmailAndLinkPasswordMutation,
 } from "@/types/__generated__/graphql";
 import { useAuthStore } from "@/stores/auth";
+import { trackSignup, trackAuthSuccess } from "@/lib/analytics";
+import { attributionInput } from "@/lib/attribution";
 
 interface RegisterFormValues {
   firstName: string;
@@ -84,6 +86,9 @@ export function RegisterForm({ from, lang, footer }: RegisterFormProps) {
             password: values.password,
             firstName: values.firstName || undefined,
             lastName: values.lastName || undefined,
+            // First-touch source, replayed from the visitor's first page load.
+            // Persisted server-side only if this call creates the account.
+            attribution: attributionInput("register"),
           },
         },
       });
@@ -115,6 +120,7 @@ export function RegisterForm({ from, lang, footer }: RegisterFormProps) {
 
       // Normal registration success
       if ("accessToken" in payload) {
+        trackSignup("email");
         setAuth(payload);
         router.replace(from && from.startsWith("/") ? from : `/${lang}/feed`);
       }
@@ -165,6 +171,9 @@ export function RegisterForm({ from, lang, footer }: RegisterFormProps) {
         return;
       }
 
+      // Not a new account — this email already existed under an OAuth provider
+      // and just gained a password, so it's an auth, not a signup.
+      trackAuthSuccess("email", "register");
       setAuth(payload);
       router.replace(from && from.startsWith("/") ? from : `/${lang}/feed`);
     } catch (err: unknown) {

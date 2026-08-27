@@ -11,14 +11,26 @@ import { faqSchema, jsonLd, marketplaceSchema } from "@/lib/structured-data";
 
 type Props = { params: Promise<{ lang: string }> };
 
+// Questions are phrased as the queries Search Console shows people actually
+// typing ("where to sell used items", "where can i sell", "sell online"), not
+// as marketing copy — an FAQPage entry only earns an answer-engine citation
+// when it restates the question close to verbatim.
 const faq = [
   {
     q: "Where can I sell items online in Kenya?",
     a: "You can sell items on Shopi by creating a free post with photos or video, a price, category and location. Buyers discover your item in the feed or search, then message you directly.",
   },
   {
-    q: "Is Shopi free for sellers in Kenya?",
-    a: "Yes. Shopi is free to browse and free to post. Shopi does not take commission, process payments, hold money or sit between the buyer and seller.",
+    q: "How do I start selling online in Kenya?",
+    a: "Create a free Shopi account, tap upload, add photos or a video of your item, then set a price, category and location. Your listing goes live immediately and buyers message you inside the app. You do not need a website, a shop, a business licence or any starting capital.",
+  },
+  {
+    q: "Where can I sell used items in Kenya?",
+    a: "Shopi is built for second-hand selling. Used phones, laptops, furniture, cars, clothes, shoes and home items are among the most traded categories. Post the item with honest photos and a clear price, and buyers near you will find it in the local feed.",
+  },
+  {
+    q: "Can I sell online for free without paying commission?",
+    a: "Yes. Shopi is free to browse and free to post, and takes no commission on sales. Shopi does not process payments, hold money or sit between the buyer and seller, so whatever the buyer pays you is yours in full.",
   },
   {
     q: "What can I sell on Shopi?",
@@ -35,9 +47,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return publicPageMetadata({
     lang,
     path: "/sell-in-kenya",
-    title: "Sell Online in Kenya for Free",
+    title: "How to Sell Online in Kenya Free — No Commission",
     description:
-      "Looking for sites to sell in Kenya? Post cars, phones, furniture, fashion, farm produce and more on Shopi for free, then message buyers directly.",
+      "Want to sell online in Kenya? Post used items, cars, phones, furniture, fashion or farm produce on Shopi free in minutes, then message buyers directly. No commission, no fees.",
   });
 }
 
@@ -97,15 +109,18 @@ export default async function SellInKenyaPage({ params }: Props) {
             <p className="mb-4 text-[0.8rem] font-bold tracking-widest uppercase text-primary">
               Sell online in Kenya
             </p>
+            {/* The H1 carries the exact target phrase ("sell online in Kenya")
+                — the old one led with "A free site to sell…", which matched no
+                query anyone actually types. */}
             <h1 className="max-w-170 font-display text-[clamp(2rem,5vw,3.6rem)] font-bold tracking-normal leading-[1.08] text-foreground">
-              A free site to sell cars, phones, furniture, fashion and everyday
-              items in Kenya.
+              Sell online in Kenya, free — cars, phones, furniture, fashion and
+              everyday items.
             </h1>
             <p className="mt-5 max-w-145 text-[1.05rem] leading-[1.75] text-muted">
-              If you are searching for sites to sell in Kenya, Shopi gives you a
-              local marketplace feed where buyers can discover what you are
-              selling and message you directly. No commission, no checkout, no
-              middleman.
+              Wondering where to sell used items online in Kenya? Shopi is a
+              free local marketplace where you post in minutes, buyers nearby
+              discover what you are selling, and they message you directly. No
+              commission, no checkout, no middleman.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
@@ -188,7 +203,7 @@ export default async function SellInKenyaPage({ params }: Props) {
         <section className="bg-surface px-5 py-16">
           <div className="mx-auto max-w-170">
             <h2 className="mb-7 font-display text-[clamp(1.5rem,3vw,2.2rem)] font-bold tracking-normal text-foreground">
-              How selling on Shopi works
+              How to sell online in Kenya, step by step
             </h2>
             <ol className="grid gap-4 p-0 md:grid-cols-4">
               {[
@@ -215,7 +230,7 @@ export default async function SellInKenyaPage({ params }: Props) {
 
         <section className="mx-auto max-w-170 px-5 py-16">
           <h2 className="mb-8 font-display text-[clamp(1.5rem,3vw,2.2rem)] font-bold tracking-normal text-foreground">
-            Questions about selling in Kenya
+            Selling online in Kenya: common questions
           </h2>
           <div className="flex flex-col gap-3">
             {faq.map(({ q, a }) => (

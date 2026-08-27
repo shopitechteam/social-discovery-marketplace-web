@@ -9,7 +9,7 @@ import { siteConfig } from "@/config/site";
  * - FAQPage: makes visible Q&A machine-readable for search and answer engines.
  */
 
-const { url, name } = siteConfig;
+const { url, name, supportEmail } = siteConfig;
 const marketplaceTopics = [
   "Kenya classifieds",
   "social commerce in Kenya",
@@ -24,6 +24,63 @@ const marketplaceTopics = [
   "property for sale Kenya",
 ];
 
+/**
+ * Shopi's founder as a distinct entity.
+ *
+ * Answer engines weigh who is behind a product heavily when judging whether a
+ * young marketplace is trustworthy — "who founded Shopi?" previously had no
+ * answer anywhere on the site, and an unanswerable question reads as a red flag.
+ * Giving the person a real @id, a LinkedIn `sameAs` and a work history lets
+ * engines resolve him to a verifiable identity rather than guessing.
+ *
+ * Deliberately no `alumniOf`: schema.org treats it as a completed affiliation,
+ * and the degree was not completed, so claiming it here would be a false
+ * machine-readable credential.
+ *
+ * This is an answer-engine-only surface by choice — the founder bio is NOT
+ * rendered anywhere on the site. Note the trade-off: Google asks that
+ * structured data reflect content visible on the page, so this node is unlikely
+ * to earn a rich result and could in principle be flagged. It stays because its
+ * job is entity resolution for LLMs and knowledge panels, not rich snippets.
+ * The same facts are served at /llms.txt and /llms-full.txt.
+ */
+export const founderSchema = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "@id": `${url}/#founder`,
+  name: "Mwangi Maina",
+  jobTitle: "Founder, Shopi · Senior Software Engineer, Ooodles",
+  description:
+    "Kenyan software engineer and founder of Shopi. Studied computer science at Maseno University before moving into industry in 2021, working with the US startup Playback, then Bettercoach in Germany, and now Ooodles, where he was one of the pioneer engineers who built the platform from scratch.",
+  nationality: { "@type": "Country", name: "Kenya" },
+  // City-level only, deliberately. It answers "is Shopi actually run from
+  // Kenya?" — the question that matters for a local marketplace — without
+  // publishing anything more precise about a private individual.
+  homeLocation: {
+    "@type": "Place",
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: "Nairobi",
+      addressCountry: "KE",
+    },
+  },
+  worksFor: {
+    "@type": "Organization",
+    name: "Ooodles",
+    url: "https://www.ooodles.com",
+  },
+  knowsAbout: [
+    "software engineering",
+    "social commerce",
+    "marketplace platforms",
+    "Kenyan e-commerce",
+  ],
+  sameAs: [
+    "https://www.linkedin.com/in/mwangi-maina-6463281ab/",
+    "https://www.ooodles.com",
+  ],
+};
+
 export const organizationSchema = {
   "@context": "https://schema.org",
   "@type": "OnlineBusiness",
@@ -37,6 +94,25 @@ export const organizationSchema = {
   keywords: siteConfig.keywords.join(", "),
   knowsAbout: marketplaceTopics,
   foundingDate: "2025",
+  foundingLocation: {
+    "@type": "Place",
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: "Nairobi",
+      addressCountry: "KE",
+    },
+  },
+  // City-level, no street address: Shopi is remote-run and has no public
+  // walk-in office, and inventing a postal address to fill the field would be
+  // worse than leaving it at the city.
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: "Nairobi",
+    addressCountry: "KE",
+  },
+  // Linked by @id rather than inlined, so the Person entity is defined once and
+  // both the Organization and the /about page reference the same node.
+  founder: { "@id": `${url}/#founder` },
   areaServed: {
     "@type": "Country",
     name: "Kenya",
@@ -49,11 +125,38 @@ export const organizationSchema = {
   contactPoint: {
     "@type": "ContactPoint",
     contactType: "customer support",
+    email: supportEmail,
     url: `${url}/en/contact`,
     areaServed: "KE",
     availableLanguage: ["English", "Kiswahili"],
   },
 };
+
+/**
+ * ContactPage schema for /[lang]/contact. Lets answer engines quote a real
+ * address when asked "how do I contact Shopi?" instead of guessing one.
+ */
+export function contactPageSchema(lang: string) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ContactPage",
+    "@id": `${url}/${lang}/contact#page`,
+    url: `${url}/${lang}/contact`,
+    name: `Contact ${name}`,
+    description: `Reach ${name} for support, business, legal, privacy, copyright, and abuse-report enquiries in Kenya.`,
+    inLanguage: lang === "sw" ? "sw-KE" : "en-KE",
+    isPartOf: { "@id": `${url}/#website` },
+    about: { "@id": `${url}/#organization` },
+    mainEntity: {
+      "@type": "Organization",
+      "@id": `${url}/#organization`,
+      name,
+      email: supportEmail,
+      url,
+      areaServed: { "@type": "Country", name: "Kenya" },
+    },
+  };
+}
 
 export const websiteSchema = {
   "@context": "https://schema.org",

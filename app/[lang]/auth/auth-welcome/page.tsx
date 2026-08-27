@@ -22,7 +22,7 @@ export default async function WelcomePage({
   const CTAs = (
     <div className="flex flex-col gap-3">
       {/* Social sign-up buttons — top priority per design */}
-      <SocialButtons lang={lang} from={from} verb="Continue" />
+      <SocialButtons lang={lang} from={from} verb="Continue" surface="welcome" />
 
       <Divider label="or use email" />
 

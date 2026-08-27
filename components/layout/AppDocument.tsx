@@ -53,6 +53,24 @@ export function AppDocument({
       suppressHydrationWarning
       className={`${manrope.variable} ${bricolage.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
+      {/* llms.txt discovery.
+          The convention relies on crawlers guessing the well-known path, so a
+          site that only *hosts* the file may never have it read. These links
+          let anything parsing the HTML find it directly. No <head> wrapper —
+          React 19 hoists link tags into the document head on its own, which is
+          the App Router-safe way to do this. */}
+      <link
+        rel="alternate"
+        type="text/plain"
+        href="/llms.txt"
+        title="LLM reference (summary)"
+      />
+      <link
+        rel="alternate"
+        type="text/plain"
+        href="/llms-full.txt"
+        title="LLM reference (full)"
+      />
       {gtmId && <GoogleTagManager gtmId={gtmId} />}
       <body className="min-h-full flex flex-col bg-app text-default">
         <script

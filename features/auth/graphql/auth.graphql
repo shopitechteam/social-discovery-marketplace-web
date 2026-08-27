@@ -13,6 +13,9 @@ fragment AuthUserFields on User {
 fragment AuthPayloadFields on AuthPayload {
   accessToken
   refreshToken
+  # True only when this call created the account. Social login and social
+  # signup share one mutation, so this is the only reliable signup signal.
+  isNewUser
   user {
     ...AuthUserFields
   }

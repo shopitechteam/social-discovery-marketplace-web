@@ -76,6 +76,7 @@ export default async function BlogPostPage({ params }: Props) {
     description: post.description,
     keywords: post.keywords.join(", "),
     datePublished: post.publishedAt,
+    dateModified: post.updatedAt ?? post.publishedAt,
     // Posts are authored by the Shopi team, not named individuals — an
     // Organization author is the accurate schema for that.
     author: {

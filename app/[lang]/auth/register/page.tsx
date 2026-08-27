@@ -25,7 +25,7 @@ export default async function RegisterPage({
 
   const SocialTop = (
     <div className="mb-5 flex flex-col gap-4">
-      <SocialButtons lang={lang} from={from} verb="Sign up" />
+      <SocialButtons lang={lang} from={from} verb="Sign up" surface="register" />
       <Divider label="or use email" />
     </div>
   );

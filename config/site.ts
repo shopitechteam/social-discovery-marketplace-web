@@ -28,6 +28,13 @@ export const siteConfig = {
   // The site-wide OG card is rendered by app/[lang]/opengraph-image.tsx.
   ogImage: "/en/opengraph-image",
 
+  // The single monitored inbox. Everything — support, business, legal, privacy,
+  // copyright, abuse, job applications — routes here, so contact pages, legal
+  // pages and structured data must all read this constant rather than hardcode
+  // an address. Enquiries are separated by mailto subject prefix, not by
+  // address (see app/[lang]/contact/page.tsx).
+  supportEmail: "tech.team@shopi.co.ke",
+
   twitterHandle: "@shopiapp",
   locale: "en-KE",
   themeColor: "#E0005C",
@@ -50,7 +57,19 @@ export const siteConfig = {
     "marketplace Kenya",
     "buy and sell Kenya",
     "buy and sell locally",
+    "sell online",
     "sell online Kenya",
+    "sell online in Kenya",
+    "how to sell online in Kenya",
+    "sell online for free",
+    "buy and sell online",
+    "buy and sell online in Kenya",
+    "where can I sell online",
+    "where to sell used items",
+    "where to sell used items in Kenya",
+    "best place to sell online in Kenya",
+    "sell things online Kenya",
+    "start selling online Kenya",
     "local buying and selling",
     "discover products near me",
     "nearby marketplace Kenya",
