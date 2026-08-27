@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import Image from "next/image";
 import { useMutation } from "@apollo/client/react";
+import { Camera } from "lucide-react";
 import { useCreateStore } from "@/stores/create";
 import type { MediaItem } from "@/stores/create";
 import { useMediaUpload } from "@/features/create/hooks/useMediaUpload";
@@ -30,6 +31,7 @@ const MAX_IMAGES = 10;
  */
 export function MediaPicker() {
   const inputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const { draftId, contentType, mediaItems, tiktokEmbed } = useCreateStore();
   const { startImageUpload, startVideoUpload } = useMediaUpload();
   const [detachMediaAsset] = useMutation(DetachMediaAssetDocument);
@@ -38,6 +40,10 @@ export function MediaPicker() {
 
   function openPicker() {
     inputRef.current?.click();
+  }
+
+  function openCamera() {
+    cameraInputRef.current?.click();
   }
 
   function handleFiles(files: FileList | null) {
@@ -67,14 +73,26 @@ export function MediaPicker() {
   }
 
   const hiddenInput = (
-    <input
-      ref={inputRef}
-      type="file"
-      accept={isVideo ? "video/*" : "image/*"}
-      multiple={!isVideo}
-      className="hidden"
-      onChange={(e) => handleFiles(e.target.files)}
-    />
+    <>
+      <input
+        ref={inputRef}
+        type="file"
+        accept={isVideo ? "video/*" : "image/*"}
+        multiple={!isVideo}
+        className="hidden"
+        onChange={(e) => handleFiles(e.target.files)}
+      />
+      {!isVideo ? (
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={(e) => handleFiles(e.target.files)}
+        />
+      ) : null}
+    </>
   );
 
   // ── Empty state — dotted picker ────────────────────────────────────────────
@@ -117,6 +135,16 @@ export function MediaPicker() {
               : `Up to ${MAX_IMAGES} images`}
           </span>
         </button>
+        {!isVideo ? (
+          <button
+            type="button"
+            onClick={openCamera}
+            className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-border bg-elevated px-4 text-sm font-semibold text-foreground transition-colors hover:bg-surface"
+          >
+            <Camera size={18} />
+            Take photo
+          </button>
+        ) : null}
         {hiddenInput}
       </div>
     );
@@ -260,32 +288,50 @@ export function MediaPicker() {
 
         {/* Add-more tile */}
         {mediaItems.length < MAX_IMAGES && (
-          <button
-            type="button"
-            onClick={openPicker}
-            className="flex flex-col items-center justify-center gap-1 rounded-xl active:scale-[0.97] transition-transform"
-            style={{
-              aspectRatio: "1/1",
-              border: "2px dashed rgb(var(--color-border))",
-              backgroundColor: "rgb(var(--color-bg-subtle))",
-              color: "rgb(var(--color-text-muted))",
-            }}
-          >
-            <svg
-              width="22"
-              height="22"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
+          <>
+            <button
+              type="button"
+              onClick={openPicker}
+              className="flex flex-col items-center justify-center gap-1 rounded-xl active:scale-[0.97] transition-transform"
+              style={{
+                aspectRatio: "1/1",
+                border: "2px dashed rgb(var(--color-border))",
+                backgroundColor: "rgb(var(--color-bg-subtle))",
+                color: "rgb(var(--color-text-muted))",
+              }}
             >
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-            <span style={{ fontSize: "var(--text-xs)", fontWeight: 500 }}>
-              Add
-            </span>
-          </button>
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              >
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              <span style={{ fontSize: "var(--text-xs)", fontWeight: 500 }}>
+                Add
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={openCamera}
+              className="flex flex-col items-center justify-center gap-1 rounded-xl active:scale-[0.97] transition-transform"
+              style={{
+                aspectRatio: "1/1",
+                border: "2px dashed rgb(var(--color-border))",
+                backgroundColor: "rgb(var(--color-bg-subtle))",
+                color: "rgb(var(--color-text-muted))",
+              }}
+            >
+              <Camera size={22} />
+              <span style={{ fontSize: "var(--text-xs)", fontWeight: 500 }}>
+                Camera
+              </span>
+            </button>
+          </>
         )}
       </div>
       <p
