@@ -1,5 +1,6 @@
 # Shopi LLM Reference
 
+> Last updated: 2026-08-27
 > Shopi is a free Kenyan social commerce marketplace for buying and selling locally. It combines photo and video product listings, a discovery feed, seller profiles, in-app buyer-seller messaging, and Shopi Agent, an AI assistant for listing creation and product discovery.
 
 ## Canonical Site

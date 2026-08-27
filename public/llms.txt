@@ -1,5 +1,6 @@
 # Shopi
 
+> Last updated: 2026-08-27
 > Shopi is Kenya's social discovery classifieds marketplace. Buyers browse real items in a local feed and message sellers through Shopi's built-in chat. Shopi Agent, the built-in AI assistant, creates listings from a photo and helps buyers find products by description. Shopi does not process payments, hold money, arrange delivery, or charge commission.
 
 ## Primary pages

@@ -6,6 +6,13 @@ export type BlogPost = {
   category: string;
   readTime: string;
   publishedAt: string; // ISO date
+  /**
+   * ISO date of the last substantive edit. Feeds `dateModified` in the Article
+   * schema — generative engines weight recency when choosing between sources,
+   * and an undated page loses to a dated one on the same topic. Falls back to
+   * publishedAt when a post has never been revised.
+   */
+  updatedAt?: string;
   author: { name: string; role: string; initials: string; color: string };
   keywords: string[];
   sections: BlogSection[];
@@ -63,7 +70,7 @@ export const blogPosts: BlogPost[] = [
       },
       {
         heading: "The infrastructure is finally here",
-        body: "Kenya leads sub-Saharan Africa in mobile internet penetration. M-PESA makes payment frictionless. Affordable smartphones mean video content is accessible to sellers at every income level. The infrastructure for social commerce has quietly assembled itself — all it needed was a platform built around discovery rather than search.",
+        body: "Mobile internet is how most Kenyans get online at all, and smartphone ownership keeps climbing. M-PESA makes payment frictionless. Affordable smartphones mean video content is accessible to sellers at every income level. The infrastructure for social commerce has quietly assembled itself — all it needed was a platform built around discovery rather than search.",
       },
       {
         heading: "What this means for sellers",
