@@ -6,6 +6,13 @@ export type BlogPost = {
   category: string;
   readTime: string;
   publishedAt: string; // ISO date
+  /**
+   * ISO date of the last substantive edit. Feeds `dateModified` in the Article
+   * schema — generative engines weight recency when choosing between sources,
+   * and an undated page loses to a dated one on the same topic. Falls back to
+   * publishedAt when a post has never been revised.
+   */
+  updatedAt?: string;
   author: { name: string; role: string; initials: string; color: string };
   keywords: string[];
   sections: BlogSection[];
@@ -63,7 +70,7 @@ export const blogPosts: BlogPost[] = [
       },
       {
         heading: "The infrastructure is finally here",
-        body: "Kenya leads sub-Saharan Africa in mobile internet penetration. M-PESA makes payment frictionless. Affordable smartphones mean video content is accessible to sellers at every income level. The infrastructure for social commerce has quietly assembled itself — all it needed was a platform built around discovery rather than search.",
+        body: "Mobile internet is how most Kenyans get online at all, and smartphone ownership keeps climbing. M-PESA makes payment frictionless. Affordable smartphones mean video content is accessible to sellers at every income level. The infrastructure for social commerce has quietly assembled itself — all it needed was a platform built around discovery rather than search.",
       },
       {
         heading: "What this means for sellers",
@@ -354,6 +361,211 @@ export const blogPosts: BlogPost[] = [
       {
         q: "Can I sell from Nairobi to buyers in other Kenyan cities?",
         a: "Yes. Sellers and buyers agree delivery directly in chat — many use couriers and matatu parcel services to reach Mombasa, Kisumu, Nakuru, and beyond. Shopi connects you; you arrange the rest on your own terms.",
+      },
+    ],
+  },
+
+  // ─────────────────────────────────────────────────────────────────
+  {
+    slug: "where-to-sell-used-items-in-kenya",
+    title: "Where to Sell Used Items in Kenya: A Practical Guide",
+    description:
+      "Comparing the real options for selling second-hand items in Kenya — marketplaces, WhatsApp groups, social media and physical dealers — and when each one actually makes sense.",
+    excerpt:
+      "Not every selling channel suits every item. Here's an honest comparison of where Kenyans sell used goods, what each one costs you, and how to pick.",
+    category: "Seller Guide",
+    readTime: "9 min read",
+    publishedAt: "2026-08-27",
+    author: {
+      name: "Shopi Team",
+      role: "Seller Guides",
+      initials: "S",
+      color: "#3b82f6",
+    },
+    keywords: [
+      "where to sell used items",
+      "where to sell used items in Kenya",
+      "sell second hand items Kenya",
+      "where can I sell online",
+      "sell used phones Kenya",
+      "sell online Kenya",
+      "buy and sell online in Kenya",
+    ],
+    sections: [
+      {
+        heading: "First, be honest about what you are selling",
+        body: "The right channel depends far more on the item than on the platform's marketing. A used iPhone, a three-seater sofa and a 2013 Toyota Premio are three completely different sales, and treating them the same is why so many listings sit untouched for weeks.\n\nThree questions decide almost everything: how much is it worth, how far will a buyer travel for it, and how urgently do you need the money? A KES 3,000 kettle is not worth a cross-town trip for anyone. A KES 800,000 car is worth a buyer driving from Nakuru to Nairobi. Match the channel to the answer.",
+        list: [
+          "Low value, bulky — sell locally, to someone who can collect the same day",
+          "High value, portable — widen the audience, because buyers will travel",
+          "Urgent sale — price below the market range and say so plainly",
+          "Niche or enthusiast item — go where that specific community already is",
+        ],
+      },
+      {
+        heading: "Online marketplaces",
+        body: "Marketplaces are the default for a reason: buyers arrive already intending to buy, and search brings your listing to people you would never otherwise reach. This is where most second-hand items in Kenya should start.\n\nThe trade-off differs by platform. Some charge listing or promotion fees, some take a commission, and some insert themselves between you and the buyer. Before you list anywhere, check three things — what it costs you, whether you speak to the buyer directly, and who sets the final price. On Shopi, listing is free, there is no commission, and buyers message you directly, because a marketplace that takes a cut of a second-hand sofa sale is taking it from a margin that barely exists.",
+      },
+      {
+        heading: "WhatsApp groups and status",
+        body: "For low-value, fast-moving items, your WhatsApp contacts are genuinely one of the strongest channels in Kenya. Trust is already established, the buyer is usually nearby, and the sale can close in an afternoon.\n\nThe ceiling is low, though. Your reach is your contact list, status updates vanish in 24 hours, and there is no way for someone searching for exactly what you are selling to find you. Use it as a first pass for cheap items, not as your only plan for anything valuable.",
+      },
+      {
+        heading: "Facebook and Instagram",
+        body: "Social platforms work well when the item photographs well and the audience is browsing rather than searching — furniture, fashion, décor and beauty products do well here.\n\nThe weakness is intent. People on social feeds are not looking to buy, so you are interrupting rather than answering a need. Expect a lot of \"is this still available?\" messages that go nowhere, and expect to repost repeatedly as your listing sinks down the feed.",
+      },
+      {
+        heading: "Physical dealers and second-hand shops",
+        body: "Dealers give you speed and certainty. You walk in, you walk out with money, and the item is gone. For anyone who needs cash this week, that is worth something real.\n\nWhat it costs is the margin. A dealer has to resell at a profit, so expect meaningfully less than a private buyer would pay. This is a fair trade when you genuinely need speed, and a poor one when you have a few weeks to wait.",
+      },
+      {
+        heading: "How to price a second-hand item in Kenya",
+        body: "Do not start from what you paid. Start from what comparable items are being advertised for right now — same model, same age, roughly the same condition — and position yourself inside that range.\n\nIf you want a fast sale, price a little under the middle of the range and say the price is firm. If you can wait, price near the top and expect negotiation. What kills sales is pricing above the range with no explanation, because a buyer comparing five listings will simply skip yours.",
+        list: [
+          "Search current listings for the same item before you set a price",
+          "Discount honestly for wear, missing accessories or repairs",
+          "State clearly whether the price is negotiable",
+          "Include the price — listings without one get far fewer genuine enquiries",
+        ],
+      },
+      {
+        heading: "The listing itself decides more than the channel",
+        body: "Two identical items on the same platform sell at very different speeds, and the difference is almost always presentation. Good light, several angles, honest photos of any damage, and a description that answers the obvious questions before they are asked.\n\nA short video does more than any of these. It shows the item working, proves it exists, and removes the doubt that keeps a buyer from sending the first message. Sellers who post video consistently get more enquiries than sellers who post a single dim photograph — on any platform.",
+      },
+      {
+        heading: "Staying safe",
+        body: "Second-hand selling in Kenya works well, but the basics matter. Meet in a public place during daylight, ideally somewhere with people around. Confirm that payment has actually cleared into your account before the item leaves your hands — a screenshot is not payment. Be wary of anyone who wants to pay above your asking price, arrange a courier you did not choose, or move the conversation off-platform immediately.\n\nIf a deal feels wrong, it is fine to walk away. Another buyer will come.",
+      },
+    ],
+    faq: [
+      {
+        q: "Where can I sell used items in Kenya?",
+        a: "The main options are online marketplaces like Shopi, WhatsApp groups and status, Facebook and Instagram, and physical second-hand dealers. Marketplaces reach buyers who are actively searching, WhatsApp is fastest for cheap local items, social media suits visual products, and dealers offer speed in exchange for a lower price.",
+      },
+      {
+        q: "What is the best place to sell second-hand items online in Kenya?",
+        a: "For most items, an online marketplace where buyers search by category and location. Look for one that is free to list, takes no commission, and lets you message the buyer directly — on a second-hand sale, a commission comes straight out of a thin margin.",
+      },
+      {
+        q: "How do I price a used item in Kenya?",
+        a: "Search what comparable items are currently advertised for, then price inside that range. Go slightly below the middle for a fast sale, near the top if you can wait for the right buyer. Always include a price and say whether it is negotiable.",
+      },
+      {
+        q: "Is it free to sell used items on Shopi?",
+        a: "Yes. Listing on Shopi is free and Shopi takes no commission on sales. Shopi does not process payments or hold money, so whatever the buyer pays you is yours in full.",
+      },
+      {
+        q: "How do I avoid scams when selling second-hand in Kenya?",
+        a: "Meet in a public place in daylight, confirm payment has cleared in your account before handing over the item, and be cautious of buyers offering more than you asked or pushing for an unusual delivery arrangement. Keep the conversation on-platform until you are confident.",
+      },
+    ],
+  },
+
+  // ─────────────────────────────────────────────────────────────────
+  {
+    slug: "how-to-sell-your-car-in-kenya-without-a-broker",
+    title: "How to Sell Your Car in Kenya Without a Broker",
+    description:
+      "A step-by-step guide to selling your car privately in Kenya — pricing it correctly, writing the listing, handling viewings safely, and transferring ownership through NTSA TIMS.",
+    excerpt:
+      "Brokers take a cut and control the conversation. Here's how to price, list, show and transfer your car yourself — and what the trade-offs really are.",
+    category: "Seller Guide",
+    readTime: "11 min read",
+    publishedAt: "2026-08-27",
+    author: {
+      name: "Shopi Team",
+      role: "Seller Guides",
+      initials: "S",
+      color: "#ef4444",
+    },
+    keywords: [
+      "sell my car Kenya",
+      "sell car without broker Kenya",
+      "how to sell a car in Kenya",
+      "car logbook transfer Kenya",
+      "NTSA TIMS transfer",
+      "how much is my car worth Kenya",
+      "sell car online Kenya",
+    ],
+    sections: [
+      {
+        heading: "What a broker actually does — and what it costs you",
+        body: "A car broker finds you a buyer, handles the viewings, and often manages the paperwork. For someone with no time and no patience for tyre-kickers, that is a real service.\n\nWhat it costs is control and margin. The broker takes a commission or quietly adds a markup, so the money leaves your side of the deal. More subtly, the broker owns the conversation — you hear the buyer's objections second-hand, you do not know what was said about your car, and if the broker earns more on a different vehicle, yours is not the one being pushed. Selling privately means doing the work yourself and keeping the difference.",
+      },
+      {
+        heading: "Step 1 — Work out what your car is actually worth",
+        body: "Almost every private sale that stalls stalls on price. Owners anchor to what they paid, or to what they need, rather than to what the market is currently offering.\n\nThe honest method is comparison. Search current listings for your make, model, year and grade, and note the range. Then place yourself in it honestly: a car with a clean logbook in your name, full service history and no accident record sits near the top; one with a pending transfer, unclear history or visible damage sits near the bottom. Remember you are comparing against asking prices, and final prices are usually somewhat lower.",
+        list: [
+          "Compare same make, model, year and grade — not just the model name",
+          "Adjust down for accident history, respray work or missing service records",
+          "Adjust up for a clean logbook already in your name",
+          "Decide before you advertise what your true walk-away figure is",
+        ],
+      },
+      {
+        heading: "Step 2 — Get the paperwork ready before you advertise",
+        body: "Serious buyers ask about the logbook in the first or second message. If your answer is vague, they move on, because unclear ownership is the single biggest risk in a private car sale in Kenya.\n\nBefore you list, confirm the logbook is in your name with no outstanding financing, that you have your national ID and KRA PIN, and that your NTSA TIMS account is active. Ownership transfer happens through TIMS and both parties need working accounts, so a dormant account discovered on sale day will cost you the deal. Requirements and fees change, so check the current process on the NTSA TIMS portal rather than relying on what was true last year.",
+      },
+      {
+        heading: "Step 3 — Write a listing that filters out time-wasters",
+        body: "The goal of a car listing is not maximum enquiries. It is maximum enquiries from people who might actually buy. Vagueness attracts messages from everyone and buyers from no one.\n\nPut the year and grade in the title, not just the model. State the mileage, the price in KES, whether it is negotiable, and your location. Say plainly whether the logbook is ready. Then answer the obvious questions in the description — accident history, service records, why you are selling — because a buyer who has to ask five questions before learning anything usually does not ask any.",
+        list: [
+          "Title: make, model, year and grade",
+          "Photos: exterior from all four corners, interior, dashboard with engine on, tyres, engine bay",
+          "A short walkaround video, which converts better than photos alone",
+          "Honest photos of any dents, scratches or interior wear",
+          "Price, location, mileage, and logbook status stated up front",
+        ],
+      },
+      {
+        heading: "Step 4 — Handle viewings and test drives safely",
+        body: "Meet in a public, busy place during daylight. Bring someone with you if you can. Ask to see the buyer's ID and driving licence before any test drive, and go along for the drive — never hand the keys to a stranger and wait.\n\nExpect and welcome an independent mechanic's inspection. A buyer who wants their own mechanic to look at the car is a serious buyer, and refusing reads as though you are hiding something. If your car is sound, an inspection closes the sale rather than threatening it.",
+      },
+      {
+        heading: "Step 5 — Negotiate without giving away your position",
+        body: "Almost every Kenyan car buyer will negotiate, so price with a little room and decide your walk-away figure in advance. The mistake is negotiating against yourself — dropping the price again before the buyer has responded to your last number.\n\nIf a buyer's offer is too low, say what you will accept and let it sit. Silence is a normal part of the process. And be cautious of anyone who agrees to your full asking price instantly without seeing the car, then asks for an unusual payment or shipping arrangement.",
+      },
+      {
+        heading: "Step 6 — Take payment and transfer ownership",
+        body: "Do not release the car until payment has actually cleared in your account. A screenshot, an SMS or a pending transfer notification is not payment. For a sum of this size, arrange to complete the transaction at a bank where the payment can be confirmed on the spot.\n\nSign a simple sale agreement recording both parties' details, the vehicle registration, the price and the date, and keep a copy. Then complete the transfer through NTSA TIMS. Until the transfer is done, the car is still legally yours — which means any offence committed in it is still your problem. Do not let this step drift.",
+      },
+      {
+        heading: "When a broker is still the right call",
+        body: "Selling privately is not free — it costs you time, several evenings of viewings, and the patience to deal with people who never intended to buy. If you are relocating in two weeks, or you simply do not want the process, a broker or a dealer buying outright is a legitimate choice.\n\nThe point is to make it a decision rather than a default. Know roughly what your car is worth privately, then decide whether the convenience is worth the difference. For many sellers it is not, and the gap is a significant amount of money for a few weekends of effort.",
+      },
+    ],
+    faq: [
+      {
+        q: "Can I sell my car in Kenya without a broker?",
+        a: "Yes. You can list the car yourself, deal with buyers directly and complete the ownership transfer through NTSA TIMS. You keep the commission a broker would have taken, in exchange for handling viewings and paperwork yourself.",
+      },
+      {
+        q: "How much is my car worth in Kenya?",
+        a: "Compare current listings for the same make, model, year and grade, and place your car inside that range based on condition, accident history, service records and logbook status. Remember those are asking prices — final prices are usually somewhat lower.",
+      },
+      {
+        q: "What documents do I need to sell a car in Kenya?",
+        a: "The logbook in your name with no outstanding financing, your national ID and KRA PIN, an active NTSA TIMS account, and a signed sale agreement. At transfer you also need copies of the buyer's ID and KRA PIN. Confirm the current requirements on the NTSA TIMS portal.",
+      },
+      {
+        q: "How do I transfer car ownership in Kenya?",
+        a: "Ownership transfer is done through the NTSA TIMS portal. Both buyer and seller need active TIMS accounts linked to their KRA PINs. The seller initiates the transfer and the buyer accepts it. Until the transfer completes, the vehicle remains legally yours.",
+      },
+      {
+        q: "How do I avoid being scammed when selling my car?",
+        a: "Confirm payment has cleared in your account before handing over the car or keys, ideally completing the transaction at a bank. Meet in public during daylight, verify the buyer's ID before a test drive, and be wary of anyone offering full asking price sight-unseen or pushing an unusual payment arrangement.",
+      },
+      {
+        q: "Is it free to list my car on Shopi?",
+        a: "Yes. Listing a car on Shopi is free and Shopi takes no commission. Buyers message you directly, and you agree price, inspection, payment and transfer between yourselves.",
+      },
+    ],
+    relatedLinks: [
+      {
+        label: "NTSA — National Transport and Safety Authority",
+        url: "https://www.ntsa.go.ke",
+        description:
+          "The official source for vehicle ownership transfer, TIMS accounts and current fees in Kenya. Always confirm the process here before transferring.",
       },
     ],
   },

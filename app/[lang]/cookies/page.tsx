@@ -2,6 +2,7 @@ import Link from "next/link";
 import { LegalNav } from "@/components/legal/LegalNav";
 import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import { publicPageMetadata } from "@/lib/metadata";
+import { siteConfig } from "@/config/site";
 
 export async function generateMetadata({ params }: Props) {
   const { lang } = await params;
@@ -216,7 +217,10 @@ export default async function CookiesPage({ params }: Props) {
             <br />
             Nairobi, Kenya
             <br />
-            Email: <a href="mailto:privacy@shopi.co.ke">privacy@shopi.co.ke</a>
+            Email:{" "}
+            <a href={`mailto:${siteConfig.supportEmail}`}>
+              {siteConfig.supportEmail}
+            </a>
           </address>
         </LegalSection>
 

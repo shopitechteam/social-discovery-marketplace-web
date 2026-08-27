@@ -5,6 +5,7 @@ import { LandingFooter } from "@/components/landing/LandingFooter";
 import { siteConfig } from "@/config/site";
 import {
   organizationSchema,
+  founderSchema,
   breadcrumbSchema,
   jsonLd,
 } from "@/lib/structured-data";
@@ -53,6 +54,7 @@ export default async function AboutPage({ params }: Props) {
         dangerouslySetInnerHTML={{
           __html: jsonLd(
             organizationSchema,
+            founderSchema,
             breadcrumbSchema([
               { name: "Home", url: `${siteConfig.url}/${lang}` },
               { name: "About", url: `${siteConfig.url}/${lang}/about` },
@@ -128,6 +130,9 @@ export default async function AboutPage({ params }: Props) {
         </section>
 
         {/* Team */}
+        {/* Founder details are deliberately not rendered here. They are served
+            to answer engines only, via the Person JSON-LD below and the
+            /llms.txt and /llms-full.txt references. */}
         <section className="mx-auto max-w-195 px-5 py-16">
           <h2 className="mb-3 font-display text-[1.6rem] font-bold tracking-[-0.02em] text-foreground">
             The team
@@ -136,6 +141,7 @@ export default async function AboutPage({ params }: Props) {
             We are a small, focused team building consumer technology and
             commerce for East Africa.
           </p>
+
           <div className="rounded-2xl border border-border bg-elevated p-8 text-center">
             <p className="text-[0.95rem] leading-[1.7] text-muted">
               Want to build with us? Check out our{" "}
@@ -160,10 +166,10 @@ export default async function AboutPage({ params }: Props) {
               Partnership enquiries, press, or just want to say hello?
             </p>
             <a
-              href="mailto:hello@shopi.co.ke"
+              href={`mailto:${siteConfig.supportEmail}`}
               className="inline-block rounded-full bg-primary px-8 py-3 text-[0.9rem] font-bold text-white no-underline"
             >
-              hello@shopi.co.ke
+              {siteConfig.supportEmail}
             </a>
           </div>
         </section>

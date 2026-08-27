@@ -8,6 +8,7 @@ import {
   searchIntentPages,
   searchIntentPath,
 } from "@/lib/seo/search-intent-pages";
+import { sellCarPages, sellCarPath } from "@/lib/seo/sell-car-pages";
 
 /**
  * The app is served under /[lang]. Every public page exists per-locale, so each
@@ -218,6 +219,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   );
 
+  // Seller-intent car pages. Priority sits above the buyer pages because a
+  // seller converting creates supply, which is what makes the buyer pages
+  // worth ranking at all.
+  const sellCarEntries: MetadataRoute.Sitemap = sellCarPages.map((page) => {
+    const path = sellCarPath(page.slug);
+    return {
+      url: langs("en", path),
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.88,
+      alternates: alternates(path),
+    };
+  });
+
   const blogEntries: MetadataRoute.Sitemap = blogPosts.map((post) => ({
     url: langs("en", `/blog/${post.slug}`),
     lastModified: new Date(post.publishedAt),
@@ -243,6 +258,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...staticEntries,
     ...countyEntries,
     ...searchIntentEntries,
+    ...sellCarEntries,
     ...blogEntries,
     ...listingEntries,
   ];

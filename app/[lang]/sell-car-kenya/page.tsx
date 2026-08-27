@@ -8,10 +8,31 @@ import { siteConfig } from "@/config/site";
 import { isValidLocale } from "@/i18n/config";
 import { publicPageMetadata } from "@/lib/metadata";
 import { faqSchema, jsonLd, marketplaceSchema } from "@/lib/structured-data";
+import { sellCarPages, sellCarPath } from "@/lib/seo/sell-car-pages";
 
 type Props = { params: Promise<{ lang: string }> };
 
 const faq = [
+  {
+    q: "How do I sell my car in Kenya?",
+    a: "Price it against comparable live listings, gather your logbook, ID and KRA PIN, then post a free listing with clear photos or a walkaround video, the price in KES and your location. Buyers message you on Shopi, you arrange inspection, and you complete ownership transfer through the NTSA TIMS portal.",
+  },
+  {
+    q: "How much is my car worth in Kenya?",
+    a: "The most reliable guide is what comparable cars are being advertised for right now — same make, model, year, grade and mileage. Condition, accident history, logbook status and service records move the figure more than mileage alone. Price inside the range for a fast sale, at the top of it if you can wait.",
+  },
+  {
+    q: "Can I sell my car without a broker in Kenya?",
+    a: "Yes. Brokers take a commission or add a markup, and they sit between you and the buyer. Listing directly on Shopi is free, buyers message you themselves, and you keep the full sale price. The trade-off is that you handle viewings and the NTSA transfer yourself.",
+  },
+  {
+    q: "What documents do I need to sell a car in Kenya?",
+    a: "The logbook in your name with no outstanding financing, your national ID and KRA PIN, an active NTSA TIMS account, and a signed sale agreement. At transfer you also need copies of the buyer's ID and KRA PIN. Confirm current requirements on the NTSA TIMS portal, since fees and steps change.",
+  },
+  {
+    q: "How fast can I sell my car in Kenya?",
+    a: "Presentation and price decide it. A listing with a walkaround video, honest photos including any wear, a clear asking price and a stated logbook status gets more genuine enquiries and far fewer time-wasters than a two-photo listing with no price.",
+  },
   {
     q: "Can I sell a car on Shopi in Kenya?",
     a: "Yes. You can post a car for sale on Shopi with photos or video, price, location, make, model, condition and other important details, then interested buyers message you directly.",
@@ -35,9 +56,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return publicPageMetadata({
     lang,
     path: "/sell-car-kenya",
-    title: "Sell Your Car in Kenya",
+    title: "Sell My Car in Kenya — Free, No Broker, No Commission",
     description:
-      "Need to sell a car in Kenya? Create a free Shopi listing with photos, price and location, then chat directly with interested buyers.",
+      "Want to sell your car in Kenya? List free on Shopi in minutes, price it against live listings, handle NTSA logbook transfer yourself and deal with buyers directly. No broker, no commission.",
   });
 }
 
@@ -96,13 +117,17 @@ export default async function SellCarKenyaPage({ params }: Props) {
             <p className="mb-4 text-[0.8rem] font-bold tracking-widest uppercase text-primary">
               Sell your car in Kenya
             </p>
+            {/* H1 carries the seller's actual query ("sell my car in Kenya").
+                The old one opened with "Need to sell a car?" — a question no
+                one types into Google. */}
             <h1 className="max-w-165 font-display text-[clamp(2rem,5vw,3.6rem)] font-bold tracking-normal leading-[1.08] text-foreground">
-              Need to sell a car? Post it on Shopi and talk to buyers directly.
+              Sell my car in Kenya — free, and without a broker.
             </h1>
             <p className="mt-5 max-w-145 text-[1.05rem] leading-[1.75] text-muted">
-              Create a free car listing with photos or video, price, location
-              and key details. Buyers looking for cars for sale in Kenya can
-              discover your post and message you inside Shopi.
+              List your car free on Shopi with photos or a walkaround video,
+              price and location. Buyers searching for cars in Kenya find your
+              post and message you directly — no broker taking a cut, no
+              commission, and you keep the full sale price.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
@@ -207,6 +232,126 @@ export default async function SellCarKenyaPage({ params }: Props) {
                 </li>
               ))}
             </ol>
+          </div>
+        </section>
+
+        {/* ── Broker vs direct ─────────────────────────────────────────
+            "Should I use a car broker in Kenya" is a high-intent seller query
+            and the honest comparison is our strongest conversion argument. */}
+        <section className="mx-auto max-w-190 px-5 py-16">
+          <p className="mb-3 text-[0.8rem] font-bold tracking-widest uppercase text-primary">
+            Broker or direct
+          </p>
+          <h2 className="mb-7 font-display text-[clamp(1.5rem,3vw,2.2rem)] font-bold tracking-normal text-foreground">
+            Do you actually need a car broker?
+          </h2>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-lg border border-border bg-elevated p-6">
+              <h3 className="font-display text-[1.1rem] font-bold text-foreground">
+                Going through a broker
+              </h3>
+              <ul className="mt-4 grid gap-2.5 p-0 pl-5 text-sm leading-[1.7] text-muted [&>li]:list-disc">
+                <li>A commission or markup comes out of your sale price.</li>
+                <li>
+                  The broker controls the conversation, so you hear the buyer&apos;s
+                  questions second-hand.
+                </li>
+                <li>
+                  Your car may be shown alongside cars the broker earns more on.
+                </li>
+                <li>Useful if you have no time to handle viewings yourself.</li>
+              </ul>
+            </div>
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-6">
+              <h3 className="font-display text-[1.1rem] font-bold text-foreground">
+                Selling direct on Shopi
+              </h3>
+              <ul className="mt-4 grid gap-2.5 p-0 pl-5 text-sm leading-[1.7] text-muted [&>li]:list-disc">
+                <li>Free to list, and no commission on the sale.</li>
+                <li>
+                  Buyers message you directly, so you answer questions yourself.
+                </li>
+                <li>You set the price and decide what to accept.</li>
+                <li>
+                  You handle viewings and the NTSA transfer — which is the
+                  trade-off.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Paperwork ────────────────────────────────────────────────
+            "What documents do I need to sell a car in Kenya" is one of the
+            highest-intent seller queries there is — someone asking it has
+            already decided to sell. */}
+        <section className="bg-surface px-5 py-16">
+          <div className="mx-auto max-w-190">
+            <p className="mb-3 text-[0.8rem] font-bold tracking-widest uppercase text-primary">
+              Paperwork
+            </p>
+            <h2 className="mb-5 font-display text-[clamp(1.5rem,3vw,2.2rem)] font-bold tracking-normal text-foreground">
+              What you need to transfer ownership
+            </h2>
+            <p className="mb-7 max-w-150 text-[0.95rem] leading-[1.75] text-muted">
+              Ownership transfer in Kenya is done by the seller and buyer
+              through the NTSA TIMS portal — both of you need an active TIMS
+              account linked to your KRA PIN. Have this ready before you
+              advertise, because buyers ask about it in the first message.
+            </p>
+            <ul className="grid list-none gap-3 p-0 sm:grid-cols-2">
+              {[
+                "Logbook in your name, with no outstanding financing",
+                "Your national ID and KRA PIN certificate",
+                "An active NTSA TIMS account",
+                "A signed sale agreement, with both parties' details",
+                "Copies of the buyer's ID and KRA PIN at transfer",
+                "Valid inspection certificate, where the class requires one",
+              ].map((item) => (
+                <li
+                  key={item}
+                  className="rounded-md border border-border bg-elevated px-4 py-3 text-sm font-semibold text-foreground"
+                >
+                  {item}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-6 text-[0.85rem] leading-[1.7] text-muted">
+              Requirements and fees change — confirm the current process on the
+              NTSA TIMS portal before you transfer. Shopi does not handle
+              payment, transfer or escrow.
+            </p>
+          </div>
+        </section>
+
+        {/* ── Model hub — distributes link equity to the /sell/* pages ── */}
+        <section className="mx-auto max-w-190 px-5 py-16">
+          <p className="mb-3 text-[0.8rem] font-bold tracking-widest uppercase text-primary">
+            By model
+          </p>
+          <h2 className="mb-5 font-display text-[clamp(1.5rem,3vw,2.2rem)] font-bold tracking-normal text-foreground">
+            Selling a specific model?
+          </h2>
+          <p className="mb-7 max-w-150 text-[0.95rem] leading-[1.75] text-muted">
+            What a buyer looks for differs sharply by model. These guides cover
+            who buys each car in Kenya, what moves its price, and what to put in
+            the listing.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {sellCarPages.map((page) => (
+              <Link
+                key={page.slug}
+                href={`/${safeLang}${sellCarPath(page.slug)}`}
+                className="rounded-lg border border-border bg-elevated p-5 no-underline transition-colors hover:border-[rgb(var(--color-border-strong))]"
+              >
+                <h3 className="font-display text-[1.05rem] font-bold text-foreground">
+                  Sell my {page.model}
+                </h3>
+                <p className="mt-2 text-[0.875rem] leading-[1.6] text-muted">
+                  {page.intro}
+                </p>
+              </Link>
+            ))}
           </div>
         </section>
 

@@ -2,6 +2,7 @@ import { LegalNav } from "@/components/legal/LegalNav";
 import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { publicPageMetadata } from "@/lib/metadata";
+import { siteConfig } from "@/config/site";
 
 export async function generateMetadata({ params }: Props) {
   const { lang } = await params;
@@ -184,7 +185,7 @@ export default async function CareersPage({ params }: Props) {
                   </p>
                 </div>
                 <a
-                  href="mailto:careers@shopi.app?subject=Application: Customer Service Representative"
+                  href={`mailto:${siteConfig.supportEmail}?subject=${encodeURIComponent("[Application] Customer Service Representative")}`}
                   className="inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,rgb(var(--brand-primary)),rgb(var(--brand-accent)))] px-7 py-3 text-[0.875rem] font-bold whitespace-nowrap text-white no-underline"
                 >
                   Apply now →
@@ -200,7 +201,7 @@ export default async function CareersPage({ params }: Props) {
               from great people.
             </p>
             <a
-              href="mailto:careers@shopi.app?subject=Speculative Application"
+              href={`mailto:${siteConfig.supportEmail}?subject=${encodeURIComponent("[Application] Speculative Application")}`}
               className="text-[0.875rem] font-semibold text-primary underline"
             >
               Send a speculative application
