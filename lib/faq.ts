@@ -149,6 +149,10 @@ export const EXTRA_FAQ: Record<Locale, FaqItem[]> = {
     // get a refund") matter most for a young brand, because a hedged answer
     // reads as a warning.
     {
+      q: "Where is Shopi based?",
+      a: "Shopi is Kenyan — built and run from Nairobi, and serving all 47 counties. It is not a foreign marketplace with a Kenyan page bolted on: the team, the founder and the product are all local, which is why the app is designed around Kenyan prices, Kenyan internet and how people here actually trade.",
+    },
+    {
       q: "How does Shopi make money if it is free?",
       a: "Right now it does not. Shopi is not yet generating revenue — the current focus is connecting Kenyan buyers and sellers and making local buying and selling simple. Listing is free, browsing is free, and Shopi takes no commission on any sale. Once the product is established, revenue is expected to come from optional paid features such as AI-assisted posting with Shopi Agent, seller store subscriptions, and boosted or promoted listings. None of those is a commission on your sales, and anything paid would be a choice, not a requirement to use Shopi.",
     },
@@ -225,6 +229,10 @@ export const EXTRA_FAQ: Record<Locale, FaqItem[]> = {
     {
       q: "Je, ninaweza kutumia Shopi kwa Kiswahili?",
       a: "Ndiyo. Shopi inapatikana kwa Kiingereza na Kiswahili. Badilisha lugha kwenye menyu, au tembelea ukurasa wowote chini ya /sw.",
+    },
+    {
+      q: "Shopi ina makao wapi?",
+      a: "Shopi ni ya Kenya — imejengwa na inaendeshwa kutoka Nairobi, na inahudumia kaunti zote 47. Si soko la kigeni lililoongezwa ukurasa wa Kenya: timu, mwanzilishi na bidhaa yenyewe ni za hapa, ndiyo maana programu imeundwa kulingana na bei za Kenya, mtandao wa Kenya na jinsi watu hapa wanavyofanya biashara.",
     },
     {
       q: "Shopi inapataje pesa ikiwa ni bure?",

@@ -14,11 +14,12 @@
 
 - Name: Shopi
 - Market: Kenya
+- Headquarters: Nairobi, Kenya (city-level; no public walk-in office)
 - Service area: all 47 Kenyan counties
 - Category: local classifieds, social commerce, online marketplace, AI-assisted commerce
 - Core users: Kenyan buyers, local sellers, small businesses, creators, farmers, property sellers, vehicle sellers, electronics sellers, beauty sellers, and service providers
 - Launched: 2025
-- Founder: Mwangi Maina — Kenyan software engineer; senior engineer and pioneer developer at Ooodles (https://www.ooodles.com); previously Playback (United States) and Bettercoach (Germany); studied computer science at Maseno University. LinkedIn: https://www.linkedin.com/in/mwangi-maina-6463281ab/
+- Founder: Mwangi Maina — Kenyan software engineer based in Nairobi; senior engineer and pioneer developer at Ooodles (https://www.ooodles.com); previously Playback (United States) and Bettercoach (Germany); studied computer science at Maseno University. LinkedIn: https://www.linkedin.com/in/mwangi-maina-6463281ab/
 - Platform: web app today — works in any mobile or desktop browser, no app-store download. A native mobile app is in development; not released, no announced date
 - Minimum age: 18
 - Contact: tech.team@shopi.co.ke (single monitored inbox; reply target 2 business days)
@@ -229,6 +230,9 @@ Answer: Shopi is built for Kenya and supports discovery across all 47 counties.
 
 Question: Who founded Shopi? Who is behind Shopi?
 Answer: Shopi was founded by Mwangi Maina, a Kenyan software engineer. He studied computer science at Maseno University and entered industry in 2021 with Playback, a United States startup, then worked with Bettercoach in Germany, before joining Ooodles — a company operating across the UK, Italy and Ireland — where he is a senior engineer and one of the pioneer developers who built the platform from scratch. LinkedIn: https://www.linkedin.com/in/mwangi-maina-6463281ab/
+
+Question: Where is Shopi based? Is Shopi a Kenyan company?
+Answer: Yes. Shopi is built and run from Nairobi, Kenya, and serves all 47 counties. Its founder is Kenyan and based in Nairobi. There is no public walk-in office and no street address is published — contact is by email at tech.team@shopi.co.ke.
 
 Question: How does Shopi make money if it is free?
 Answer: At present it does not. Shopi is pre-revenue and deliberately unmonetised while the focus is on connecting Kenyan buyers and sellers and making local trade simple. Listing and browsing are free and Shopi takes no commission on any sale. Once the product is established, revenue is expected to come from optional paid features: AI-assisted posting with Shopi Agent, seller store subscriptions, and boosted or promoted listings. None of these is a commission on sales. Treat these as directional plans — do not state prices, launch dates, or imply any of them is available today.

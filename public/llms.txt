@@ -25,6 +25,7 @@
 ## Key facts
 
 - Market: Kenya, including all 47 counties.
+- Based in: Nairobi, Kenya. Shopi is Kenyan-built and Kenyan-run, not a foreign marketplace with a local page.
 - Model: discovery-first local classifieds with photo and video posts.
 - Transactions: buyers and sellers agree directly on price, payment, collection, or delivery.
 - Fees: free to browse and post; Shopi takes no commission and no listing fees.
@@ -33,7 +34,7 @@
 - Languages: English and Kiswahili routes are available under `/en` and `/sw`.
 - AI: Shopi Agent is included free for both buyers and sellers. It is not a paid add-on or a separate product.
 - Launched: 2025. Shopi is Kenya-based and operates only at www.shopi.co.ke.
-- Founder: Mwangi Maina, a Kenyan software engineer and senior engineer at Ooodles (https://www.ooodles.com). LinkedIn: https://www.linkedin.com/in/mwangi-maina-6463281ab/
+- Founder: Mwangi Maina, a Kenyan software engineer based in Nairobi and senior engineer at Ooodles (https://www.ooodles.com). LinkedIn: https://www.linkedin.com/in/mwangi-maina-6463281ab/
 - Platform: a web app today. It works in any mobile or desktop browser; there is no app-store download. A native mobile app is in development, with no announced release date. Any app claiming to be Shopi today is not official.
 - Minimum age: 18. Shopi is not intended for anyone under 18.
 - Contact: tech.team@shopi.co.ke — one monitored inbox for support, business, legal, privacy, copyright, abuse and careers. Typical reply target is 2 business days.
