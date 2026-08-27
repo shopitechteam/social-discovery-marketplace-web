@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 export function CreateDrawer({ lang }: { lang: string }) {
   const router = useRouter();
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const imageCameraInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -110,6 +111,10 @@ export function CreateDrawer({ lang }: { lang: string }) {
     imageInputRef.current?.click();
   }
 
+  function handleCameraClick() {
+    imageCameraInputRef.current?.click();
+  }
+
   const hasDraft = Boolean(draftId && step !== "pick");
 
   return (
@@ -177,6 +182,17 @@ export function CreateDrawer({ lang }: { lang: string }) {
               <span className="text-md font-medium">Photos</span>
             </Button>
 
+            <div className="h-px bg-border" />
+
+            {/* Camera option */}
+            <Button
+              variant="ghost"
+              onClick={handleCameraClick}
+              className="w-full h-14 rounded-none active:bg-surface transition-colors"
+            >
+              <span className="text-md font-medium">Camera</span>
+            </Button>
+
             {SHOW_TIKTOK_CREATE_OPTIONS && (
               <>
                 <div className="h-px bg-border" />
@@ -222,6 +238,14 @@ export function CreateDrawer({ lang }: { lang: string }) {
         type="file"
         accept="image/*"
         multiple
+        className="hidden"
+        onChange={(e) => e.target.files && handleFiles(e.target.files, "image")}
+      />
+      <input
+        ref={imageCameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
         className="hidden"
         onChange={(e) => e.target.files && handleFiles(e.target.files, "image")}
       />

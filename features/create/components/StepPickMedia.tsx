@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@apollo/client/react";
+import { Camera } from "lucide-react";
 import { useCreateStore } from "@/stores/create";
 import { useMediaUpload } from "@/features/create/hooks/useMediaUpload";
 import { SHOW_TIKTOK_CREATE_OPTIONS } from "@/features/create/utils/tiktokAvailability";
@@ -14,6 +15,7 @@ export function StepPickMedia() {
 
   const router = useRouter();
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const imageCameraInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const [creating, setCreating] = useState(false);
 
@@ -94,6 +96,7 @@ export function StepPickMedia() {
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </button>
+
         <h1
           className="font-semibold"
           style={{
@@ -213,6 +216,32 @@ export function StepPickMedia() {
           />
         </button>
 
+        {/* Camera */}
+        <button
+          className="relative overflow-hidden rounded-2xl active:scale-[0.98] transition-transform"
+          style={{
+            height: 72,
+            backgroundColor: "rgb(var(--color-bg-subtle))",
+            border: "1px solid rgb(var(--color-border))",
+            opacity: creating ? 0.6 : 1,
+          }}
+          onClick={() => imageCameraInputRef.current?.click()}
+          disabled={creating}
+        >
+          <div className="absolute inset-0 flex items-center justify-center gap-3">
+            <Camera size={24} style={{ color: "rgb(var(--color-text))" }} />
+            <span
+              className="font-semibold"
+              style={{
+                fontSize: "var(--text-md)",
+                color: "rgb(var(--color-text))",
+              }}
+            >
+              Take photo
+            </span>
+          </div>
+        </button>
+
         {SHOW_TIKTOK_CREATE_OPTIONS && (
           <div
             className="rounded-2xl px-4 py-3 flex items-center gap-3"
@@ -294,6 +323,14 @@ export function StepPickMedia() {
         type="file"
         accept="image/*"
         multiple
+        className="hidden"
+        onChange={(e) => e.target.files && handleFiles(e.target.files, "image")}
+      />
+      <input
+        ref={imageCameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
         className="hidden"
         onChange={(e) => e.target.files && handleFiles(e.target.files, "image")}
       />
