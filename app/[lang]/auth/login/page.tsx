@@ -26,7 +26,7 @@ export default async function LoginPage({
 
   const SocialTop = (
     <div className="mb-5 flex flex-col gap-4">
-      <SocialButtons lang={lang} from={from} verb="Sign in" />
+      <SocialButtons lang={lang} from={from} verb="Sign in" surface="login" />
       <Divider label="or use email" />
     </div>
   );

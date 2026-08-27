@@ -160,10 +160,10 @@ export default async function AboutPage({ params }: Props) {
               Partnership enquiries, press, or just want to say hello?
             </p>
             <a
-              href="mailto:hello@shopi.co.ke"
+              href={`mailto:${siteConfig.supportEmail}`}
               className="inline-block rounded-full bg-primary px-8 py-3 text-[0.9rem] font-bold text-white no-underline"
             >
-              hello@shopi.co.ke
+              {siteConfig.supportEmail}
             </a>
           </div>
         </section>

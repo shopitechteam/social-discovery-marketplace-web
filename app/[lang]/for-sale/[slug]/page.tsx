@@ -23,6 +23,7 @@ import {
   searchIntentPages,
   searchIntentPath,
 } from "@/lib/seo/search-intent-pages";
+import { getSellCarPage, sellCarPath } from "@/lib/seo/sell-car-pages";
 
 type Props = { params: Promise<{ lang: string; slug: string }> };
 type SearchIntentPageData = NonNullable<
@@ -98,6 +99,8 @@ export default async function SearchIntentLandingPage({ params }: Props) {
   const path = searchIntentPath(page.slug);
   const pageUrl = `${siteConfig.url}/${safeLang}${path}`;
   const listings = await fetchRecentListings(12, undefined, page.query);
+  // Non-null only for models that have a seller-intent counterpart page.
+  const sellPage = getSellCarPage(page.slug);
   const relatedPages = page.related
     .map((relatedSlug) => getSearchIntentPage(relatedSlug))
     .filter((related): related is SearchIntentPageData => Boolean(related));
@@ -285,6 +288,31 @@ export default async function SearchIntentLandingPage({ params }: Props) {
             )}
           </div>
         </section>
+
+        {/* A large share of people researching "<model> for sale" are owners
+            checking what theirs is worth before selling. Give them the route
+            to the seller guide instead of letting them bounce. */}
+        {sellPage && (
+          <section className="mx-auto max-w-190 px-5 pb-4">
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-6 md:flex md:items-center md:justify-between md:gap-6">
+              <div>
+                <h2 className="font-display text-[1.15rem] font-bold text-foreground">
+                  Own a {sellPage.model} and thinking of selling?
+                </h2>
+                <p className="mt-2 max-w-140 text-[0.9rem] leading-[1.7] text-muted">
+                  See what other owners are asking, what moves the price, and
+                  how to list yours free — no broker, no commission.
+                </p>
+              </div>
+              <Link
+                href={`/${safeLang}${sellCarPath(sellPage.slug)}`}
+                className="mt-4 inline-block shrink-0 rounded-full bg-primary px-6 py-3 text-sm font-bold text-white no-underline md:mt-0"
+              >
+                Sell my {sellPage.model}
+              </Link>
+            </div>
+          </section>
+        )}
 
         <section className="bg-surface px-5 py-16">
           <div className="mx-auto max-w-170">

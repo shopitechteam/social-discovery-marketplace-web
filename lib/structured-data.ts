@@ -9,7 +9,7 @@ import { siteConfig } from "@/config/site";
  * - FAQPage: makes visible Q&A machine-readable for search and answer engines.
  */
 
-const { url, name } = siteConfig;
+const { url, name, supportEmail } = siteConfig;
 const marketplaceTopics = [
   "Kenya classifieds",
   "social commerce in Kenya",
@@ -49,11 +49,38 @@ export const organizationSchema = {
   contactPoint: {
     "@type": "ContactPoint",
     contactType: "customer support",
+    email: supportEmail,
     url: `${url}/en/contact`,
     areaServed: "KE",
     availableLanguage: ["English", "Kiswahili"],
   },
 };
+
+/**
+ * ContactPage schema for /[lang]/contact. Lets answer engines quote a real
+ * address when asked "how do I contact Shopi?" instead of guessing one.
+ */
+export function contactPageSchema(lang: string) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ContactPage",
+    "@id": `${url}/${lang}/contact#page`,
+    url: `${url}/${lang}/contact`,
+    name: `Contact ${name}`,
+    description: `Reach ${name} for support, business, legal, privacy, copyright, and abuse-report enquiries in Kenya.`,
+    inLanguage: lang === "sw" ? "sw-KE" : "en-KE",
+    isPartOf: { "@id": `${url}/#website` },
+    about: { "@id": `${url}/#organization` },
+    mainEntity: {
+      "@type": "Organization",
+      "@id": `${url}/#organization`,
+      name,
+      email: supportEmail,
+      url,
+      areaServed: { "@type": "Country", name: "Kenya" },
+    },
+  };
+}
 
 export const websiteSchema = {
   "@context": "https://schema.org",

@@ -9,10 +9,17 @@ interface Props {
   from?: string;
   /** Label prefix: "Continue" (default) or "Sign in" or "Sign up" */
   verb?: string;
+  /** Which auth screen this is, for signup-source analytics. */
+  surface?: "register" | "welcome" | "login";
 }
 
-export function SocialButtons({ lang, from, verb = "Continue" }: Props) {
-  const { renderGoogleButton, loading } = useOAuthMutation(lang, from);
+export function SocialButtons({
+  lang,
+  from,
+  verb = "Continue",
+  surface = "welcome",
+}: Props) {
+  const { renderGoogleButton, loading } = useOAuthMutation(lang, from, surface);
   const [error, setError] = useState<string | null>(null);
   const [googleReady, setGoogleReady] = useState(false);
   const googleButtonRef = useRef<HTMLDivElement>(null);

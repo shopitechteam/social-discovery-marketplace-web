@@ -33,17 +33,22 @@ const HOME_META: Record<
   Locale,
   { title: string; description: string; ogLocale: string }
 > = {
-  // Titles lead with the commercial intent ("sell online in Kenya") rather than
-  // the brand positioning — the brand term already ranks unaided, so the title
-  // is spent on the query people actually type.
+  // Titles lead with commercial intent, not brand positioning — the brand term
+  // already ranks unaided, so the title is spent on the query people type.
+  //
+  // The home page owns the two-sided "buy and sell" cluster; the seller-intent
+  // "sell online in Kenya" cluster belongs to /sell-in-kenya. Both pages used to
+  // carry "Sell Online in Kenya", which made them compete for one query while
+  // neither fully covered "buy and sell online", where Search Console shows
+  // real impressions and almost no clicks.
   en: {
-    title: `${siteConfig.name} — Sell Online in Kenya | Buy & Sell Locally`,
+    title: `${siteConfig.name} — Buy and Sell Online in Kenya | Free Marketplace`,
     description:
-      "Sell online in Kenya for free with Shopi. Use Shopi Agent to create listings with AI, discover local buyers, and connect directly with buyers and sellers. Zero commission.",
+      "Buy and sell online in Kenya for free on Shopi. Post anything in minutes with Shopi Agent, discover local buyers and sellers near you, and message them directly. Zero commission.",
     ogLocale: "en_KE",
   },
   sw: {
-    title: `${siteConfig.name} — Uza Mtandaoni Kenya | Nunua na Uuze Karibu Nawe`,
+    title: `${siteConfig.name} — Nunua na Uuze Mtandaoni Kenya | Soko Bure`,
     description:
       "Uza mtandaoni Kenya bure ukitumia Shopi. Tumia Shopi Agent kuunda matangazo kwa AI, pata wanunuzi wa karibu, na wasiliana moja kwa moja na wanunuzi na wauzaji. Hakuna commission.",
     ogLocale: "sw_KE",
