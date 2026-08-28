@@ -12,7 +12,21 @@ import type { Locale } from "@/i18n/config";
 import { ShopiLogo } from "@/features/auth/components/AuthIcons";
 import { Menu, Moon, Sun, X } from "lucide-react";
 
-const NAV_HREFS = ["#features", "#how-it-works", "#creators"] as const;
+/**
+ * A nav entry is either an in-page section ("section", scroll-spied and
+ * smooth-scrolled) or a real route ("route", a plain <Link>).
+ *
+ * The nav used to be three section anchors. Sitelinks — the vertical list of
+ * sub-pages Google can show under the brand result — are built from prominent
+ * internal links to *distinct pages*, so a nav made only of hashes gave it
+ * nothing to choose from. Routes here are the highest-prominence internal
+ * links on the site; the footer covers the long tail.
+ */
+type NavLink = { label: string; href: string; kind: "section" | "route" };
+
+/** Section ids the nav scroll-spies. Kept module-level so the observer effect
+ *  doesn't depend on the per-render NAV_LINKS array. */
+const SECTION_IDS = ["how-it-works"];
 
 export function LandingNav({
   dict,
@@ -21,11 +35,6 @@ export function LandingNav({
   dict?: Dictionary;
   lang?: Locale;
 }) {
-  const NAV_LINKS = [
-    { label: dict?.nav.features ?? "Features", href: "#features" },
-    { label: dict?.nav.howItWorks ?? "How It Works", href: "#how-it-works" },
-    { label: dict?.nav.creators ?? "Sell on Shopi", href: "#creators" },
-  ];
   const { resolvedTheme, toggleTheme } = useThemeStore();
   const { isAuthenticated, user } = useAuthSession();
   const [scrolled, setScrolled] = useState(false);
@@ -35,13 +44,33 @@ export function LandingNav({
   const homeBase = `/${lang}`;
   const sectionHref = (hash: string) => `${homeBase}/${hash}`;
 
+  // Three indexable destinations + one in-page section.
+  //
+  // Shopi Agent points at /shopi-agent rather than straight at /upload: that
+  // page's own CTA continues into the post flow, so the funnel is unchanged,
+  // but unlike /upload (robots-disallowed) it can actually be indexed and
+  // surfaced as a sitelink. Signing up is deliberately absent — /auth/ is
+  // robots-disallowed, and the Sign in link and "Start selling" CTA to its
+  // right already cover it.
+  const NAV_LINKS: NavLink[] = [
+    { label: "Feed", href: `${homeBase}/feed`, kind: "route" },
+    { label: "Shopi Agent", href: `${homeBase}/shopi-agent`, kind: "route" },
+    { label: "Sell in Kenya", href: `${homeBase}/sell-in-kenya`, kind: "route" },
+    {
+      label: dict?.nav.howItWorks ?? "How It Works",
+      href: "#how-it-works",
+      kind: "section",
+    },
+  ];
+
   useEffect(() => {
     void setHydrated(true);
 
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", onScroll, { passive: true });
 
-    const sectionIds = NAV_HREFS.map((h) => h.replace("#", ""));
+    // Only in-page sections get scroll-spied; route links are never "active".
+    const sectionIds = SECTION_IDS;
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
@@ -110,18 +139,24 @@ export function LandingNav({
 
             {/* Desktop nav links */}
             <div className="hidden items-center gap-7 text-sm font-medium text-muted md:flex">
-              {NAV_LINKS.map(({ label, href }) => {
-                const isActive = activeHash === href;
-                return (
+              {NAV_LINKS.map(({ label, href, kind }) => {
+                const isActive = kind === "section" && activeHash === href;
+                const className = `whitespace-nowrap transition-colors duration-150 hover:text-foreground ${
+                  isActive
+                    ? "font-bold text-foreground underline decoration-2 underline-offset-8"
+                    : "text-muted no-underline"
+                }`;
+
+                return kind === "route" ? (
+                  <Link key={label} href={href} className={className}>
+                    {label}
+                  </Link>
+                ) : (
                   <a
                     key={label}
                     href={sectionHref(href)}
                     onClick={(e) => handleHashLink(e, href)}
-                    className={`whitespace-nowrap transition-colors duration-150 hover:text-foreground ${
-                      isActive
-                        ? "font-bold text-foreground underline decoration-2 underline-offset-8"
-                        : "text-muted no-underline"
-                    }`}
+                    className={className}
                   >
                     {label}
                   </a>
@@ -214,20 +249,33 @@ export function LandingNav({
       {/* Mobile menu overlay */}
       {menuOpen && (
         <div className="fixed top-19 right-0 bottom-0 left-0 z-49 flex flex-col overflow-y-auto bg-[rgb(var(--color-bg)/0.97)] px-(--landing-page-x) py-5 backdrop-blur-[18px]">
-          {NAV_LINKS.map(({ label, href }) => (
-            <a
-              key={label}
-              href={sectionHref(href)}
-              onClick={(e) => handleHashLink(e, href)}
-              className={`border-b border-border py-[0.65rem] text-[0.85rem] text-foreground ${
-                activeHash === href
-                  ? "font-bold underline decoration-2 underline-offset-4"
-                  : "font-semibold no-underline"
-              }`}
-            >
-              {label}
-            </a>
-          ))}
+          {NAV_LINKS.map(({ label, href, kind }) => {
+            const className = `border-b border-border py-[0.65rem] text-[0.85rem] text-foreground ${
+              kind === "section" && activeHash === href
+                ? "font-bold underline decoration-2 underline-offset-4"
+                : "font-semibold no-underline"
+            }`;
+
+            return kind === "route" ? (
+              <Link
+                key={label}
+                href={href}
+                onClick={() => setMenuOpen(false)}
+                className={className}
+              >
+                {label}
+              </Link>
+            ) : (
+              <a
+                key={label}
+                href={sectionHref(href)}
+                onClick={(e) => handleHashLink(e, href)}
+                className={className}
+              >
+                {label}
+              </a>
+            );
+          })}
 
           {isAuthenticated && (
             <Link
