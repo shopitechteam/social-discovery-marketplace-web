@@ -290,14 +290,42 @@ export function productSchema(input: {
   category?: string | null;
   specs?: { key?: string | null; value?: string | null }[];
   createdAt?: string | null;
+  updatedAt?: string | null;
 }) {
   // A free item is still an offer — the previous `> 0` test dropped the Offer
   // entirely for them, leaving a Product with no price signal at all.
   const hasPrice = typeof input.price === "number" && input.price >= 0;
 
-  // Marketplace listings are overwhelmingly second-hand and Google treats a
-  // missing itemCondition as "new", which misrepresents most of the inventory.
-  const condition = "https://schema.org/UsedCondition";
+  const normalizedSpecs = new Map(
+    (input.specs ?? [])
+      .filter((spec) => spec.key?.trim() && spec.value?.trim())
+      .map((spec) => [spec.key!.trim().toLowerCase(), spec.value!.trim()]),
+  );
+  const spec = (...keys: string[]) => {
+    for (const key of keys) {
+      const value = normalizedSpecs.get(key.toLowerCase());
+      if (value) return value;
+    }
+    return undefined;
+  };
+  const conditionLabel = spec("condition", "item condition");
+  const normalizedCondition = conditionLabel?.toLowerCase() ?? "";
+  const condition = normalizedCondition
+    ? normalizedCondition.includes("refurb") ||
+      normalizedCondition.includes("recondition")
+      ? "https://schema.org/RefurbishedCondition"
+      : normalizedCondition.includes("damag") ||
+          normalizedCondition.includes("for parts")
+        ? "https://schema.org/DamagedCondition"
+        : normalizedCondition.includes("used") ||
+            normalizedCondition.includes("pre-owned") ||
+            normalizedCondition.includes("second hand")
+          ? "https://schema.org/UsedCondition"
+          : normalizedCondition.includes("new") ||
+              normalizedCondition.includes("sealed")
+            ? "https://schema.org/NewCondition"
+            : undefined
+    : undefined;
 
   // Google warns on offers with no priceValidUntil. Listings have no natural
   // expiry, so declare the revalidation horizon we actually honour: a year.
@@ -312,7 +340,7 @@ export function productSchema(input: {
         priceCurrency: input.currency || "KES",
         price: String(input.price),
         availability: "https://schema.org/InStock",
-        itemCondition: condition,
+        ...(condition ? { itemCondition: condition } : {}),
         priceValidUntil,
         ...(input.createdAt ? { validFrom: input.createdAt } : {}),
         ...(input.sellerName
@@ -334,6 +362,25 @@ export function productSchema(input: {
         ...(input.locationName
           ? {
               areaServed: { "@type": "Place", name: input.locationName },
+              availableAtOrFrom: {
+                "@type": "Place",
+                name: input.locationName,
+                address: {
+                  "@type": "PostalAddress",
+                  addressCountry: "KE",
+                },
+              },
+            }
+          : {}),
+        ...(input.negotiable
+          ? {
+              priceSpecification: {
+                "@type": "UnitPriceSpecification",
+                price: String(input.price),
+                priceCurrency: input.currency || "KES",
+                description:
+                  "Seller states that the asking price is negotiable.",
+              },
             }
           : {}),
       }
@@ -349,6 +396,20 @@ export function productSchema(input: {
     ...(input.description ? { description: input.description } : {}),
     ...(input.images.length ? { image: input.images } : {}),
     ...(input.category ? { category: input.category } : {}),
+    ...(spec("brand", "make", "manufacturer")
+      ? {
+          brand: {
+            "@type": "Brand",
+            name: spec("brand", "make", "manufacturer"),
+          },
+        }
+      : {}),
+    ...(spec("model") ? { model: spec("model") } : {}),
+    ...(spec("colour", "color") ? { color: spec("colour", "color") } : {}),
+    ...(spec("material") ? { material: spec("material") } : {}),
+    ...(spec("size", "dimensions") ? { size: spec("size", "dimensions") } : {}),
+    ...(spec("mpn") ? { mpn: spec("mpn") } : {}),
+    ...(spec("gtin", "barcode") ? { gtin: spec("gtin", "barcode") } : {}),
     keywords: [
       input.title,
       input.category,
@@ -372,6 +433,29 @@ export function productSchema(input: {
       : {}),
     ...(offer ? { offers: offer } : {}),
     isRelatedTo: { "@id": `${url}/#app` },
+  };
+}
+
+export function productWebPageSchema(input: {
+  url: string;
+  name: string;
+  description: string;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemPage",
+    "@id": `${input.url}#webpage`,
+    url: input.url,
+    name: input.name,
+    description: input.description,
+    inLanguage: "en-KE",
+    isPartOf: { "@id": `${url}/#website` },
+    mainEntity: { "@id": `${input.url}#product` },
+    publisher: { "@id": `${url}/#organization` },
+    ...(input.createdAt ? { datePublished: input.createdAt } : {}),
+    ...(input.updatedAt ? { dateModified: input.updatedAt } : {}),
   };
 }
 
@@ -502,7 +586,6 @@ export function profilePageSchema(input: {
       ...(input.avatar ? { image: input.avatar } : {}),
       ...(sameAs.length ? { sameAs } : {}),
       url: input.url,
-      memberOf: { "@id": `${url}/#organization` },
       ...(typeof input.followerCount === "number" ||
       typeof input.postCount === "number"
         ? {

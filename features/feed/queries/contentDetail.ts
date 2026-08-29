@@ -39,6 +39,7 @@ export const ContentDetailDocument = gql`
       allowDownload
       hdEnabled
       createdAt
+      updatedAt
       creator {
         id
         username

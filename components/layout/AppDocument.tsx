@@ -71,6 +71,18 @@ export function AppDocument({
         href="/llms-full.txt"
         title="LLM reference (full)"
       />
+      <link
+        rel="alternate"
+        type="text/markdown"
+        href="/catalog.md"
+        title="Current Shopi marketplace catalog"
+      />
+      <link
+        rel="alternate"
+        type="application/json"
+        href="/catalog.json"
+        title="Current Shopi marketplace catalog (JSON)"
+      />
       {gtmId && <GoogleTagManager gtmId={gtmId} />}
       <body className="min-h-full flex flex-col bg-app text-default">
         <script

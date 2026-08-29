@@ -5,7 +5,12 @@ import { ContentDetailDocument } from "@/features/feed/queries/contentDetail";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { siteConfig } from "@/config/site";
 import { permanentRedirect } from "next/navigation";
-import { productSchema, breadcrumbSchema, jsonLd } from "@/lib/structured-data";
+import {
+  productSchema,
+  productWebPageSchema,
+  breadcrumbSchema,
+  jsonLd,
+} from "@/lib/structured-data";
 import { contentPath } from "@/lib/content-url";
 import { localeAlternates } from "@/lib/metadata";
 
@@ -18,6 +23,7 @@ export const revalidate = 3600;
 // ── Server-side fetch + SEO field derivation ────────────────────────────────
 
 type Post = ContentCardFieldsFragment & {
+  updatedAt?: string | null;
   categoryId?: string | null;
   category?: { id: string; name: string; slug: string } | null;
   specs?: { key: string; value: string }[];
@@ -64,20 +70,19 @@ function locationName(post: Post): string | null {
   );
 }
 
-/** Best available image URL for sharing (large variant → imageUrl → mux thumb). */
-function primaryImage(post: Post): string | null {
-  const m = [...(post.media ?? [])].sort(
-    (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
-  )[0];
-  if (!m) return null;
-  return (
-    m.r2Variants?.find((v) => v.variant === "large")?.url ??
-    m.r2Variants?.[0]?.url ??
-    m.imageUrl ??
-    m.muxMeta?.thumbnailUrl ??
-    m.thumbnailUrl ??
-    null
-  );
+function listingImages(post: Post): string[] {
+  return [...(post.media ?? [])]
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+    .flatMap((media) => [
+      media.r2Variants?.find((variant) => variant.variant === "large")?.url,
+      media.r2Variants?.[0]?.url,
+      media.imageUrl,
+      media.muxMeta?.thumbnailUrl,
+      media.thumbnailUrl,
+    ])
+    .filter((image): image is string => Boolean(image?.trim()))
+    .filter((image, index, images) => images.indexOf(image) === index)
+    .slice(0, 10);
 }
 
 function priceLabel(post: Post): string | null {
@@ -109,7 +114,15 @@ function buildDescription(post: Post): string {
   const body =
     post.caption?.trim() ||
     `${post.title} — available now on ${siteConfig.name}, Kenya's social marketplace. Message the seller directly.`;
-  return `${lead}${body}`.slice(0, 300);
+  const details = (post.specs ?? [])
+    .filter((item) => item.key?.trim() && item.value?.trim())
+    .slice(0, 5)
+    .map((item) => `${item.key}: ${item.value}`)
+    .join("; ");
+  return `${lead}${body}${details ? ` Details: ${details}.` : ""}`.slice(
+    0,
+    300,
+  );
 }
 
 // ── Metadata ────────────────────────────────────────────────────────────────
@@ -222,7 +235,7 @@ export default async function ContentDetailPage({ params }: Props) {
                 url: canonical,
                 title: post.title,
                 description: post.caption,
-                images: [primaryImage(post)].filter(Boolean) as string[],
+                images: listingImages(post),
                 price: post.price?.amount,
                 currency: post.price?.currency,
                 negotiable: post.price?.negotiable,
@@ -235,6 +248,20 @@ export default async function ContentDetailPage({ params }: Props) {
                 specs: post.specs,
                 createdAt: post.createdAt
                   ? new Date(post.createdAt as string).toISOString()
+                  : null,
+                updatedAt: post.updatedAt
+                  ? new Date(post.updatedAt as string).toISOString()
+                  : null,
+              }),
+              productWebPageSchema({
+                url: canonical,
+                name: post.title,
+                description: buildDescription(post),
+                createdAt: post.createdAt
+                  ? new Date(post.createdAt as string).toISOString()
+                  : null,
+                updatedAt: post.updatedAt
+                  ? new Date(post.updatedAt as string).toISOString()
                   : null,
               }),
               breadcrumbSchema([
