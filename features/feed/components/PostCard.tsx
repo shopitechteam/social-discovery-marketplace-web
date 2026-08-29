@@ -21,7 +21,6 @@ import {
   Share2,
   MoreVertical,
   Maximize2,
-  Phone,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -51,10 +50,10 @@ import { useInteractions } from "../hooks/useInteractions";
 import { useAuthGuard } from "../hooks/useAuthGuard";
 import { useFollow } from "../hooks/useFollow";
 import { useSellerPhone } from "../hooks/useSellerPhone";
-import { formatStoredPhone } from "@/lib/phone";
-import { useIsDesktop } from "@/hooks/useIsDesktop";
+import { whatsappHref } from "@/lib/phone";
 import { BufferSpinner } from "./BufferSpinner";
 import { TikTokIcon } from "@/components/ui/TikTokIcon";
+import { WhatsAppIcon } from "@/components/ui/WhatsAppIcon";
 import { usePageFocused } from "../hooks/usePageFocused";
 import toBase64, { cn } from "@/lib/utils";
 import { timeAgo } from "@/lib/time";
@@ -1318,22 +1317,14 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
   const {
     phone,
     reveal,
-    dial,
     loading: phoneLoading,
     unavailable: phoneUnavailable,
   } = useSellerPhone(post.id);
-  // Desktop has no dialer, so the number is the end state there rather than a
-  // step on the way to a call. Stays null until measured; we only dial on a
-  // confirmed-mobile viewport so a first-paint tap can't misfire into tel:.
-  const isDesktop = useIsDesktop();
-  const canDial = isDesktop === false;
-  // Only desktop ever puts the number in the pill — on a phone it's a long
-  // string in a quarter-width cell that the dialer is about to receive anyway.
-  const showNumber = !!phone && !canDial;
 
   // The action bar is an even grid on phones so the pills can never run past
-  // the viewport. Call and Chat drop out on your own posts (and Call drops out
-  // when the seller left no number), so the column count follows what's shown.
+  // the viewport. WhatsApp and Chat drop out on your own posts (and WhatsApp
+  // drops out when the seller left no number), so the column count follows
+  // what's shown.
   const actionCount =
     2 + (isOwnPost ? 0 : 1) + (isOwnPost || phoneUnavailable ? 0 : 1);
   const actionGridCols =
@@ -1357,23 +1348,34 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
     void handleSave();
   }
 
-  // The number isn't in the card payload (it's kept out of feed/PDP responses
-  // so it can't be scraped), so the tap fetches it for this signed-in buyer.
-  // On mobile that fetch is invisible — we hand the number straight to the
-  // dialer, so the pill never has to show it. On desktop there's nothing to
-  // dial with, so revealing the number IS the whole interaction.
-  function handleCallPress() {
+  // The number stays out of feed payloads so it cannot be scraped. An
+  // authenticated tap fetches it, then opens WhatsApp with enough listing
+  // context for the seller to recognise the enquiry immediately.
+  function handleWhatsAppPress() {
     if (!requireAuth({ contentId: post.id })) return;
+
+    const openWhatsApp = (sellerPhone: string) => {
+      const url = absoluteContentUrl(window.location.origin, lang, post);
+      const message = [
+        `Hi, I saw "${post.title}" on Shopi and I'm interested.`,
+        "Is it still available?",
+        "",
+        url,
+      ].join("\n");
+      window.location.href = whatsappHref(sellerPhone, message);
+    };
+
     if (phone) {
-      if (canDial) dial();
+      openWhatsApp(phone);
       return;
     }
-    void reveal().then((revealed) => {
-      if (!revealed) {
-        toast.error("This seller didn't leave a number");
+
+    void reveal().then((sellerPhone) => {
+      if (!sellerPhone) {
+        toast.error("This seller hasn't added a WhatsApp number");
         return;
       }
-      if (canDial) dial(revealed);
+      openWhatsApp(sellerPhone);
     });
   }
 
@@ -1877,30 +1879,23 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
           )}
         </button>
 
-        {/* Call pill — outlined like Comment so Message stays the primary CTA.
-            Mobile: one tap dials, the pill always reads "Call". Desktop: the
-            tap swaps the label for the number, since there's no dialer. */}
+        {/* WhatsApp is the high-intent off-platform shortcut; Message remains
+            the primary Shopi CTA. The seller number is still fetched only on
+            tap and never rendered into the feed payload. */}
         {!isOwnPost && !phoneUnavailable && (
           <button
-            onClick={handleCallPress}
-            // Once revealed on desktop there's no further action, so the pill
-            // stops presenting itself as a control and just displays the number.
-            disabled={phoneLoading || showNumber}
-            aria-label={showNumber ? undefined : "Call seller"}
-            className={cn(
-              "flex w-full min-w-0 md:min-w-fit items-center justify-center gap-1 px-2 py-2 rounded-full border border-border text-[11px] font-semibold text-default transition-all md:w-auto md:justify-start md:gap-1.5 md:px-4 md:py-2.5 md:text-xs",
-              showNumber
-                ? "disabled:opacity-100 select-text"
-                : "lg:cursor-pointer active:scale-95 disabled:opacity-60",
-            )}
+            onClick={handleWhatsAppPress}
+            disabled={phoneLoading}
+            aria-label="Message seller on WhatsApp"
+            title="Message seller on WhatsApp"
+            className="flex w-full min-w-0 items-center justify-center gap-1 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-1.5 py-2 text-[10px] font-semibold text-emerald-700 transition-all active:scale-95 disabled:opacity-60 md:w-auto md:min-w-fit md:justify-start md:gap-1.5 md:px-4 md:py-2.5 md:text-xs lg:cursor-pointer dark:text-emerald-400"
           >
-            <Phone
-              className="w-3.5 h-3.5 shrink-0 md:w-4 md:h-4"
-              strokeWidth={1.8}
-            />
-            <span className="truncate md:whitespace-nowrap">
-              {showNumber ? formatStoredPhone(phone!) : "Call"}
-            </span>
+            {phoneLoading ? (
+              <span className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent md:h-4 md:w-4" />
+            ) : (
+              <WhatsAppIcon className="h-3.5 w-3.5 shrink-0 md:h-4 md:w-4" />
+            )}
+            <span className="truncate md:whitespace-nowrap">WhatsApp</span>
           </button>
         )}
 
