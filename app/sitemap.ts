@@ -40,6 +40,8 @@ type SitemapListing = {
   slug?: string | null;
   title?: string | null;
   createdAt?: string | null;
+  updatedAt?: string | null;
+  creator?: { username?: string | null } | null;
   media?: {
     imageUrl?: string | null;
     thumbnailUrl?: string | null;
@@ -105,6 +107,8 @@ async function fetchRecentListings(): Promise<SitemapListing[]> {
                   slug
                   title
                   createdAt
+                  updatedAt
+                  creator { username }
                   media {
                     imageUrl
                     thumbnailUrl
@@ -270,7 +274,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const path = contentPath("en", item).replace(/^\/en/, "");
     return {
       url: langs("en", path),
-      lastModified: item.createdAt ? new Date(item.createdAt) : now,
+      lastModified: item.updatedAt
+        ? new Date(item.updatedAt)
+        : item.createdAt
+          ? new Date(item.createdAt)
+          : now,
       changeFrequency: "daily",
       priority: 0.65,
       images: listingImages(item),
@@ -278,12 +286,39 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     };
   });
 
+  const sellerLastModified = new Map<string, Date>();
+  for (const item of listings) {
+    const username = item.creator?.username?.trim();
+    if (!username) continue;
+    const modified = item.updatedAt
+      ? new Date(item.updatedAt)
+      : item.createdAt
+        ? new Date(item.createdAt)
+        : now;
+    const previous = sellerLastModified.get(username);
+    if (!previous || modified > previous)
+      sellerLastModified.set(username, modified);
+  }
+  const sellerEntries: MetadataRoute.Sitemap = [...sellerLastModified].map(
+    ([username, lastModified]) => {
+      const path = `/profile/${username}`;
+      return {
+        url: langs("en", path),
+        lastModified,
+        changeFrequency: "daily" as const,
+        priority: 0.6,
+        alternates: alternates(path),
+      };
+    },
+  );
+
   return [
     ...staticEntries,
     ...countyEntries,
     ...searchIntentEntries,
     ...sellCarEntries,
     ...blogEntries,
+    ...sellerEntries,
     ...listingEntries,
   ];
 }

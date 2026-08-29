@@ -18,7 +18,7 @@ const STORAGE_KEY = "shopi_attribution_v1";
 export interface Attribution {
   /** Coarse bucket: "google", "facebook", "tiktok", "instagram", "direct", … */
   source: string;
-  /** "organic" | "social" | "paid" | "referral" | "direct" | "internal" */
+  /** "ai" | "organic" | "social" | "paid" | "referral" | "direct" | "internal" */
   medium: string;
   /** utm_campaign, when present */
   campaign?: string;
@@ -38,6 +38,11 @@ export interface Attribution {
 
 /** Hosts we classify without a UTM tag. Ordered longest-match-first at lookup. */
 const REFERRER_RULES: Array<[RegExp, { source: string; medium: string }]> = [
+  [/(^|\.)(chatgpt\.com|chat\.openai\.com)$/, { source: "chatgpt", medium: "ai" }],
+  [/(^|\.)perplexity\.ai$/, { source: "perplexity", medium: "ai" }],
+  [/(^|\.)claude\.ai$/, { source: "claude", medium: "ai" }],
+  [/(^|\.)gemini\.google\.com$/, { source: "gemini", medium: "ai" }],
+  [/(^|\.)copilot\.microsoft\.com$/, { source: "copilot", medium: "ai" }],
   [/(^|\.)google\./, { source: "google", medium: "organic" }],
   [/(^|\.)bing\./, { source: "bing", medium: "organic" }],
   [/(^|\.)duckduckgo\./, { source: "duckduckgo", medium: "organic" }],
