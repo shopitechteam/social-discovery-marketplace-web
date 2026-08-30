@@ -1,4 +1,13 @@
+import {
+  TrendingUp,
+  GraduationCap,
+  Laptop,
+  MessageSquare,
+  Wallet,
+  Check,
+} from "lucide-react";
 import { LegalNav } from "@/components/legal/LegalNav";
+import { ApplyForm } from "./ApplyForm";
 import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { publicPageMetadata } from "@/lib/metadata";
@@ -28,10 +37,11 @@ export default async function CareersPage({ params }: Props) {
       />
       <main>
         {/* Hero */}
-        <section className="bg-[linear-gradient(135deg,rgb(var(--brand-primary)/0.08)_0%,rgb(var(--brand-accent)/0.06)_100%)] px-5 pt-24 pb-16 text-center">
+        <section className="border-b border-border bg-surface px-5 pt-24 pb-16 text-center">
           <div className="mx-auto max-w-160">
-            <div className="mb-6 inline-flex items-center gap-1.5 rounded-full border border-[rgb(var(--brand-primary)/0.3)] bg-[rgb(var(--brand-primary)/0.07)] px-4 py-[0.35rem] text-[0.75rem] font-semibold tracking-[0.04em] text-primary">
-              ✦ We&apos;re hiring · 1 open role
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border px-4 py-[0.35rem] text-[0.75rem] font-semibold tracking-[0.04em] text-primary">
+              <span className="size-1.5 rounded-full bg-primary" aria-hidden />
+              We&apos;re hiring · 1 open role
             </div>
             <h1 className="mb-5 font-display text-[clamp(2rem,5vw,3.25rem)] font-extrabold tracking-[-0.03em] leading-[1.1] text-foreground">
               Help us take care of every customer
@@ -67,9 +77,9 @@ export default async function CareersPage({ params }: Props) {
               <h2 className="mb-2.5 font-display text-[clamp(1.4rem,3vw,2rem)] font-extrabold tracking-[-0.02em] text-foreground">
                 Customer Service Representative
               </h2>
-              <p className="text-[0.95rem] leading-[1.65] text-muted italic">
-                Be the friendly face (and fast fingers) behind every great Shopi
-                experience.
+              <p className="text-[0.95rem] leading-[1.65] text-muted">
+                Own the first line of support for every buyer and seller on
+                Shopi.
               </p>
             </div>
 
@@ -125,40 +135,40 @@ export default async function CareersPage({ params }: Props) {
 
               {/* Benefits */}
               <RoleSection title="What you get">
-                <div className="grid grid-cols-1 gap-3.5">
+                <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
                   {[
                     {
-                      icon: "🚀",
+                      icon: TrendingUp,
                       title: "Join a high-growth startup early",
                       body: "Get in at the ground floor of one of Kenya's most exciting new platforms. Your work has real, immediate impact.",
                     },
                     {
-                      icon: "📚",
+                      icon: GraduationCap,
                       title: "Learn fast",
                       body: "Working directly with a small founding team means you'll gain experience across product, ops, and business — not just support.",
                     },
                     {
-                      icon: "🏠",
+                      icon: Laptop,
                       title: "Fully remote",
                       body: "Work from home, a café, or anywhere in Kenya. We care about results, not where you sit.",
                     },
                     {
-                      icon: "💬",
+                      icon: MessageSquare,
                       title: "Your voice shapes the product",
                       body: "The patterns you spot in customer feedback directly influence what we build next. You are not just support — you are research.",
                     },
                     {
-                      icon: "💰",
+                      icon: Wallet,
                       title: "Salary negotiable",
                       body: "We will have an honest conversation about compensation based on your experience and what you bring to the team.",
                     },
-                  ].map(({ icon, title, body }) => (
+                  ].map(({ icon: Icon, title, body }) => (
                     <div
                       key={title}
                       className="flex items-start gap-4 rounded-md border border-border bg-surface p-5"
                     >
-                      <span className="mt-[0.1rem] shrink-0 text-[1.5rem] leading-none">
-                        {icon}
+                      <span className="mt-[0.1rem] flex size-9 shrink-0 items-center justify-center rounded-md border border-border bg-elevated text-primary">
+                        <Icon className="size-4" aria-hidden />
                       </span>
                       <div>
                         <div className="mb-[0.3rem] text-[0.875rem] font-bold text-foreground">
@@ -173,29 +183,22 @@ export default async function CareersPage({ params }: Props) {
                 </div>
               </RoleSection>
 
-              {/* Apply CTA */}
-              <div className="flex flex-wrap items-center justify-between gap-4 border-t border-border pt-4">
-                <div>
-                  <p className="mb-1 text-[0.875rem] font-semibold text-foreground">
-                    Ready to apply?
-                  </p>
-                  <p className="text-[0.8rem] text-muted">
-                    Send your CV and a short note (2–3 sentences) about why this
-                    role is a good fit for you.
-                  </p>
-                </div>
-                <a
-                  href={`mailto:${siteConfig.supportEmail}?subject=${encodeURIComponent("[Application] Customer Service Representative")}`}
-                  className="inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,rgb(var(--brand-primary)),rgb(var(--brand-accent)))] px-7 py-3 text-[0.875rem] font-bold whitespace-nowrap text-white no-underline"
-                >
-                  Apply now →
-                </a>
+              {/* Apply */}
+              <div className="border-t border-border pt-6">
+                <h3 className="mb-1 text-[0.75rem] font-bold tracking-[0.07em] uppercase text-foreground">
+                  Apply for this role
+                </h3>
+                <p className="mb-5 text-[0.8rem] leading-[1.65] text-muted">
+                  Fill in your details, attach your CV, and submit. Your
+                  application is sent directly to {siteConfig.supportEmail}.
+                </p>
+                <ApplyForm />
               </div>
             </div>
           </article>
 
           {/* No other roles */}
-          <div className="mt-10 rounded-2xl border border-border bg-surface p-8 text-center">
+          <div className="mt-10 rounded-lg border border-border bg-surface p-8 text-center">
             <p className="mb-4 text-[0.9rem] leading-[1.7] text-muted">
               Don&apos;t see a role that fits? We are always open to hearing
               from great people.
@@ -242,7 +245,7 @@ function BulletList({ items }: { items: string[] }) {
           key={item}
           className="flex items-start gap-2.5 text-[0.875rem] leading-[1.65] text-muted"
         >
-          <span className="mt-[0.15em] shrink-0 text-primary">→</span>
+          <Check className="mt-[0.25em] size-4 shrink-0 text-primary" aria-hidden />
           {item}
         </li>
       ))}
