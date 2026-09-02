@@ -453,6 +453,23 @@ export function ChatDetail({
                   </button>
                 ) : null}
 
+                {canAttemptSellerContact ? (
+                  <button
+                    type="button"
+                    onClick={handleWhatsAppSeller}
+                    disabled={sellerPhoneLoading}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-emerald-500/25 bg-emerald-500/10 text-emerald-700 transition-colors hover:bg-emerald-500/20 dark:text-emerald-400"
+                    aria-label="Chat with seller on WhatsApp"
+                    title="Chat with seller on WhatsApp"
+                  >
+                    {sellerPhoneLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <WhatsAppIcon className="h-4 w-4" />
+                    )}
+                  </button>
+                ) : null}
+
                 {contentSummary ? (
                   <button
                     type="button"
