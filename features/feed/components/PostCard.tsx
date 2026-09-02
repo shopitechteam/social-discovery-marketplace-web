@@ -21,7 +21,6 @@ import {
   Share2,
   MoreVertical,
   Maximize2,
-  Sparkles,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -187,22 +186,6 @@ interface AvatarProps {
   firstName?: string | null;
   lastName?: string | null;
   isVerified?: boolean | null;
-}
-
-/**
- * Marks a post the seller paid to promote. Ad-disclosure, not decoration — a
- * boosted listing outranks organic ones, so the viewer is told why it is here.
- */
-function BoostedBadge({ tier }: { tier?: string | null }) {
-  return (
-    <span
-      className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-semibold text-primary-strong dark:text-primary"
-      title={tier ? `${tier} boost` : "Promoted listing"}
-    >
-      <Sparkles className="h-2.5 w-2.5" />
-      Promoted
-    </span>
-  );
 }
 
 /** Blue verified check — same mark shown on the creator's profile page. */
@@ -1495,9 +1478,8 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
               <span className="truncate">{locationTrail(post.location)}</span>
             </p>
           )}
-          <p className="flex items-center gap-1.5 text-muted-foreground text-[11px] mt-0.5">
+          <p className="text-muted-foreground text-[11px] mt-0.5">
             {timeAgo(post.createdAt)}
-            {post.boost?.isBoosted && <BoostedBadge tier={post.boost.tier} />}
           </p>
         </div>
 
