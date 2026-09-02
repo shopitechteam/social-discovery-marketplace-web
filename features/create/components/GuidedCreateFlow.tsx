@@ -13,6 +13,7 @@ import { useApolloClient, useMutation, useQuery } from "@apollo/client/react";
 import {
   ArrowRight,
   Bot,
+  Camera,
   Check,
   ChevronLeft,
   Globe,
@@ -174,6 +175,7 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
   const { user } = useAuthSession();
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const draftSetupInFlightRef = useRef(false);
   const analysisInFlightRef = useRef<string | null>(null);
   const locationAutofilledRef = useRef(false);
@@ -1563,21 +1565,31 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
           {guidedStage === "media" ? (
             <div className="pl-0 sm:pl-11">
               {mediaItems.length === 0 ? (
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="group flex w-full flex-col items-center justify-center rounded-3xl border-2 border-dashed border-[rgb(var(--color-border-strong))] bg-elevated px-5 py-9 text-center transition-colors hover:border-primary hover:bg-primary-soft/40"
-                >
-                  <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-soft text-primary transition-transform group-hover:scale-105">
-                    <Upload size={26} />
-                  </span>
-                  <span className="mt-4 text-base font-semibold text-foreground">
-                    Upload photos or a video
-                  </span>
-                  <span className="mt-1 text-xs text-muted">
-                    Up to {MAX_IMAGES} photos, or one video
-                  </span>
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="group flex w-full flex-col items-center justify-center rounded-3xl border-2 border-dashed border-[rgb(var(--color-border-strong))] bg-elevated px-5 py-9 text-center transition-colors hover:border-primary hover:bg-primary-soft/40"
+                  >
+                    <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-soft text-primary transition-transform group-hover:scale-105">
+                      <Upload size={26} />
+                    </span>
+                    <span className="mt-4 text-base font-semibold text-foreground">
+                      Upload photos or a video
+                    </span>
+                    <span className="mt-1 text-xs text-muted">
+                      Up to {MAX_IMAGES} photos, or one video
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => cameraInputRef.current?.click()}
+                    className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-border bg-elevated px-4 text-sm font-semibold text-foreground transition-colors hover:bg-surface sm:w-auto sm:px-5"
+                  >
+                    <Camera size={17} />
+                    Take photo
+                  </button>
+                </>
               ) : (
                 <div className="rounded-2xl border border-border bg-elevated p-4">
                   <p className="text-sm font-semibold text-foreground">
@@ -1598,10 +1610,17 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
                     ) : null}
                     <button
                       type="button"
+                      onClick={() => cameraInputRef.current?.click()}
+                      className="flex min-h-11 flex-1 items-center justify-center rounded-xl border border-border px-4 text-sm font-semibold text-foreground hover:bg-surface"
+                    >
+                      Take photo
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => fileInputRef.current?.click()}
                       className="flex min-h-11 flex-1 items-center justify-center rounded-xl border border-border px-4 text-sm font-semibold text-foreground hover:bg-surface"
                     >
-                      Choose different media
+                      Choose media
                     </button>
                   </div>
                 </div>
@@ -1611,6 +1630,14 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
                 type="file"
                 accept="image/*,video/*"
                 multiple
+                className="hidden"
+                onChange={handleMediaChange}
+              />
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
                 className="hidden"
                 onChange={handleMediaChange}
               />

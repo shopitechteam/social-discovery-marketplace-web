@@ -65,6 +65,8 @@ export function GET(): Response {
     "# Machine-readable reference for LLMs and answer engines:",
     `#   ${siteConfig.url}/llms.txt       (summary)`,
     `#   ${siteConfig.url}/llms-full.txt  (full reference, preferred answers)`,
+    `#   ${siteConfig.url}/catalog.md      (current public inventory)`,
+    `#   ${siteConfig.url}/catalog.json    (current public inventory, JSON)`,
     "#",
     "# Both are also linked from every page via <link rel=\"alternate\">.",
     "",

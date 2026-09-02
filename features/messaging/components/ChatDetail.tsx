@@ -9,12 +9,14 @@ import {
   Handshake,
   Loader2,
   MessageCircle,
+  Phone,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { absoluteContentUrl } from "@/lib/content-url";
 import { whatsappHref } from "@/lib/phone";
 import { useSellerPhone } from "@/features/feed/hooks/useSellerPhone";
+import { WhatsAppIcon } from "@/components/ui/WhatsAppIcon";
 import type { Conversation, Message, StagedMedia, UserLite } from "../types";
 import {
   avatarGradient,
@@ -26,17 +28,6 @@ import {
 import { MessageList } from "./MessageList";
 import { Composer } from "./Composer";
 import { ConversationActionsDrawer } from "./ConversationActionsDrawer";
-
-function WhatsAppIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
-      <path
-        fill="currentColor"
-        d="M12.04 2a9.94 9.94 0 0 0-8.5 15.1L2.3 21.7l4.72-1.24A9.95 9.95 0 1 0 12.04 2Zm0 1.8a8.15 8.15 0 0 1 6.92 12.45 8.13 8.13 0 0 1-10.98 2.66l-.34-.2-2.8.74.75-2.72-.22-.36A8.14 8.14 0 0 1 12.04 3.8Zm-3.48 4.35c-.18 0-.48.07-.73.34-.25.28-.96.94-.96 2.28 0 1.35.98 2.65 1.12 2.84.14.18 1.9 3.04 4.72 4.14 2.35.93 2.83.74 3.34.7.51-.05 1.66-.68 1.9-1.34.23-.66.23-1.22.16-1.34-.07-.12-.25-.19-.53-.33-.27-.14-1.65-.82-1.9-.91-.26-.1-.44-.14-.63.14-.18.27-.72.91-.88 1.1-.16.18-.32.2-.6.06-.27-.14-1.16-.43-2.2-1.36-.82-.73-1.37-1.63-1.53-1.9-.16-.28-.02-.43.12-.57.12-.12.27-.32.41-.48.14-.16.18-.28.28-.46.09-.19.04-.35-.03-.49-.07-.14-.62-1.5-.85-2.06-.22-.53-.45-.46-.62-.47h-.53Z"
-      />
-    </svg>
-  );
-}
 
 interface Props {
   lang: string;
@@ -137,6 +128,7 @@ export function ChatDetail({
   const router = useRouter();
   const contentSummary = selectedConversation?.content;
   const {
+    dial: dialSellerPhone,
     reveal: revealSellerPhone,
     loading: sellerPhoneLoading,
     unavailable: sellerPhoneUnavailable,
@@ -169,7 +161,7 @@ export function ChatDetail({
           (60 * 1000),
       )
     : 0;
-  const canAttemptWhatsAppSeller = Boolean(
+  const canAttemptSellerContact = Boolean(
     contentSummary &&
       selectedConversation &&
       currentUserId &&
@@ -182,8 +174,6 @@ export function ChatDetail({
       messages.length === 0 &&
       !conversationNotReady,
   );
-  const showHeaderWhatsApp =
-    canAttemptWhatsAppSeller && !isEmptyConversationBody;
 
   const conversationNudge = (() => {
     if (!selectedConversation || selectedConversation.dealClosedAt) {
@@ -279,6 +269,26 @@ export function ChatDetail({
   }, [
     contentSummary,
     lang,
+    requireAuth,
+    revealSellerPhone,
+    selectedConversation?.contactPhone,
+  ]);
+
+  const handleCallSeller = useCallback(async () => {
+    if (!contentSummary) return;
+    if (!requireAuth()) return;
+
+    const phone =
+      selectedConversation?.contactPhone ?? (await revealSellerPhone());
+    if (!phone) {
+      toast("This seller hasn't added a phone number");
+      return;
+    }
+
+    dialSellerPhone(phone);
+  }, [
+    contentSummary,
+    dialSellerPhone,
     requireAuth,
     revealSellerPhone,
     selectedConversation?.contactPhone,
@@ -426,14 +436,31 @@ export function ChatDetail({
               </div>
 
               <div className="flex items-center gap-2">
-                {showHeaderWhatsApp ? (
+                {canAttemptSellerContact ? (
+                  <button
+                    type="button"
+                    onClick={handleCallSeller}
+                    disabled={sellerPhoneLoading}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-elevated text-foreground transition-colors hover:bg-surface"
+                    aria-label="Call seller"
+                    title="Call seller"
+                  >
+                    {sellerPhoneLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Phone className="h-4 w-4" />
+                    )}
+                  </button>
+                ) : null}
+
+                {canAttemptSellerContact ? (
                   <button
                     type="button"
                     onClick={handleWhatsAppSeller}
                     disabled={sellerPhoneLoading}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-emerald-500/25 bg-emerald-500/10 text-emerald-600 transition-colors hover:bg-emerald-500/15 dark:text-emerald-400"
-                    aria-label="Ask seller on WhatsApp"
-                    title="Ask seller on WhatsApp"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-emerald-500/25 bg-emerald-500/10 text-emerald-700 transition-colors hover:bg-emerald-500/20 dark:text-emerald-400"
+                    aria-label="Chat with seller on WhatsApp"
+                    title="Chat with seller on WhatsApp"
                   >
                     {sellerPhoneLoading ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -554,7 +581,7 @@ export function ChatDetail({
             hasMoreOlder={hasMoreOlder}
             scrollToBottomSignal={scrollSignal}
             emptyState={
-              isEmptyConversationBody && canAttemptWhatsAppSeller ? (
+              isEmptyConversationBody && canAttemptSellerContact ? (
                 <div className="mx-auto flex w-full max-w-sm flex-col items-center rounded-3xl border border-emerald-500/20 bg-elevated/90 px-5 py-6 text-center shadow-sm backdrop-blur">
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500 text-white">
                     <WhatsAppIcon className="h-6 w-6" />

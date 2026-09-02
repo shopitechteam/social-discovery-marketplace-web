@@ -4,6 +4,12 @@ import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 type SummaryPost = ContentCardFieldsFragment & {
   slug?: string | null;
   category?: { name?: string | null; slug?: string | null } | null;
+  specs?: Array<{ key: string; value: string }>;
+  aiClassification?: {
+    level1?: string | null;
+    level2?: string | null;
+    level3?: string | null;
+  } | null;
 };
 
 /**
@@ -59,6 +65,17 @@ export function ListingSeoSummary({
       .trim() ||
     post.creator?.username ||
     null;
+  const category =
+    [
+      post.aiClassification?.level1,
+      post.aiClassification?.level2,
+      post.aiClassification?.level3,
+    ]
+      .filter(Boolean)
+      .join(" / ") || post.category?.name;
+  const specs = (post.specs ?? []).filter(
+    (item) => item.key?.trim() && item.value?.trim(),
+  );
 
   return (
     <article className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-4 py-6">
@@ -89,6 +106,35 @@ export function ListingSeoSummary({
         <p className="text-base leading-normal text-muted">{post.caption}</p>
       )}
 
+      {(category || specs.length > 0) && (
+        <section aria-labelledby="listing-details">
+          <h2
+            id="listing-details"
+            className="font-display text-lg font-bold text-default"
+          >
+            Listing details
+          </h2>
+          {category && (
+            <p className="mt-2 text-sm text-muted">Category: {category}</p>
+          )}
+          {specs.length > 0 && (
+            <dl className="mt-3 grid grid-cols-2 gap-2">
+              {specs.map((item) => (
+                <div
+                  key={`${item.key}-${item.value}`}
+                  className="rounded-lg border border-default bg-surface px-3 py-2"
+                >
+                  <dt className="text-xs font-semibold text-muted">
+                    {item.key}
+                  </dt>
+                  <dd className="mt-1 text-sm text-default">{item.value}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+        </section>
+      )}
+
       {seller && (
         <p className="text-sm text-muted">
           Sold by{" "}
@@ -104,6 +150,18 @@ export function ListingSeoSummary({
           )}
         </p>
       )}
+
+      <aside className="rounded-xl border border-default bg-surface p-4">
+        <h2 className="font-display text-base font-bold text-default">
+          How to buy on Shopi
+        </h2>
+        <p className="mt-2 text-sm leading-normal text-muted">
+          Message the seller to confirm availability, condition and the final
+          price. Inspect the item before paying where possible, meet in a public
+          place, and agree payment, pickup or delivery directly with the seller.
+          Shopi does not hold money or provide escrow.
+        </p>
+      </aside>
 
       {/* Crawlable routes out of the listing — without these the detail page is
           a dead end for a non-JS crawler. */}

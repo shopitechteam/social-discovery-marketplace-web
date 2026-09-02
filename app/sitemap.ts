@@ -40,6 +40,8 @@ type SitemapListing = {
   slug?: string | null;
   title?: string | null;
   createdAt?: string | null;
+  updatedAt?: string | null;
+  creator?: { username?: string | null } | null;
   media?: {
     imageUrl?: string | null;
     thumbnailUrl?: string | null;
@@ -48,6 +50,23 @@ type SitemapListing = {
     r2Variants?: { url?: string | null; variant?: string | null }[] | null;
   }[];
 };
+
+/**
+ * Next serialises `images` into <image:loc> *without* XML-escaping them (only
+ * the page's own <loc> is escaped). A single raw `&` therefore makes the whole
+ * document not well-formed, and Search Console rejects the entire sitemap —
+ * every URL in it, not just the offending entry.
+ *
+ * The URLs that carry `&` are the signed TikTok CDN links on imported posts
+ * (`?x-expires=…&x-signature=…`). Dropping them rather than escaping them is
+ * the right fix twice over: it keeps the document valid without depending on
+ * Next's escaping behaviour staying as it is, and those links expire within
+ * days, so they are worthless for image indexing anyway. Listings keep their
+ * own media.shopi.co.ke variants, which is what we want indexed.
+ */
+function isXmlSafeImageUrl(url: string): boolean {
+  return !/[&<>"']/.test(url);
+}
 
 function listingImages(item: SitemapListing): string[] {
   return (item.media ?? [])
@@ -61,6 +80,7 @@ function listingImages(item: SitemapListing): string[] {
       media.thumbnailUrl,
     ])
     .filter((url): url is string => Boolean(url?.trim()))
+    .filter(isXmlSafeImageUrl)
     .slice(0, 6);
 }
 
@@ -87,6 +107,8 @@ async function fetchRecentListings(): Promise<SitemapListing[]> {
                   slug
                   title
                   createdAt
+                  updatedAt
+                  creator { username }
                   media {
                     imageUrl
                     thumbnailUrl
@@ -140,8 +162,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const { url } = siteConfig;
 
   const langs = (l: string, path: string) => `${url}/${l}${path}`;
+  // Mirrors localeAlternates() in lib/metadata.ts, x-default included: the
+  // sitemap's hreflang set and the page's own <link rel="alternate"> set have
+  // to agree, or the annotations are treated as unconfirmed and dropped.
   const alternates = (path: string) => ({
-    languages: Object.fromEntries(locales.map((l) => [l, langs(l, path)])),
+    languages: {
+      ...Object.fromEntries(locales.map((l) => [l, langs(l, path)])),
+      "x-default": langs("en", path),
+    },
   });
 
   // path -> [changeFrequency, priority, lastModified?]
@@ -246,7 +274,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const path = contentPath("en", item).replace(/^\/en/, "");
     return {
       url: langs("en", path),
-      lastModified: item.createdAt ? new Date(item.createdAt) : now,
+      lastModified: item.updatedAt
+        ? new Date(item.updatedAt)
+        : item.createdAt
+          ? new Date(item.createdAt)
+          : now,
       changeFrequency: "daily",
       priority: 0.65,
       images: listingImages(item),
@@ -254,12 +286,39 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     };
   });
 
+  const sellerLastModified = new Map<string, Date>();
+  for (const item of listings) {
+    const username = item.creator?.username?.trim();
+    if (!username) continue;
+    const modified = item.updatedAt
+      ? new Date(item.updatedAt)
+      : item.createdAt
+        ? new Date(item.createdAt)
+        : now;
+    const previous = sellerLastModified.get(username);
+    if (!previous || modified > previous)
+      sellerLastModified.set(username, modified);
+  }
+  const sellerEntries: MetadataRoute.Sitemap = [...sellerLastModified].map(
+    ([username, lastModified]) => {
+      const path = `/profile/${username}`;
+      return {
+        url: langs("en", path),
+        lastModified,
+        changeFrequency: "daily" as const,
+        priority: 0.6,
+        alternates: alternates(path),
+      };
+    },
+  );
+
   return [
     ...staticEntries,
     ...countyEntries,
     ...searchIntentEntries,
     ...sellCarEntries,
     ...blogEntries,
+    ...sellerEntries,
     ...listingEntries,
   ];
 }

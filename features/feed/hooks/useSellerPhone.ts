@@ -1,13 +1,13 @@
 "use client";
 
 /**
- * Fetch-on-demand seller number for a listing's Call button.
+ * Fetch a seller's contact number only after a buyer requests it.
  *
  * The number is never part of the content payload — it's fetched only when a
  * signed-in buyer asks for it, which keeps every seller's number out of the
- * crawlable PDP HTML and off the feed responses, and gives us a real "intent
- * to call" moment to measure. Callers decide what to do with it: phones hand
- * it straight to the dialer, desktop displays it (nothing there to dial with).
+ * crawlable PDP HTML and off the feed responses, and gives us a real contact
+ * intent moment to measure. Callers decide whether to use it for a phone call
+ * or a WhatsApp handoff.
  */
 
 import { useCallback, useState } from "react";
@@ -16,8 +16,20 @@ import { SellerContactPhoneDocument } from "@/types/__generated__/graphql";
 import { telHref } from "@/lib/phone";
 
 export function useSellerPhone(contentId: string | null | undefined) {
-  const [phone, setPhone] = useState<string | null>(null);
-  const [unavailable, setUnavailable] = useState(false);
+  const [resolvedPhone, setResolvedPhone] = useState<{
+    contentId: string;
+    value: string;
+  } | null>(null);
+  const [unavailableContentId, setUnavailableContentId] = useState<
+    string | null
+  >(null);
+  const phone =
+    resolvedPhone && resolvedPhone.contentId === contentId
+      ? resolvedPhone.value
+      : null;
+  const unavailable = Boolean(
+    contentId && unavailableContentId === contentId,
+  );
   const [fetchPhone, { loading }] = useLazyQuery(SellerContactPhoneDocument, {
     fetchPolicy: "network-only",
   });
@@ -34,10 +46,10 @@ export function useSellerPhone(contentId: string | null | undefined) {
     const revealed = data?.sellerContactPhone ?? null;
     if (!revealed) {
       // Listings published before contact numbers became mandatory have none.
-      setUnavailable(true);
+      setUnavailableContentId(contentId);
       return null;
     }
-    setPhone(revealed);
+    setResolvedPhone({ contentId, value: revealed });
     return revealed;
   }, [contentId, phone, fetchPhone]);
 

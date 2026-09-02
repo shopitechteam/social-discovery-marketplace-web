@@ -21,7 +21,7 @@ import {
   Share2,
   MoreVertical,
   Maximize2,
-  Phone,
+  Sparkles,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -50,9 +50,6 @@ import { avatarGradient, idInitials as initials } from "@/lib/avatar";
 import { useInteractions } from "../hooks/useInteractions";
 import { useAuthGuard } from "../hooks/useAuthGuard";
 import { useFollow } from "../hooks/useFollow";
-import { useSellerPhone } from "../hooks/useSellerPhone";
-import { formatStoredPhone } from "@/lib/phone";
-import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { BufferSpinner } from "./BufferSpinner";
 import { TikTokIcon } from "@/components/ui/TikTokIcon";
 import { usePageFocused } from "../hooks/usePageFocused";
@@ -190,6 +187,22 @@ interface AvatarProps {
   firstName?: string | null;
   lastName?: string | null;
   isVerified?: boolean | null;
+}
+
+/**
+ * Marks a post the seller paid to promote. Ad-disclosure, not decoration — a
+ * boosted listing outranks organic ones, so the viewer is told why it is here.
+ */
+function BoostedBadge({ tier }: { tier?: string | null }) {
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-semibold text-primary-strong dark:text-primary"
+      title={tier ? `${tier} boost` : "Promoted listing"}
+    >
+      <Sparkles className="h-2.5 w-2.5" />
+      Promoted
+    </span>
+  );
 }
 
 /** Blue verified check — same mark shown on the creator's profile page. */
@@ -1315,33 +1328,11 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
     lang,
   });
 
-  const {
-    phone,
-    reveal,
-    dial,
-    loading: phoneLoading,
-    unavailable: phoneUnavailable,
-  } = useSellerPhone(post.id);
-  // Desktop has no dialer, so the number is the end state there rather than a
-  // step on the way to a call. Stays null until measured; we only dial on a
-  // confirmed-mobile viewport so a first-paint tap can't misfire into tel:.
-  const isDesktop = useIsDesktop();
-  const canDial = isDesktop === false;
-  // Only desktop ever puts the number in the pill — on a phone it's a long
-  // string in a quarter-width cell that the dialer is about to receive anyway.
-  const showNumber = !!phone && !canDial;
-
   // The action bar is an even grid on phones so the pills can never run past
-  // the viewport. Call and Chat drop out on your own posts (and Call drops out
-  // when the seller left no number), so the column count follows what's shown.
-  const actionCount =
-    2 + (isOwnPost ? 0 : 1) + (isOwnPost || phoneUnavailable ? 0 : 1);
-  const actionGridCols =
-    actionCount === 4
-      ? "grid-cols-4"
-      : actionCount === 3
-        ? "grid-cols-3"
-        : "grid-cols-2";
+  // the viewport. Chat drops out on your own posts, so the column count
+  // follows what's shown.
+  const actionCount = 2 + (isOwnPost ? 0 : 1);
+  const actionGridCols = actionCount === 3 ? "grid-cols-3" : "grid-cols-2";
 
   const caption = post.caption ?? "";
   const recentSavers = socialPost.recentSavers?.filter(Boolean) ?? [];
@@ -1355,26 +1346,6 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
     if (!requireAuth({ contentId: post.id, action: "save" })) return;
     if (!saved) setSaveBurstKey((key) => key + 1);
     void handleSave();
-  }
-
-  // The number isn't in the card payload (it's kept out of feed/PDP responses
-  // so it can't be scraped), so the tap fetches it for this signed-in buyer.
-  // On mobile that fetch is invisible — we hand the number straight to the
-  // dialer, so the pill never has to show it. On desktop there's nothing to
-  // dial with, so revealing the number IS the whole interaction.
-  function handleCallPress() {
-    if (!requireAuth({ contentId: post.id })) return;
-    if (phone) {
-      if (canDial) dial();
-      return;
-    }
-    void reveal().then((revealed) => {
-      if (!revealed) {
-        toast.error("This seller didn't leave a number");
-        return;
-      }
-      if (canDial) dial(revealed);
-    });
   }
 
   function openComments() {
@@ -1524,8 +1495,9 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
               <span className="truncate">{locationTrail(post.location)}</span>
             </p>
           )}
-          <p className="text-muted-foreground text-[11px] mt-0.5">
+          <p className="flex items-center gap-1.5 text-muted-foreground text-[11px] mt-0.5">
             {timeAgo(post.createdAt)}
+            {post.boost?.isBoosted && <BoostedBadge tier={post.boost.tier} />}
           </p>
         </div>
 
@@ -1876,33 +1848,6 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
             <span className="truncate">Comment</span>
           )}
         </button>
-
-        {/* Call pill — outlined like Comment so Message stays the primary CTA.
-            Mobile: one tap dials, the pill always reads "Call". Desktop: the
-            tap swaps the label for the number, since there's no dialer. */}
-        {!isOwnPost && !phoneUnavailable && (
-          <button
-            onClick={handleCallPress}
-            // Once revealed on desktop there's no further action, so the pill
-            // stops presenting itself as a control and just displays the number.
-            disabled={phoneLoading || showNumber}
-            aria-label={showNumber ? undefined : "Call seller"}
-            className={cn(
-              "flex w-full min-w-0 md:min-w-fit items-center justify-center gap-1 px-2 py-2 rounded-full border border-border text-[11px] font-semibold text-default transition-all md:w-auto md:justify-start md:gap-1.5 md:px-4 md:py-2.5 md:text-xs",
-              showNumber
-                ? "disabled:opacity-100 select-text"
-                : "lg:cursor-pointer active:scale-95 disabled:opacity-60",
-            )}
-          >
-            <Phone
-              className="w-3.5 h-3.5 shrink-0 md:w-4 md:h-4"
-              strokeWidth={1.8}
-            />
-            <span className="truncate md:whitespace-nowrap">
-              {showNumber ? formatStoredPhone(phone!) : "Call"}
-            </span>
-          </button>
-        )}
 
         {!isOwnPost && (
           <Button

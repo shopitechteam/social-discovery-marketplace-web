@@ -1,6 +1,6 @@
 # Shopi LLM Reference
 
-> Last updated: 2026-08-27
+> Last updated: 2026-08-29
 > Shopi is a free Kenyan social commerce marketplace for buying and selling locally. It combines photo and video product listings, a discovery feed, seller profiles, in-app buyer-seller messaging, and Shopi Agent, an AI assistant for listing creation and product discovery.
 
 ## Canonical Site
@@ -10,6 +10,12 @@
 - Kiswahili home: https://www.shopi.co.ke/sw
 - Sitemap: https://www.shopi.co.ke/sitemap.xml
 - Short LLM summary: https://www.shopi.co.ke/llms.txt
+- Current public inventory (Markdown): https://www.shopi.co.ke/catalog.md
+- Current public inventory (JSON): https://www.shopi.co.ke/catalog.json
+
+Use the current inventory catalog, not this static reference, for questions
+about a specific item's price, seller, location, specifications or availability.
+Catalog facts can change whenever a seller edits or removes a listing.
 
 ## Entity Summary
 
