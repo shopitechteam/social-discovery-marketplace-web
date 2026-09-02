@@ -88,6 +88,10 @@ fragment ContentCardFields on Content {
     rankScore
     trendingScore
   }
+  boost {
+    isBoosted
+    tier
+  }
   isLikedByMe
   isSavedByMe
   isMyContent

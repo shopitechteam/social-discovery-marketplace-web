@@ -21,6 +21,7 @@ import {
   Share2,
   MoreVertical,
   Maximize2,
+  Sparkles,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -49,11 +50,8 @@ import { avatarGradient, idInitials as initials } from "@/lib/avatar";
 import { useInteractions } from "../hooks/useInteractions";
 import { useAuthGuard } from "../hooks/useAuthGuard";
 import { useFollow } from "../hooks/useFollow";
-import { useSellerPhone } from "../hooks/useSellerPhone";
-import { whatsappHref } from "@/lib/phone";
 import { BufferSpinner } from "./BufferSpinner";
 import { TikTokIcon } from "@/components/ui/TikTokIcon";
-import { WhatsAppIcon } from "@/components/ui/WhatsAppIcon";
 import { usePageFocused } from "../hooks/usePageFocused";
 import toBase64, { cn } from "@/lib/utils";
 import { timeAgo } from "@/lib/time";
@@ -189,6 +187,22 @@ interface AvatarProps {
   firstName?: string | null;
   lastName?: string | null;
   isVerified?: boolean | null;
+}
+
+/**
+ * Marks a post the seller paid to promote. Ad-disclosure, not decoration — a
+ * boosted listing outranks organic ones, so the viewer is told why it is here.
+ */
+function BoostedBadge({ tier }: { tier?: string | null }) {
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-semibold text-primary-strong dark:text-primary"
+      title={tier ? `${tier} boost` : "Promoted listing"}
+    >
+      <Sparkles className="h-2.5 w-2.5" />
+      Promoted
+    </span>
+  );
 }
 
 /** Blue verified check — same mark shown on the creator's profile page. */
@@ -1314,25 +1328,11 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
     lang,
   });
 
-  const {
-    phone,
-    reveal,
-    loading: phoneLoading,
-    unavailable: phoneUnavailable,
-  } = useSellerPhone(post.id);
-
   // The action bar is an even grid on phones so the pills can never run past
-  // the viewport. WhatsApp and Chat drop out on your own posts (and WhatsApp
-  // drops out when the seller left no number), so the column count follows
-  // what's shown.
-  const actionCount =
-    2 + (isOwnPost ? 0 : 1) + (isOwnPost || phoneUnavailable ? 0 : 1);
-  const actionGridCols =
-    actionCount === 4
-      ? "grid-cols-4"
-      : actionCount === 3
-        ? "grid-cols-3"
-        : "grid-cols-2";
+  // the viewport. Chat drops out on your own posts, so the column count
+  // follows what's shown.
+  const actionCount = 2 + (isOwnPost ? 0 : 1);
+  const actionGridCols = actionCount === 3 ? "grid-cols-3" : "grid-cols-2";
 
   const caption = post.caption ?? "";
   const recentSavers = socialPost.recentSavers?.filter(Boolean) ?? [];
@@ -1346,37 +1346,6 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
     if (!requireAuth({ contentId: post.id, action: "save" })) return;
     if (!saved) setSaveBurstKey((key) => key + 1);
     void handleSave();
-  }
-
-  // The number stays out of feed payloads so it cannot be scraped. An
-  // authenticated tap fetches it, then opens WhatsApp with enough listing
-  // context for the seller to recognise the enquiry immediately.
-  function handleWhatsAppPress() {
-    if (!requireAuth({ contentId: post.id })) return;
-
-    const openWhatsApp = (sellerPhone: string) => {
-      const url = absoluteContentUrl(window.location.origin, lang, post);
-      const message = [
-        `Hi, I saw "${post.title}" on Shopi and I'm interested.`,
-        "Is it still available?",
-        "",
-        url,
-      ].join("\n");
-      window.location.href = whatsappHref(sellerPhone, message);
-    };
-
-    if (phone) {
-      openWhatsApp(phone);
-      return;
-    }
-
-    void reveal().then((sellerPhone) => {
-      if (!sellerPhone) {
-        toast.error("This seller hasn't added a WhatsApp number");
-        return;
-      }
-      openWhatsApp(sellerPhone);
-    });
   }
 
   function openComments() {
@@ -1526,8 +1495,9 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
               <span className="truncate">{locationTrail(post.location)}</span>
             </p>
           )}
-          <p className="text-muted-foreground text-[11px] mt-0.5">
+          <p className="flex items-center gap-1.5 text-muted-foreground text-[11px] mt-0.5">
             {timeAgo(post.createdAt)}
+            {post.boost?.isBoosted && <BoostedBadge tier={post.boost.tier} />}
           </p>
         </div>
 
@@ -1878,26 +1848,6 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
             <span className="truncate">Comment</span>
           )}
         </button>
-
-        {/* WhatsApp is the high-intent off-platform shortcut; Message remains
-            the primary Shopi CTA. The seller number is still fetched only on
-            tap and never rendered into the feed payload. */}
-        {!isOwnPost && !phoneUnavailable && (
-          <button
-            onClick={handleWhatsAppPress}
-            disabled={phoneLoading}
-            aria-label="Message seller on WhatsApp"
-            title="Message seller on WhatsApp"
-            className="flex w-full min-w-0 items-center justify-center gap-1 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-1.5 py-2 text-[10px] font-semibold text-emerald-700 transition-all active:scale-95 disabled:opacity-60 md:w-auto md:min-w-fit md:justify-start md:gap-1.5 md:px-4 md:py-2.5 md:text-xs lg:cursor-pointer dark:text-emerald-400"
-          >
-            {phoneLoading ? (
-              <span className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent md:h-4 md:w-4" />
-            ) : (
-              <WhatsAppIcon className="h-3.5 w-3.5 shrink-0 md:h-4 md:w-4" />
-            )}
-            <span className="truncate md:whitespace-nowrap">WhatsApp</span>
-          </button>
-        )}
 
         {!isOwnPost && (
           <Button
