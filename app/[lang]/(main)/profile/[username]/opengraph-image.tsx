@@ -3,6 +3,7 @@ import { query } from "@/lib/apollo/ApolloClient";
 import { GetUserProfileDocument } from "@/types/__generated__/graphql";
 import type { ProfileUserFieldsFragment } from "@/types/__generated__/graphql";
 import { siteConfig } from "@/config/site";
+import { ogDecodableImage } from "@/lib/og-image";
 
 // Node runtime so we can reuse the Apollo `query` helper to fetch the profile.
 export const runtime = "nodejs";
@@ -30,13 +31,17 @@ function fmtCount(n: number): string {
 export default async function ProfileOgImage({
   params,
 }: {
-  params: { lang: string; username: string };
+  // Next 16 hands metadata image routes an async params object — see the
+  // sibling listing OG route; reading it synchronously rendered a blank card.
+  params: Promise<{ lang: string; username: string }>;
 }) {
+  const { username } = await params;
+
   let profile: Profile | null = null;
   try {
     const { data } = await query({
       query: GetUserProfileDocument,
-      variables: { username: params.username },
+      variables: { username },
     });
     profile = (data?.userProfile as Profile | undefined) ?? null;
   } catch {
@@ -45,7 +50,9 @@ export default async function ProfileOgImage({
 
   const name = profile ? displayName(profile) : "Shopi";
   const handle = profile?.username ? `@${profile.username}` : "";
-  const avatar = profile?.profile?.avatar ?? null;
+  // Avatars are usually .webp, which satori cannot decode — those fall back
+  // to the initials tile instead of an empty circle.
+  const avatar = ogDecodableImage(profile?.profile?.avatar);
   const initials = name.slice(0, 2).toUpperCase();
 
   const stats = [
