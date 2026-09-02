@@ -8,6 +8,7 @@ import {
   CheckCheck,
   Loader2,
   PlayCircle,
+  Sparkles,
   UserPlus,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -162,6 +163,8 @@ export function NotificationList({
                         <AlertCircle size={13} />
                       ) : notification.type === "POST_LIVE" ? (
                         <PlayCircle size={13} />
+                      ) : notification.type === "POST_BOOSTED" ? (
+                        <Sparkles size={13} />
                       ) : (
                         <UserPlus size={13} />
                       )}

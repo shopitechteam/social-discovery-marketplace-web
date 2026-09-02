@@ -172,7 +172,7 @@ export interface NotificationActorPayload {
 
 export interface NotificationPayload {
   id: string;
-  type: 'FOLLOW' | 'SAVE' | 'POST_LIVE' | 'POST_REJECTED';
+  type: 'FOLLOW' | 'SAVE' | 'POST_LIVE' | 'POST_REJECTED' | 'POST_BOOSTED';
   title: string;
   body: string;
   actorCount: number;

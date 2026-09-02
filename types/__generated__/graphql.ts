@@ -293,6 +293,7 @@ export type MediaAssetType =
 
 export type NotificationType =
   | 'FOLLOW'
+  | 'POST_BOOSTED'
   | 'POST_LIVE'
   | 'POST_REJECTED'
   | 'SAVE';
