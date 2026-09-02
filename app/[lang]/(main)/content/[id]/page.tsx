@@ -151,8 +151,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const shareTitle = `${title} | ${siteConfig.name}`;
   const description = buildDescription(post);
   const category = categoryLabel(post);
-  // Per-listing OG image (rendered by the sibling opengraph-image route).
-  const ogImage = `${canonical}/opengraph-image`;
 
   return {
     title,
@@ -197,14 +195,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: shareTitle,
       description,
       locale: "en_KE",
-      images: [{ url: ogImage, width: 1200, height: 630, alt: post.title }],
+      // og:image is intentionally omitted: the sibling opengraph-image route
+      // supplies it. Next fingerprints image routes under dynamic segments
+      // (/…/opengraph-image-<hash>), so a hand-built "/opengraph-image" URL
+      // 404s — and an explicit `images` here would override the real one.
     },
     twitter: {
       card: "summary_large_image",
       site: siteConfig.twitterHandle,
       title: shareTitle,
       description,
-      images: [ogImage],
     },
   };
 }

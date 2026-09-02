@@ -74,7 +74,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = `${name}${handle ? ` (${handle})` : ""}`;
   const shareTitle = `${title} | ${siteConfig.name}`;
   const description = buildDescription(profile);
-  const ogImage = `${canonical}/opengraph-image`;
 
   return {
     title,
@@ -97,14 +96,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: shareTitle,
       description,
       locale: "en_KE",
-      images: [{ url: ogImage, width: 1200, height: 630, alt: name }],
+      // og:image comes from the sibling opengraph-image route. Next
+      // fingerprints image routes under dynamic segments, so a hand-built
+      // "/opengraph-image" URL 404s and would override the real one.
     },
     twitter: {
       card: "summary_large_image",
       site: siteConfig.twitterHandle,
       title: shareTitle,
       description,
-      images: [ogImage],
     },
   };
 }

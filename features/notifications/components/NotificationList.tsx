@@ -7,8 +7,9 @@ import {
   Bookmark,
   CheckCheck,
   Loader2,
+  Megaphone,
   PlayCircle,
-  Sparkles,
+  Store,
   UserPlus,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -164,7 +165,9 @@ export function NotificationList({
                       ) : notification.type === "POST_LIVE" ? (
                         <PlayCircle size={13} />
                       ) : notification.type === "POST_BOOSTED" ? (
-                        <Sparkles size={13} />
+                        <Megaphone size={13} />
+                      ) : notification.type === "NEW_POST" ? (
+                        <Store size={13} />
                       ) : (
                         <UserPlus size={13} />
                       )}
