@@ -14,10 +14,17 @@ import {
   TrendingContentDocument,
   LocalFeedDocument,
 } from "@/types/__generated__/graphql";
-import { FEED_PAGE_SIZE } from "@/features/feed/constants";
+import {
+  FEED_PAGE_SIZE,
+  FEED_LOAD_MORE_SIZE,
+} from "@/features/feed/constants";
 import { useNearbyLocation } from "@/features/feed/hooks/useNearbyLocation";
 
+// The first page is deliberately small (it is server-rendered and hydrated
+// before the feed is interactive); later pages are larger because they mount
+// off-screen and cost nothing on the critical path.
 const PAGE_SIZE = FEED_PAGE_SIZE;
+const LOAD_MORE_SIZE = FEED_LOAD_MORE_SIZE;
 
 /**
  * Guards cursor-based pagination against a page that returns only duplicates
@@ -114,7 +121,7 @@ export function useForYouFeed() {
       let request!: Promise<unknown>;
       startTransition(() => {
         request = fetchMore({
-          variables: { limit: PAGE_SIZE, after: cursor },
+          variables: { limit: LOAD_MORE_SIZE, after: cursor },
         }).finally(() => setLoadingMore(false));
       });
       return request;
@@ -159,7 +166,7 @@ export function useFollowingFeed() {
     guard(cursor, itemCount, () => {
       setLoadingMore(true);
       return fetchMore({
-        variables: { limit: PAGE_SIZE, after: cursor },
+        variables: { limit: LOAD_MORE_SIZE, after: cursor },
       }).finally(() => setLoadingMore(false));
     });
   }, [fetchMore, pageInfo, guard, itemCount]);
@@ -226,7 +233,7 @@ export function useNearbyFeed(
           latitude: coordinates.latitude,
           longitude: coordinates.longitude,
           radiusKm,
-          limit: PAGE_SIZE,
+          limit: LOAD_MORE_SIZE,
           after: cursor,
         },
       }).finally(() => setLoadingMore(false));

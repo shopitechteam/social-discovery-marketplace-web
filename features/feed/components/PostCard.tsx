@@ -6,7 +6,6 @@ import {
   useEffect,
   useState,
   useCallback,
-  useLayoutEffect,
   useId,
   useMemo,
 } from "react";
@@ -896,6 +895,13 @@ function FeedImageInner({
       sizes={sizes}
       className={cn("w-full mx-0 px-0", className)}
       preload={priority}
+      // `preload`/`priority` only emit the <link rel="preload"> and opt the
+      // image out of lazy loading — neither sets fetchpriority on the <img>
+      // (see next/dist/shared/lib/get-img-props). Without this the LCP
+      // thumbnail was discovered early but still fetched at default priority,
+      // queued behind the feed's scripts. Only the first card gets it: marking
+      // every image high-priority is the same as marking none.
+      fetchPriority={priority ? "high" : undefined}
       loading={priority ? undefined : loadingProp}
       quality={priority ? 75 : 55}
       placeholder={blurDataURL ? "blur" : "empty"}
@@ -1345,19 +1351,22 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
     router.push(`/${lang}/profile/${creator.id}`, { scroll: false });
   }
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     const el = captionRef.current;
     if (!el) {
       setCaptionOverflows(false);
       return;
     }
 
-    const measure = () => {
+    // Measurement is left entirely to the ResizeObserver, which fires once for
+    // the initial size the moment it observes. The explicit synchronous
+    // measure() that used to run here forced a style+layout flush per card
+    // inside a layout effect — with a full page of feed cards hydrating at
+    // once that was the bulk of the reported forced-reflow time. The observer
+    // does the same reads off the layout-flush path, so nothing looks different.
+    const observer = new ResizeObserver(() => {
       setCaptionOverflows(el.scrollHeight > el.clientHeight + 1);
-    };
-
-    measure();
-    const observer = new ResizeObserver(measure);
+    });
     observer.observe(el);
     return () => observer.disconnect();
   }, [caption, expanded]);
