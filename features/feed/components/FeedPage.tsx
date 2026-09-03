@@ -8,6 +8,7 @@ import FeedGrid from "./FeedGrid";
 import { FeedSkeleton } from "./FeedSkeleton";
 import { useUiStore } from "@/stores/ui";
 import { SHOW_ASK_SHOPI } from "@/features/feed/utils/askShopiAvailability";
+import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 
 const FollowingGrid = dynamic(() =>
   import("./FollowingGrid").then((mod) => mod.FollowingGrid),
@@ -27,6 +28,9 @@ const DesktopFeed = dynamic(() => import("./DesktopFeed"), {
 interface Props {
   lang: string;
   visible?: boolean;
+  /** Server-fetched first page, handed to FeedGrid so the feed's cards (and
+   *  the LCP image) are present in the server-rendered HTML. */
+  initialItems?: ContentCardFieldsFragment[];
 }
 
 type Tab = "for-you" | "following" | "nearby" | "ask-shopi";
@@ -43,7 +47,7 @@ const isMobileViewport = () =>
   typeof window !== "undefined" &&
   !window.matchMedia("(min-width: 768px)").matches;
 
-export function FeedPage({ lang, visible = true }: Props) {
+export function FeedPage({ lang, visible = true, initialItems }: Props) {
   const searchParams = useSearchParams();
   const setBottomNavHidden = useUiStore((s) => s.setBottomNavHidden);
   // Only mount the feed tree that can actually be displayed. CSS-hidden client
@@ -163,7 +167,11 @@ export function FeedPage({ lang, visible = true }: Props) {
             active-video election. */}
           <div className="relative bg-surface">
             <div className={tab === "for-you" ? undefined : "hidden"}>
-              <FeedGrid lang={lang} active={visible && tab === "for-you"} />
+              <FeedGrid
+                lang={lang}
+                active={visible && tab === "for-you"}
+                initialItems={initialItems}
+              />
             </div>
 
             {/* Following mounts lazily too, to avoid firing its feed query on
