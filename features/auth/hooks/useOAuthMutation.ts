@@ -166,6 +166,9 @@ export function useOAuthMutation(
         };
       };
 
+      const googleLoadError =
+        "Google sign-in is not available in this in-app browser. Use email below, or open Shopi in your browser and try Google again.";
+
       const getGoogle = (): Promise<GIS> =>
         new Promise((resolve, reject) => {
           const existing = (window as unknown as { google?: GIS }).google;
@@ -175,33 +178,51 @@ export function useOAuthMutation(
           }
 
           const selector = 'script[src="https://accounts.google.com/gsi/client"]';
-          const script = document.querySelector<HTMLScriptElement>(selector)
-            ?? document.createElement("script");
+          const failedScript = document.querySelector<HTMLScriptElement>(
+            `${selector}[data-shopi-load-state="error"]`,
+          );
+          failedScript?.remove();
+
+          const script =
+            document.querySelector<HTMLScriptElement>(selector) ??
+            document.createElement("script");
+          let settled = false;
           const resolveGoogle = () => {
+            if (settled) return;
             const google = (window as unknown as { google?: GIS }).google;
-            if (google) resolve(google);
-            else reject(new Error("Google sign-in failed to load."));
+            if (google) {
+              settled = true;
+              script.dataset.shopiLoadState = "loaded";
+              window.clearTimeout(timeoutId);
+              resolve(google);
+            } else {
+              settled = true;
+              script.dataset.shopiLoadState = "error";
+              window.clearTimeout(timeoutId);
+              reject(new Error(googleLoadError));
+            }
           };
+          const rejectGoogle = () => {
+            if (settled) return;
+            settled = true;
+            script.dataset.shopiLoadState = "error";
+            window.clearTimeout(timeoutId);
+            reject(new Error(googleLoadError));
+          };
+          const timeoutId = window.setTimeout(rejectGoogle, 8000);
 
           if (!script.parentNode) {
             script.src = "https://accounts.google.com/gsi/client";
             script.async = true;
             script.defer = true;
             script.addEventListener("load", resolveGoogle, { once: true });
-            script.addEventListener(
-              "error",
-              () => reject(new Error("Failed to load Google sign-in.")),
-              { once: true },
-            );
+            script.addEventListener("error", rejectGoogle, { once: true });
             document.head.appendChild(script);
           } else {
             script.addEventListener("load", resolveGoogle, { once: true });
-            script.addEventListener(
-              "error",
-              () => reject(new Error("Failed to load Google sign-in.")),
-              { once: true },
-            );
+            script.addEventListener("error", rejectGoogle, { once: true });
           }
+
         });
 
       try {

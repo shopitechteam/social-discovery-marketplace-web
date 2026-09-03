@@ -100,6 +100,9 @@ export function SideNav({ lang = "en" }: { lang: string }) {
                   OWN_PROFILE_SUBPATHS.some((p) =>
                     pathname.startsWith(`/${lang}/profile/${p}`),
                   )
+                : tab.key === "explore"
+                  ? pathname.startsWith(`/${lang}/explore`) ||
+                    pathname.startsWith(`/${lang}/search`)
                 : pathname.startsWith(`/${lang}/${tab.path}`);
           const Icon = tab.icon;
 
@@ -127,7 +130,9 @@ export function SideNav({ lang = "en" }: { lang: string }) {
       </nav>
 
       {/* Explore has its own full category UI, so Browse is redundant there. */}
-      {isDesktop && !pathname.startsWith(`/${lang}/explore`) ? (
+      {isDesktop &&
+      !pathname.startsWith(`/${lang}/explore`) &&
+      !pathname.startsWith(`/${lang}/search`) ? (
         <BrowseCategories lang={lang} />
       ) : null}
 
