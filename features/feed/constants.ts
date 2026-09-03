@@ -15,7 +15,7 @@
  * exact same limit, or the client's query misses the SSR cache and refetches
  * page 1 on hydration.
  */
-export const FEED_PAGE_SIZE = 6;
+export const FEED_PAGE_SIZE = 12;
 
 /**
  * Subsequent pages fetched by the infinite-scroll sentinel. Larger than the
