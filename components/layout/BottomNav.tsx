@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   House,
-  Inbox,
   InboxIcon,
   Plus,
   Search,
@@ -106,6 +105,9 @@ export function BottomNav({ lang = "en" }: { lang: string }) {
               ? pathname === `/${lang}` ||
                 pathname.startsWith(`/${lang}/feed`) ||
                 pathname.startsWith(`/${lang}/collections/`)
+              : tab.key === "explore"
+                ? pathname.startsWith(`/${lang}/explore`) ||
+                  pathname.startsWith(`/${lang}/search`)
               : pathname.startsWith(`/${lang}/${tab.path}`);
 
           return (

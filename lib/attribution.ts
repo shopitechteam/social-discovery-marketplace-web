@@ -38,7 +38,10 @@ export interface Attribution {
 
 /** Hosts we classify without a UTM tag. Ordered longest-match-first at lookup. */
 const REFERRER_RULES: Array<[RegExp, { source: string; medium: string }]> = [
-  [/(^|\.)(chatgpt\.com|chat\.openai\.com)$/, { source: "chatgpt", medium: "ai" }],
+  [
+    /(^|\.)(chatgpt\.com|chat\.openai\.com|openai\.com)$/,
+    { source: "chatgpt", medium: "ai" },
+  ],
   [/(^|\.)perplexity\.ai$/, { source: "perplexity", medium: "ai" }],
   [/(^|\.)claude\.ai$/, { source: "claude", medium: "ai" }],
   [/(^|\.)gemini\.google\.com$/, { source: "gemini", medium: "ai" }],
@@ -61,6 +64,42 @@ const REFERRER_RULES: Array<[RegExp, { source: string; medium: string }]> = [
   [/(^|\.)(messenger|l\.facebook)\./, { source: "messenger", medium: "social" }],
   [/(^|\.)t\.co$/, { source: "twitter", medium: "social" }],
 ];
+
+const AI_SOURCE_ALIASES: Array<[RegExp, string]> = [
+  [/(^|[.-])(chatgpt|openai)([.-]|$)|chat\.openai\.com/, "chatgpt"],
+  [/(^|[.-])perplexity([.-]|$)/, "perplexity"],
+  [/(^|[.-])claude([.-]|$)|anthropic/, "claude"],
+  [/(^|[.-])gemini([.-]|$)|bard/, "gemini"],
+  [/(^|[.-])copilot([.-]|$)/, "copilot"],
+];
+
+function normalizeCampaignValue(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, "")
+    .replace(/^www\./, "");
+}
+
+function normalizeSource(
+  source: string,
+  medium: string,
+): { source: string; medium: string } {
+  const normalized = normalizeCampaignValue(source);
+  if (!normalized) return { source, medium };
+
+  for (const [pattern, canonical] of AI_SOURCE_ALIASES) {
+    if (pattern.test(normalized)) {
+      return {
+        source: canonical,
+        medium: medium && medium !== "referral" ? medium : "ai",
+      };
+    }
+  }
+
+  return { source: normalized, medium };
+}
 
 function classifyReferrer(referrer: string): { source: string; medium: string } {
   if (!referrer) return { source: "direct", medium: "direct" };
@@ -119,8 +158,14 @@ export function captureAttribution(): Attribution | null {
   const existing = readStored();
   const params = new URLSearchParams(window.location.search);
 
-  const utmSource = params.get("utm_source")?.trim().toLowerCase() || undefined;
-  const utmMedium = params.get("utm_medium")?.trim().toLowerCase() || undefined;
+  const explicitSource =
+    params.get("utm_source") ||
+    params.get("source") ||
+    params.get("ref") ||
+    params.get("referrer") ||
+    undefined;
+  const utmSource = normalizeCampaignValue(explicitSource);
+  const utmMedium = normalizeCampaignValue(params.get("utm_medium") || undefined);
   const campaign = params.get("utm_campaign")?.trim() || undefined;
   const term =
     params.get("utm_term")?.trim() || params.get("utm_content")?.trim() || undefined;
@@ -133,6 +178,7 @@ export function captureAttribution(): Attribution | null {
 
   let source = utmSource ?? classified.source;
   let medium = utmMedium ?? classified.medium;
+  ({ source, medium } = normalizeSource(source, medium));
 
   if (!utmSource && gclid) {
     source = "google";
