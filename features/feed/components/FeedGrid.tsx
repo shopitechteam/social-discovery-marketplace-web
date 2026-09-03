@@ -2,7 +2,10 @@
 
 import { PostCard } from "./PostCard";
 import { useForYouFeed } from "../hooks/useFeed";
-import { FeedPaginationSkeleton, FeedSkeleton } from "./FeedSkeleton";
+import {
+  FeedCardsSkeleton,
+  FeedPaginationSkeleton,
+} from "./FeedSkeleton";
 import { TrendingStrip } from "./TrendingStrip";
 import { LocationPermissionBanner } from "./LocationPermissionBanner";
 //import { StoriesBar } from "@/features/stories/components/StoriesBar";
@@ -123,7 +126,7 @@ function FeedGrid({ lang, active = true, initialItems }: Props) {
           initialItems && initialItems.length > 0 ? (
             <FeedCards items={initialItems} lang={lang} />
           ) : (
-            <FeedSkeleton />
+            <FeedCardsSkeleton />
           )
         }
       >

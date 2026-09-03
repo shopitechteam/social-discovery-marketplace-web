@@ -62,6 +62,16 @@ export function PostCardSkeleton() {
   );
 }
 
+export function FeedCardsSkeleton() {
+  return (
+    <>
+      {[...Array(3)].map((_, i) => (
+        <PostCardSkeleton key={i} />
+      ))}
+    </>
+  );
+}
+
 export function FeedSkeleton() {
   return (
     <div>
@@ -88,9 +98,7 @@ export function FeedSkeleton() {
           </div>
         </section>
 
-        {[...Array(3)].map((_, i) => (
-          <PostCardSkeleton key={i} />
-        ))}
+        <FeedCardsSkeleton />
       </div>
 
       {/* ── Desktop skeleton — mirrors DesktopFeed's frame exactly (same

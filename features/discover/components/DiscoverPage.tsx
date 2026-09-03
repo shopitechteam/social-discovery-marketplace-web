@@ -45,6 +45,7 @@ import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { DiscoverGridCard } from "./DiscoverGridCard";
+import { FEED_PAGE_SIZE } from "@/features/feed/constants";
 import { useInfiniteScroll } from "@/features/feed/hooks/useInfiniteScroll";
 import { usePaginationGuard } from "@/features/feed/hooks/useFeed";
 import {
@@ -108,7 +109,7 @@ type DiscoveryResultCountData = {
   discoveryResultCount: number;
 };
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = FEED_PAGE_SIZE;
 const SEARCH_DEBOUNCE_MS = 280;
 
 const DISCOVERY_FEED: TypedDocumentNode<DiscoveryFeedData, DiscoveryFeedVars> =
