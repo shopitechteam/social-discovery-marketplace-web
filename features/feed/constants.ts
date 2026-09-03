@@ -1,3 +1,25 @@
-/** Mobile-first initial window. Six cards fill several phone viewports while
- * keeping the first streamed response and hydration work bounded. */
-export const FEED_PAGE_SIZE = 16;
+/**
+ * Mobile-first initial window. Six cards fill several phone viewports while
+ * keeping the first streamed response and hydration work bounded.
+ *
+ * This is the size of the FIRST page only — the one that is server-rendered
+ * into the document and hydrated before the feed is interactive. It is the
+ * single biggest lever on the feed's cold-start cost, because every card is a
+ * PostCard: ~100 DOM nodes, an IntersectionObserver, a ResizeObserver and a
+ * `<video>` element each. At 16 the first document carried ~1,700 elements and
+ * ~940 KB of HTML, which delayed LCP-image discovery by seconds. Six keeps the
+ * first paint small; `FEED_LOAD_MORE_SIZE` refills ahead of the scroll so the
+ * feed still feels endless.
+ *
+ * NOTE: the server preload in app/[lang]/(main)/feed/page.tsx must request this
+ * exact same limit, or the client's query misses the SSR cache and refetches
+ * page 1 on hydration.
+ */
+export const FEED_PAGE_SIZE = 6;
+
+/**
+ * Subsequent pages fetched by the infinite-scroll sentinel. Larger than the
+ * first page because by then nothing is blocking: the cards mount off-screen,
+ * outside the LCP window, so a bigger page just means fewer round trips.
+ */
+export const FEED_LOAD_MORE_SIZE = 12;
