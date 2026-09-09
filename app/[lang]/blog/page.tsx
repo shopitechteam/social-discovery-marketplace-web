@@ -48,6 +48,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 const categoryColors: Record<string, string> = {
+  "AI Guide": "#d81470",
   Trends: "rgb(var(--brand-primary))",
   "Seller Guide": "#10b981",
   Industry: "#8b5cf6",

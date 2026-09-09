@@ -2,6 +2,8 @@
 
 import { useEffect } from "react";
 
+const SERVICE_WORKER_URL = "/shopi-push-sw.js";
+
 /**
  * Registers the service worker for every visitor.
  *
@@ -24,14 +26,49 @@ export function ServiceWorkerRegistrar() {
     }
 
     let cancelled = false;
+    let refreshing = false;
+    let registration: ServiceWorkerRegistration | null = null;
+    const hadControllerAtStart = Boolean(navigator.serviceWorker.controller);
+
+    const reloadOnControllerChange = () => {
+      if (!hadControllerAtStart) return;
+      if (refreshing) return;
+      refreshing = true;
+      window.location.reload();
+    };
+
+    const checkForUpdate = () => {
+      if (cancelled || !registration) return;
+      void registration.update().catch(() => {
+        // Browsers already do periodic checks; this explicit check is a
+        // best-effort nudge for installed PWAs opened after a deploy.
+      });
+    };
 
     const register = () => {
       if (cancelled) return;
-      navigator.serviceWorker.register("/shopi-push-sw.js").catch(() => {
-        // A failed registration costs the install prompt and offline page, and
-        // nothing else — never surface it to the user.
-      });
+      navigator.serviceWorker
+        .register(SERVICE_WORKER_URL, { updateViaCache: "none" })
+        .then((nextRegistration) => {
+          if (cancelled) return;
+          registration = nextRegistration;
+          checkForUpdate();
+        })
+        .catch(() => {
+          // A failed registration costs the install prompt and offline page, and
+          // nothing else — never surface it to the user.
+        });
     };
+
+    const checkForVisibleUpdate = () => {
+      if (document.visibilityState === "visible") checkForUpdate();
+    };
+
+    navigator.serviceWorker.addEventListener(
+      "controllerchange",
+      reloadOnControllerChange,
+    );
+    document.addEventListener("visibilitychange", checkForVisibleUpdate);
 
     if (document.readyState === "complete") {
       register();
@@ -42,6 +79,11 @@ export function ServiceWorkerRegistrar() {
     return () => {
       cancelled = true;
       window.removeEventListener("load", register);
+      navigator.serviceWorker.removeEventListener(
+        "controllerchange",
+        reloadOnControllerChange,
+      );
+      document.removeEventListener("visibilitychange", checkForVisibleUpdate);
     };
   }, []);
 

@@ -106,12 +106,16 @@ export default async function BlogPostPage({ params }: Props) {
   };
 
   const categoryColors: Record<string, string> = {
+    "AI Guide": "#d81470",
     Trends: "rgb(var(--brand-primary))",
     "Seller Guide": "#10b981",
     Industry: "#8b5cf6",
     "Success Stories": "#f59e0b",
   };
   const catColor = categoryColors[post.category] ?? "rgb(var(--brand-primary))";
+  const resolveRelatedHref = (url: string) =>
+    url.startsWith("/") ? `/${lang}${url}` : url;
+  const isExternalRelatedLink = (url: string) => /^https?:\/\//.test(url);
 
   return (
     <>
@@ -266,7 +270,7 @@ export default async function BlogPostPage({ params }: Props) {
               </div>
             </div>
 
-            {/* Further reading — outbound links to Jiji / TikTok where relevant */}
+            {/* Further reading */}
             {post.relatedLinks && post.relatedLinks.length > 0 && (
               <div className="mb-12 border-t border-border pt-6">
                 <div className="mb-4 text-[0.75rem] font-semibold tracking-[0.05em] uppercase text-muted">
@@ -277,9 +281,13 @@ export default async function BlogPostPage({ params }: Props) {
                     ({ label, url, description: desc }) => (
                       <a
                         key={url}
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        href={resolveRelatedHref(url)}
+                        target={isExternalRelatedLink(url) ? "_blank" : undefined}
+                        rel={
+                          isExternalRelatedLink(url)
+                            ? "noopener noreferrer"
+                            : undefined
+                        }
                         className="flex items-start gap-4 rounded-[10px] border border-border bg-surface px-4 py-3.5 no-underline transition-colors duration-150"
                       >
                         <span
@@ -288,7 +296,8 @@ export default async function BlogPostPage({ params }: Props) {
                         />
                         <div>
                           <div className="mb-1 text-[0.875rem] font-semibold text-foreground">
-                            {label} ↗
+                            {label}
+                            {isExternalRelatedLink(url) ? " ↗" : ""}
                           </div>
                           <div className="text-[0.8rem] leading-[1.5] text-muted">
                             {desc}

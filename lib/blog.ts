@@ -29,6 +29,133 @@ type BlogSection = {
 export const blogPosts: BlogPost[] = [
   // ─────────────────────────────────────────────────────────────────
   {
+    slug: "how-shopi-agent-helps-kenyan-buyers-and-sellers-every-day",
+    title: "How Shopi Agent Helps Kenyan Buyers and Sellers Every Day",
+    description:
+      "Shopi Agent is the free AI assistant inside Shopi. Learn how it helps Kenyan sellers create listings and buyers find products through everyday language.",
+    excerpt:
+      "Shopi Agent turns everyday buying and selling into a conversation: sellers upload a photo, buyers describe what they need, and Shopi helps both sides move faster.",
+    category: "AI Guide",
+    readTime: "7 min read",
+    publishedAt: "2026-09-09",
+    author: {
+      name: "Shopi Team",
+      role: "Product Education",
+      initials: "S",
+      color: "#d81470",
+    },
+    keywords: [
+      "Shopi Agent",
+      "AI shopping assistant Kenya",
+      "AI marketplace Kenya",
+      "AI listing assistant",
+      "AI for sellers Kenya",
+      "AI product search Kenya",
+      "photo to listing AI",
+      "social commerce AI",
+      "sell online Kenya with AI",
+      "find products online Kenya",
+    ],
+    sections: [
+      {
+        heading: "What is Shopi Agent?",
+        body: "Shopi Agent is the AI assistant built into Shopi, Kenya's social marketplace. It helps sellers create better listings from simple product photos and helps buyers find relevant products by describing what they want in normal language.\n\nThe important difference is that Shopi Agent sits inside the marketplace. It is not a separate chatbot that gives general advice and sends people away. It works around real Shopi buying and selling tasks: creating a listing, improving product details, understanding a buyer's request, and guiding the user toward the next useful step.",
+      },
+      {
+        heading: "How Shopi Agent helps sellers day to day",
+        body: "For many small sellers, the hardest part of selling online is not the product. It is the blank form: title, category, description, specifications, condition, and the small details buyers expect before they message. Shopi Agent reduces that work.\n\nA seller can upload a product photo and use Shopi Agent to draft the listing details. The seller still checks the price, condition, location, and any details the photo cannot prove, but the first draft is no longer starting from zero.",
+        list: [
+          "Turns product photos into listing drafts",
+          "Suggests product titles buyers can understand",
+          "Helps write descriptions that mention condition, use case, and key details",
+          "Suggests categories and specifications where the product is clear",
+          "Leaves the seller in control before anything is published",
+        ],
+      },
+      {
+        heading: "How Shopi Agent helps buyers day to day",
+        body: "Buyers do not always know the perfect search term. Someone may want 'a clean used fridge near Nakuru under 30k' or 'a good phone for TikTok videos around 20,000' rather than a specific brand and model. Shopi Agent is designed for those moments.\n\nInstead of forcing the buyer to think like a filter menu, Shopi Agent lets them explain the need in plain language. It can use the item, budget, location, and intent inside the request to help surface useful Shopi listings.",
+        list: [
+          "Understands natural buying requests",
+          "Helps buyers move from vague need to relevant listings",
+          "Makes local discovery easier by considering location language",
+          "Supports product discovery when buyers do not know the exact category",
+        ],
+      },
+      {
+        heading: "Why AI matters for social commerce in Kenya",
+        body: "Kenyan commerce is already conversational. People ask questions before buying, negotiate in chat, confirm location, ask for more photos, and decide based on trust. AI is useful when it supports that behaviour instead of replacing it.\n\nShopi Agent helps with the repetitive parts of commerce: writing, structuring, describing, and searching. The human parts remain human. Buyers and sellers still message directly, agree price directly, arrange payment directly, and decide whether a deal feels right.",
+      },
+      {
+        heading: "Everyday examples",
+        body: "A clothes seller in Nairobi can photograph a dress and get help turning it into a clear listing with size, style, condition, and a buyer-friendly title. A phone dealer can create a faster draft that reminds them to mention storage, battery health, accessories, and location. A furniture seller can describe dimensions and delivery options in a way buyers can scan quickly.\n\nOn the buyer side, someone furnishing a bedsitter can ask for affordable sofas near them. A parent can search for a school bag within a budget. A small business owner can look for a second-hand phone for content creation. The goal is not to make shopping complicated; it is to remove the typing and guessing that slow people down.",
+      },
+      {
+        heading: "What Shopi Agent does not do",
+        body: "For trust and safety, Shopi Agent has clear limits. It does not publish a listing without the seller reviewing it. It does not negotiate prices. It does not message buyers or sellers on anyone's behalf. It does not process payments, hold money, provide escrow, or guarantee that a seller or buyer is trustworthy.\n\nThat matters because Shopi is a direct marketplace. The agent helps people create and discover better listings, but every deal remains between the buyer and the seller.",
+        list: [
+          "No automatic publishing without review",
+          "No payment handling or escrow",
+          "No price negotiation on behalf of users",
+          "No messaging other people without the user's action",
+          "No replacement for checking product condition before paying",
+        ],
+      },
+      {
+        heading: "How to get the best results from Shopi Agent",
+        body: "AI works best when the input is specific. Sellers should upload clear photos, add the real price, correct details that only they know, and be honest about condition. Buyers should mention the product, budget, location, preferred condition, and any must-have details.\n\nA simple request like 'used Samsung phone in Nairobi under 25,000 with good camera' is more useful than 'phone'. A seller photo taken in good light is more useful than a dark or cropped image. Shopi Agent is powerful, but better context still creates better results.",
+      },
+    ],
+    faq: [
+      {
+        q: "What is Shopi Agent?",
+        a: "Shopi Agent is the free AI assistant inside Shopi. It helps sellers create listings from product photos and helps buyers find products by describing what they want in plain language.",
+      },
+      {
+        q: "How does Shopi Agent help sellers in Kenya?",
+        a: "It reduces the work of creating listings by suggesting titles, descriptions, categories, and specifications from a product photo. Sellers review and edit the draft before publishing.",
+      },
+      {
+        q: "How does Shopi Agent help buyers?",
+        a: "Buyers can describe what they want naturally, including budget and location, and Shopi Agent helps them discover relevant listings instead of relying only on exact search keywords.",
+      },
+      {
+        q: "Is Shopi Agent free?",
+        a: "Yes. Shopi Agent is part of Shopi and is free for buyers and sellers. Shopi does not charge listing fees or take commission from sales.",
+      },
+      {
+        q: "Can Shopi Agent negotiate or buy products for me?",
+        a: "No. Shopi Agent helps with listing creation and product discovery. It does not negotiate, send messages on your behalf, process payments, or complete purchases.",
+      },
+      {
+        q: "Does Shopi Agent publish listings automatically?",
+        a: "No. The seller reviews and edits the listing draft first. Nothing is published until the seller confirms it.",
+      },
+    ],
+    relatedLinks: [
+      {
+        label: "Shopi Agent",
+        url: "/shopi-agent",
+        description:
+          "The main Shopi Agent page explains how the AI assistant works for sellers and buyers.",
+      },
+      {
+        label: "How to sell on Shopi",
+        url: "/blog/how-to-sell-on-shopi-complete-guide-for-kenyan-sellers",
+        description:
+          "A practical guide for sellers who want to create better listings and close more direct chats.",
+      },
+      {
+        label: "Explore Shopi listings",
+        url: "/explore",
+        description:
+          "Browse the marketplace and see how product discovery works across categories and locations.",
+      },
+    ],
+  },
+
+  // ─────────────────────────────────────────────────────────────────
+  {
     slug: "why-social-discovery-is-the-future-of-shopping-in-kenya",
     title: "Why Social Discovery Is the Future of Shopping in Kenya",
     description:

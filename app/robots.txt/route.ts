@@ -22,6 +22,8 @@ const DISALLOWED = [
   "/*/notifications",
   "/*/upload",
   "/*/auth/",
+  "/careers",
+  "/*/careers",
   // Public seller pages (/{lang}/profile/{username}) stay crawlable — only the
   // viewer's own profile and its management screens are private.
   "/*/profile/edit",

@@ -65,7 +65,9 @@ function subscriptionMatchesKey(
 }
 
 async function getRegistration(): Promise<ServiceWorkerRegistration> {
-  return navigator.serviceWorker.register("/shopi-push-sw.js");
+  return navigator.serviceWorker.register("/shopi-push-sw.js", {
+    updateViaCache: "none",
+  });
 }
 
 async function fetchPushStatus(

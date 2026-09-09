@@ -183,12 +183,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/faq", changeFrequency: "monthly", priority: 0.8 },
     { path: "/shopi-agent", changeFrequency: "monthly", priority: 0.9 },
     {
+      path: "/online-selling-jobs-kenya",
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
       path: "/marketplace-alternatives-kenya",
       changeFrequency: "monthly",
       priority: 0.8,
     },
     { path: "/about", changeFrequency: "monthly", priority: 0.7 },
-    { path: "/careers", changeFrequency: "monthly", priority: 0.5 },
     { path: "/feed", changeFrequency: "always", priority: 0.9 },
     { path: "/explore", changeFrequency: "hourly", priority: 0.8 },
     { path: "/search", changeFrequency: "hourly", priority: 0.8 },

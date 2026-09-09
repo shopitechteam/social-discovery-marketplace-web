@@ -4,14 +4,24 @@ export const dynamic = "force-dynamic";
 
 const FALLBACK_FRONTEND_URL = "https://www.shopi.co.ke";
 
-function frontendUrl(): string {
+function frontendUrl(requestOrigin: string): string {
   const value =
     process.env.FRONTEND_URL ??
     process.env.NEXT_PUBLIC_APP_URL ??
+    requestOrigin ??
     FALLBACK_FRONTEND_URL;
 
   try {
-    return new URL(value).origin;
+    const configured = new URL(value);
+    const servedFrom = new URL(requestOrigin);
+    if (
+      configured.hostname === "localhost" &&
+      servedFrom.hostname === "localhost" &&
+      configured.origin !== servedFrom.origin
+    ) {
+      return servedFrom.origin;
+    }
+    return configured.origin;
   } catch {
     return FALLBACK_FRONTEND_URL;
   }
@@ -23,10 +33,25 @@ function frontendUrl(): string {
  * clicks on the canonical frontend even when an API payload contains a stale
  * localhost/development absolute URL.
  */
-export async function GET() {
+export async function GET(request: Request) {
+  const requestOrigin = new URL(request.url).origin;
   const script = `
-const APP_ORIGIN = ${JSON.stringify(frontendUrl())};
+const SW_VERSION = ${JSON.stringify(
+    process.env.VERCEL_GIT_COMMIT_SHA ??
+      process.env.VERCEL_DEPLOYMENT_ID ??
+      process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA ??
+      "local",
+  )};
+const APP_ORIGIN = ${JSON.stringify(frontendUrl(requestOrigin))};
 const DEFAULT_PATH = "/en";
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(self.skipWaiting());
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(clients.claim());
+});
 
 function notificationUrl(value) {
   try {
