@@ -13,6 +13,7 @@ import {
 import { useFollow } from "@/features/feed/hooks/useFollow";
 import { SHIMMER_AVATAR } from "@/lib/shimmer";
 import { Skeleton } from "@/components/ui/skeleton";
+import { profileHref } from "@/lib/profile-url";
 
 const PAGE_SIZE = 20;
 
@@ -57,7 +58,7 @@ function FollowerRow({
       ? "Follow back"
       : "Follow";
 
-  const profileHref = `/${lang}/profile/${user.username || user.id}`;
+  const href = profileHref(lang, user);
 
   return (
     <li
@@ -65,7 +66,7 @@ function FollowerRow({
       style={{ borderColor: "rgb(var(--color-border))" }}
     >
       <Link
-        href={profileHref}
+        href={href}
         className="flex min-w-0 flex-1 items-center gap-3"
       >
         <div

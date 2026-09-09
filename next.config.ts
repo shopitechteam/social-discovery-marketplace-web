@@ -66,13 +66,37 @@ const connectSrc = [
   "https://appleid.apple.com",
   // Analytics
   "https://api.mixpanel.com",
+  // Google Tag Manager beacons + whatever tags the container loads report to.
+  // Without these the container script parses and then fails on every send,
+  // which is worse than not loading it at all.
+  "https://www.googletagmanager.com",
+  "https://www.google-analytics.com",
+  "https://*.google-analytics.com",
+  "https://*.analytics.google.com",
+  // Cloudflare Web Analytics. The beacon is injected by the Cloudflare proxy
+  // in front of the site, not by this app, so it has to be allowed here or it
+  // reports a CSP violation on every page view.
+  "https://static.cloudflareinsights.com",
+  "https://cloudflareinsights.com",
 ]
   .filter(Boolean)
   .join(" ");
 
+// `upgrade-insecure-requests` rewrites every http:// subresource to https://.
+// That is exactly right for the deployed site, but it also rewrites an http
+// API origin — so a production build pointed at http://localhost:4000 has all
+// of its browser GraphQL requests silently upgraded to https and fail with
+// "TypeError: Failed to fetch". (SSR is unaffected: CSP only governs the
+// browser, which is why the page renders and then dies on the first
+// client-side query.) Emit it only when the API is already https, i.e. on a
+// real deployment, where it never changes behaviour but keeps the hardening.
+const upgradeInsecureRequests = apiUrl.startsWith("http://")
+  ? ""
+  : "upgrade-insecure-requests;";
+
 const cspHeader = `
   default-src 'self';
-  script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://accounts.google.com https://appleid.cdn-apple.com https://maps.googleapis.com https://*.mux.com;
+  script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://accounts.google.com https://appleid.cdn-apple.com https://maps.googleapis.com https://*.mux.com https://www.googletagmanager.com https://static.cloudflareinsights.com;
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style;
   img-src 'self' blob: data: https: ;
   font-src 'self' data: https://fonts.gstatic.com;
@@ -84,7 +108,7 @@ const cspHeader = `
   base-uri 'self';
   form-action 'self';
   frame-ancestors 'self';
-  upgrade-insecure-requests;
+  ${upgradeInsecureRequests}
 `
   .replace(/\s{2,}/g, " ")
   .trim();

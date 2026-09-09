@@ -33,9 +33,12 @@ export default async function ProfileOgImage({
 }: {
   // Next 16 hands metadata image routes an async params object — see the
   // sibling listing OG route; reading it synchronously rendered a blank card.
-  params: Promise<{ lang: string; username: string }>;
+  params: Promise<{ lang: string; handle: string }>;
 }) {
-  const { username } = await params;
+  const { handle } = await params;
+  // The segment carries the leading "@" (see page.tsx) — strip it before the
+  // lookup, which keys on the bare username.
+  const username = decodeURIComponent(handle).replace(/^@/, "").toLowerCase();
 
   let profile: Profile | null = null;
   try {
@@ -49,7 +52,7 @@ export default async function ProfileOgImage({
   }
 
   const name = profile ? displayName(profile) : "Shopi";
-  const handle = profile?.username ? `@${profile.username}` : "";
+  const handleLabel = profile?.username ? `@${profile.username}` : "";
   // Avatars are usually .webp, which satori cannot decode — those fall back
   // to the initials tile instead of an empty circle.
   const avatar = ogDecodableImage(profile?.profile?.avatar);
@@ -149,9 +152,9 @@ export default async function ProfileOgImage({
             >
               {name.length > 28 ? `${name.slice(0, 28)}…` : name}
             </div>
-            {handle && (
+            {handleLabel && (
               <div style={{ fontSize: 34, color: "#F5A8C4", display: "flex" }}>
-                {handle}
+                {handleLabel}
               </div>
             )}
           </div>

@@ -6,7 +6,6 @@ import {
   useEffect,
   useState,
   useCallback,
-  useLayoutEffect,
   useId,
   useMemo,
 } from "react";
@@ -63,6 +62,7 @@ import { toast } from "sonner";
 import { absoluteContentUrl, contentPath } from "@/lib/content-url";
 import { Button } from "@/components/ui/button";
 import { rememberScrollBeforeNavigation } from "@/components/layout/RouteScrollRestoration";
+import { profileHref } from "@/lib/profile-url";
 
 const CommentsDrawer = dynamic(() =>
   import("./CommentsDrawer").then((mod) => mod.CommentsDrawer),
@@ -896,6 +896,13 @@ function FeedImageInner({
       sizes={sizes}
       className={cn("w-full mx-0 px-0", className)}
       preload={priority}
+      // `preload`/`priority` only emit the <link rel="preload"> and opt the
+      // image out of lazy loading — neither sets fetchpriority on the <img>
+      // (see next/dist/shared/lib/get-img-props). Without this the LCP
+      // thumbnail was discovered early but still fetched at default priority,
+      // queued behind the feed's scripts. Only the first card gets it: marking
+      // every image high-priority is the same as marking none.
+      fetchPriority={priority ? "high" : undefined}
       loading={priority ? undefined : loadingProp}
       quality={priority ? 75 : 55}
       placeholder={blurDataURL ? "blur" : "empty"}
@@ -1342,22 +1349,25 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
     }
 
     rememberScrollBeforeNavigation();
-    router.push(`/${lang}/profile/${creator.id}`, { scroll: false });
+    router.push(profileHref(lang, creator), { scroll: false });
   }
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     const el = captionRef.current;
     if (!el) {
       setCaptionOverflows(false);
       return;
     }
 
-    const measure = () => {
+    // Measurement is left entirely to the ResizeObserver, which fires once for
+    // the initial size the moment it observes. The explicit synchronous
+    // measure() that used to run here forced a style+layout flush per card
+    // inside a layout effect — with a full page of feed cards hydrating at
+    // once that was the bulk of the reported forced-reflow time. The observer
+    // does the same reads off the layout-flush path, so nothing looks different.
+    const observer = new ResizeObserver(() => {
       setCaptionOverflows(el.scrollHeight > el.clientHeight + 1);
-    };
-
-    measure();
-    const observer = new ResizeObserver(measure);
+    });
     observer.observe(el);
     return () => observer.disconnect();
   }, [caption, expanded]);
@@ -1628,6 +1638,32 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
         <p className="font-semibold text-default text-[15px] leading-snug mb-1">
           {post.title}
         </p>
+
+        {/* Price sits with the title, above the media.
+
+            It used to live in the stats row below the media. A card runs about
+            1005px on a 390px phone against an 844px viewport, so by the time
+            the photo filled the screen the price had scrolled off the bottom —
+            the buyer saw the product and not what it costs. On a marketplace
+            that is the one number the card exists to deliver, so it belongs in
+            the first block, next to what it is buying. */}
+        <div className="mb-2.5 mt-2 flex items-baseline gap-2">
+          <span
+            // 800 is a real Manrope weight (see AppDocument), not a synthesised
+            // one, so it thickens cleanly instead of smearing.
+            className="text-[19px] font-extrabold leading-none tracking-[-0.01em]"
+            style={{ color: "rgb(var(--color-text-main))" }}
+          >
+            {post.price && post.price.amount > 0
+              ? `${post.price.currency} ${post.price.amount.toLocaleString()}`
+              : "Ask price"}
+          </span>
+          {post.price?.negotiable && post.price.amount > 0 && (
+            <span className="text-xs font-medium text-muted-foreground">
+              Negotiable
+            </span>
+          )}
+        </div>
         {caption && (
           <div className="text-sm leading-5 text-default">
             <p
@@ -1715,37 +1751,17 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
       </div>
 
       {/* ── Stats row ──────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between px-4 pt-2.5 pb-1">
-        <div className="flex items-center gap-3 text-muted-foreground text-xs font-medium">
-          {/* {(post.stats?.comments ?? 0) > 0 && (
-            <span>
-              · {fmt(post.stats!.comments!)} comment
-              {post.stats.comments == 1 ? "" : "s"}
-            </span>
-          )} */}
-          {(post.stats?.shares ?? 0) > 0 && (
-            <span>
-              {saveCount > 0 ? " " : ""}
-              {fmt(post.stats!.shares!)} share
-              {post.stats.shares == 1 ? "" : "s"}
-            </span>
-          )}
-          {(post.stats?.views ?? 0) > 0 && (
-            <span>
-              · {fmt(post.stats!.views!)} view
-              {post.stats.views == 1 ? "" : "s"}
-            </span>
-          )}
+      {/* Shares only, and only when there are any. Raw view counts came out as
+          "· 15 views" — a dangling separator from a hardcoded prefix that
+          assumed a shares span before it, and a number that discourages more
+          than it persuades on a young listing. The save proof below carries the
+          social signal that actually reads well. */}
+      {(post.stats?.shares ?? 0) > 0 && (
+        <div className="px-4 pt-2.5 pb-1 text-muted-foreground text-xs font-medium">
+          {fmt(post.stats!.shares!)} share
+          {post.stats!.shares === 1 ? "" : "s"}
         </div>
-        {post.price && post.price.amount > 0 && (
-          <span
-            className="text-base font-bold"
-            style={{ color: "rgb(var(--color-text))" }}
-          >
-            {post.price.currency} {post.price.amount.toLocaleString()}
-          </span>
-        )}
-      </div>
+      )}
 
       {saveProofText && (
         <div className="mx-4 mb-1.5 flex max-w-[calc(100%-2rem)] items-center gap-2 rounded-2xl px-0.5 py-1 text-xs text-muted-foreground">

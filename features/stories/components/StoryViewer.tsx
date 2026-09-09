@@ -34,10 +34,13 @@ function ProgressBars({
   const startRef = useRef<number | null>(null);
   // Stable ref so the RAF loop never captures a stale onComplete
   const onCompleteRef = useRef(onComplete);
-  useEffect(() => { onCompleteRef.current = onComplete; });
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  });
 
   useEffect(() => {
     // Reset progress whenever the current segment changes
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setProgress(0);
     startRef.current = null;
 
@@ -81,7 +84,11 @@ function ProgressBars({
             className="h-full bg-white rounded-full"
             style={{
               width:
-                i < current ? "100%" : i === current ? `${progress * 100}%` : "0%",
+                i < current
+                  ? "100%"
+                  : i === current
+                    ? `${progress * 100}%`
+                    : "0%",
               transition: "none",
             }}
           />
@@ -151,9 +158,15 @@ export function StoryViewer({
   const advanceRef = useRef(advance);
   const goBackRef = useRef(goBack);
   const onCloseRef = useRef(onClose);
-  useEffect(() => { advanceRef.current = advance; }, [advance]);
-  useEffect(() => { goBackRef.current = goBack; }, [goBack]);
-  useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
+  useEffect(() => {
+    advanceRef.current = advance;
+  }, [advance]);
+  useEffect(() => {
+    goBackRef.current = goBack;
+  }, [goBack]);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -206,8 +219,9 @@ export function StoryViewer({
   const user = ring.user;
   const avatar = user.profile?.avatar;
   const name =
-    [user.profile?.firstName, user.profile?.lastName].filter(Boolean).join(" ") ||
-    "User";
+    [user.profile?.firstName, user.profile?.lastName]
+      .filter(Boolean)
+      .join(" ") || "User";
   const isVideo = story.media.mediaType === "VIDEO";
   const playbackId = story.media.muxPlaybackId;
   const mediaReady = story.media.processingStatus === "ready";
@@ -221,7 +235,6 @@ export function StoryViewer({
     >
       {/* Full-screen media area */}
       <div className="relative w-full h-full flex items-center justify-center">
-
         {/* ── Media ─────────────────────────────────────────────────── */}
         {isVideo && playbackId && mediaReady ? (
           <MuxPlayer
@@ -291,7 +304,9 @@ export function StoryViewer({
               <p className="text-white text-sm font-semibold leading-tight truncate drop-shadow">
                 {name}
               </p>
-              <p className="text-white/60 text-xs">{timeAgo(String(story.createdAt))}</p>
+              <p className="text-white/60 text-xs">
+                {timeAgo(String(story.createdAt))}
+              </p>
             </div>
           </div>
         </div>
@@ -302,7 +317,14 @@ export function StoryViewer({
           className="absolute top-0 right-0 z-30 mt-safe-area-inset-top mt-10 mr-3 p-2 rounded-full bg-black/40 text-white active:bg-black/60"
           aria-label="Close stories"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+          >
             <path d="M18 6 6 18M6 6l12 12" strokeLinecap="round" />
           </svg>
         </button>

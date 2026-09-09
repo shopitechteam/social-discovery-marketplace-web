@@ -4,8 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
-  Bell,
   Home,
+  MessageCircle,
   LogOut,
   Moon,
   Plus,
@@ -35,7 +35,14 @@ const tabs: Tab[] = [
   { key: "feed", path: "feed", label: "Feed", icon: Home },
   { key: "explore", path: "explore", label: "Explore", icon: Search },
   { key: "upload", path: "upload", label: "Upload & sell", icon: Plus },
-  { key: "notifications", path: "notifications", label: "Inbox", icon: Bell },
+  // Same glyph as the mobile bar — this tab was a bell here and a tray there,
+  // for one destination that opens on Messages.
+  {
+    key: "notifications",
+    path: "notifications",
+    label: "Inbox",
+    icon: MessageCircle,
+  },
   { key: "profile", path: "profile", label: "Profile", icon: User },
 ];
 
@@ -100,6 +107,9 @@ export function SideNav({ lang = "en" }: { lang: string }) {
                   OWN_PROFILE_SUBPATHS.some((p) =>
                     pathname.startsWith(`/${lang}/profile/${p}`),
                   )
+                : tab.key === "explore"
+                  ? pathname.startsWith(`/${lang}/explore`) ||
+                    pathname.startsWith(`/${lang}/search`)
                 : pathname.startsWith(`/${lang}/${tab.path}`);
           const Icon = tab.icon;
 
@@ -127,7 +137,9 @@ export function SideNav({ lang = "en" }: { lang: string }) {
       </nav>
 
       {/* Explore has its own full category UI, so Browse is redundant there. */}
-      {isDesktop && !pathname.startsWith(`/${lang}/explore`) ? (
+      {isDesktop &&
+      !pathname.startsWith(`/${lang}/explore`) &&
+      !pathname.startsWith(`/${lang}/search`) ? (
         <BrowseCategories lang={lang} />
       ) : null}
 

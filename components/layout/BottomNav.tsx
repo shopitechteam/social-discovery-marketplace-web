@@ -4,11 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   House,
-  Inbox,
-  InboxIcon,
+  MessageCircle,
   Plus,
   Search,
-  UserRound,
+  User,
   type LucideIcon,
 } from "lucide-react";
 import { useInboxUnreadCount } from "@/features/messaging/hooks/useUnreadCount";
@@ -21,6 +20,12 @@ type Tab = {
   icon: LucideIcon;
 };
 
+/**
+ * Icon set is deliberately uniform: one weight, one size, outline only, round
+ * joins. Mixing a boxy tray with a hairline house is what made the old bar look
+ * assembled rather than drawn. `MessageCircle` also matches what the Inbox tab
+ * actually opens on — its Messages subtab.
+ */
 const tabs: Tab[] = [
   {
     key: "feed",
@@ -44,15 +49,20 @@ const tabs: Tab[] = [
     key: "notifications",
     path: "notifications",
     label: "Inbox",
-    icon: InboxIcon,
+    icon: MessageCircle,
   },
   {
     key: "profile",
     path: "profile",
     label: "Profile",
-    icon: UserRound,
+    icon: User,
   },
 ];
+
+/** One size and one weight for every tab icon — active differs by colour. */
+const ICON_SIZE = 25;
+const STROKE_INACTIVE = 1.85;
+const STROKE_ACTIVE = 2.15;
 
 export function shouldHideBottomNav(pathname: string) {
   return (
@@ -86,16 +96,21 @@ export function BottomNav({ lang = "en" }: { lang: string }) {
           const href = `/${lang}/${tab.path}`;
           const Icon = tab.icon;
 
-          // Center Post button — gradient pill
+          // Center Post button — one flat brand-coloured squircle. It used to
+          // carry a two-stop gradient and a 16px coloured glow, which is what
+          // made the bar read as decorated rather than clean. A solid block of
+          // the brand colour is louder than the glow ever was, because nothing
+          // around it competes.
           if (tab.key === "upload") {
             return (
               <Link
                 key={tab.key}
                 href={href}
-                className="flex h-9 w-13 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,rgb(var(--brand-primary)),rgb(var(--brand-primary))_60%,rgb(var(--brand-secondary)))] shadow-[0_4px_16px_rgb(var(--brand-primary)/0.4)]"
+                className="flex h-9.5 w-14 shrink-0 items-center justify-center rounded-[13px] text-white [-webkit-tap-highlight-color:transparent] active:opacity-90"
+                style={{ backgroundColor: "rgb(var(--brand-primary))" }}
                 aria-label="Create post"
               >
-                <Icon size={22} strokeWidth={2.8} color="white" />
+                <Icon size={21} strokeWidth={2.6} />
               </Link>
             );
           }
@@ -106,6 +121,9 @@ export function BottomNav({ lang = "en" }: { lang: string }) {
               ? pathname === `/${lang}` ||
                 pathname.startsWith(`/${lang}/feed`) ||
                 pathname.startsWith(`/${lang}/collections/`)
+              : tab.key === "explore"
+                ? pathname.startsWith(`/${lang}/explore`) ||
+                  pathname.startsWith(`/${lang}/search`)
               : pathname.startsWith(`/${lang}/${tab.path}`);
 
           return (
@@ -119,15 +137,17 @@ export function BottomNav({ lang = "en" }: { lang: string }) {
               aria-current={isActive ? "page" : undefined}
             >
               <span className="relative">
+                {/* Outline only. The old active state filled the glyph at 18%
+                    opacity, which turned a crisp icon into a smudge — colour
+                    and the label weight already say which tab you're on. */}
                 <Icon
-                  size={24}
-                  strokeWidth={isActive ? 2.45 : 1.9}
-                  fill={isActive ? "currentColor" : "none"}
-                  fillOpacity={isActive ? 0.18 : 0}
+                  size={ICON_SIZE}
+                  strokeWidth={isActive ? STROKE_ACTIVE : STROKE_INACTIVE}
+                  fill="none"
                 />
                 {tab.key === "notifications" && unreadCount > 0 ? (
                   <span
-                    className="absolute -right-2 -top-1.5 flex h-4.5 min-w-4.5 items-center justify-center rounded-full border-[1.5px] border-elevated bg-primary px-1 text-[10px] leading-none font-bold text-white shadow-[0_1px_3px_rgba(0,0,0,0.25)]"
+                    className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full border-2 border-elevated bg-primary px-[3px] text-[9px] font-bold leading-none text-white"
                     aria-label={`${unreadCount} unread`}
                   >
                     {unreadCount > 99 ? "99+" : unreadCount}

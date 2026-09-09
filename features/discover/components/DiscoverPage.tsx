@@ -41,10 +41,13 @@ import {
 } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FeedLoader } from "@/components/ui/feed-loader";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { DiscoverGridCard } from "./DiscoverGridCard";
+import { SubcategoryRow } from "./SubcategoryRow";
+import { FEED_PAGE_SIZE } from "@/features/feed/constants";
 import { useInfiniteScroll } from "@/features/feed/hooks/useInfiniteScroll";
 import { usePaginationGuard } from "@/features/feed/hooks/useFeed";
 import {
@@ -88,6 +91,7 @@ type DiscoveryFeedVars = {
   minPrice?: number;
   maxPrice?: number;
   negotiableOnly?: boolean;
+  subcategory?: string;
   sort?: DiscoverySort;
   limit?: number;
   after?: string;
@@ -96,6 +100,7 @@ type DiscoveryFeedVars = {
 type DiscoveryFacetsVars = {
   query?: string;
   categoryId?: string;
+  subcategory?: string;
   countyId?: string;
   subCountyId?: string;
   wardId?: string;
@@ -108,7 +113,7 @@ type DiscoveryResultCountData = {
   discoveryResultCount: number;
 };
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = FEED_PAGE_SIZE;
 const SEARCH_DEBOUNCE_MS = 280;
 
 const DISCOVERY_FEED: TypedDocumentNode<DiscoveryFeedData, DiscoveryFeedVars> =
@@ -116,6 +121,7 @@ const DISCOVERY_FEED: TypedDocumentNode<DiscoveryFeedData, DiscoveryFeedVars> =
     query DiscoveryFeed(
       $query: String
       $categoryId: String
+      $subcategory: String
       $countyId: String
       $subCountyId: String
       $wardId: String
@@ -129,6 +135,7 @@ const DISCOVERY_FEED: TypedDocumentNode<DiscoveryFeedData, DiscoveryFeedVars> =
       discoveryFeed(
         query: $query
         categoryId: $categoryId
+        subcategory: $subcategory
         countyId: $countyId
         subCountyId: $subCountyId
         wardId: $wardId
@@ -232,6 +239,7 @@ const DISCOVERY_LOCATION_FACETS: TypedDocumentNode<
   query DiscoveryLocationFacets(
     $query: String
     $categoryId: String
+    $subcategory: String
     $countyId: String
     $subCountyId: String
     $wardId: String
@@ -242,6 +250,7 @@ const DISCOVERY_LOCATION_FACETS: TypedDocumentNode<
     discoveryFacets(
       query: $query
       categoryId: $categoryId
+      subcategory: $subcategory
       countyId: $countyId
       subCountyId: $subCountyId
       wardId: $wardId
@@ -274,6 +283,56 @@ const DISCOVERY_LOCATION_FACETS: TypedDocumentNode<
   }
 `;
 
+/**
+ * Level-2 subcategories inside the active category, with a cover image each.
+ *
+ * Deliberately does NOT take `$subcategory`: the row must not rearrange itself
+ * when you pick a tile from it, and leaving the variable out keeps one cache
+ * entry per category instead of one per tile.
+ */
+type SubcategoryFacet = {
+  name: string;
+  count: number;
+  imageUrl?: string | null;
+};
+
+type DiscoverySubcategoryFacetsData = {
+  discoveryFacets: { subcategories: SubcategoryFacet[] };
+};
+
+const DISCOVERY_SUBCATEGORY_FACETS: TypedDocumentNode<
+  DiscoverySubcategoryFacetsData,
+  Omit<DiscoveryFacetsVars, "subcategory">
+> = gql`
+  query DiscoverySubcategoryFacets(
+    $query: String
+    $categoryId: String
+    $countyId: String
+    $subCountyId: String
+    $wardId: String
+    $minPrice: Float
+    $maxPrice: Float
+    $negotiableOnly: Boolean
+  ) {
+    discoveryFacets(
+      query: $query
+      categoryId: $categoryId
+      countyId: $countyId
+      subCountyId: $subCountyId
+      wardId: $wardId
+      minPrice: $minPrice
+      maxPrice: $maxPrice
+      negotiableOnly: $negotiableOnly
+    ) {
+      subcategories {
+        name
+        count
+        imageUrl
+      }
+    }
+  }
+`;
+
 const DISCOVERY_RESULT_COUNT: TypedDocumentNode<
   DiscoveryResultCountData,
   DiscoveryFacetsVars
@@ -281,6 +340,7 @@ const DISCOVERY_RESULT_COUNT: TypedDocumentNode<
   query DiscoveryResultCount(
     $query: String
     $categoryId: String
+    $subcategory: String
     $countyId: String
     $subCountyId: String
     $wardId: String
@@ -291,6 +351,7 @@ const DISCOVERY_RESULT_COUNT: TypedDocumentNode<
     discoveryResultCount(
       query: $query
       categoryId: $categoryId
+      subcategory: $subcategory
       countyId: $countyId
       subCountyId: $subCountyId
       wardId: $wardId
@@ -404,36 +465,16 @@ function DiscoverFeedSkeleton() {
     <div className="px-4 pb-8 pt-3 lg:px-0">
       {/* 15 tiles so every column count (2 → 5) fills the viewport with full
           rows — fewer left the tail columns empty on wide screens. */}
-      <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3 xl:grid-cols-4 min-[90rem]:grid-cols-5">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-3 md:gap-x-4 md:gap-y-6 xl:grid-cols-4 min-[90rem]:grid-cols-5">
         {Array.from({ length: 15 }).map((_, i) => (
-          <div
-            key={i}
-            className="overflow-hidden rounded-2xl border border-default bg-app"
-          >
-            <Skeleton className="aspect-3/4 w-full rounded-none md:aspect-4/5" />
-            <div className="space-y-2 p-2.5">
-              <Skeleton className="h-3.5 w-4/5" />
-              <Skeleton className="h-3 w-1/2" />
+          <div key={i}>
+            <Skeleton className="aspect-3/4 w-full rounded-xl md:aspect-4/5" />
+            <div className="space-y-2 pt-2">
+              <Skeleton className="h-3.5 w-1/2" />
+              <Skeleton className="h-3 w-4/5" />
             </div>
           </div>
         ))}
-      </div>
-    </div>
-  );
-}
-
-function DiscoverPaginationSkeleton() {
-  return (
-    <div
-      className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+4.75rem)] z-40 flex justify-center px-4 lg:bottom-6"
-      aria-hidden
-    >
-      <div className="flex h-12 w-full max-w-xs items-center gap-3 rounded-full border border-default bg-app/95 px-4 shadow-lg shadow-black/10 backdrop-blur dark:shadow-black/30">
-        <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
-        <div className="min-w-0 flex-1 space-y-2">
-          <Skeleton className="h-2.5 w-3/4 rounded-full" />
-          <Skeleton className="h-2 w-1/2 rounded-full" />
-        </div>
       </div>
     </div>
   );
@@ -590,6 +631,11 @@ export function DiscoverPage({ lang }: { lang: string }) {
   );
   const [selectedCategory, setSelectedCategory] =
     useState<CategoryFacet | null>(null);
+  // Level-2 label, e.g. "Cables & Adapters". Held as a plain string because the
+  // API has no subcategory rows to key against — the label IS the filter.
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(
+    () => searchParams.get("subcategory")?.trim() || null,
+  );
   const [selectedCounty, setSelectedCounty] = useState<LocationFacet | null>(
     null,
   );
@@ -621,15 +667,77 @@ export function DiscoverPage({ lang }: { lang: string }) {
       // Search spans every category, so drop any category constraint when one
       // starts — otherwise results would be silently scoped to a category whose
       // bar is now hidden.
-      if (next) setSelectedCategory(null);
+      if (next) {
+        setSelectedCategory(null);
+        setSelectedSubcategory(null);
+      }
     }, SEARCH_DEBOUNCE_MS);
     return () => window.clearTimeout(handle);
   }, [searchDraft]);
+
+  // Subcategory tiles follow every filter EXCEPT the subcategory itself, so
+  // picking a tile narrows the grid below without the row reshuffling under the
+  // thumb that just tapped it. Built before the feed variables because the feed
+  // depends on which tiles actually exist — see `subcategory` below.
+  const subcategoryFacetVariables = useMemo(
+    () => ({
+      query: query || undefined,
+      categoryId: selectedCategory?.id,
+      countyId: selectedCounty?.id,
+      subCountyId: selectedSubCounty?.id,
+      wardId: selectedWard?.id,
+      minPrice: parsedMinPrice,
+      maxPrice: parsedMaxPrice,
+      negotiableOnly: negotiableOnly || undefined,
+    }),
+    [
+      query,
+      selectedCategory?.id,
+      selectedCounty?.id,
+      selectedSubCounty?.id,
+      selectedWard?.id,
+      parsedMinPrice,
+      parsedMaxPrice,
+      negotiableOnly,
+    ],
+  );
+
+  const { data: subcategoryFacetsData } = useQuery(
+    DISCOVERY_SUBCATEGORY_FACETS,
+    {
+      variables: subcategoryFacetVariables,
+      fetchPolicy: "cache-and-network",
+      nextFetchPolicy: "cache-first",
+    },
+  );
+
+  const subcategories = useMemo(
+    () => subcategoryFacetsData?.discoveryFacets.subcategories ?? [],
+    [subcategoryFacetsData?.discoveryFacets.subcategories],
+  );
+
+  /**
+   * The subcategory actually applied to the queries.
+   *
+   * Narrowing the location (or the search) can empty out the chosen
+   * subcategory. Left alone that reads as a broken page: an empty grid with no
+   * visibly selected tile to un-tap. Deriving it rather than clearing the state
+   * in an effect means the stale name simply stops counting for as long as it
+   * has no listings, and starts counting again if widening the filters brings
+   * it back — no cascading render either way.
+   */
+  const subcategory =
+    selectedSubcategory &&
+    (!subcategoryFacetsData ||
+      subcategories.some((item) => item.name === selectedSubcategory))
+      ? selectedSubcategory
+      : null;
 
   const feedVariables = useMemo<DiscoveryFeedVars>(
     () => ({
       query: query || undefined,
       categoryId: selectedCategory?.id,
+      subcategory: subcategory || undefined,
       countyId: selectedCounty?.id,
       subCountyId: selectedSubCounty?.id,
       wardId: selectedWard?.id,
@@ -642,6 +750,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
     [
       query,
       selectedCategory?.id,
+      subcategory,
       selectedCounty?.id,
       selectedSubCounty?.id,
       selectedWard?.id,
@@ -656,6 +765,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
     () => ({
       query: query || undefined,
       categoryId: selectedCategory?.id,
+      subcategory: subcategory || undefined,
       countyId: selectedCounty?.id,
       subCountyId: selectedSubCounty?.id,
       wardId: selectedWard?.id,
@@ -666,6 +776,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
     [
       query,
       selectedCategory?.id,
+      subcategory,
       selectedCounty?.id,
       selectedSubCounty?.id,
       selectedWard?.id,
@@ -706,6 +817,12 @@ export function DiscoverPage({ lang }: { lang: string }) {
     fetchPolicy: "cache-and-network",
     nextFetchPolicy: "cache-first",
   });
+
+  /** Picking a category drops the subcategory — it only means something inside its parent. */
+  const selectCategory = useCallback((next: CategoryFacet | null) => {
+    setSelectedCategory(next);
+    setSelectedSubcategory(null);
+  }, []);
 
   const { data: resultCountData, loading: resultCountLoading } = useQuery(
     DISCOVERY_RESULT_COUNT,
@@ -1145,7 +1262,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
                   {selectedCategory ? (
                     <button
                       type="button"
-                      onClick={() => setSelectedCategory(null)}
+                      onClick={() => selectCategory(null)}
                       className="text-xs text-primary"
                     >
                       Clear
@@ -1155,7 +1272,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
-                    onClick={() => setSelectedCategory(null)}
+                    onClick={() => selectCategory(null)}
                     className={pillButton(selectedCategory === null)}
                   >
                     All
@@ -1164,7 +1281,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
                     <button
                       key={category.id}
                       type="button"
-                      onClick={() => setSelectedCategory(category)}
+                      onClick={() => selectCategory(category)}
                       className={pillButton(
                         selectedCategory?.id === category.id,
                       )}
@@ -1248,20 +1365,29 @@ export function DiscoverPage({ lang }: { lang: string }) {
                   <CategoryTab
                     label="All"
                     active={selectedCategory === null}
-                    onClick={() => setSelectedCategory(null)}
+                    onClick={() => selectCategory(null)}
                   />
                   {categories.map((category) => (
                     <CategoryTab
                       key={category.id}
                       label={category.name}
                       active={selectedCategory?.id === category.id}
-                      onClick={() => setSelectedCategory(category)}
+                      onClick={() => selectCategory(category)}
                     />
                   ))}
                 </div>
               )
             ) : null}
           </div>
+
+          {/* Subcategory tiles — the second level of the taxonomy, and the only
+              way to narrow inside a category. Renders itself away when the
+              category has too few subcategories to be worth a row. */}
+          <SubcategoryRow
+            subcategories={subcategories}
+            selected={subcategory}
+            onSelect={setSelectedSubcategory}
+          />
 
           {error && items.length === 0 ? (
             <div className="px-4 py-12 lg:px-0">
@@ -1313,7 +1439,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3 xl:grid-cols-4 min-[90rem]:grid-cols-5">
+              <div className="grid grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-3 md:gap-x-4 md:gap-y-6 xl:grid-cols-4 min-[90rem]:grid-cols-5">
                 {items.map((post, index) => (
                   <DiscoverGridCard
                     key={post.id}
@@ -1326,7 +1452,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
 
               <div ref={sentinelRef} className="h-2" />
 
-              {isFetchingMore ? <DiscoverPaginationSkeleton /> : null}
+              {isFetchingMore ? <FeedLoader /> : null}
 
               {!pageInfo?.hasNextPage ? (
                 <p className="py-6 text-center text-xs text-muted-foreground">

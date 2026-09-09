@@ -280,13 +280,26 @@ export function StepEdit({
   const hasUsableMedia =
     mediaItems.length > 0 && !mediaItems.every((m) => m.status === "error");
 
+  /**
+   * Level 2 is free-form: the AI writes a plain label ("Laptops") and there is
+   * no seeded row to select, so most subcategories have a name and no id. The
+   * publish payload sends `aiClassification.level2` — the NAME — and never the
+   * id, so the name is what "has a subcategory" actually means.
+   *
+   * Gating on the id meant a seller saw the AI's subcategory sitting in the
+   * field, filled in, and was still told to choose one; opening the picker and
+   * tapping the same value only worked because that path happens to also set an
+   * id nothing reads.
+   */
+  const hasSubcategory = !!(subcategoryId || subcategoryName?.trim());
+
   const canProceed =
     !!draftId &&
     titleValue.trim().length > 0 &&
     !!location &&
     !!contactPhone &&
     !!categoryId &&
-    !!subcategoryId &&
+    hasSubcategory &&
     hasUsableMedia &&
     priceValid;
 
@@ -364,7 +377,7 @@ export function StepEdit({
       return;
     }
 
-    if (!subcategoryId) {
+    if (!hasSubcategory) {
       setCategoryError("Choose a subcategory before moving to settings.");
       scrollFieldIntoView("category");
       return;

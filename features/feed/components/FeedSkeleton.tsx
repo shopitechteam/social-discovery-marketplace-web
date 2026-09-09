@@ -1,6 +1,7 @@
 "use client";
 
 import { Skeleton } from "@/components/ui/skeleton";
+import { FeedLoader } from "@/components/ui/feed-loader";
 
 /**
  * Skeletons must occupy EXACTLY the space of the content that replaces them —
@@ -62,6 +63,16 @@ export function PostCardSkeleton() {
   );
 }
 
+export function FeedCardsSkeleton() {
+  return (
+    <>
+      {[...Array(3)].map((_, i) => (
+        <PostCardSkeleton key={i} />
+      ))}
+    </>
+  );
+}
+
 export function FeedSkeleton() {
   return (
     <div>
@@ -88,9 +99,7 @@ export function FeedSkeleton() {
           </div>
         </section>
 
-        {[...Array(3)].map((_, i) => (
-          <PostCardSkeleton key={i} />
-        ))}
+        <FeedCardsSkeleton />
       </div>
 
       {/* ── Desktop skeleton — mirrors DesktopFeed's frame exactly (same
@@ -151,19 +160,11 @@ export function FeedSkeleton() {
   );
 }
 
+/**
+ * Kept under its original name so the four grids importing it don't churn, but
+ * it is no longer a skeleton: see {@link FeedLoader} for why the floating glass
+ * pill went away.
+ */
 export function FeedPaginationSkeleton() {
-  return (
-    <div
-      className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+4.75rem)] z-40 flex justify-center px-4 md:bottom-6 md:left-[var(--sidebar-width,0px)]"
-      aria-hidden
-    >
-      <div className="flex h-12 w-full max-w-xs items-center gap-3 rounded-full border border-default bg-elevated/95 px-4 shadow-lg shadow-black/10 backdrop-blur dark:shadow-black/30">
-        <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
-        <div className="min-w-0 flex-1 space-y-2">
-          <Skeleton className="h-2.5 w-3/4 rounded-full" />
-          <Skeleton className="h-2 w-1/2 rounded-full" />
-        </div>
-      </div>
-    </div>
-  );
+  return <FeedLoader />;
 }

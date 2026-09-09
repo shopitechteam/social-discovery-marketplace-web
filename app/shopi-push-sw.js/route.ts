@@ -46,6 +46,44 @@ function notificationUrl(value) {
   }
 }
 
+/**
+ * Installability.
+ *
+ * Chrome only offers the install icon when the registered service worker has a
+ * fetch handler — this worker had only push and notificationclick, which is why
+ * the icon disappeared even with a valid manifest.
+ *
+ * Deliberately minimal. Only top-level navigations are intercepted and they go
+ * straight to the network, so normal browsing behaves exactly as it did with no
+ * worker at all. Everything else (scripts, images, GraphQL) is never touched.
+ * The single thing this adds is a readable page when the network is gone, in
+ * place of the browser's dinosaur.
+ *
+ * NOTE: single quotes, not backticks — this whole worker is embedded in a
+ * template literal below.
+ */
+const OFFLINE_HTML =
+  '<!doctype html><meta charset="utf-8">' +
+  '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+  '<title>You are offline</title>' +
+  '<style>body{margin:0;min-height:100vh;display:flex;align-items:center;' +
+  'justify-content:center;font:16px/1.5 system-ui,sans-serif;background:#fff;' +
+  'color:#0f0f14;text-align:center;padding:24px}p{color:#646473;margin:8px 0 0}</style>' +
+  '<div><strong>You are offline</strong><p>Check your connection and try again.</p></div>';
+
+self.addEventListener("fetch", (event) => {
+  if (event.request.mode !== "navigate") return;
+  event.respondWith(
+    fetch(event.request).catch(
+      () =>
+        new Response(OFFLINE_HTML, {
+          status: 503,
+          headers: { "Content-Type": "text/html; charset=utf-8" },
+        }),
+    ),
+  );
+});
+
 self.addEventListener("push", (event) => {
   let payload = {};
   try {

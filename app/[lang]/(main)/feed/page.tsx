@@ -3,7 +3,8 @@ import { Suspense } from "react";
 import { cookies } from "next/headers";
 import { siteConfig } from "@/config/site";
 import { locales, isValidLocale } from "@/i18n/config";
-import { PreloadQuery } from "@/lib/apollo/ApolloClient";
+import { PreloadQuery, query } from "@/lib/apollo/ApolloClient";
+import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { ForYouFeedDocument } from "@/types/__generated__/graphql";
 import { FeedPage } from "@/features/feed/components/FeedPage";
 import { FeedSkeleton } from "@/features/feed/components/FeedSkeleton";
@@ -69,9 +70,37 @@ export default async function FeedPageRoute({
   params: Promise<{ lang: string }>;
 }) {
   const [{ lang }, cookieStore] = await Promise.all([params, cookies()]);
+
+  // PreloadQuery streams the feed to the client but does not block the server
+  // render, so the client's useSuspenseQuery could only resolve during SSR if
+  // the API answered within the render. Against production (~2.4s for one
+  // page) it never did: React abandoned the boundary and shipped a skeleton,
+  // which is React error #419 and left every card — including the LCP image —
+  // to be fetched and rendered on the client.
+  //
+  // Awaiting the same query here gives the server real items to render. It is
+  // not an extra round trip in practice: it shares the HttpLink's Next data
+  // cache (revalidate: 30) with the PreloadQuery below, so the cost is
+  // amortised across visitors rather than paid per request. A failure degrades
+  // to the old behaviour (skeleton + client fetch) rather than breaking the
+  // route — the feed's error boundary covers the rest.
+  let initialItems: ContentCardFieldsFragment[] = [];
+  if (!cookieStore.has("shopi-auth-hint")) {
+    try {
+      const { data } = await query({
+        query: ForYouFeedDocument,
+        variables: { limit: FEED_PAGE_SIZE },
+      });
+      initialItems = (data?.forYouFeed?.items ??
+        []) as ContentCardFieldsFragment[];
+    } catch {
+      initialItems = [];
+    }
+  }
+
   const feed = (
     <Suspense fallback={<FeedSkeleton />}>
-      <FeedPage lang={lang} />
+      <FeedPage lang={lang} initialItems={initialItems} />
     </Suspense>
   );
 

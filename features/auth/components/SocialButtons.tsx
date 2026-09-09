@@ -27,6 +27,7 @@ export function SocialButtons({
   useEffect(() => {
     const container = googleButtonRef.current;
     if (!container) return;
+    setError(null);
     setGoogleReady(false);
     void renderGoogleButton(container, setError).then(() => {
       setGoogleReady(container.childNodes.length > 0);

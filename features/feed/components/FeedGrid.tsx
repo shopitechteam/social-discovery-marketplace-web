@@ -1,21 +1,93 @@
 "use client";
 
+import { Fragment } from "react";
 import { PostCard } from "./PostCard";
+import {
+  FeaturedSellerCard,
+  useFeaturedSellers,
+} from "./FeaturedSellerCard";
+import { FEED_PAGE_SIZE } from "../constants";
 import { useForYouFeed } from "../hooks/useFeed";
-import { FeedPaginationSkeleton, FeedSkeleton } from "./FeedSkeleton";
+import {
+  FeedCardsSkeleton,
+  FeedPaginationSkeleton,
+} from "./FeedSkeleton";
 import { TrendingStrip } from "./TrendingStrip";
 import { LocationPermissionBanner } from "./LocationPermissionBanner";
 //import { StoriesBar } from "@/features/stories/components/StoriesBar";
 import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
-import { memo } from "react";
+import { memo, Suspense } from "react";
+import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 
 interface Props {
   lang: string;
   active?: boolean;
+  /**
+   * The first page, fetched on the server. See the Suspense boundary below for
+   * why this exists — without it the feed's HTML is a skeleton in production.
+   */
+  initialItems?: ContentCardFieldsFragment[];
 }
 
-function FeedGrid({ lang, active = true }: Props) {
-  const { items, loading, loadingMore, hasMore, loadMore } = useForYouFeed();
+/** The card list itself — the only part that differs between the server
+ *  snapshot and the live, paginating feed. */
+/**
+ * Where the seller slots land, counted in posts.
+ *
+ * The first comes at the end of page one — early enough that a scroller meets a
+ * shop in their first session, late enough that it never interrupts the opening
+ * screen. After that they space out to every two pages, so the feed stays
+ * mostly listings.
+ *
+ * Slots therefore fall after post 12, 36, 60, …
+ */
+const SELLER_SLOT_FIRST_AFTER = FEED_PAGE_SIZE;
+const SELLER_SLOT_EVERY = FEED_PAGE_SIZE * 2;
+
+function FeedCards({
+  items,
+  lang,
+}: {
+  items: ContentCardFieldsFragment[];
+  lang: string;
+}) {
+  const sellers = useFeaturedSellers();
+
+  return (
+    <div className="flex flex-col gap-2">
+      {items.map((post, i) => {
+        // Slot goes AFTER the nth post, and only once there is a seller to put
+        // in it — never an empty gap or a placeholder.
+        const posted = i + 1;
+        const isSlot =
+          posted >= SELLER_SLOT_FIRST_AFTER &&
+          (posted - SELLER_SLOT_FIRST_AFTER) % SELLER_SLOT_EVERY === 0;
+        const slot = isSlot
+          ? (posted - SELLER_SLOT_FIRST_AFTER) / SELLER_SLOT_EVERY
+          : -1;
+        // Cycle, so a long scroll keeps offering sellers instead of running dry
+        // after the last ranked one.
+        const seller = slot >= 0 && sellers.length > 0
+          ? sellers[slot % sellers.length]
+          : null;
+
+        return (
+          <Fragment key={post.id}>
+            <PostCard post={post} lang={lang} priority={i === 0} />
+            {seller && <FeaturedSellerCard seller={seller} lang={lang} />}
+          </Fragment>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * The live feed. Reads through `useForYouFeed`, which uses `useSuspenseQuery`
+ * and therefore suspends until the query resolves.
+ */
+function LiveFeedCards({ lang, active }: { lang: string; active: boolean }) {
+  const { items, loadingMore, hasMore, loadMore, loading } = useForYouFeed();
 
   const { sentinelRef } = useInfiniteScroll({
     enabled: active,
@@ -23,8 +95,6 @@ function FeedGrid({ lang, active = true }: Props) {
     loading,
     onLoadMore: loadMore,
   });
-
-  if (loading && items.length === 0) return <FeedSkeleton />;
 
   if (!loading && items.length === 0) {
     return (
@@ -41,24 +111,8 @@ function FeedGrid({ lang, active = true }: Props) {
   }
 
   return (
-    <div className="pb-safe-area-inset-bottom pb-6 min-h-svh">
-      {/* ── Stories bar ──────────────────────────────────────────────── */}
-      {/* <StoriesBar lang={lang} /> */}
-
-      {/* ── Trending strip ────────────────────────────────────────────── */}
-      <div className="pt-2 pb-1">
-        <TrendingStrip lang={lang} />
-      </div>
-
-      {/* ── Location permission nudge ────────────────────────────────── */}
-      <LocationPermissionBanner />
-
-      {/* ── Post cards ───────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-2">
-        {items.map((post, i) => (
-          <PostCard key={post.id} post={post} lang={lang} priority={i === 0} />
-        ))}
-      </div>
+    <>
+      <FeedCards items={items} lang={lang} />
 
       {/* ── Infinite scroll sentinel ─────────────────────────────────── */}
       <div ref={sentinelRef} className="h-1" />
@@ -70,6 +124,55 @@ function FeedGrid({ lang, active = true }: Props) {
           You&apos;re all caught up ✓
         </p>
       )}
+    </>
+  );
+}
+
+function FeedGrid({ lang, active = true, initialItems }: Props) {
+  return (
+    <div className="pb-safe-area-inset-bottom pb-6 min-h-svh">
+      {/* ── Stories bar ──────────────────────────────────────────────── */}
+      {/* <StoriesBar lang={lang} /> */}
+
+      {/* ── Trending strip ────────────────────────────────────────────── */}
+      {/* Deliberately OUTSIDE the boundary below: it reads with useQuery (not
+          useSuspenseQuery), so it never suspends and renders null until its
+          data arrives — identically in both branches. Keeping it here means the
+          swap from server snapshot to live feed cannot move anything above the
+          cards, which is what would have shown up as layout shift. */}
+      <div className="pt-2 pb-1">
+        <TrendingStrip lang={lang} />
+      </div>
+
+      {/* ── Location permission nudge ────────────────────────────────── */}
+      <LocationPermissionBanner />
+
+      {/* ── Post cards ───────────────────────────────────────────────────
+          `useForYouFeed` suspends. Without a boundary here, the *route's*
+          boundary was the nearest one, and on the server it could only be
+          completed if the feed query resolved during the render. Against the
+          production API (~2.4s for one page) it never did, so React abandoned
+          the whole boundary and shipped a skeleton, leaving the client to fetch
+          and render every card — and leaving the LCP image out of the HTML
+          entirely, where no preload or fetchpriority hint could reach it. That
+          abort is React error #419.
+
+          Giving the suspending part its own boundary whose fallback is the
+          server-fetched first page means the server always has something real
+          to render: the cards, and with them the LCP <img>, land in the initial
+          HTML. The live feed then takes over on the client with the same items
+          (same query, same cache), so the swap is invisible. */}
+      <Suspense
+        fallback={
+          initialItems && initialItems.length > 0 ? (
+            <FeedCards items={initialItems} lang={lang} />
+          ) : (
+            <FeedCardsSkeleton />
+          )
+        }
+      >
+        <LiveFeedCards lang={lang} active={active} />
+      </Suspense>
     </div>
   );
 }
