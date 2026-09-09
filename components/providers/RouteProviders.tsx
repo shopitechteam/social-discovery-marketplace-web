@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import { locales } from "@/i18n/config";
 import { GlobalPushBootstrap } from "@/components/providers/GlobalPushBootstrap";
+import { ServiceWorkerRegistrar } from "@/components/providers/ServiceWorkerRegistrar";
 import { GlobalPushToastBridge } from "@/components/providers/GlobalPushToastBridge";
 
 const ApolloWrapper = dynamic(() =>
@@ -49,6 +50,7 @@ export function RouteProviders({ children }: { children: React.ReactNode }) {
 
   return (
     <ThemeProvider>
+      <ServiceWorkerRegistrar />
       <GlobalPushBootstrap lang={pathname.split("/")[1] || "en"} />
       <GlobalPushToastBridge />
       {isLandingPage ? (

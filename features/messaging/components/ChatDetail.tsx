@@ -28,6 +28,7 @@ import {
 import { MessageList } from "./MessageList";
 import { Composer } from "./Composer";
 import { ConversationActionsDrawer } from "./ConversationActionsDrawer";
+import { profileHref } from "@/lib/profile-url";
 
 interface Props {
   lang: string;
@@ -142,7 +143,9 @@ export function ChatDetail({
     conversationLoading ||
     (messagesLoading && messages.length === 0);
   const isSeller = Boolean(
-    selectedConversation && currentUserId && selectedConversation.sellerId === currentUserId,
+    selectedConversation &&
+    currentUserId &&
+    selectedConversation.sellerId === currentUserId,
   );
   const myReplyIsPending =
     Boolean(selectedConversation?.myUnreadCount) &&
@@ -163,16 +166,16 @@ export function ChatDetail({
     : 0;
   const canAttemptSellerContact = Boolean(
     contentSummary &&
-      selectedConversation &&
-      currentUserId &&
-      selectedConversation.sellerId !== currentUserId &&
-      !sellerPhoneUnavailable,
+    selectedConversation &&
+    currentUserId &&
+    selectedConversation.sellerId !== currentUserId &&
+    !sellerPhoneUnavailable,
   );
   const isEmptyConversationBody = Boolean(
     selectedConversation &&
-      contentSummary &&
-      messages.length === 0 &&
-      !conversationNotReady,
+    contentSummary &&
+    messages.length === 0 &&
+    !conversationNotReady,
   );
 
   const conversationNudge = (() => {
@@ -200,14 +203,20 @@ export function ChatDetail({
     if (myReplyIsPending && lastMessageAgeMinutes >= 15) {
       return {
         tone: "warning" as const,
-        title: isSeller ? "A buyer is waiting on you" : "The seller is waiting on you",
+        title: isSeller
+          ? "A buyer is waiting on you"
+          : "The seller is waiting on you",
         body: isSeller
           ? "Fast replies help buyers stay warm and improve your chances of closing the deal."
           : "A quick reply keeps the negotiation moving and makes it easier to secure the item.",
       };
     }
 
-    if (!myReplyIsPending && selectedConversation.lastMessageSenderId === currentUserId && lastMessageAgeMinutes >= 6 * 60) {
+    if (
+      !myReplyIsPending &&
+      selectedConversation.lastMessageSenderId === currentUserId &&
+      lastMessageAgeMinutes >= 6 * 60
+    ) {
       return {
         tone: "default" as const,
         title: "A polite follow-up could help",
@@ -258,7 +267,11 @@ export function ChatDetail({
       return;
     }
 
-    const url = absoluteContentUrl(window.location.origin, lang, contentSummary);
+    const url = absoluteContentUrl(
+      window.location.origin,
+      lang,
+      contentSummary,
+    );
     const message = [
       `Hi, I saw "${contentSummary.title}" on Shopi and I'm interested.`,
       "Is it still available?",
@@ -375,7 +388,7 @@ export function ChatDetail({
               ) : otherParticipant?.profile?.avatar ? (
                 <div
                   onClick={() => {
-                    router.push(`/profile/${otherParticipant?.id}`);
+                    router.push(profileHref(lang, otherParticipant));
                   }}
                   className="relative h-10 w-10 overflow-hidden rounded-full"
                 >
@@ -390,7 +403,7 @@ export function ChatDetail({
               ) : (
                 <div
                   onClick={() => {
-                    router.push(`/profile/${otherParticipant?.id}`);
+                    router.push(profileHref(lang, otherParticipant));
                   }}
                   className={`flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br ${avatarGradient(
                     otherParticipant?.id ?? "0",
@@ -476,7 +489,7 @@ export function ChatDetail({
                     onClick={() =>
                       router.push(`/${lang}/content/${contentSummary.id}`)
                     }
-                    className="rounded-full border px-3 py-1.5 text-xs font-semibold"
+                    className="rounded-full hidden border px-3 py-1.5 text-xs font-semibold"
                     style={{ borderColor: "rgb(var(--color-border))" }}
                   >
                     View post
@@ -563,7 +576,9 @@ export function ChatDetail({
               <p className="text-sm font-semibold text-foreground">
                 {conversationNudge.title}
               </p>
-              <p className="mt-1 text-sm text-muted">{conversationNudge.body}</p>
+              <p className="mt-1 text-sm text-muted">
+                {conversationNudge.body}
+              </p>
             </div>
           ) : null}
 
@@ -625,12 +640,12 @@ export function ChatDetail({
               conversationNotReady
                 ? "Preparing chat..."
                 : selectedConversation?.blockedByMe
-                ? "You blocked this user"
-                : selectedConversation?.blockedByOther
-                  ? "This user blocked you"
-                  : selectedConversation?.canSendMessages === false
-                    ? "Messaging unavailable"
-                    : null
+                  ? "You blocked this user"
+                  : selectedConversation?.blockedByOther
+                    ? "This user blocked you"
+                    : selectedConversation?.canSendMessages === false
+                      ? "Messaging unavailable"
+                      : null
             }
             requireAuth={requireAuth}
             onChange={onComposerChange}

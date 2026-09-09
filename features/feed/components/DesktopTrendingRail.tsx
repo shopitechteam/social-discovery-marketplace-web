@@ -20,6 +20,7 @@ import { idInitials } from "@/lib/avatar";
 import { useAuthStore } from "@/stores/auth";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { contentPath } from "@/lib/content-url";
+import { profileHref } from "@/lib/profile-url";
 
 type SellerToFollow = {
   id: string;
@@ -163,7 +164,7 @@ function SellerToFollowRow({
   return (
     <div className="flex items-center gap-3">
       <Link
-        href={`/${lang}/profile/${seller.id}`}
+        href={profileHref(lang, seller)}
         scroll={false}
         className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface text-xs font-black text-default"
       >
@@ -180,7 +181,7 @@ function SellerToFollowRow({
         )}
       </Link>
       <Link
-        href={`/${lang}/profile/${seller.id}`}
+        href={profileHref(lang, seller)}
         scroll={false}
         className="min-w-0 flex-1"
       >

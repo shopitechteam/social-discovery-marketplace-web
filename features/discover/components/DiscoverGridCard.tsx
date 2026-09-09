@@ -1,11 +1,15 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useCallback, useState } from "react";
+import type { MouseEvent } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Bookmark, Eye, MapPin, Play } from "lucide-react";
+import { Bookmark, Flame, ImageIcon, Images, MapPin, Play } from "lucide-react";
 import { SHIMMER_PORTRAIT } from "@/lib/shimmer";
 import { contentPath } from "@/lib/content-url";
+import { cn } from "@/lib/utils";
+import { useAuthGuard } from "@/features/feed/hooks/useAuthGuard";
+import { useSaveToggle } from "@/features/feed/hooks/useSaveToggle";
 import {
   HoverVideoPreview,
   useHoverPreview,
@@ -13,30 +17,56 @@ import {
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 
 /**
- * Compact discovery tile — the RedNote-style explore card. Mirrors the profile
- * grid tile (`PostThumbnail`) but takes the discover feed's
- * `ContentCardFieldsFragment`. Every tile uses the same fixed cover ratio so the
- * two-column grid stays uniform (no staggered/masonry heights).
+ * Discovery tile for /explore.
+ *
+ * Design intent — this is a *discovery* surface, not a catalogue listing, and
+ * 98% of the traffic is a thumb on a phone holding two columns. So:
+ *
+ *   · The photo is the product. It gets the whole tile, edge to edge, with no
+ *     card border or panel behind it — chrome around 40 small tiles reads as a
+ *     spreadsheet, not a feed.
+ *   · Everything painted on the photo is a *reason to tap*: one context signal
+ *     (live / popular / new / promoted, never more than one), where it is, and
+ *     what kind of media it is. Nothing decorative.
+ *   · Everything under the photo is the *decision*: price first (it aligns
+ *     down the column so prices compare at a glance), then the title.
+ *   · Vanity counters (views, raw save counts) and the seller name are gone.
+ *     A "3 views" label is noise at best and discouraging at worst; the seller
+ *     matters on the detail screen, not while scanning.
+ *   · Save is reachable without leaving the grid — a 36px target in the corner,
+ *     optimistic, so building a shortlist never costs a page load.
+ *
+ * The cover ratio stays uniform (3:4 phone, 4:5 md+) so rows align and the
+ * infinite scroll never reflows under the thumb.
  */
 
-// Uniform cover ratio for every tile — keeps the grid rows aligned. Portrait
-// 3:4 on mobile; a shorter 4:5 on md+ where the denser grid suits flatter
-// tiles.
-
-function formatCompact(value: number) {
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
-  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
-  return String(value);
-}
+/** Saves at or above this read as genuine traction, so the tile says so. */
+const POPULAR_SAVES = 10;
+/** Posts newer than this wear the "New" chip. */
+const FRESH_HOURS = 24;
 
 /** "KSh 12,500" — grouped thousands, no decimals. */
 function formatPrice(amount: number, currency: string) {
   return `${currency} ${Math.round(amount).toLocaleString("en-KE")}`;
 }
 
+/** Seconds → "0:42" / "12:05". */
+function formatDuration(seconds: number) {
+  const total = Math.round(seconds);
+  const mins = Math.floor(total / 60);
+  const secs = total % 60;
+  return `${mins}:${String(secs).padStart(2, "0")}`;
+}
+
 /**
- * Readable location for a card: county first, then the more specific area, e.g.
- * "Nairobi, Westlands". De-dupes so we never show "Nairobi, Nairobi".
+ * "Nyandarua, Mairo-Inya" — county first, then the more specific area, both
+ * spelled out in full. County leads because it is the unit a buyer actually
+ * recognises and filters on; the area after it answers "where exactly".
+ *
+ * The pill truncates with an ellipsis when the pair is too wide for half a
+ * phone screen, so a long chain degrades to the county rather than to nothing.
+ * De-duped, so a listing whose area equals its county reads "Nairobi", never
+ * "Nairobi, Nairobi".
  */
 function locationLabel(loc: {
   placeName?: string | null;
@@ -70,13 +100,43 @@ function getThumb(post: ContentCardFieldsFragment): string | null {
   );
 }
 
-function StatChip({ icon: Icon, value }: { icon: typeof Eye; value: number }) {
-  return (
-    <span className="flex items-center gap-1">
-      <Icon size={12} aria-hidden /> {formatCompact(value)}
-    </span>
-  );
+type TileSignal = {
+  label: string;
+  icon?: typeof Flame;
+  /** Live is the one signal urgent enough to break the glass-chip pattern. */
+  urgent?: boolean;
+  /** Promoted is disclosure, not a hook — it sits back. */
+  quiet?: boolean;
+};
+
+/**
+ * At most one chip, chosen by how much it should change the user's next tap.
+ * Stacking badges is how a clean grid turns into a noticeboard.
+ */
+function tileSignal(post: ContentCardFieldsFragment): TileSignal | null {
+  if (post.isLive) return { label: "Live", urgent: true };
+
+  if ((post.stats?.saves ?? 0) >= POPULAR_SAVES)
+    return { label: "Popular", icon: Flame };
+
+  // `createdAt` is an opaque GraphQL scalar in the generated types.
+  const created = post.createdAt
+    ? new Date(post.createdAt as unknown as string).getTime()
+    : NaN;
+  if (
+    Number.isFinite(created) &&
+    Date.now() - created < FRESH_HOURS * 60 * 60 * 1000
+  )
+    return { label: "New" };
+
+  if (post.boost?.isBoosted) return { label: "Promoted", quiet: true };
+
+  return null;
 }
+
+/** Shared glass treatment for everything that floats over the photo. */
+const GLASS =
+  "inline-flex items-center gap-1 rounded-full bg-black/55 text-white backdrop-blur-[2px]";
 
 function DiscoverGridCardImpl({
   post,
@@ -87,36 +147,73 @@ function DiscoverGridCardImpl({
   lang: string;
   priority: boolean;
 }) {
+  // Some legacy listings point at media that 404s. Without this the tile shows
+  // the browser's broken-image chrome plus raw alt text — a dead tile in the
+  // middle of a discovery grid. Fall back to the same neutral block we use when
+  // there was never a thumbnail.
+  const [imageFailed, setImageFailed] = useState(false);
   const thumb = getThumb(post);
   const isVideo = post.type === "VIDEO";
   const playbackId =
     post.media?.find((m) => m.muxMeta?.playbackId)?.muxMeta?.playbackId ?? null;
   const { previewing, bind } = useHoverPreview(isVideo && !!playbackId);
-  const priceText =
-    !post.price || post.price.amount <= 0
-      ? "Custom"
-      : formatPrice(post.price.amount, post.price.currency);
+  const { requireAuth } = useAuthGuard(lang);
+  const { saved, toggle } = useSaveToggle({
+    contentId: post.id,
+    initialSaved: post.isSavedByMe ?? false,
+    initialCount: post.stats?.saves ?? 0,
+  });
+
+  const hasPrice = !!post.price && post.price.amount > 0;
+  const priceText = hasPrice
+    ? formatPrice(post.price.amount, post.price.currency)
+    : "Ask price";
   const place = post.location ? locationLabel(post.location) : null;
-  const creator = post.creator;
-  const creatorName = creator?.profile?.firstName
-    ? `${creator.profile.firstName}${creator.profile.lastName ? " " + creator.profile.lastName : ""}`
-    : (creator?.username ?? null);
+  const signal = tileSignal(post);
+
+  const durationSeconds =
+    post.media?.find((m) => m.muxMeta?.duration)?.muxMeta?.duration ??
+    post.tiktokEmbed?.duration ??
+    null;
+  const photoCount =
+    post.media?.filter((m) => m.mediaType === "IMAGE").length ?? 0;
+  const hasBottomRow = !!place || isVideo || photoCount > 1;
+
+  // Screen readers get the whole decision in one label — the visual hierarchy
+  // (price, then title, then place) doesn't survive being read tile by tile.
+  const ariaLabel = [
+    post.title,
+    priceText,
+    place,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  const onSaveTap = useCallback(
+    (e: MouseEvent<HTMLButtonElement>) => {
+      // The tile is a Link; saving must not navigate.
+      e.preventDefault();
+      e.stopPropagation();
+      if (!requireAuth({ contentId: post.id, action: "save" })) return;
+      void toggle();
+    },
+    [post.id, requireAuth, toggle],
+  );
 
   return (
     <Link
       href={contentPath(lang, post)}
       scroll={false}
-      className="group block overflow-hidden rounded-2xl border outline-none focus-visible:ring-2 focus-visible:ring-primary"
-      style={{
-        borderColor: "rgb(var(--color-border))",
-        backgroundColor: "rgb(var(--color-bg-elevated))",
-      }}
-      aria-label={post.title}
+      className="group block outline-none"
+      aria-label={ariaLabel}
       {...bind}
     >
-      {/* Cover */}
-      <div className="relative aspect-3/4 w-full bg-surface md:aspect-4/5">
-        {thumb ? (
+      {/* ---- Cover ---------------------------------------------------- */}
+      <div
+        className="relative aspect-3/4 w-full overflow-hidden rounded-xl transition-transform duration-200 group-focus-visible:ring-2 group-focus-visible:ring-primary group-active:scale-[0.98] md:aspect-4/5"
+        style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
+      >
+        {thumb && !imageFailed ? (
           <Image
             src={
               post.media.filter((m) => m.mediaType === "IMAGE")[0]
@@ -124,90 +221,159 @@ function DiscoverGridCardImpl({
               thumb ??
               "/images/placeholder.png"
             }
-            alt={post.title}
+            alt=""
             fill
-            className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            className="object-cover transition-transform duration-300 group-hover:scale-[1.04]"
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
             priority={priority}
             loading={priority ? "eager" : "lazy"}
             placeholder="blur"
             blurDataURL={SHIMMER_PORTRAIT}
+            onError={() => setImageFailed(true)}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-muted-foreground/30">
-            <MapPin size={24} aria-hidden />
+          <div
+            className="flex h-full w-full items-center justify-center"
+            style={{ color: "rgb(var(--color-text-placeholder))" }}
+          >
+            <ImageIcon size={22} strokeWidth={1.6} aria-hidden />
           </div>
         )}
 
         {/* Hover preview sits over the thumbnail, which stays mounted behind
-            it so there's no flash while the stream spins up. */}
+            it so there's no flash while the stream spins up. Desktop only. */}
         {previewing && playbackId && (
           <HoverVideoPreview playbackId={playbackId} />
         )}
 
-        {isVideo && thumb && !previewing && (
-          <span className="absolute inset-0 flex items-center justify-center">
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white">
-              <Play
-                size={18}
-                fill="currentColor"
-                strokeWidth={0}
-                className="ml-0.5"
+        {/* Scrim — just enough to keep the bottom row legible over a bright
+            photo, and short enough that it never dims the product itself. Only
+            drawn when there's actually something down there to read. */}
+        {hasBottomRow && (
+          <div
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/55 via-black/15 to-transparent"
+            aria-hidden
+          />
+        )}
+
+        {/* Top-left: the one context signal. */}
+        {signal && (
+          <span
+            className={cn(
+              GLASS,
+              "absolute left-1.5 top-1.5 h-6 px-2 text-[11px] font-semibold leading-none",
+              signal.urgent && "bg-[#EF4444] backdrop-blur-none",
+              signal.quiet && "font-medium text-white/80",
+            )}
+          >
+            {signal.urgent && (
+              <span
+                className="h-1.5 w-1.5 animate-pulse rounded-full bg-white"
+                aria-hidden
               />
-            </span>
+            )}
+            {signal.icon && <signal.icon size={11} aria-hidden />}
+            {signal.label}
           </span>
         )}
 
-        {/* Price badge — the primary marketplace signal */}
-        <span
-          className="absolute bottom-2 left-2 rounded-lg bg-black/70 px-2 py-1 font-bold leading-none text-white backdrop-blur-sm"
-          style={{ fontSize: "var(--text-sm)" }}
+        {/* Top-right: save, without leaving the grid. */}
+        <button
+          type="button"
+          onClick={onSaveTap}
+          aria-pressed={saved}
+          aria-label={saved ? "Remove from saved" : `Save ${post.title}`}
+          className={cn(
+            "absolute right-1.5 top-1.5 flex h-9 w-9 items-center justify-center rounded-full backdrop-blur-[2px] transition active:scale-90",
+            saved ? "bg-white text-primary" : "bg-black/40 text-white",
+          )}
         >
-          {priceText}
-        </span>
+          <Bookmark
+            size={16}
+            strokeWidth={2.2}
+            fill={saved ? "currentColor" : "none"}
+            aria-hidden
+          />
+        </button>
+
+        {/* Bottom row: where it is, and what kind of media it is. */}
+        <div className="pointer-events-none absolute inset-x-1.5 bottom-1.5 flex items-end justify-between gap-1.5">
+          {place ? (
+            <span
+              className={cn(
+                GLASS,
+                "h-6 min-w-0 max-w-full px-2 text-[11px] font-medium leading-none",
+              )}
+            >
+              <MapPin size={11} strokeWidth={2.2} className="shrink-0" aria-hidden />
+              <span className="truncate">{place}</span>
+            </span>
+          ) : (
+            <span />
+          )}
+
+          {isVideo ? (
+            <span
+              className={cn(
+                GLASS,
+                "h-6 shrink-0 px-2 text-[11px] font-semibold leading-none tabular-nums",
+              )}
+            >
+              <Play size={10} fill="currentColor" strokeWidth={0} aria-hidden />
+              {durationSeconds ? formatDuration(durationSeconds) : "Video"}
+            </span>
+          ) : photoCount > 1 ? (
+            <span
+              className={cn(
+                GLASS,
+                "h-6 shrink-0 px-2 text-[11px] font-semibold leading-none tabular-nums",
+              )}
+            >
+              <Images size={11} strokeWidth={2.2} aria-hidden />
+              {photoCount}
+            </span>
+          ) : null}
+        </div>
       </div>
 
-      {/* Meta */}
-      <div className="p-2.5">
-        {post.title && (
-          <p
-            className="line-clamp-1 leading-snug"
+      {/* ---- Decision ------------------------------------------------- */}
+      <div className="px-0.5 pt-2">
+        <div className="flex items-baseline gap-1.5">
+          <span
+            className="truncate"
             style={{
               fontSize: "var(--text-sm)",
-              color: "rgb(var(--color-text))",
-              fontWeight: 600,
+              fontWeight: 700,
+              color: "rgb(var(--color-text-main))",
+              letterSpacing: "-0.01em",
+            }}
+          >
+            {priceText}
+          </span>
+          {post.price?.negotiable && hasPrice && (
+            <span
+              className="shrink-0 leading-none"
+              style={{
+                fontSize: "11px",
+                color: "rgb(var(--color-text-muted))",
+              }}
+            >
+              Negotiable
+            </span>
+          )}
+        </div>
+
+        {post.title && (
+          <p
+            className="mt-0.5 line-clamp-2 leading-snug"
+            style={{
+              fontSize: "var(--text-sm)",
+              color: "rgb(var(--color-text-muted))",
             }}
           >
             {post.title}
           </p>
         )}
-
-        {place && (
-          <p
-            className="mt-1 flex items-center gap-1 line-clamp-1"
-            style={{
-              fontSize: "var(--text-xs)",
-              color: "rgb(var(--color-text-muted))",
-            }}
-          >
-            <MapPin size={12} aria-hidden className="shrink-0" />
-            <span className="truncate">{place}</span>
-          </p>
-        )}
-
-        <div
-          className="mt-1.5 flex items-center gap-3"
-          style={{
-            fontSize: "var(--text-xs)",
-            color: "rgb(var(--color-text-muted))",
-          }}
-        >
-          {creatorName ? <span className="truncate">{creatorName}</span> : null}
-          <span className="ml-auto flex shrink-0 items-center gap-3">
-            <StatChip icon={Eye} value={post.stats?.views ?? 0} />
-            <StatChip icon={Bookmark} value={post.stats?.saves ?? 0} />
-          </span>
-        </div>
       </div>
     </Link>
   );

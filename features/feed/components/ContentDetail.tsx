@@ -1,8 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
+import Link from "next/link";
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
+  BadgeCheck,
   Download,
   Bookmark,
   Send,
@@ -53,6 +55,7 @@ import { timeAgoLong as timeAgo } from "@/lib/time";
 import { absoluteContentUrl } from "@/lib/content-url";
 import { ContentDetailDocument } from "../queries/contentDetail";
 import { ListingSeoSummary } from "./ListingSeoSummary";
+import { profileHref } from "@/lib/profile-url";
 
 const MediaCarouselDialog = dynamic(() =>
   import("./MediaCarouselDialog").then((mod) => mod.MediaCarouselDialog),
@@ -960,6 +963,13 @@ export function ContentDetail({
 
   const CreatorRow = (
     <div className="flex items-center gap-3 px-4 pt-4 pb-3">
+      {/* Avatar + name open the shop. The Follow button is a sibling, not a
+          child, so it keeps its own tap target. */}
+      <Link
+        href={profileHref(lang, { username: postCreator?.username, id: post.creatorId })}
+        className="flex min-w-0 flex-1 items-center gap-3"
+        aria-label={creatorName ? `View ${creatorName}'s profile` : "View seller profile"}
+      >
       <div
         className={`w-10 h-10 rounded-full shrink-0  relative overflow-hidden ${avatarUrl ? "bg-surface" : `bg-linear-to-br ${avatarColors(post.creatorId)}`} flex items-center justify-center`}
       >
@@ -981,8 +991,20 @@ export function ContentDetail({
       </div>
       <div className="flex-1 min-w-0">
         {creatorName ? (
-          <p className="font-semibold text-sm text-default truncate">
-            {creatorName}
+          /* The verified mark belongs here more than anywhere else in the app.
+             Every other surface (feed card, seller card) already shows it, but
+             this row was name-and-timestamp only — and this is the screen where
+             someone decides whether to trust a stranger enough to message them
+             about a six-figure item. */
+          <p className="flex items-center gap-1 font-semibold text-sm text-default">
+            <span className="truncate">{creatorName}</span>
+            {postCreator?.isVerified && (
+              <BadgeCheck
+                size={15}
+                className="shrink-0 text-primary"
+                aria-label="Verified seller"
+              />
+            )}
           </p>
         ) : (
           <div className="h-3.5 w-28 rounded-full bg-surface animate-pulse" />
@@ -991,6 +1013,7 @@ export function ContentDetail({
           {timeAgo(post.createdAt)}
         </p>
       </div>
+      </Link>
       {!isOwnPost && (
         <button
           onClick={handleFollow}
@@ -1739,32 +1762,28 @@ export function ContentDetail({
                 </div>
               )}
 
-              <div className="mt-4 grid grid-cols-3 divide-x divide-default rounded-lg border border-default bg-surface">
-                <div className="px-2 py-3 text-center">
-                  <p className="text-sm font-bold text-default">
-                    {fmt(post.stats.views)}
-                  </p>
-                  <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">
-                    Views
-                  </p>
-                </div>
-                <div className="px-2 py-3 text-center">
-                  <p className="text-sm font-bold text-default">
-                    {fmt(resolvedSaveCount)}
-                  </p>
-                  <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">
-                    Saves
-                  </p>
-                </div>
-                <div className="px-2 py-3 text-center">
-                  <p className="text-sm font-bold text-default">
-                    {fmt(resolvedCommentCount)}
-                  </p>
-                  <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">
-                    Comments
-                  </p>
-                </div>
-              </div>
+              {/* Interest in this listing, as one quiet line.
+
+                  This was a bordered three-up panel sitting directly above the
+                  Message button — roughly 60px of chrome whose most prominent
+                  cell, on a listing nobody has commented on yet, read "0
+                  Comments". A buyer deciding whether to contact a stranger about
+                  a six-figure laptop is not helped by being told nobody else has
+                  spoken up. Zeros are dropped rather than displayed, and the
+                  comment count is left to the Comments heading further down,
+                  which already carries it. */}
+              {(post.stats.views > 0 || resolvedSaveCount > 0) && (
+                <p className="mt-3 text-xs font-medium text-muted-foreground">
+                  {[
+                    post.stats.views > 0 ? `${fmt(post.stats.views)} views` : null,
+                    resolvedSaveCount > 0
+                      ? `${fmt(resolvedSaveCount)} saved`
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              )}
 
               {/* Contact the seller — Message + Call (hidden on own posts) */}
               {!isOwnPost && (

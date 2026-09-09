@@ -1,6 +1,12 @@
 "use client";
 
+import { Fragment } from "react";
 import { PostCard } from "./PostCard";
+import {
+  FeaturedSellerCard,
+  useFeaturedSellers,
+} from "./FeaturedSellerCard";
+import { FEED_PAGE_SIZE } from "../constants";
 import { useForYouFeed } from "../hooks/useFeed";
 import {
   FeedCardsSkeleton,
@@ -25,6 +31,19 @@ interface Props {
 
 /** The card list itself — the only part that differs between the server
  *  snapshot and the live, paginating feed. */
+/**
+ * Where the seller slots land, counted in posts.
+ *
+ * The first comes at the end of page one — early enough that a scroller meets a
+ * shop in their first session, late enough that it never interrupts the opening
+ * screen. After that they space out to every two pages, so the feed stays
+ * mostly listings.
+ *
+ * Slots therefore fall after post 12, 36, 60, …
+ */
+const SELLER_SLOT_FIRST_AFTER = FEED_PAGE_SIZE;
+const SELLER_SLOT_EVERY = FEED_PAGE_SIZE * 2;
+
 function FeedCards({
   items,
   lang,
@@ -32,11 +51,33 @@ function FeedCards({
   items: ContentCardFieldsFragment[];
   lang: string;
 }) {
+  const sellers = useFeaturedSellers();
+
   return (
     <div className="flex flex-col gap-2">
-      {items.map((post, i) => (
-        <PostCard key={post.id} post={post} lang={lang} priority={i === 0} />
-      ))}
+      {items.map((post, i) => {
+        // Slot goes AFTER the nth post, and only once there is a seller to put
+        // in it — never an empty gap or a placeholder.
+        const posted = i + 1;
+        const isSlot =
+          posted >= SELLER_SLOT_FIRST_AFTER &&
+          (posted - SELLER_SLOT_FIRST_AFTER) % SELLER_SLOT_EVERY === 0;
+        const slot = isSlot
+          ? (posted - SELLER_SLOT_FIRST_AFTER) / SELLER_SLOT_EVERY
+          : -1;
+        // Cycle, so a long scroll keeps offering sellers instead of running dry
+        // after the last ranked one.
+        const seller = slot >= 0 && sellers.length > 0
+          ? sellers[slot % sellers.length]
+          : null;
+
+        return (
+          <Fragment key={post.id}>
+            <PostCard post={post} lang={lang} priority={i === 0} />
+            {seller && <FeaturedSellerCard seller={seller} lang={lang} />}
+          </Fragment>
+        );
+      })}
     </div>
   );
 }
