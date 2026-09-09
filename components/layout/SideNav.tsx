@@ -4,8 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
-  Bell,
   Home,
+  MessageCircle,
   LogOut,
   Moon,
   Plus,
@@ -35,7 +35,14 @@ const tabs: Tab[] = [
   { key: "feed", path: "feed", label: "Feed", icon: Home },
   { key: "explore", path: "explore", label: "Explore", icon: Search },
   { key: "upload", path: "upload", label: "Upload & sell", icon: Plus },
-  { key: "notifications", path: "notifications", label: "Inbox", icon: Bell },
+  // Same glyph as the mobile bar — this tab was a bell here and a tray there,
+  // for one destination that opens on Messages.
+  {
+    key: "notifications",
+    path: "notifications",
+    label: "Inbox",
+    icon: MessageCircle,
+  },
   { key: "profile", path: "profile", label: "Profile", icon: User },
 ];
 

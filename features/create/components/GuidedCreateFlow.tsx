@@ -1148,7 +1148,11 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
       );
       return;
     }
-    if (!subcategoryId) {
+    // Same label the picker displays and the payload sends (level2). Level 2 is
+    // free-form, so an AI-filled subcategory has a name and no id — requiring
+    // the id blocked a listing whose subcategory was visibly already set.
+    const subcategoryLabel = subcategoryName || guidedInsights?.subcategory;
+    if (!subcategoryId && !subcategoryLabel?.trim()) {
       setFormError("Choose a subcategory before posting.");
       setGuidedStage("options");
       return;

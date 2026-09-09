@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
+import { profileHref } from "@/lib/profile-url";
 
 type SummaryPost = ContentCardFieldsFragment & {
   slug?: string | null;
@@ -140,7 +141,7 @@ export function ListingSeoSummary({
           Sold by{" "}
           {post.creator?.username ? (
             <Link
-              href={`/${lang}/profile/${post.creator.username}`}
+              href={profileHref(lang, post.creator)}
               className="font-semibold text-primary"
             >
               {seller}
