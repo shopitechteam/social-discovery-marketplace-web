@@ -167,6 +167,15 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        source: "/manifest.json",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-cache, no-store, must-revalidate",
+          },
+        ],
+      },
+      {
         source: "/(.*)",
         headers: securityHeaders,
       },
@@ -183,9 +192,9 @@ const nextConfig: NextConfig = {
       "about",
       "faq",
       "shopi-agent",
+      "online-selling-jobs-kenya",
       "marketplace-alternatives-kenya",
       "marketplace/:county",
-      "careers",
       "privacy",
       "terms",
       "cookies",
@@ -201,11 +210,24 @@ const nextConfig: NextConfig = {
       // Host consolidation. www is the canonical host (siteConfig.url), so the
       // apex must 301 to it — otherwise both hosts serve the full site and the
       // duplicate signals split ranking equity. Kept first so it resolves
-      // before any path-level rule.
+      // before any path-level rule. The one exception is the PWA origin
+      // association file: scope_extensions requires it to be served directly
+      // from the associated apex origin, not redirected to www.
       {
-        source: "/:path*",
+        source:
+          "/:path((?!\\.well-known/web-app-origin-association$).*)",
         has: [{ type: "host", value: "shopi.co.ke" }],
-        destination: "https://www.shopi.co.ke/:path*",
+        destination: "https://www.shopi.co.ke/:path",
+        permanent: true,
+      },
+      {
+        source: "/:lang(en|sw)/careers",
+        destination: "/:lang/online-selling-jobs-kenya",
+        permanent: true,
+      },
+      {
+        source: "/careers",
+        destination: "/en/online-selling-jobs-kenya",
         permanent: true,
       },
       { source: "/", destination: "/en", permanent: true },

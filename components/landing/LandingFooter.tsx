@@ -104,7 +104,10 @@ export function LandingFooter({
                   href: `/${lang}/marketplace-alternatives-kenya`,
                 },
                 { label: "Blog", href: `/${lang}/blog` },
-                { label: "Careers", href: `/${lang}/careers` },
+                {
+                  label: "Online selling jobs",
+                  href: `/${lang}/online-selling-jobs-kenya`,
+                },
               ],
             },
             {

@@ -5,6 +5,13 @@
   "id": "/en",
   "start_url": "/en/feed",
   "scope": "/",
+  "handle_links": "preferred",
+  "scope_extensions": [
+    {
+      "type": "origin",
+      "origin": "https://shopi.co.ke"
+    }
+  ],
   "display": "standalone",
   "display_override": [
     "window-controls-overlay",
@@ -20,7 +27,7 @@
   "background_color": "#d81470",
   "theme_color": "#d81470",
   "launch_handler": {
-    "client_mode": "focus-existing"
+    "client_mode": "navigate-existing"
   },
   "shortcuts": [
     {
