@@ -19,6 +19,34 @@ export default async function WelcomePage({
   const from = typeof sp?.["from"] === "string" ? sp["from"] : undefined;
   const qs = from ? `?from=${encodeURIComponent(from)}` : "";
 
+  /**
+   * Match the screen to the button that produced it.
+   *
+   * The proxy sends anyone who taps a post CTA here with `from=/{lang}/upload`.
+   * They arrived intending to sell, and this page used to answer with buyer
+   * copy — "Everything for sale near you, in one feed. Create your free account
+   * to start scrolling." Promising scrolling to someone holding a photo of a
+   * sofa is a dropped handoff at the exact step where a signup is won.
+   */
+  const sellerIntent = from?.includes("/upload") ?? false;
+
+  const copy = sellerIntent
+    ? {
+        mobileHeadline: "Your listing is one photo away.",
+        mobileBody:
+          "Create your free account to publish it. Posting costs nothing and Shopi takes no commission.",
+        desktopHeadline: "Create your free account to post",
+        desktopBody:
+          "Posting is free, Shopi takes 0% commission, and buyers message you directly.",
+      }
+    : {
+        mobileHeadline: "Everything for sale near you, in one feed.",
+        mobileBody: "Create your free account to start scrolling.",
+        desktopHeadline: "Create your free account",
+        desktopBody:
+          "Start discovering what people near you are selling — in seconds.",
+      };
+
   const CTAs = (
     <div className="flex flex-col gap-3">
       {/* Social sign-up buttons — top priority per design */}
@@ -153,10 +181,10 @@ export default async function WelcomePage({
           </div>
 
           <h1 className="text-2xl font-bold text-default font-display text-center leading-[1.2] tracking-tight text-balance">
-            Everything for sale near you, in one feed.
+            {copy.mobileHeadline}
           </h1>
           <p className="mt-2 text-sm text-muted text-center leading-relaxed">
-            Create your free account to start scrolling.
+            {copy.mobileBody}
           </p>
         </div>
 
@@ -168,10 +196,10 @@ export default async function WelcomePage({
       <div className="hidden lg:flex flex-col gap-6">
         <div>
           <h1 className="text-[28px] text-center font-bold text-default font-display leading-tight tracking-tight">
-            Create your free account
+            {copy.desktopHeadline}
           </h1>
           <p className="mt-2 text-base text-center text-muted leading-relaxed">
-            Start discovering what people near you are selling — in seconds.
+            {copy.desktopBody}
           </p>
         </div>
         {CTAs}

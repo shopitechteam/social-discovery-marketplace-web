@@ -1,12 +1,12 @@
 {
   "common": {
     "appName": "Shopi",
-    "tagline": "Pata kilicho karibu. Mtumie muuzaji ujumbe.",
+    "tagline": "Post bure. Uza karibu nawe.",
     "loading": "Inapakia…",
     "error": "Kuna hitilafu fulani",
-    "continueWeb": "Fungua malisho →",
-    "openFeed": "Fungua malisho",
-    "startFree": "Anza bure"
+    "continueWeb": "Fungua feed →",
+    "openFeed": "Fungua feed",
+    "startFree": "Post bidhaa"
   },
   "nav": {
     "features": "Vipengele",
@@ -57,25 +57,25 @@
   },
   "howItWorks": {
     "sectionLabel": "Jinsi inavyofanya kazi",
-    "eyebrow": "Mtiririko wa dili ya moja kwa moja",
-    "headline": "Biashara ya karibu bila njia ndefu.",
-    "intro": "Fungua feed, pata kilicho karibu, mtumie muuzaji ujumbe, kisha mkubaliane moja kwa moja.",
+    "eyebrow": "Kutoka picha hadi tangazo",
+    "headline": "Hatua nne, na bidhaa yako iko mbele ya wanunuzi wa karibu.",
+    "intro": "Hakuna fomu ndefu ya kupambana nayo na hakuna cha kulipa. Fungua akaunti bure, weka picha zako, acha Shopi Agent iandike maneno, kisha chapisha. Tangazo lako linaingia kwenye feed ya karibu papo hapo.",
     "steps": {
       "1": {
-        "title": "Fungua malisho",
-        "body": "Anza na feed. Magari, simu, fashion, samani, mazao, mifugo na vitu vya nyumbani vinaonekana kama posts halisi kutoka kwa wauzaji halisi."
+        "title": "Fungua akaunti yako bure",
+        "body": "Jisajili kwa Google, kwa barua pepe, au kwa Apple ukiwa na iPhone. Huhitaji biashara iliyosajiliwa, website wala nambari ya simu iliyothibitishwa ili kuuza hapa."
       },
       "2": {
-        "title": "Ona kilicho karibu",
-        "body": "Location husaidia kuleta wauzaji wa karibu kwanza, kisha interests zako husaidia kupangilia kilicho muhimu juu zaidi, ili feed ibaki ya maana na relevant."
+        "title": "Weka picha au video",
+        "body": "Piga picha ya bidhaa kwa simu yako, au ingiza video uliyotengeneza tayari kwenye TikTok. Media iliyo wazi ndiyo humfanya mnunuzi asimame na kufungua tangazo lako."
       },
       "3": {
-        "title": "Tuma ujumbe kwa muuzaji",
-        "body": "Uliza kama bado iko, omba details, ongea bei, kisha mpange pickup au delivery. Mazungumzo ni ya moja kwa moja."
+        "title": "Acha Shopi Agent iandike",
+        "body": "Pakia picha na Shopi Agent itaandaa kichwa, maelezo, kategoria na taarifa za bidhaa. Unasoma kisha unabadilisha chochote unachotaka kabla halijachapishwa."
       },
       "4": {
-        "title": "Mkikubaliana ni nje ya checkout",
-        "body": "Shopi haiprocess malipo wala haichukui sehemu. Mnunuzi na muuzaji huamua bei, malipo, pa kukutana na delivery wenyewe."
+        "title": "Chapisha kisha ujibu wanunuzi",
+        "body": "Weka bei yako kwa shilingi, weka alama ya negotiable ukipenda, kisha chapisha. Wanunuzi wa karibu wanaliona kwenye feed na kukutumia ujumbe ndani ya Shopi, ambapo mnakubaliana bei na mahali pa kuchukua moja kwa moja."
       }
     }
   },
@@ -96,17 +96,19 @@
     }
   },
   "testimonials": {
-    "sectionLabel": "Matumizi ya karibu",
-    "headline": "Imejengwa kwa maisha ya kununua na kuuza Kenya."
+    "sectionLabel": "Nani hupost kwenye Shopi",
+    "headline": "Wauzaji wa kawaida. Bidhaa halisi. Hakuna duka linalohitajika."
   },
   "download": {
-    "sectionLabel": "Anza kuangalia",
-    "headline": "Kitu kizuri kinaweza kuwa scroll chache mbele.",
-    "body": "Fungua feed uone watu wa karibu wanauza nini leo. Hakuna checkout, hakuna commission, hakuna pressure ya kufungua account kabla hujaanza kubrowse.",
-    "webCta": "Fungua malisho →"
+    "sectionLabel": "Anza kuuza",
+    "headline": "Post leo. Acha wanunuzi wa karibu wakujie.",
+    "body": "Fungua akaunti yako bure, weka unachouza, na wanunuzi wa eneo lako watalipata kwenye feed na kukutumia ujumbe. Kupost ni bure, Shopi haichukui commission, na unabaki na kila shilingi mliyokubaliana na mnunuzi.",
+    "webCta": "Post bidhaa yako ya kwanza — bure",
+    "secondaryCta": "Ona feed kwanza",
+    "reassurance": "Bure kupost · 0% commission · Huhitaji biashara iliyosajiliwa"
   },
   "footer": {
-    "tagline": "Feed ya soko la karibu Kenya. Kigundue, mtumie muuzaji ujumbe, mkubaliane moja kwa moja.",
+    "tagline": "Feed ya soko la karibu Kenya. Post bure, mtumie muuzaji ujumbe, mkubaliane moja kwa moja.",
     "links": {
       "product": "Bidhaa",
       "company": "Kampuni",
@@ -163,83 +165,94 @@
   },
   "landing": {
     "hero": {
-      "headline": "Soko la kijamii la Kenya.",
-      "subheadline": "Teleza kwenye feed ya vitu halisi vinavyouzwa karibu nawe — magari, simu, samani, mazao freshi — kisha mtumie muuzaji ujumbe moja kwa moja. Shopi haichukui commission na haishiki pesa kamwe.",
-      "ctaPrimary": "Fungua feed",
-      "ctaSecondary": "Anza kuuza",
-      "reassurance": "Bure kubrowse · Bure kupost · Hakuna commission",
-      "ctaLoggedIn": "Endelea kwenye feed yako"
+      "eyebrow": "Soko la kijamii la bure la Kenya",
+      "headline": "Post bure. Uza karibu nawe.",
+      "subheadline": "Piga picha moja na Shopi Agent itakuandikia kichwa, maelezo na taarifa za bidhaa. Weka bei yako, chapisha, na wanunuzi wa karibu watalipata kwenye feed na kukutumia ujumbe ndani ya Shopi. Hakuna commission, hakuna ada ya tangazo, hakuna mtu wa katikati.",
+      "ctaPost": "Post bidhaa yako ya kwanza — bure",
+      "ctaPostShort": "Post bidhaa",
+      "ctaFeed": "Ona kilicho karibu nawe",
+      "ctaFeedShort": "Fungua feed",
+      "ctaFeedLoggedIn": "Endelea kwenye feed yako",
+      "reassurance": "Bure kupost · 0% commission · Huhitaji biashara iliyosajiliwa",
+      "figures": {
+        "commission": "commission kwenye mauzo yako",
+        "photo": "picha inakuwa tangazo kamili",
+        "counties": "kaunti, feed moja ya karibu"
+      }
     },
     "pillars": {
+      "eyebrow": "Kwa nini uuze hapa",
+      "headline": "Bidhaa yako inaonekana bila kulipia kuonekana.",
+      "intro": "Shopi ni feed, si search box. Watu wanateleza kama wanavyoteleza apps za social, na matangazo ya karibu nao yanakuja kwanza — kwa hivyo post yako inawafikia wanunuzi ambao hawakuwa bado wanaitafuta. Ni bure kupost, hakuna commission, na kila ujumbe unakujia wewe.",
       "feed": {
-        "title": "Feed",
-        "tagline": "Vitu halisi vinavyouzwa, karibu nawe"
+        "title": "Feed, si search box",
+        "tagline": "Wanunuzi wanakutana na bidhaa yako wakiteleza, si tu wakitafuta maneno kamili."
       },
       "chat": {
-        "title": "Chat ya moja kwa moja",
-        "tagline": "Ongea na muuzaji, si checkout"
+        "title": "Wanunuzi wanakutumia ujumbe moja kwa moja",
+        "tagline": "Hakuna cart, hakuna checkout, hakuna dalali katikati. Unajibu, unajadiliana, mnakubaliana pa kuchukua."
       },
       "sell": {
-        "title": "Uza kwa sekunde",
-        "tagline": "Post mara moja — wanunuzi walio karibu wanaiona"
+        "title": "Shopi Agent inaandika tangazo",
+        "tagline": "Pakia picha upate kichwa, maelezo na taarifa za bidhaa unazoweza kuhariri kabla ya kuchapisha."
       }
     },
     "stats": {
-      "eyebrow": "Imejengwa kwa uaminifu wa karibu",
-      "headline": "Kwa nini wanunuzi na wauzaji wanachagua Shopi",
-      "intro": "Shopi hupunguza hatua kutoka “nimekiona” hadi “nimemtumia muuzaji ujumbe”: discovery ya karibu, media halisi, chat ya moja kwa moja, na hakuna checkout ya Shopi katikati.",
+      "eyebrow": "Inakugharimu nini",
+      "headline": "Hakuna commission. Hakuna ada ya tangazo. Hakuna kinachotolewa.",
+      "intro": "Shopi haikai ndani ya biashara yako. Haichakati malipo, haishiki pesa yako wala haipangi usafirishaji — ndiyo maana hakuna cha kutoa kwenye mauzo yako.",
       "zero": {
         "figure": "KES 0",
-        "label": "Commission au ada",
-        "body": "Shopi haiingii ndani ya biashara yako. Wauzaji wanabaki na bei yao, na wanunuzi wanamlipa muuzaji — si sisi."
+        "label": "Commission na ada za matangazo",
+        "body": "Kupost ni bure na Shopi haichukui chochote kwenye mauzo. Mnunuzi anakulipa wewe moja kwa moja, si sisi."
       },
       "counties": {
         "figure": "47",
         "label": "Kaunti, feed moja",
-        "body": "Post za karibu zinakuja kwanza — Nairobi, Mombasa, Kisumu, Meru na kila mji katikati."
+        "body": "Post za karibu zinakuja kwanza — Nairobi, Mombasa, Kisumu, Nakuru, Meru na kila mji katikati."
       },
       "chat": {
         "figure": "1",
-        "label": "Chat kutoka kupata hadi dili",
-        "body": "Iione, mtumie muuzaji ujumbe, mkubaliane bei na mahali pa kuchukua. Hakuna cart, hakuna checkout, hakuna dalali."
+        "label": "Chat, kutoka ujumbe wa kwanza hadi dili",
+        "body": "Wanunuzi wanakufikia ndani ya Shopi. Jibu maswali, kubalianeni bei na mpange pa kuchukua bila kutoka kwenye app."
       }
     },
     "dives": {
       "feed": {
-        "eyebrow": "Feed",
-        "title": "Feed inayojifunza unachopenda.",
-        "body": "Search inafanya kazi ukijua maneno kamili. Feed ni ya zile nyakati zingine: unateleza na kukutana na sofa, simu safi, gari ya mtumba au mazao freshi ambayo hukupanga kuyatafuta.",
+        "eyebrow": "Kwa wanunuzi",
+        "title": "Pata ulichokuwa hujui unakitafuta.",
+        "body": "Shopi si search box tu. Feed hujifunza unachofungua, kuhifadhi na kuzungumzia, kisha huweka matangazo ya karibu nawe kwanza — kutoka simu na samani hadi mazao freshi na magari.",
         "bullets": [
-          "Wauzaji wa karibu wanaonekana kwanza, kuanzia mtaa wako",
-          "Post za video na picha zikiwa na bei halisi na mahali",
-          "Inapangwa na unachofungua, kuhifadhi na ku-message — si matangazo"
+          "Matangazo ya karibu yanaonekana kwanza, kuanzia mtaa wako",
+          "Picha halisi, video, bei na mahali kutoka kwa wauzaji wa karibu",
+          "Mwambie Shopi Agent unachotaka kwa maneno ya kawaida badala ya kujenga filters"
         ],
-        "ctaPrimary": "Fungua feed",
+        "ctaPrimary": "Ona kilicho karibu nawe",
         "ctaSecondary": "Ona jinsi inavyofanya kazi"
       },
       "chat": {
         "eyebrow": "Chat ya moja kwa moja",
-        "title": "Hakuna checkout. Ni mazungumzo tu.",
-        "body": "Hakuna cart, escrow wala wakala wa Shopi anayeshika pesa. Bonyeza ku-chat, omba picha zaidi, jadiliana bei, na mchague mahali pa kukutana au jinsi ya kufikisha — dili inabaki kati yenu.",
+        "title": "Ongea na mtu, si checkout.",
+        "body": "Ukipata bidhaa unayotaka, mtumie muuzaji ujumbe ndani ya Shopi. Bei, malipo na pa kuchukua mnakubaliana nyinyi wawili. Shopi haishiki pesa kamwe, kwa hivyo hakuna cha kutolewa na hakuna wa kusubiri.",
         "bullets": [
-          "Mtumie muuzaji ujumbe kwa mbonyezo mmoja",
-          "Kubalianeni bei, mahali pa kuchukua na malipo moja kwa moja",
-          "Shopi haishiki pesa yako kamwe"
+          "Mbonyezo mmoja kutoka tangazo hadi mazungumzo halisi",
+          "Omba picha zaidi, jadiliana bei, na mchague pa kukutana",
+          "Mazungumzo yanabaki ndani ya Shopi, kwa hivyo mnabaki na kumbukumbu ya mliyokubaliana"
         ],
-        "ctaPrimary": "Fungua feed",
-        "ctaSecondary": "Ona jinsi inavyofanya kazi"
+        "ctaPrimary": "Ona kilicho karibu nawe",
+        "ctaSecondary": "Vinjari vya karibu"
       },
       "sell": {
-        "eyebrow": "Uza kwenye Shopi",
-        "title": "Post kwa sekunde. Uza karibu nawe.",
-        "body": "Rekodi unachouza, weka bei na mahali, kisha post. Wanunuzi walio karibu wanaipata kwenye feed na kukutumia ujumbe moja kwa moja — hakuna website, hakuna kuseti checkout, hakuna commission inayotolewa kwenye mauzo yako.",
+        "eyebrow": "Shopi Agent",
+        "title": "Picha moja. Tangazo kamili.",
+        "body": "Sababu kubwa inayowazuia watu kupost ni kuandika. Pakia picha na Shopi Agent itaandaa kichwa, maelezo, kategoria na taarifa za bidhaa. Hakuna kinachochapishwa kabla hujasoma na kukifanya kiwe chako.",
         "bullets": [
-          "Bure kuweka bidhaa, kila wakati",
-          "Share post ile ile moja kwa moja hadi TikTok",
-          "Baki na kila shilingi ya bei yako"
+          "Picha ndani, tangazo kamili nje",
+          "Hariri neno lolote kabla halijachapishwa — hakuna kinachopostwa chenyewe",
+          "Ingiza video uliyotengeneza tayari TikTok badala ya kupiga upya"
         ],
-        "ctaPrimary": "Anza kuuza",
-        "ctaSecondary": "Ona feed kwanza"
+        "ctaPrimary": "Post bidhaa yako ya kwanza — bure",
+        "ctaSecondary": "Ona Shopi Agent inafanya nini"
       }
     },
     "welcomeBack": {

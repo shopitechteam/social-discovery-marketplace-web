@@ -37,8 +37,12 @@ export const HOME_FAQ_EN: FaqItem[] = [
     a: "Almost anything that can be bought and sold locally in Kenya, including cars, phones, electronics, fashion, furniture, home items, farm produce, livestock and much more.",
   },
   {
+    q: "How do I create a Shopi account?",
+    a: "Sign up with Google, with an email address and password, or with Apple on an Apple device. Joining is free, and you do not need a registered business, a website or a verified phone number to start selling.",
+  },
+  {
     q: "How do I post something for sale?",
-    a: "You can post manually by adding photos or videos, or let Shopi Agent guide you through the process. Upload a photo, answer a few simple questions and Shopi Agent generates the title, description, category and other listing details for you.",
+    a: "Sign in and tap Create, then add photos or a video of the item. Write the listing yourself, or upload a photo and let Shopi Agent generate the title, description, category and specifications for you to review and edit. Add your price in Kenyan Shillings, a category and your location, then publish. Posting is free and the listing appears in the local feed immediately.",
   },
   {
     q: "How do buyers and sellers communicate?",

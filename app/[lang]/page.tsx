@@ -41,16 +41,20 @@ const HOME_META: Record<
   // carry "Sell Online in Kenya", which made them compete for one query while
   // neither fully covered "buy and sell online", where Search Console shows
   // real impressions and almost no clicks.
+  // The description's job is the click, not the ranking. It leads with the
+  // exact-match phrase, then spends the remaining characters on the two things
+  // that actually move a Kenyan seller: the listing writes itself, and nothing
+  // is deducted from the sale.
   en: {
     title: `${siteConfig.name} — Buy and Sell Online in Kenya | Free Marketplace`,
     description:
-      "Buy and sell online in Kenya for free on Shopi. Post anything in minutes with Shopi Agent, discover local buyers and sellers near you, and message them directly. Zero commission.",
+      "Buy and sell online in Kenya, free. Post a photo and Shopi Agent writes your listing. Buyers nearby find it in the feed and message you directly. No commission, no listing fees.",
     ogLocale: "en_KE",
   },
   sw: {
     title: `${siteConfig.name} — Nunua na Uuze Mtandaoni Kenya | Soko Bure`,
     description:
-      "Uza mtandaoni Kenya bure ukitumia Shopi. Tumia Shopi Agent kuunda matangazo kwa AI, pata wanunuzi wa karibu, na wasiliana moja kwa moja na wanunuzi na wauzaji. Hakuna commission.",
+      "Nunua na uuze mtandaoni Kenya bure. Piga picha na Shopi Agent ikuandikie tangazo. Wanunuzi wa karibu wanalipata kwenye feed na kukutumia ujumbe. Hakuna commission wala ada.",
     ogLocale: "sw_KE",
   },
 };
@@ -179,11 +183,15 @@ export default async function Rootpage({ params }: PageProps<"/[lang]">) {
         <LandingNav dict={dict} lang={lang} />
         <HeroSection dict={dict} lang={lang} />
         <PillarsSection dict={dict} />
-        <MarketplaceCategoriesSection lang={lang} />
-        <StatsSection dict={dict} />
-        <DeepDivesSection dict={dict} lang={lang} />
+        {/* Order is a funnel, not a tour. After the reasons to post comes the
+            proof that posting is easy (the four steps), then what it costs
+            (nothing), then what to post. The effort objection is the one that
+            stops people publishing, so it is answered before anything else. */}
         <HowItWorksSection dict={dict} />
-        <TestimonialsSection dict={dict} />
+        <StatsSection dict={dict} />
+        <MarketplaceCategoriesSection lang={lang} />
+        <DeepDivesSection dict={dict} lang={lang} />
+        <TestimonialsSection dict={dict} lang={lang} />
         {/* Side utility, intentionally low on the page — a "by the way" tool,
             not a headline feature. */}
         <TiktokSaverSection dict={dict} />
