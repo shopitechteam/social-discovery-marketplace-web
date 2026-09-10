@@ -37,14 +37,9 @@ export const metadata: Metadata = {
     title: siteConfig.metaTitle,
     description: siteConfig.description,
   },
-  // Installability: without a linked manifest Chrome never offers the install
-  // icon, and iOS ignores the app-shell hints entirely.
-  manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: siteConfig.name,
-  },
+  // No web app manifest and no apple-mobile-web-app hints: Shopi is a website,
+  // not an installable app. A native mobile app is the delivery path for that,
+  // so browsers must never offer "Install" or open this in a standalone shell.
   robots: {
     index: true,
     follow: true,
