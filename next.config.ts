@@ -167,15 +167,6 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: "/manifest.json",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "no-cache, no-store, must-revalidate",
-          },
-        ],
-      },
-      {
         source: "/(.*)",
         headers: securityHeaders,
       },
@@ -210,14 +201,11 @@ const nextConfig: NextConfig = {
       // Host consolidation. www is the canonical host (siteConfig.url), so the
       // apex must 301 to it — otherwise both hosts serve the full site and the
       // duplicate signals split ranking equity. Kept first so it resolves
-      // before any path-level rule. The one exception is the PWA origin
-      // association file: scope_extensions requires it to be served directly
-      // from the associated apex origin, not redirected to www.
+      // before any path-level rule.
       {
-        source:
-          "/:path((?!\\.well-known/web-app-origin-association$).*)",
+        source: "/:path*",
         has: [{ type: "host", value: "shopi.co.ke" }],
-        destination: "https://www.shopi.co.ke/:path",
+        destination: "https://www.shopi.co.ke/:path*",
         permanent: true,
       },
       {
