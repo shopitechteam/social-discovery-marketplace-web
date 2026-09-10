@@ -1,51 +1,51 @@
 import React from "react";
+import Link from "next/link";
 import type { Dictionary } from "@/i18n/getDictionary";
 
-const EL = ({
-  href,
-  children,
-}: {
-  href: string;
-  children: React.ReactNode;
-}) => (
-  <a
-    href={href}
-    target="_blank"
-    rel="noopener noreferrer"
-    className="text-inherit underline decoration-dotted underline-offset-3"
-  >
-    {children}
-  </a>
-);
-
-/* Honest, real use cases — not fabricated reviews. */
+/**
+ * Honest use cases — not fabricated reviews, and deliberately not a wall of
+ * five-star quotes from people who do not exist. Each card describes a kind of
+ * seller the product is built for and the exact steps they take, so the reader
+ * can place themselves in one.
+ *
+ * Every card ends on an internal link to a real category page. The section used
+ * to close with an outbound link to a competing marketplace, which handed link
+ * equity away from the homepage — the comparison argument now lives on
+ * /marketplace-alternatives-kenya, where it belongs.
+ */
 const useCases: {
   node: React.ReactNode;
   who: string;
+  href: string;
+  linkLabel: string;
   accentBar: string;
   accentText: string;
 }[] = [
   {
     node: (
       <>
-        A farmer in Kiambu records the animals, adds a price and location, then
-        posts. Buyers can see the listing in the feed and message directly,
-        without a broker setting the conversation for them.
+        A farmer in Kiambu films the animals in the shamba, adds a price and a
+        location, and posts. Buyers see it in the local feed and message
+        directly, so no broker sets the price or the conversation.
       </>
     ),
     who: "Farm produce & livestock",
+    href: "/feed",
+    linkLabel: "See what's in the feed",
     accentBar: "bg-primary",
     accentText: "text-primary",
   },
   {
     node: (
       <>
-        A phone dealer in town posts a clean iPhone with clear photos, video and
-        a price. Someone nearby spots it while scrolling, asks a few questions,
-        and they decide where to meet.
+        A phone dealer in town photographs a clean iPhone. Shopi Agent drafts
+        the title, the storage, the condition and the description, the dealer
+        fixes the price, and it is live before the next customer walks in.
       </>
     ),
-    who: "Electronics & phones",
+    who: "Phones & electronics",
+    href: "/phones-electronics-kenya",
+    linkLabel: "Sell phones and electronics",
     accentBar: "bg-secondary",
     // secondary-strong (dark amber): base #ff9f40 is only 2.04:1 on white.
     accentText: "text-secondary-strong",
@@ -53,19 +53,26 @@ const useCases: {
   {
     node: (
       <>
-        Shopi keeps the classifieds idea people know from sites like{" "}
-        <EL href="https://jiji.co.ke">Jiji</EL>, but makes discovery feel closer
-        to a social feed. The difference is simple: every post is something for
-        sale, with a seller you can message.
+        Someone selling skincare and wigs from home posts each product with
+        shades, sizes and delivery options. No website to build, no shopfront to
+        rent, and no commission taken off what a customer pays.
       </>
     ),
-    who: "Fashion, furniture & more",
+    who: "Beauty, fashion & home",
+    href: "/beauty-cosmetics-kenya",
+    linkLabel: "Sell beauty products",
     accentBar: "bg-accent",
     accentText: "text-accent",
   },
 ];
 
-export function TestimonialsSection({ dict }: { dict: Dictionary }) {
+export function TestimonialsSection({
+  dict,
+  lang,
+}: {
+  dict: Dictionary;
+  lang: string;
+}) {
   return (
     <section className="border-y border-border bg-surface px-(--landing-page-x) py-20">
       <div className="mx-auto max-w-(--landing-page-max)">
@@ -79,18 +86,28 @@ export function TestimonialsSection({ dict }: { dict: Dictionary }) {
         </div>
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
-          {useCases.map(({ node, who, accentBar, accentText }) => (
-            <div
-              key={who}
-              className="flex flex-col gap-5 rounded-lg border border-border bg-elevated p-8"
-            >
-              <div className={`h-1 w-9 rounded-sm ${accentBar}`} />
-              <p className="flex-1 text-md leading-[1.6] text-foreground">
-                {node}
-              </p>
-              <div className={`text-sm font-bold ${accentText}`}>{who}</div>
-            </div>
-          ))}
+          {useCases.map(
+            ({ node, who, href, linkLabel, accentBar, accentText }) => (
+              <div
+                key={who}
+                className="flex flex-col gap-5 rounded-lg border border-border bg-elevated p-8"
+              >
+                <div className={`h-1 w-9 rounded-sm ${accentBar}`} />
+                <p className="flex-1 text-md leading-[1.6] text-foreground">
+                  {node}
+                </p>
+                <div>
+                  <div className={`text-sm font-bold ${accentText}`}>{who}</div>
+                  <Link
+                    href={`/${lang}${href}`}
+                    className="mt-1 inline-block text-sm font-semibold text-muted underline decoration-dotted underline-offset-4 hover:text-foreground"
+                  >
+                    {linkLabel}
+                  </Link>
+                </div>
+              </div>
+            ),
+          )}
         </div>
       </div>
     </section>

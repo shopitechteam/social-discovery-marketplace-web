@@ -25,16 +25,28 @@ export function DownloadSection({
             {dict.download.body}
           </p>
 
-          <Link
-            href={`/${lang}/feed`}
-            className="btn-primary inline-flex items-center gap-2 px-9 py-4 text-md font-semibold no-underline"
-          >
-            {dict.download.webCta.replace(/\s*→\s*$/, "")}
-            <span aria-hidden> →</span>
-          </Link>
+          {/* Closing CTA points at the post flow, not the feed. Someone who
+              has read the whole page is the most likely person on the site to
+              actually publish something; sending them to a no-account browse
+              spends that intent on nothing. */}
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Link
+              href={`/${lang}/upload`}
+              className="btn-primary inline-flex items-center gap-2 px-9 py-4 text-md font-semibold no-underline"
+            >
+              {dict.download.webCta.replace(/\s*→\s*$/, "")}
+              <span aria-hidden> →</span>
+            </Link>
+            <Link
+              href={`/${lang}/feed`}
+              className="inline-flex items-center rounded-full border border-border bg-elevated px-7 py-4 text-md font-semibold text-foreground no-underline hover:bg-subtle"
+            >
+              {dict.download.secondaryCta}
+            </Link>
+          </div>
 
           <p className="mt-5 text-sm text-muted">
-            Free to browse · No checkout · No commission
+            {dict.download.reassurance}
           </p>
         </div>
       </div>

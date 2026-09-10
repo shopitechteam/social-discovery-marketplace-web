@@ -20,6 +20,12 @@ export function HeroSection({
     >
       <div className="mx-auto grid max-w-(--landing-page-max) items-center gap-10 lg:grid-cols-[1fr_0.78fr]">
         <div>
+          {/* The eyebrow carries the entity and the head term ("Kenya's free
+              social marketplace") so the H1 is free to be an outcome rather
+              than a category label. Both are crawlable text above the fold. */}
+          <p className="mb-4 text-sm font-bold uppercase tracking-widest text-primary">
+            {t.eyebrow}
+          </p>
           <h1 className="max-w-4xl text-balance font-display text-[clamp(2.45rem,5.2vw,4.85rem)] font-semibold leading-[1.02] tracking-normal text-default">
             {t.headline}
           </h1>
@@ -28,15 +34,19 @@ export function HeroSection({
           </p>
           <HeroCtas
             lang={lang}
-            ctaPrimary={t.ctaPrimary}
-            ctaLoggedIn={t.ctaLoggedIn}
-            ctaSecondary={t.ctaSecondary}
+            ctaPost={t.ctaPost}
+            ctaPostShort={t.ctaPostShort}
+            ctaFeed={t.ctaFeed}
+            ctaFeedLoggedIn={t.ctaFeedLoggedIn}
           />
+          {/* Only figures the product actually keeps: zero commission, the
+              photo-to-listing flow, and nationwide coverage. No user or
+              listing counts — nothing here is a number we cannot stand on. */}
           <div className="mt-6 grid max-w-xl gap-3 sm:grid-cols-3">
             {[
-              ["KES 0", "commission"],
-              ["47", "counties"],
-              ["1 tap", "to chat"],
+              ["KES 0", t.figures.commission],
+              ["1", t.figures.photo],
+              ["47", t.figures.counties],
             ].map(([figure, label]) => (
               <div
                 key={label}
@@ -52,6 +62,7 @@ export function HeroSection({
             ))}
           </div>
           <p className="mt-5 flex items-center gap-2 text-sm text-muted">
+            <ShieldCheck size={15} className="shrink-0 text-primary" />
             {t.reassurance}
           </p>
         </div>
@@ -102,10 +113,11 @@ function FocusedListing() {
             </span>
             <div>
               <p className="text-sm font-bold text-default">
-                Deal directly with the seller
+                Buyers message you right here
               </p>
               <p className="mt-1 text-xs leading-snug text-muted">
-                Ask questions, negotiate, then agree on pickup and payment.
+                They ask, you answer, you agree the price and the pickup.
+                Shopi never touches the money.
               </p>
             </div>
           </div>

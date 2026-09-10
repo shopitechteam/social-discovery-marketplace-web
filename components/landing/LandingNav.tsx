@@ -215,20 +215,24 @@ export function LandingNav({
               </Link>
             )}
 
-            {/* Desktop CTA pair — outline + solid primary, Tolstoy-style */}
+            {/* Desktop CTA pair — quiet feed link, solid post CTA.
+                Posting is the action the site is short of, and it is the only
+                one of the two that requires an account, so it gets the filled
+                button on every screen. */}
             <Link
               href={`${homeBase}/feed`}
               className="hidden items-center rounded-full border border-border bg-elevated px-[1.1rem] py-2 text-sm font-semibold whitespace-nowrap text-foreground no-underline md:inline-flex"
             >
               {isAuthenticated
-                ? (dict?.landing.hero.ctaLoggedIn ?? "Continue to your feed")
-                : (dict?.common.openFeed ?? "Open the feed")}
+                ? (dict?.landing.hero.ctaFeedLoggedIn ??
+                  "Continue to your feed")
+                : (dict?.common.openFeed ?? "Browse the feed")}
             </Link>
             <Link
               href={`${homeBase}/upload`}
               className="hidden items-center rounded-full bg-primary px-[1.1rem] py-2 text-sm font-semibold whitespace-nowrap text-white no-underline md:inline-flex"
             >
-              {dict?.landing.hero.ctaSecondary ?? "Start selling"}
+              {dict?.landing.hero.ctaPostShort ?? "Post an item"}
             </Link>
 
             {/* Language switcher */}
@@ -287,21 +291,36 @@ export function LandingNav({
             </Link>
           )}
 
-          {/* Primary CTA → feed */}
+          {/* Primary CTA → post, secondary → feed.
+              The old primary went to the feed under the line "No account
+              needed to start looking", which is true but talks people out of
+              the one step this page exists to produce. */}
           <div className="mt-5 flex flex-col gap-3">
             <Link
-              href={`${homeBase}/feed`}
+              href={`${homeBase}/upload`}
               onClick={() => setMenuOpen(false)}
               className="flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-[0.85rem] text-[0.9rem] font-bold text-white no-underline"
             >
               {isAuthenticated
-                ? (dict?.landing.hero.ctaLoggedIn ?? "Continue to your feed")
-                : (dict?.common.openFeed ?? "Open the feed")}
+                ? (dict?.landing.hero.ctaPostShort ?? "Post an item")
+                : (dict?.landing.hero.ctaPost ??
+                  "Post your first item — free")}
               <span aria-hidden>→</span>
+            </Link>
+            <Link
+              href={`${homeBase}/feed`}
+              onClick={() => setMenuOpen(false)}
+              className="flex items-center justify-center gap-2 rounded-full border border-border bg-elevated px-5 py-[0.85rem] text-[0.9rem] font-bold text-foreground no-underline"
+            >
+              {isAuthenticated
+                ? (dict?.landing.hero.ctaFeedLoggedIn ??
+                  "Continue to your feed")
+                : (dict?.common.openFeed ?? "Browse the feed")}
             </Link>
             {!isAuthenticated && (
               <p className="text-center text-[0.78rem] text-muted">
-                Free to use · No account needed to start looking
+                {dict?.landing.hero.reassurance ??
+                  "Free to post · 0% commission · No business registration needed"}
               </p>
             )}
           </div>
