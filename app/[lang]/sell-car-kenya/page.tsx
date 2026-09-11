@@ -9,6 +9,10 @@ import { isValidLocale } from "@/i18n/config";
 import { publicPageMetadata } from "@/lib/metadata";
 import { faqSchema, jsonLd, marketplaceSchema } from "@/lib/structured-data";
 import { sellCarPages, sellCarPath } from "@/lib/seo/sell-car-pages";
+import {
+  sellCarLocationPath,
+  sellCarLocations,
+} from "@/lib/seo/sell-car-locations";
 
 type Props = { params: Promise<{ lang: string }> };
 
@@ -352,6 +356,44 @@ export default async function SellCarKenyaPage({ params }: Props) {
                 </p>
               </Link>
             ))}
+          </div>
+        </section>
+
+        {/* ── Location hub ─────────────────────────────────────────────
+            "Sell my car in Nairobi" is a different query from "sell my car in
+            Kenya" and this page cannot rank for both. Cars are also the most
+            location-bound category we have — a buyer will cross a county to
+            inspect one but almost never the country — so the town genuinely
+            changes who sees the listing. */}
+        <section className="bg-surface px-5 py-16">
+          <div className="mx-auto max-w-190">
+            <p className="mb-3 text-[0.8rem] font-bold tracking-widest uppercase text-primary">
+              By town
+            </p>
+            <h2 className="mb-5 font-display text-[clamp(1.5rem,3vw,2.2rem)] font-bold tracking-normal text-foreground">
+              Where are you selling from?
+            </h2>
+            <p className="mb-7 max-w-150 text-[0.95rem] leading-[1.75] text-muted">
+              Who buys, what they pay and what they ask about all change between
+              towns. These guides cover the local market, where to meet buyers
+              safely, and what sellers in that county are currently asking.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {sellCarLocations.map((location) => (
+                <Link
+                  key={location.slug}
+                  href={`/${safeLang}${sellCarLocationPath(location.slug)}`}
+                  className="rounded-lg border border-border bg-elevated p-5 no-underline transition-colors hover:border-[rgb(var(--color-border-strong))]"
+                >
+                  <h3 className="font-display text-[1.05rem] font-bold text-foreground">
+                    Sell my car in {location.town}
+                  </h3>
+                  <p className="mt-2 text-[0.875rem] leading-[1.6] text-muted">
+                    {location.county} County
+                  </p>
+                </Link>
+              ))}
+            </div>
           </div>
         </section>
 

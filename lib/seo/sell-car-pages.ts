@@ -173,7 +173,245 @@ export const sellCarPages = [
       "Probox resale value Kenya",
       "where to sell Probox Nairobi",
     ],
-    related: ["toyota-premio", "toyota-harrier", "mazda-atenza"],
+    related: ["toyota-premio", "toyota-fielder", "isuzu-d-max"],
+  },
+  {
+    slug: "toyota-vitz",
+    model: "Toyota Vitz",
+    buyerSlug: "toyota-vitz",
+    intro:
+      "The Vitz is the car most Kenyans buy first, so your audience is large but price-sensitive. A clean, honestly priced Vitz sells quickly; an optimistic one sits.",
+    buyerProfile:
+      "Vitz buyers are usually buying their first car, or a second small car for a household that already has one. They are budget-led and comparing several listings at once, often cross-shopping against the Passo, Demio and Note. Running costs matter more to them than specification, and many are nervous first-time buyers who will value a seller who explains things plainly over one who pushes.",
+    priceFactors: [
+      "Engine size — the 1.0 and the 1.3 sit at clearly different prices.",
+      "Year and shape, since buyers recognise the generations and price them apart.",
+      "Overall body condition, because this buyer cannot afford bodywork after buying.",
+      "Service history and any recent major work, which reassures a first-time buyer.",
+      "Logbook status — a pending transfer scares this buyer more than most.",
+    ],
+    buyerQuestions: [
+      "Is it the 1.0 or the 1.3, and what is the fuel consumption?",
+      "Has it been in any accident, and is there a service history?",
+      "Is the logbook in your name and ready to transfer?",
+      "What will it cost me to run and service?",
+    ],
+    listingTips: [
+      "Put the engine size in the title — it is the first thing a Vitz buyer filters on.",
+      "Answer the running-cost question in the description before it is asked.",
+      "Be patient and plain in chat. Many of these buyers are buying their first car.",
+    ],
+    keywords: [
+      "sell my Toyota Vitz",
+      "sell Toyota Vitz Kenya",
+      "Toyota Vitz resale value Kenya",
+      "where to sell Vitz Nairobi",
+    ],
+    related: ["toyota-axio", "nissan-note", "toyota-premio"],
+  },
+  {
+    slug: "toyota-axio",
+    model: "Toyota Axio",
+    buyerSlug: "toyota-axio",
+    intro:
+      "The Axio is one of the highest-turnover saloons in Kenya, which means a fair price sells fast and an ambitious one is immediately obvious to buyers.",
+    buyerProfile:
+      "Axio buyers want the cheapest sensible route into a reliable saloon, and most are commuters or small-business owners. They compare directly against the Vitz below and the Premio above, so your car is being judged on whether it justifies the step up or down. Hybrid variants attract a distinct, more informed buyer who will ask about battery condition specifically.",
+    priceFactors: [
+      "Hybrid versus petrol, and for hybrids, the state of the battery.",
+      "Grade and trim level within the same model year.",
+      "Genuine mileage supported by records rather than the odometer alone.",
+      "Interior condition, which this buyer inspects closely for a car bought to commute in daily.",
+      "Logbook status and whether any financing is outstanding.",
+    ],
+    buyerQuestions: [
+      "Is it the hybrid, and if so how is the battery?",
+      "What grade is it, and is it a local unit or an import?",
+      "What is the genuine mileage, and do you have service records?",
+      "Is the logbook ready for transfer?",
+    ],
+    listingTips: [
+      "State hybrid or petrol in the title — it changes the buyer and the price bracket.",
+      "For a hybrid, address battery health directly; silence on it reads as a problem.",
+      "Photograph the interior properly. This car is bought to sit in every day.",
+    ],
+    keywords: [
+      "sell my Toyota Axio",
+      "sell Toyota Axio Kenya",
+      "Toyota Axio resale value Kenya",
+      "sell Axio hybrid Kenya",
+    ],
+    related: ["toyota-fielder", "toyota-vitz", "toyota-premio"],
+  },
+  {
+    slug: "toyota-fielder",
+    model: "Toyota Fielder",
+    buyerSlug: "toyota-fielder",
+    intro:
+      "Fielder buyers are buying space, so lead with the load area and what the car can carry. Outside the main cities it is one of the easiest cars in Kenya to sell.",
+    buyerProfile:
+      "The Fielder sells to two groups at once: families who want a wagon rather than a saloon, and small traders who need to carry stock without running a pickup. That second group is why it moves so well upcountry. Both care about rear suspension condition, because a Fielder that has spent years carrying heavy loads shows it there first.",
+    priceFactors: [
+      "Hybrid versus petrol, and 2WD versus 4WD for upcountry buyers.",
+      "Rear suspension condition, which reveals how hard the car has been loaded.",
+      "Grade and trim, which buyers of this model do distinguish between.",
+      "Body condition underneath, particularly for cars used on rough roads.",
+      "Logbook status and any outstanding financing.",
+    ],
+    buyerQuestions: [
+      "Is it the hybrid or petrol, and is it 2WD or 4WD?",
+      "Has it been used to carry heavy loads, and how is the rear suspension?",
+      "What is the service history, and has anything major been replaced?",
+      "Is the logbook in your name?",
+    ],
+    listingTips: [
+      "Photograph the load area with the seats down — it is the reason people buy this car.",
+      "Be honest about load use. Traders will pay for a working car; they will not pay for a surprise.",
+      "Mention 4WD if you have it. It matters a lot outside Nairobi and almost not at all inside it.",
+    ],
+    keywords: [
+      "sell my Toyota Fielder",
+      "sell Toyota Fielder Kenya",
+      "Toyota Fielder resale value Kenya",
+      "where to sell Fielder Kenya",
+    ],
+    related: ["toyota-axio", "probox", "toyota-premio"],
+  },
+  {
+    slug: "nissan-note",
+    model: "Nissan Note",
+    buyerSlug: "nissan-note",
+    intro:
+      "The Note competes directly with the Vitz and Demio on price, so what sells it is reassurance about the gearbox. Address that in the listing and you will filter out most of the hesitation.",
+    buyerProfile:
+      "Note buyers are budget-focused first or second-car buyers who have usually looked at a Vitz or a Demio first and are considering the Note because it offers more space for the money. The recurring objection is the CVT gearbox — buyers have heard about it and will ask. A seller with servicing records and a straight answer converts far better than one who deflects.",
+    priceFactors: [
+      "Gearbox condition and any CVT servicing history, which dominates this model's resale.",
+      "Standard versus the supercharged DIG-S engine.",
+      "Year and shape, since the generations are priced quite differently.",
+      "Body and interior condition, given the buyer's budget for repairs is limited.",
+      "Logbook readiness and outstanding financing.",
+    ],
+    buyerQuestions: [
+      "How does the CVT gearbox behave, and has it been serviced?",
+      "Is it the standard engine or the DIG-S?",
+      "What is the fuel consumption in town?",
+      "Is the logbook in your name and ready to transfer?",
+    ],
+    listingTips: [
+      "Address the gearbox in the description. It is the objection, so answer it before it is raised.",
+      "Photograph any CVT or transmission service receipts you hold.",
+      "Encourage a test drive. This model sells on the drive more than on the photos.",
+    ],
+    keywords: [
+      "sell my Nissan Note",
+      "sell Nissan Note Kenya",
+      "Nissan Note resale value Kenya",
+      "where to sell Nissan Note Nairobi",
+    ],
+    related: ["toyota-vitz", "toyota-axio", "toyota-premio"],
+  },
+  {
+    slug: "subaru-forester",
+    model: "Subaru Forester",
+    buyerSlug: "subaru-forester",
+    intro:
+      "Forester buyers know the model and will ask technical questions. Documentation, not price, is what closes this sale — a well-serviced car commands a clear premium.",
+    buyerProfile:
+      "Forester buyers are usually enthusiasts or people who specifically need all-wheel drive, and they have chosen it deliberately over a RAV4 or an X-Trail. They know the engine's reputation, they know what neglect looks like, and they will ask about oil change intervals and head gaskets. They are wary of running costs, which means proof of maintenance is worth more to them than a lower asking price.",
+    priceFactors: [
+      "Turbo versus non-turbo, which separates two quite different buyer groups and price brackets.",
+      "Documented servicing, especially oil change intervals — the single biggest value driver.",
+      "Condition of the all-wheel-drive system and suspension.",
+      "Any engine rebuild or head gasket work, and whether it is documented.",
+      "Logbook status and outstanding financing.",
+    ],
+    buyerQuestions: [
+      "Is it turbo or non-turbo, and what has been done to the engine?",
+      "How regularly was the oil changed, and do you have receipts?",
+      "Any head gasket or major engine work in its history?",
+      "How is the suspension and the AWD system?",
+    ],
+    listingTips: [
+      "Say turbo or non-turbo in the title — it is the first filter for this buyer.",
+      "Photograph every service receipt you have. On this model, paperwork is the product.",
+      "Write a longer description than you would for a Toyota. This buyer reads all of it.",
+    ],
+    keywords: [
+      "sell my Subaru Forester",
+      "sell Subaru Forester Kenya",
+      "Subaru Forester resale value Kenya",
+      "where to sell Subaru Kenya",
+    ],
+    related: ["toyota-harrier", "isuzu-d-max", "toyota-premio"],
+  },
+  {
+    slug: "isuzu-d-max",
+    model: "Isuzu D-Max",
+    buyerSlug: "isuzu-d-max",
+    intro:
+      "A D-Max sells as equipment, not as a car. Buyers are businesses that need it working from day one, so lead with mechanical condition and what it has been used for.",
+    buyerProfile:
+      "D-Max buyers are overwhelmingly commercial — farmers, contractors, transporters and construction businesses — and they are buying capability. They will not pay for cosmetics, but they will pay well for a pickup with a sound chassis, healthy suspension and documented servicing. They almost always want their own mechanic to inspect it, and they buy decisively once satisfied.",
+    priceFactors: [
+      "2WD versus 4WD, and single versus double cab.",
+      "Chassis and load-bed condition, including any welding or repair history.",
+      "Suspension and clutch condition, given how these vehicles are used.",
+      "Documented servicing and what the vehicle has been hauling.",
+      "Logbook status and outstanding financing, which business buyers check before viewing.",
+    ],
+    buyerQuestions: [
+      "Is it 2WD or 4WD, single or double cab?",
+      "What has it been carrying, and how heavily?",
+      "When were the suspension and clutch last done?",
+      "Can my mechanic inspect it before I pay?",
+    ],
+    listingTips: [
+      "Photograph the chassis, load bed and suspension. That is what gets inspected.",
+      "State the work history plainly. Business buyers price honesty in; they punish surprises.",
+      "Welcome an independent inspection in the listing itself — it signals confidence.",
+    ],
+    keywords: [
+      "sell my Isuzu D-Max",
+      "sell pickup Kenya",
+      "sell double cab Kenya",
+      "Isuzu D-Max resale value Kenya",
+    ],
+    related: ["toyota-hiace", "probox", "subaru-forester"],
+  },
+  {
+    slug: "toyota-hiace",
+    model: "Toyota Hiace",
+    buyerSlug: "toyota-hiace",
+    intro:
+      "A Hiace is bought to earn, so buyers calculate payback rather than admire the vehicle. Be precise about route history, compliance and mechanical condition.",
+    buyerProfile:
+      "Hiace buyers are transport operators, matatu owners, tour operators and businesses moving staff or goods. They think in terms of daily revenue and downtime, so their questions are about engine condition, gearbox, suspension and how many days a month the vehicle has historically been off the road. PSV compliance and inspection status are decisive for anyone intending to operate it on a route.",
+    priceFactors: [
+      "Seating configuration and whether the vehicle is PSV-compliant.",
+      "Engine and gearbox condition, and how recently major work was done.",
+      "Suspension and body condition after route use.",
+      "Current inspection certificate and licensing status.",
+      "Logbook status and any outstanding financing, which matters more on commercial vehicles.",
+    ],
+    buyerQuestions: [
+      "What routes has it worked, and for how long?",
+      "Is it PSV-compliant, and is the inspection current?",
+      "When were the engine, gearbox and suspension last worked on?",
+      "Is the logbook clean, with no financing outstanding?",
+    ],
+    listingTips: [
+      "State seating and PSV status in the title — operators filter on both.",
+      "Give the route history honestly. Operators can read a vehicle's condition anyway.",
+      "Photograph the seating, engine bay and suspension rather than styling the exterior.",
+    ],
+    keywords: [
+      "sell my Toyota Hiace",
+      "sell matatu Kenya",
+      "sell van Kenya",
+      "Toyota Hiace resale value Kenya",
+    ],
+    related: ["isuzu-d-max", "probox", "toyota-fielder"],
   },
 ] as const satisfies SellCarPage[];
 
