@@ -694,6 +694,315 @@ export const blogPosts: BlogPost[] = [
         description:
           "The official source for vehicle ownership transfer, TIMS accounts and current fees in Kenya. Always confirm the process here before transferring.",
       },
+      {
+        label: "How much is my car worth in Kenya?",
+        url: "/blog/how-much-is-my-car-worth-in-kenya",
+        description:
+          "The pricing half of the job: how to work out a realistic asking price before you advertise, and what actually moves the number.",
+      },
+      {
+        label: "Sell a car in Kenya",
+        url: "/sell-car-kenya",
+        description:
+          "The main guide to selling a car on Shopi — free listing, no broker, and the NTSA transfer explained.",
+      },
+    ],
+  },
+
+  // ─────────────────────────────────────────────────────────────────
+  {
+    slug: "how-much-is-my-car-worth-in-kenya",
+    title: "How Much Is My Car Worth in Kenya? A Seller's Pricing Guide",
+    description:
+      "How to price a used car in Kenya before you advertise — what actually moves the number, how to read comparable listings honestly, and the pricing mistakes that leave cars unsold for months.",
+    excerpt:
+      "Almost every car that sits unsold for months is priced wrong, not marketed wrong. Here is how to work out what yours is genuinely worth before you advertise.",
+    category: "Seller Guide",
+    readTime: "10 min read",
+    publishedAt: "2026-09-11",
+    author: {
+      name: "Shopi Team",
+      role: "Seller Guides",
+      initials: "S",
+      color: "#ef4444",
+    },
+    keywords: [
+      "how much is my car worth in Kenya",
+      "car valuation Kenya",
+      "used car prices Kenya",
+      "sell my car Kenya",
+      "car resale value Kenya",
+      "price my car Kenya",
+      "second hand car prices Kenya",
+    ],
+    sections: [
+      {
+        heading: "Why this is the only question that matters first",
+        body: "A car that is priced correctly sells. A car that is priced wrong does not sell no matter how good the photographs are, how many platforms it is listed on, or how quickly the owner replies to messages. Everything else in a private sale is secondary to this one number.\n\nThe difficulty is that most owners do not price from the market. They price from what they paid, from what they still owe, or from what they need for the next car. None of those figures has any bearing on what a buyer will pay, and a buyer comparing five listings will simply skip the one that sits above the others without explaining why.",
+      },
+      {
+        heading: "Start from comparable listings, not from what you paid",
+        body: "The honest method is comparison, and it takes about thirty minutes. Search current listings for your exact make, model, year and grade. Not the model name alone — a 2015 Premio F and a 2015 Premio G-Package are different cars to a buyer, and pricing them the same is how sellers lose money in both directions.\n\nCollect a range rather than a single figure. Note the highest and lowest asking prices for cars genuinely comparable to yours, then place your car inside that range based on its condition and paperwork rather than on hope. One thing to keep in mind throughout: these are asking prices, not sale prices. Final agreed prices in Kenya are usually somewhat below the advertised figure, so the range you are looking at is already optimistic.",
+        list: [
+          "Match make, model, year and grade — not just the model name",
+          "Collect at least five comparable listings before deciding anything",
+          "Note the range, not a single number",
+          "Remember you are reading asking prices, which sit above final prices",
+        ],
+      },
+      {
+        heading: "What actually moves the number",
+        body: "Owners tend to over-weight mileage and under-weight paperwork. In the Kenyan market it is usually the other way round. A clean logbook already in your name removes the single biggest risk a private buyer faces, and buyers pay for that certainty. A pending transfer, an unclear ownership history or outstanding financing pulls the price down sharply, and in many cases stops the sale entirely.\n\nAccident history matters more than age. Structural repair work is visible to any competent mechanic, and a buyer who discovers it after being told the car was clean will walk away from the whole deal rather than negotiate. Service records work in the opposite direction: documented maintenance is one of the few things that reliably pulls a price towards the top of its range.",
+        list: [
+          "Logbook clean and in your name — the largest single factor",
+          "Accident and structural repair history",
+          "Documented service records, which support a higher asking price",
+          "Genuine mileage, evidenced rather than simply stated",
+          "Grade and trim within the same model year",
+          "Body and interior condition, especially rust at the coast",
+        ],
+      },
+      {
+        heading: "Location changes the number more than sellers expect",
+        body: "The same car is not worth the same amount in every Kenyan town, because the buyers are different. A high-clearance vehicle or a pickup is worth more in Nakuru, Eldoret or Meru, where buyers are running it on farm roads and buying it as a working asset. A small economical hatchback is easiest to sell in Nairobi, Kisumu or Mombasa, where the buyer is thinking about daily fuel costs in traffic.\n\nThis cuts both ways. If you own a double cab in Nairobi, you may find a stronger price from a buyer in the North Rift than from the city market. If you own a Vitz upcountry, the deepest pool of buyers is in the cities. It is worth checking what comparable cars are being asked for in your own county rather than nationally, because that is the market your buyers are actually comparing against.",
+      },
+      {
+        heading: "Decide what you are optimising for before you advertise",
+        body: "There is a real trade-off between price and speed, and pretending otherwise is why so many private sales drag on. Price slightly below the middle of the range and say the price is firm, and you will usually sell quickly to a buyer who recognises a fair deal. Price near the top of the range and you will wait longer, field more negotiation, and need the condition and paperwork to justify it.\n\nBoth are legitimate. What does not work is pricing at the top of the range while needing to sell this month, because the market corrects that position slowly and painfully, usually through a series of reductions that signal desperation to everyone watching.",
+        list: [
+          "For a fast sale, price just under mid-range and state that the price is firm",
+          "To maximise the price, price near the top and be prepared to wait",
+          "Decide your walk-away figure before the first buyer calls",
+          "Avoid repeated small reductions — they tell buyers to wait for the next one",
+        ],
+      },
+      {
+        heading: "Be careful with online valuation tools",
+        body: "Automated valuation figures should be treated as a rough sanity check, not as evidence. Most are built on limited local data, few account properly for grade, import history or logbook status, and none of them has seen your car. A number from a tool will not persuade a buyer who is looking at five real listings.\n\nWhat does persuade a buyer is a price that sits sensibly among comparable cars, and a listing that explains why yours is where it is in that range. \"Priced slightly above similar 2015 models because it has full service history and the logbook is ready\" is a far stronger argument than any valuation figure.",
+      },
+      {
+        heading: "Common pricing mistakes",
+        body: "The patterns repeat across almost every stalled private sale in Kenya, and they are all avoidable.",
+        list: [
+          "Pricing from the purchase price rather than the current market",
+          "Adding the cost of recent repairs on top of market value — buyers expect a working car, and do not pay twice for maintenance",
+          "Advertising with no price at all, which drastically reduces genuine enquiries",
+          "Ignoring grade, so the car is compared against a better-specified version of itself",
+          "Setting a high price to 'leave room for negotiation' so wide that serious buyers never make contact",
+          "Refusing an independent mechanic's inspection, which reads as concealment and costs you the buyer",
+        ],
+      },
+      {
+        heading: "Put the number in the listing",
+        body: "Listings without a price get far fewer genuine enquiries. \"Price on request\" filters out exactly the buyers you want — people who are actively comparing and ready to move — and attracts people who are browsing without intent.\n\nState the figure in Kenyan Shillings, say plainly whether it is negotiable, and give your town. Those three facts, along with the year and grade, do most of the work of a listing. Once the price is right, the rest of the sale is presentation: honest photographs including any damage, a short walkaround video, and quick replies to the people who message.",
+      },
+    ],
+    faq: [
+      {
+        q: "How much is my car worth in Kenya?",
+        a: "The most reliable guide is what comparable cars are being advertised for right now — the same make, model, year and grade as yours. Collect at least five comparable listings, note the range, and place your car inside it based on condition, accident history, service records and logbook status. Remember those are asking prices, and final agreed prices are usually somewhat lower.",
+      },
+      {
+        q: "Does mileage or condition matter more when pricing a used car in Kenya?",
+        a: "Condition and paperwork usually matter more. A clean logbook already in your name, no accident history and documented servicing will support a higher price than low mileage alone, because buyers treat an unverified odometer reading with caution.",
+      },
+      {
+        q: "Is my car worth more in Nairobi or upcountry?",
+        a: "It depends on the vehicle. Pickups, double cabs and high-clearance vehicles often fetch more in farming areas such as Nakuru, Eldoret and Meru, where they are bought as working assets. Small economical cars are easiest to sell in Nairobi, Kisumu and Mombasa. Compare against listings in your own county rather than national ones.",
+      },
+      {
+        q: "Should I use an online car valuation tool in Kenya?",
+        a: "Use it only as a rough sanity check. Most valuation tools are built on limited local data and do not account for grade, import history or logbook status, and none of them has inspected your car. Comparable live listings are a better guide, and a more persuasive argument to a buyer.",
+      },
+      {
+        q: "Should I add the cost of recent repairs to my asking price?",
+        a: "No. Buyers expect a car to be in working order and will not pay separately for maintenance you have already carried out. Recent work supports your position within the market range and makes the car easier to sell, but it does not add its cost on top of market value.",
+      },
+      {
+        q: "Should I put the price in my car listing?",
+        a: "Yes, always. Listings without a price receive far fewer genuine enquiries, because buyers who are actively comparing skip them. State the figure in KES, say whether it is negotiable, and include your town.",
+      },
+      {
+        q: "Is it free to list my car on Shopi?",
+        a: "Yes. Listing a car on Shopi is free and Shopi takes no commission. Buyers message you directly, and you agree price, inspection, payment and NTSA transfer between yourselves.",
+      },
+    ],
+    relatedLinks: [
+      {
+        label: "How to sell your car in Kenya without a broker",
+        url: "/blog/how-to-sell-your-car-in-kenya-without-a-broker",
+        description:
+          "Once the price is right, this covers the rest — the listing, viewings, negotiation and the NTSA TIMS transfer.",
+      },
+      {
+        label: "Sell a car in Kenya",
+        url: "/sell-car-kenya",
+        description:
+          "Free listing, no broker, and model-by-model guides covering what moves the price on each car.",
+      },
+      {
+        label: "NTSA — National Transport and Safety Authority",
+        url: "https://www.ntsa.go.ke",
+        description:
+          "The official source for ownership transfer, TIMS accounts and current fees. Confirm the process here before transferring.",
+      },
+    ],
+  },
+
+  // ─────────────────────────────────────────────────────────────────
+  {
+    slug: "where-to-sell-your-car-in-kenya-city-by-city",
+    title: "Where to Sell Your Car in Kenya: A City-by-City Guide",
+    description:
+      "Car buyers differ by town in Kenya. A guide to selling in Nairobi, Mombasa, Nakuru, Eldoret, Kisumu, Thika, Nyeri, Meru and Machakos — who buys, what sells, and where to meet safely.",
+    excerpt:
+      "A Probox sells differently in Eldoret than in Nairobi, and a Vitz differently in Kisumu than in Nyeri. Where you sell changes who turns up and what they pay.",
+    category: "Seller Guide",
+    readTime: "12 min read",
+    publishedAt: "2026-09-11",
+    author: {
+      name: "Shopi Team",
+      role: "Seller Guides",
+      initials: "S",
+      color: "#3b82f6",
+    },
+    keywords: [
+      "where to sell my car in Kenya",
+      "sell my car in Nairobi",
+      "sell car Mombasa",
+      "sell car Nakuru",
+      "sell car Eldoret",
+      "sell car Kisumu",
+      "car buyers Kenya",
+      "sell car without broker Kenya",
+    ],
+    sections: [
+      {
+        heading: "Cars are the most location-bound thing you can sell",
+        body: "Most second-hand items travel. Someone will courier a phone from Nairobi to Kisumu without much thought. A car is different: a buyer has to come and see it, drive it, and usually bring a mechanic. That physical constraint is what makes the town you are selling from matter more for a car than for anything else.\n\nIt also means the local buyer pool is your real market, not the national one. A buyer will cross a county to inspect the right car, and sometimes further for something unusual or high-value, but the great majority of private car sales in Kenya happen within a couple of hours' drive. Understanding who is in that radius is most of the work.",
+      },
+      {
+        heading: "Nairobi — deepest market, most competition",
+        body: "More cars change hands in Nairobi than anywhere else in Kenya, which is both the opportunity and the problem. Buyers are plentiful and many can view the same week. They are also comparing your car against dozens of similar listings before messaging anyone, so an optimistic price is immediately visible.\n\nNairobi buyers inspect more thoroughly than anywhere else in the country. Expect an independent mechanic, expect questions about the logbook before the first viewing, and expect to lose buyers over a vague answer on accident history. Practical advice: say which side of town you are on, because a buyer in Rongai will not cross to Kasarani on a weekday evening, and offer weekend viewing slots, because traffic destroys weekday appointments.",
+        list: [
+          "Strongest demand: Premio, Axio, Fielder, Vitz, Demio, Harrier, X-Trail, Probox",
+          "Say which side of town you are on — it decides whether buyers travel",
+          "Offer weekend viewings; weekday no-shows are common after 5pm",
+          "Welcome independent mechanics. Resisting one costs you the buyer",
+        ],
+      },
+      {
+        heading: "Mombasa and the coast — rust is the first question",
+        body: "Coastal salt air does real damage, and experienced Mombasa buyers check the underbody, sills and door bottoms before almost anything else. If your car has spent its life upcountry, say so — it is a genuine selling point on the coast and worth stating plainly in the listing.\n\nProximity to the port also means coastal buyers are unusually familiar with import paperwork, so import dates, duty and registration history come up early. Answer those in the description rather than waiting to be asked. One local detail worth remembering: state which side of the Likoni ferry you are on, because crossing times decide whether a buyer bothers at all.",
+        list: [
+          "Photograph the underbody, sills and door bottoms before you are asked",
+          "Say whether the car has lived at the coast or upcountry",
+          "Put import and registration dates in the description",
+          "State which side of the ferry you are on",
+        ],
+      },
+      {
+        heading: "Nakuru and Eldoret — the working-vehicle markets",
+        body: "Both towns sit at the centre of large farming economies, and the vehicles that hold value are the ones that support that work. Ground clearance, suspension condition and load capacity matter far more here than specification or styling. A saloon that has only ever driven on tarmac is worth saying so about, because it is a real advantage to some buyers and a real limitation to others.\n\nEldoret in particular is pickup and double-cab country, serving a wide North Rift catchment where buyers travel in from Kitale, Iten and Kapsabet. Nakuru draws from Naivasha, Gilgil, Molo and Njoro. In both markets buyers ask direct questions about what the vehicle has been used for and how hard, and they respect a straight answer far more than a flattering one.",
+        list: [
+          "Strongest demand: pickups, double cabs, Probox, Succeed, Forester, Land Cruiser, Fielder",
+          "Lead with mechanical condition and service history, not appearance",
+          "Say plainly what the vehicle has been used for",
+          "Name the surrounding towns you will meet in — it widens your audience",
+        ],
+      },
+      {
+        heading: "Kisumu and the lake region — running costs decide it",
+        body: "Kisumu is the commercial centre for a wide western catchment, with buyers travelling in from Kakamega, Siaya, Homa Bay and Bondo. That makes the audience larger than the town's size suggests, but it also means a first viewing has to be worth a journey.\n\nThe conversation here starts with running costs. Buyers ask about fuel consumption and the price of common repairs before they ask about extras, so a documented service history and an economical engine are the strongest cards you can hold. A walkaround video converts noticeably better than photographs alone, because it saves a buyer from driving an hour to find out the car is not what they expected.",
+        list: [
+          "Put fuel consumption in the description — it is the first question",
+          "Post a walkaround video; your buyers are often travelling in",
+          "Strongest demand: Vitz, Passo, Demio, Probox, Premio, Axio, Fielder",
+          "Name the surrounding towns you will deal with",
+        ],
+      },
+      {
+        heading: "Thika, Kiambu and Machakos — Nairobi buyers, easier logistics",
+        body: "Kiambu County and the Mombasa Road corridor through Machakos are functionally part of the Nairobi market. Buyers are largely Nairobi commuters, demand looks like Nairobi demand, and prices should be set against Nairobi listings rather than against a smaller upcountry market.\n\nThe practical advantage is that viewings are much easier to arrange than inside the city. The disadvantage is that some Nairobi buyers will not travel out at all, which is why the single most useful line in a listing from these areas is an offer to meet along the main road — Thika Superhighway for Kiambu, Mombasa Road for Machakos, Athi River and Mlolongo. That one sentence converts buyers who would otherwise skip an out-of-town listing.",
+        list: [
+          "Offer to meet along Thika Road or Mombasa Road — it widens your reach considerably",
+          "Price against Nairobi listings, because that is what buyers compare with",
+          "Name your specific town; Ruiru, Juja, Thika and Limuru are different journeys",
+          "Machakos and Athi River see strong demand for vans and light commercial vehicles",
+        ],
+      },
+      {
+        heading: "Nyeri, Meru and central Kenya — documentation wins",
+        body: "Central Kenya buyers have a reputation for thorough due diligence, and it is earned. Cars are bought to be kept, so buyers ask about service records, previous ownership and repair history in far more detail than in most markets, and they are entirely comfortable walking away from a car whose history is unclear.\n\nThe compensation is that a well-documented car with a clean logbook sells at a strong price without much haggling. Expect fewer enquiries than you would get in Nairobi, and treat each one properly, because these buyers are mostly serious. Meru adds a distinct commercial layer — Probox-class vehicles and pickups bought for the produce and miraa trade, judged purely on whether they will earn from day one.",
+        list: [
+          "Photograph your service records — documentation is the strongest asset here",
+          "Be precise about previous ownership and accident history",
+          "Expect fewer but more serious enquiries; answer each one properly",
+          "Ground clearance matters across both counties",
+        ],
+      },
+      {
+        heading: "What stays the same everywhere",
+        body: "Local differences change emphasis, not fundamentals. Wherever you are selling in Kenya, the same things decide whether a private sale goes well.\n\nPrice against comparable local listings rather than what you paid. Put the figure in the listing. Photograph honestly, including any damage, and add a walkaround video. Have the logbook ready in your name before you advertise, because serious buyers ask in the first or second message. Meet in a public place during daylight, verify the buyer's ID and licence before any test drive, and go along for the drive. Do not release the car until payment has genuinely cleared in your account — a screenshot is not payment. Then complete the transfer through NTSA TIMS promptly, because until it is done the car is still legally yours, and so is anything that happens in it.",
+        list: [
+          "Price against local comparable listings, and state the price",
+          "Honest photos plus a walkaround video",
+          "Logbook ready in your name before you advertise",
+          "Public meeting place, daylight, ID checked before any test drive",
+          "Payment cleared in your account before the keys change hands",
+          "Complete the NTSA TIMS transfer without delay",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Where is the best place to sell a car in Kenya?",
+        a: "For most cars, the deepest buyer pool is where you already are, because buyers need to inspect the vehicle in person. Nairobi has the most buyers and the most competition. Farming areas such as Nakuru, Eldoret and Meru pay better for pickups, double cabs and high-clearance vehicles. Cities pay better for small economical cars. List locally first and price against listings in your own county.",
+      },
+      {
+        q: "Do cars sell for different prices in different Kenyan towns?",
+        a: "Yes. The same vehicle can be worth noticeably more in one market than another because the buyers differ. Working vehicles do better in farming regions, small economical cars do better in cities, and coastal buyers discount for rust while valuing upcountry cars. Compare against listings in your own county rather than national ones.",
+      },
+      {
+        q: "How do I sell my car in Nairobi quickly?",
+        a: "Price it honestly against the many comparable Nairobi listings, say which side of town you are on, offer weekend viewing slots, and welcome an independent mechanic's inspection. Nairobi buyers compare more listings and inspect more thoroughly than anywhere else in Kenya, so an accurate price and a complete, honest listing matter more than anywhere else.",
+      },
+      {
+        q: "Is it better to sell my car privately or to a broker in Kenya?",
+        a: "Selling privately keeps the commission or markup that a broker would take, and you deal with buyers directly. The trade-off is that you handle the viewings, the negotiation and the NTSA transfer yourself. A broker is a reasonable choice if you are short of time; otherwise the difference is usually a significant amount of money for a few weekends of effort.",
+      },
+      {
+        q: "Where should I meet a car buyer safely in Kenya?",
+        a: "Meet in a public, busy place during daylight — petrol station forecourts and mall car parks work well in most towns. Bring someone with you, ask to see the buyer's ID and driving licence before any test drive, and go along for the drive rather than handing over the keys. Never release the car until payment has cleared in your account.",
+      },
+      {
+        q: "Can I sell my car to a buyer in another county?",
+        a: "Yes, and it happens regularly for high-value or unusual vehicles. Buyers will travel for the right car, but they need a reason to set off, so a walkaround video and a complete description do most of that persuading. Ownership transfer through NTSA TIMS is done online, so the two of you do not need to be in the same town for that step.",
+      },
+      {
+        q: "Does Shopi charge commission when I sell my car?",
+        a: "No. Listing is free and Shopi takes no commission. Shopi does not process payment, hold money or provide escrow — you and the buyer agree price, inspection, payment and the NTSA transfer directly between yourselves.",
+      },
+    ],
+    relatedLinks: [
+      {
+        label: "Sell a car in Kenya",
+        url: "/sell-car-kenya",
+        description:
+          "The main guide, with town-by-town pages covering the local market, where to meet buyers, and what sellers in each county are currently asking.",
+      },
+      {
+        label: "How much is my car worth in Kenya?",
+        url: "/blog/how-much-is-my-car-worth-in-kenya",
+        description:
+          "How to set a realistic asking price before you advertise, and the pricing mistakes that leave cars unsold for months.",
+      },
+      {
+        label: "How to sell your car in Kenya without a broker",
+        url: "/blog/how-to-sell-your-car-in-kenya-without-a-broker",
+        description:
+          "The full private-sale process, from writing the listing to completing the NTSA TIMS transfer.",
+      },
     ],
   },
 ];

@@ -586,6 +586,199 @@ export const searchIntentPages = [
     ],
     related: ["farm-produce", "land", "plots", "probox"],
   },
+  // ── Additional car models ──────────────────────────────────────────
+  // Appended rather than grouped with the cars above on purpose:
+  // topSearchIntentPages takes the first twelve entries for the browse hub and
+  // cross-links, and moving these up would make that list entirely cars.
+  {
+    slug: "toyota-vitz",
+    query: "Toyota Vitz",
+    label: "Toyota Vitz",
+    pluralLabel: "Toyota Vitz cars",
+    category: "Cars",
+    intro:
+      "Browse Toyota Vitz cars for sale in Kenya from local sellers. Compare year, mileage, engine size, condition and price, then message the seller directly on Shopi.",
+    buyerTips: [
+      "Check the engine size — the 1.0 and 1.3 differ noticeably in power and fuel use.",
+      "Ask about service history, accident repairs and whether the logbook is ready.",
+      "Inspect the car and confirm ownership documents before paying anything.",
+    ],
+    sellerTips: [
+      "Put Toyota Vitz, year, engine size and location in the title or description.",
+      "Show the exterior, interior, dashboard with the engine running, and tyres.",
+      "State your price in KES and whether it is negotiable.",
+    ],
+    keywords: [
+      "toyota vitz for sale",
+      "toyota vitz for sale in Kenya",
+      "used toyota vitz Kenya",
+      "toyota vitz price Kenya",
+      "cheap cars for sale Kenya",
+    ],
+    related: ["toyota-axio", "nissan-note", "toyota-premio"],
+  },
+  {
+    slug: "toyota-axio",
+    query: "Toyota Axio",
+    label: "Toyota Axio",
+    pluralLabel: "Toyota Axio cars",
+    category: "Cars",
+    intro:
+      "Find Toyota Axio cars for sale in Kenya. Compare year, grade, mileage, condition and price across local sellers, and contact the seller directly on Shopi.",
+    buyerTips: [
+      "Check the grade and whether it is a hybrid or petrol model.",
+      "Ask for mileage backed by service records, not just the odometer.",
+      "Confirm accident history and logbook status before you commit.",
+    ],
+    sellerTips: [
+      "Include Toyota Axio, year, grade and whether it is hybrid in your listing.",
+      "Photograph the interior honestly, including seat and trim wear.",
+      "Add the price in KES, your location and the logbook status.",
+    ],
+    keywords: [
+      "toyota axio for sale",
+      "toyota axio for sale in Kenya",
+      "used toyota axio Kenya",
+      "toyota axio price Kenya",
+      "toyota axio hybrid Kenya",
+    ],
+    related: ["toyota-fielder", "toyota-premio", "toyota-vitz"],
+  },
+  {
+    slug: "toyota-fielder",
+    query: "Toyota Fielder",
+    label: "Toyota Fielder",
+    pluralLabel: "Toyota Fielder cars",
+    category: "Cars",
+    intro:
+      "Browse Toyota Fielder wagons for sale in Kenya. Compare year, grade, mileage, load space and price from local sellers, and message them directly on Shopi.",
+    buyerTips: [
+      "Check whether it is the petrol or hybrid, and 2WD or 4WD.",
+      "Inspect the rear suspension if the car has been used to carry loads.",
+      "Ask about service history, accident repairs and logbook readiness.",
+    ],
+    sellerTips: [
+      "Say Toyota Fielder, year, grade and hybrid or petrol in the title.",
+      "Photograph the load area — it is the reason most buyers choose this model.",
+      "State price, mileage, location and whether the price is negotiable.",
+    ],
+    keywords: [
+      "toyota fielder for sale",
+      "toyota fielder for sale in Kenya",
+      "used toyota fielder Kenya",
+      "toyota fielder price Kenya",
+      "station wagon for sale Kenya",
+    ],
+    related: ["toyota-axio", "probox", "toyota-premio"],
+  },
+  {
+    slug: "nissan-note",
+    query: "Nissan Note",
+    label: "Nissan Note",
+    pluralLabel: "Nissan Note cars",
+    category: "Cars",
+    intro:
+      "Find Nissan Note cars for sale in Kenya from local sellers. Compare year, mileage, engine, condition and price, then contact the seller directly on Shopi.",
+    buyerTips: [
+      "Ask whether it is the standard or the supercharged DIG-S engine.",
+      "Check the CVT gearbox behaviour on a test drive — it is the common concern.",
+      "Confirm service history, accident repairs and logbook status.",
+    ],
+    sellerTips: [
+      "Include Nissan Note, year, engine variant and location in your listing.",
+      "Mention recent gearbox or CVT servicing if you have the records.",
+      "Show the dashboard with the engine on, plus interior and tyre condition.",
+    ],
+    keywords: [
+      "nissan note for sale",
+      "nissan note for sale in Kenya",
+      "used nissan note Kenya",
+      "nissan note price Kenya",
+      "affordable cars for sale Kenya",
+    ],
+    related: ["toyota-vitz", "toyota-axio", "toyota-premio"],
+  },
+  {
+    slug: "subaru-forester",
+    query: "Subaru Forester",
+    label: "Subaru Forester",
+    pluralLabel: "Subaru Forester cars",
+    category: "Cars",
+    intro:
+      "Browse Subaru Forester cars for sale in Kenya. Compare year, engine, turbo or non-turbo, mileage and price from local sellers on Shopi.",
+    buyerTips: [
+      "Establish whether it is turbo or non-turbo — running costs differ sharply.",
+      "Ask for evidence of regular servicing, especially oil change intervals.",
+      "Check the all-wheel-drive system and suspension on a proper test drive.",
+    ],
+    sellerTips: [
+      "Say Subaru Forester, year, and turbo or non-turbo in the title.",
+      "Photograph your service receipts — documentation sells this model.",
+      "Mention suspension and tyre condition, which Forester buyers check first.",
+    ],
+    keywords: [
+      "subaru forester for sale",
+      "subaru forester for sale in Kenya",
+      "used subaru forester Kenya",
+      "subaru forester price Kenya",
+      "4wd cars for sale Kenya",
+    ],
+    related: ["toyota-harrier", "isuzu-d-max", "toyota-premio"],
+  },
+  {
+    slug: "isuzu-d-max",
+    query: "Isuzu D-Max",
+    label: "Isuzu D-Max",
+    pluralLabel: "Isuzu D-Max pickups",
+    category: "Cars",
+    intro:
+      "Find Isuzu D-Max pickups and double cabs for sale in Kenya. Compare year, 2WD or 4WD, mileage, load capacity and price from local sellers on Shopi.",
+    buyerTips: [
+      "Confirm 2WD or 4WD and single or double cab before travelling to view.",
+      "Inspect the chassis, load bed and suspension — this is a working vehicle.",
+      "Ask what the pickup has been used for and how heavily it was loaded.",
+    ],
+    sellerTips: [
+      "Put Isuzu D-Max, year, cab type and 2WD or 4WD in the title.",
+      "Photograph the load bed, suspension, tyres and underside honestly.",
+      "State what the vehicle was used for — business buyers respect a straight answer.",
+    ],
+    keywords: [
+      "isuzu d-max for sale",
+      "isuzu d max for sale in Kenya",
+      "pickup for sale Kenya",
+      "double cab for sale Kenya",
+      "isuzu d-max price Kenya",
+    ],
+    related: ["toyota-hiace", "probox", "subaru-forester"],
+  },
+  {
+    slug: "toyota-hiace",
+    query: "Toyota Hiace",
+    label: "Toyota Hiace",
+    pluralLabel: "Toyota Hiace vans",
+    category: "Cars",
+    intro:
+      "Browse Toyota Hiace vans and matatus for sale in Kenya. Compare year, seating, engine, mileage and price from local sellers, and message them directly on Shopi.",
+    buyerTips: [
+      "Confirm seating capacity and whether it is PSV-compliant if you plan to operate it.",
+      "Check engine condition, gearbox and suspension — these vehicles work hard.",
+      "Ask about the logbook, any financing, and current inspection status.",
+    ],
+    sellerTips: [
+      "Include Toyota Hiace, year, engine, seating and PSV status in the listing.",
+      "Photograph the interior seating, engine bay, tyres and body panels.",
+      "Be clear about route history and mileage — commercial buyers will ask.",
+    ],
+    keywords: [
+      "toyota hiace for sale",
+      "toyota hiace for sale in Kenya",
+      "matatu for sale Kenya",
+      "van for sale Kenya",
+      "toyota hiace price Kenya",
+    ],
+    related: ["isuzu-d-max", "probox", "toyota-fielder"],
+  },
 ] as const satisfies SearchIntentPage[];
 
 export const topSearchIntentPages = searchIntentPages.slice(0, 12);

@@ -9,6 +9,10 @@ import {
   searchIntentPath,
 } from "@/lib/seo/search-intent-pages";
 import { sellCarPages, sellCarPath } from "@/lib/seo/sell-car-pages";
+import {
+  sellCarLocationPath,
+  sellCarLocations,
+} from "@/lib/seo/sell-car-locations";
 
 /**
  * The app is served under /[lang]. Every public page exists per-locale, so each
@@ -265,6 +269,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     };
   });
 
+  // Car-selling location pages. Same reasoning as the model pages, plus local
+  // intent is the strongest commercial query pattern in this market.
+  const sellCarLocationEntries: MetadataRoute.Sitemap = sellCarLocations.map(
+    (location) => {
+      const path = sellCarLocationPath(location.slug);
+      return {
+        url: langs("en", path),
+        lastModified: now,
+        changeFrequency: "weekly",
+        priority: 0.88,
+        alternates: alternates(path),
+      };
+    },
+  );
+
   const blogEntries: MetadataRoute.Sitemap = blogPosts.map((post) => ({
     url: langs("en", `/blog/${post.slug}`),
     lastModified: new Date(post.publishedAt),
@@ -321,6 +340,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...countyEntries,
     ...searchIntentEntries,
     ...sellCarEntries,
+    ...sellCarLocationEntries,
     ...blogEntries,
     ...sellerEntries,
     ...listingEntries,
