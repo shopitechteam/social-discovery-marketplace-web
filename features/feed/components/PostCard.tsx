@@ -365,7 +365,10 @@ function saveFeedVideoTime(contentId: string, video: HTMLVideoElement | null) {
   feedVideoResumeTimes.set(contentId, time);
 }
 
-function restoreFeedVideoTime(contentId: string, video: HTMLVideoElement | null) {
+function restoreFeedVideoTime(
+  contentId: string,
+  video: HTMLVideoElement | null,
+) {
   if (!video) return;
   const time = feedVideoResumeTimes.get(contentId);
   if (!time || Math.abs(video.currentTime - time) < 0.4) return;
@@ -1054,8 +1057,8 @@ function ImageMedia({
           // image binds one of these two clamps (a tall one hits the max, a wide
           // one hits the min), so with dvh their boxes resized on every frame of
           // iOS Safari's toolbar collapse and the whole feed jumped mid-scroll.
-          maxHeight: "60svh",
-          minHeight: "40svh",
+          maxHeight: "60dvh",
+          minHeight: "40dvh",
         }}
         onClick={nav}
       >
@@ -1461,10 +1464,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
     <article ref={cardRef} className="bg-elevated overflow-hidden">
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 px-4 pt-3.5 pb-2.5">
-        <button
-          className="lg:cursor-pointer"
-          onClick={openCreatorProfile}
-        >
+        <button className="lg:cursor-pointer" onClick={openCreatorProfile}>
           <Avatar
             creatorId={post.creatorId}
             avatarUrl={creator?.profile?.avatar}
@@ -1670,10 +1670,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
         </div>
         {caption && (
           <div className="text-sm leading-5 text-default">
-            <p
-              ref={captionRef}
-              className={cn(!expanded && "line-clamp-2")}
-            >
+            <p ref={captionRef} className={cn(!expanded && "line-clamp-2")}>
               {caption}
             </p>
             {(captionOverflows || expanded) && (
