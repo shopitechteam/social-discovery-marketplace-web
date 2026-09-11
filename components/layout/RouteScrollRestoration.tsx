@@ -11,6 +11,8 @@ import { usePathname, useSearchParams } from "next/navigation";
 
 const PREFIX = "shopi-scroll:";
 const MAX_RESTORE_FRAMES = 45;
+/** How often a scroll in progress is allowed to reach sessionStorage. */
+const SCROLL_SAVE_INTERVAL_MS = 200;
 
 type PendingNavigation = {
   fromKey: string;
@@ -131,21 +133,52 @@ export function RouteScrollRestoration() {
 
   useEffect(() => {
     let frame = 0;
+    let saveTimer: ReturnType<typeof setTimeout> | undefined;
+    let lastSavedAt = 0;
+
+    const writeNow = (key: string, y: number) => {
+      if (saveTimer) {
+        clearTimeout(saveTimer);
+        saveTimer = undefined;
+      }
+      lastSavedAt = Date.now();
+      saveY(key, y);
+    };
+
+    // sessionStorage.setItem is synchronous, and this used to run once per
+    // animation frame for the whole length of a scroll. The in-memory refs are
+    // what every reader here actually consults, so they keep updating per
+    // frame; only the storage write is throttled. The trailing timer means the
+    // resting position still lands when a scroll simply stops — nothing has to
+    // navigate or hide the page for the last value to be persisted.
+    const scheduleSave = (key: string, y: number) => {
+      const elapsed = Date.now() - lastSavedAt;
+      if (elapsed >= SCROLL_SAVE_INTERVAL_MS) {
+        writeNow(key, y);
+        return;
+      }
+      if (saveTimer) return;
+      saveTimer = setTimeout(() => {
+        saveTimer = undefined;
+        lastSavedAt = Date.now();
+        saveY(key, latestYByKeyRef.current.get(key) ?? y);
+      }, SCROLL_SAVE_INTERVAL_MS - elapsed);
+    };
 
     const remember = () => {
+      frame = 0;
+
       const key = currentKeyRef.current;
       const pending = pendingNavigationRef.current;
       if (pending?.fromKey === key) {
         latestYByKeyRef.current.set(key, pending.fromY);
-        saveY(key, pending.fromY);
-        frame = 0;
+        scheduleSave(key, pending.fromY);
         return;
       }
 
       latestYRef.current = window.scrollY;
       latestYByKeyRef.current.set(key, latestYRef.current);
-      saveY(key, latestYRef.current);
-      frame = 0;
+      scheduleSave(key, latestYRef.current);
     };
 
     const onScroll = () => {
@@ -153,6 +186,8 @@ export function RouteScrollRestoration() {
       frame = requestAnimationFrame(remember);
     };
 
+    // Leaving the page is the one moment the value MUST already be in storage,
+    // so this bypasses the throttle rather than scheduling.
     const flush = () => {
       if (frame) {
         cancelAnimationFrame(frame);
@@ -163,13 +198,13 @@ export function RouteScrollRestoration() {
       const pending = pendingNavigationRef.current;
       if (pending?.fromKey === key) {
         latestYByKeyRef.current.set(key, pending.fromY);
-        saveY(key, pending.fromY);
+        writeNow(key, pending.fromY);
         return;
       }
 
       latestYRef.current = window.scrollY;
       latestYByKeyRef.current.set(key, latestYRef.current);
-      saveY(key, latestYRef.current);
+      writeNow(key, latestYRef.current);
     };
 
     const onNavigationStart = (event: Event) => {

@@ -1044,14 +1044,18 @@ function ImageMedia({
     // ones don't exceed the viewport budget.
     const ratio = aspectRatioOf(first); // width / height
     // clamp displayed ratio between 4:5 (tall) and 16:9 (wide)
-    const clamped = Math.min(Math.max(ratio, 9 / 16), 16 / 9);
+    const clamped = Math.min(Math.max(ratio, 4 / 5), 16 / 9);
     return (
       <div
         className="relative w-full cursor-pointer overflow-hidden bg-surface"
         style={{
           aspectRatio: String(clamped),
-          maxHeight: "60dvh",
-          minHeight: "40dvh",
+          // svh, not dvh — same reason as GRID_H above. Nearly every single
+          // image binds one of these two clamps (a tall one hits the max, a wide
+          // one hits the min), so with dvh their boxes resized on every frame of
+          // iOS Safari's toolbar collapse and the whole feed jumped mid-scroll.
+          maxHeight: "60svh",
+          minHeight: "40svh",
         }}
         onClick={nav}
       >
