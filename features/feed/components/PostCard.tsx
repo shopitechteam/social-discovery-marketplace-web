@@ -60,7 +60,6 @@ import {
 } from "@/components/ui/popover";
 import { toast } from "sonner";
 import { absoluteContentUrl, contentPath } from "@/lib/content-url";
-import { Button } from "@/components/ui/button";
 import { rememberScrollBeforeNavigation } from "@/components/layout/RouteScrollRestoration";
 import { profileHref } from "@/lib/profile-url";
 
@@ -162,20 +161,28 @@ function userDisplayName(user?: FeedSocialUser | null): string {
   return profileName || user.username || `Shopi user`;
 }
 
-function savedByText(
+/**
+ * Compact save proof for the engagement summary row.
+ *
+ * Deliberately short — "Wanjiru + 3.5K" rather than the old full sentence.
+ * The summary row puts this on one line opposite the comment and share counts,
+ * so a sentence long enough to wrap or truncate mid-phrase reads worse than a
+ * name and a number, which is the shape people already parse on social feeds.
+ */
+function saveSummaryText(
   savers: FeedSocialUser[],
   saveCount: number,
 ): string | null {
   if (saveCount <= 0) return null;
-  const visibleNames = savers.map(userDisplayName).filter(Boolean);
-  if (visibleNames.length === 0) {
-    return `${fmt(saveCount)} shopper${saveCount === 1 ? "" : "s"} saved this listing`;
+  const leadName = savers.map(userDisplayName).filter(Boolean)[0];
+  if (!leadName) {
+    return `${fmt(saveCount)} save${saveCount === 1 ? "" : "s"}`;
   }
 
-  if (saveCount === 1) return `${visibleNames[0]} saved this listing`;
+  if (saveCount === 1) return leadName;
 
   const remaining = Math.max(saveCount - 1, 0);
-  return `${visibleNames[0]} and ${fmt(remaining)} other${remaining === 1 ? "" : "s"} saved this listing`;
+  return `${leadName} + ${fmt(remaining)}`;
 }
 
 // ── Avatar ────────────────────────────────────────────────────────────────────
@@ -1325,15 +1332,19 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
     lang,
   });
 
-  // The action bar is an even grid on phones so the pills can never run past
-  // the viewport. Chat drops out on your own posts, so the column count
-  // follows what's shown.
+  // The action bar is an even grid at every width so the cells stay the same
+  // size as each other. Contact drops out on your own posts, so the column
+  // count follows what's shown.
   const actionCount = 2 + (isOwnPost ? 0 : 1);
   const actionGridCols = actionCount === 3 ? "grid-cols-3" : "grid-cols-2";
 
   const caption = post.caption ?? "";
   const recentSavers = socialPost.recentSavers?.filter(Boolean) ?? [];
-  const saveProofText = savedByText(recentSavers, saveCount);
+  const saveSummary = saveSummaryText(recentSavers, saveCount);
+  const commentCount = post.stats?.comments ?? 0;
+  const shareCount = post.stats?.shares ?? 0;
+  const hasEngagement =
+    Boolean(saveSummary) || commentCount > 0 || shareCount > 0;
   const latestComment = socialPost.latestComment?.text
     ? socialPost.latestComment
     : null;
@@ -1751,88 +1762,121 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
           )}
       </div>
 
-      {/* ── Stats row ──────────────────────────────────────────────────── */}
-      {/* Shares only, and only when there are any. Raw view counts came out as
-          "· 15 views" — a dangling separator from a hardcoded prefix that
-          assumed a shares span before it, and a number that discourages more
-          than it persuades on a young listing. The save proof below carries the
-          social signal that actually reads well. */}
-      {(post.stats?.shares ?? 0) > 0 && (
-        <div className="px-4 pt-2.5 pb-1 text-muted-foreground text-xs font-medium">
-          {fmt(post.stats!.shares!)} share
-          {post.stats!.shares === 1 ? "" : "s"}
-        </div>
-      )}
+      {/* ── Engagement summary ─────────────────────────────────────────
+          Social-feed convention: who engaged on the left, the counts on the
+          right, one divider, then the actions. It replaces three stacked rows
+          (shares, save proof, actions) with two, so the eye has two places to
+          look instead of four, and the counts stop competing with the buttons
+          for the same horizontal space.
 
-      {saveProofText && (
-        <div className="mx-4 mb-1.5 flex max-w-[calc(100%-2rem)] items-center gap-2 rounded-2xl px-0.5 py-1 text-xs text-muted-foreground">
-          {recentSavers.length > 0 && (
-            <span className="flex shrink-0 items-center">
-              {recentSavers.slice(0, 2).map((user, index) => (
-                <MiniAvatar key={user.id} user={user} index={index} />
-              ))}
-            </span>
+          Raw view counts stay out of it deliberately — they read as "· 15
+          views" on a young listing, which discourages more than it persuades.
+          Saves, comments and shares are the signals worth showing. */}
+      {hasEngagement && (
+        <div className="flex items-center justify-between gap-3 px-4 pt-2.5 pb-2 text-xs text-muted-foreground">
+          {saveSummary ? (
+            <button
+              type="button"
+              onClick={handleSavePress}
+              className="flex min-w-0 items-center gap-1.5 text-left lg:cursor-pointer"
+            >
+              {recentSavers.length > 0 ? (
+                <span className="flex shrink-0 items-center">
+                  {recentSavers.slice(0, 2).map((user, index) => (
+                    <MiniAvatar key={user.id} user={user} index={index} />
+                  ))}
+                </span>
+              ) : (
+                // No saver profiles resolved yet — a filled badge still reads
+                // as "people saved this" the way a reaction pill does.
+                <span className="flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full bg-primary">
+                  <Bookmark
+                    className="h-2.5 w-2.5 text-white"
+                    fill="white"
+                    strokeWidth={2}
+                  />
+                </span>
+              )}
+              <span className="min-w-0 truncate">{saveSummary}</span>
+            </button>
+          ) : (
+            // Keeps the counts hard right when there is no save proof.
+            <span aria-hidden="true" />
           )}
-          <span className="min-w-0 truncate">
-            <span className="font-semibold text-default">
-              {saveProofText.split(" saved this listing")[0]}
-            </span>
-            {saveProofText.includes(" saved this listing")
-              ? " saved this listing"
-              : ""}
-          </span>
+
+          <div className="flex shrink-0 items-center gap-3">
+            {commentCount > 0 && (
+              <button
+                type="button"
+                onClick={openComments}
+                className="hover:underline lg:cursor-pointer"
+              >
+                {fmt(commentCount)} comment{commentCount === 1 ? "" : "s"}
+              </button>
+            )}
+            {shareCount > 0 && (
+              <span>
+                {fmt(shareCount)} share{shareCount === 1 ? "" : "s"}
+              </span>
+            )}
+          </div>
         </div>
       )}
 
-      {/* ── Action bar — 4 pill buttons matching design ─────────────────── */}
+      {/* Hairline above the actions, inset so it reads as part of the card
+          rather than slicing it in two. On a post with no engagement yet the
+          summary row above is absent, so the divider needs its own breathing
+          room or it sits flush against the media. */}
       <div
         className={cn(
-          "grid items-stretch gap-1.5 px-3 pb-3 pt-1 md:flex md:items-center md:gap-2",
-          actionGridCols,
+          "mx-3 border-t border-border",
+          !hasEngagement && "mt-2.5",
         )}
-      >
-        {/* Save pill — outlined, active = filled primary */}
+      />
+
+      {/* ── Action bar ──────────────────────────────────────────────────
+          Flat, evenly-split buttons under a divider, the shape people already
+          know from social feeds. The pills this replaced carried their own
+          borders and a filled CTA, which stacked three competing weights in a
+          row barely 40px tall on a phone. All three now share one weight; only
+          Save changes colour, and only once it is active. */}
+      <div className={cn("grid items-stretch gap-1 px-2 py-1", actionGridCols)}>
+        {/* Save — active state fills the icon and tints the label */}
         <button
           onClick={handleSavePress}
-          className="relative flex w-full min-w-0 md:min-w-fit lg:cursor-pointer items-center justify-center gap-1 px-2 py-2 rounded-full border text-[11px] font-semibold transition-all active:scale-95 md:w-auto md:justify-start md:gap-1.5 md:px-4 md:py-2.5 md:text-xs"
-          style={{
-            borderColor: saved
-              ? "rgb(var(--brand-primary))"
-              : "rgb(var(--color-border))",
-            color: saved
-              ? "rgb(var(--brand-primary))"
-              : "rgb(var(--color-text-default))",
-            backgroundColor: saved
-              ? "rgb(var(--brand-primary) / 0.08)"
-              : "transparent",
-          }}
+          className={cn(
+            "relative flex min-w-0 items-center justify-center gap-1.5 rounded-lg py-2.5 text-[13px] font-semibold transition-colors active:scale-95 lg:cursor-pointer",
+            "hover:bg-surface",
+            saved ? "text-primary" : "text-muted-foreground",
+          )}
         >
           <SaveBurst key={saveBurstKey} burstKey={saveBurstKey} />
           <Bookmark
             className={cn(
-              "w-3.5 h-3.5 shrink-0 transition-transform duration-300 md:w-4 md:h-4",
+              "h-4.5 w-4.5 shrink-0 transition-transform duration-300",
               saved && "scale-110",
             )}
             fill={saved ? "rgb(var(--brand-primary))" : "none"}
             strokeWidth={1.8}
           />
-          <span className="truncate">
-            {saveCount > 0 ? fmt(saveCount) : "Save"}
-          </span>
+          {/* Always the word, never the count — the count is in the summary
+              row directly above, and showing it twice read as two different
+              numbers at a glance. */}
+          <span className="truncate">Save</span>
         </button>
 
-        {/* Comment pill — opens the lazy-loaded comments sheet */}
+        {/* Comment — opens the lazy-loaded comments sheet */}
         <button
           onClick={openComments}
-          className="flex w-full min-w-0 md:min-w-fit lg:cursor-pointer items-center justify-center gap-1 px-2 py-2 rounded-full border border-border text-[11px] font-semibold text-default transition-all active:scale-95 md:w-auto md:justify-start md:gap-1.5 md:px-4 md:py-2.5 md:text-xs"
+          className="flex min-w-0 items-center justify-center gap-1.5 rounded-lg py-2.5 text-[13px] font-semibold text-muted-foreground transition-colors hover:bg-surface active:scale-95 lg:cursor-pointer"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
-            strokeWidth={1.5}
+            strokeWidth={1.8}
             stroke="currentColor"
-            className="size-3.5 shrink-0 md:size-4"
+            className="h-4.5 w-4.5 shrink-0"
           >
             <path
               strokeLinecap="round"
@@ -1840,16 +1884,12 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
               d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z"
             />
           </svg>
-
-          {post?.stats.comments > 0 ? (
-            <span className="truncate">{post?.stats.comments}</span>
-          ) : (
-            <span className="truncate">Comment</span>
-          )}
+          <span className="truncate">Comment</span>
         </button>
 
         {!isOwnPost && (
-          <Button
+          <button
+            type="button"
             // Warm the conversation route's JS so the transition paints the chat
             // shell (loading.tsx) instantly instead of a blank frame on tap.
             onPointerEnter={() =>
@@ -1873,13 +1913,14 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
               // so we never flash the inbox list.
               router.push(`/${lang}/notifications/${post.id}?source=content`);
             }}
-            className="h-auto w-full min-w-0 md:min-w-fit px-2 py-2 text-[11px] gap-1 [&_svg]:size-3.5 md:[&_svg]:size-4 md:h-10 md:flex-1 lg:flex-0 bg-primary lg:w-fit md:px-4 lg:px-8 md:py-2.5 md:text-xs md:gap-1.5 lg:cursor-pointer flex items-center justify-center rounded-full font-semibold text-white transition-all hover:bg-primary/90 active:scale-95"
+            className="flex min-w-0 items-center justify-center gap-1.5 rounded-lg py-2.5 text-[13px] font-semibold text-muted-foreground transition-colors hover:bg-surface active:scale-95 lg:cursor-pointer"
           >
             <svg
               fill="none"
               stroke="currentColor"
               strokeWidth={1.8}
               viewBox="0 0 24 24"
+              className="h-4.5 w-4.5 shrink-0"
             >
               <path
                 strokeLinecap="round"
@@ -1887,10 +1928,8 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
                 d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
               />
             </svg>
-            {/* "Chat" on phones — "Message" doesn't fit a quarter-width cell. */}
-            <span className="truncate md:hidden">Chat</span>
-            <span className="hidden truncate md:inline">Message</span>
-          </Button>
+            <span className="truncate">Contact</span>
+          </button>
         )}
       </div>
 
