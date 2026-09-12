@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Play, RotateCcw, Volume2, VolumeX } from "lucide-react";
 import { useHlsVideo } from "@/lib/useHlsVideo";
-import { useFeedPreferencesStore } from "@/stores/feedPreferences";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { BufferSpinner } from "../BufferSpinner";
 import { VideoProgressBar } from "../VideoProgressBar";
@@ -45,6 +44,20 @@ interface Props {
    * otherwise becoming active would destroy the very buffer we just filled.
    */
   prefetch?: boolean;
+  /**
+   * Whether sound is off, owned by the viewer rather than read from the store
+   * here.
+   *
+   * Sound is one decision for the whole viewer — unmute on any slide and every
+   * slide is unmuted, which is what people expect from this kind of feed. It
+   * also has to be known before a slide's first paint: mounting a <video>
+   * muted and unmuting it in an effect leaves the unmute at the mercy of the
+   * autoplay policy, and the slide you opened kept starting silent while the
+   * ones you swiped to played with sound.
+   */
+  muted: boolean;
+  /** Flip sound for the whole viewer. */
+  onToggleMuted: () => void;
   /** Rendered over the video on mobile, beside it on desktop. */
   overlay?: React.ReactNode;
   rail?: React.ReactNode;
@@ -55,6 +68,8 @@ export function ImmersiveSlide({
   post,
   state,
   prefetch = false,
+  muted,
+  onToggleMuted,
   overlay,
   rail,
   onRequestNext,
@@ -67,12 +82,9 @@ export function ImmersiveSlide({
   // from prefetched to active, which is what preserves the warmed buffer.
   const attached = Boolean(hlsUrl) && (active || (state === "near" && prefetch));
 
-  const muted = useFeedPreferencesStore((s) => s.videoMuted);
-  const setVideoMuted = useFeedPreferencesStore((s) => s.setVideoMuted);
-
-  // The element's real mute state, which can diverge from the preference when
-  // the browser refuses an unmuted autoplay. Kept local so a forced mute never
-  // rewrites what the user actually asked for.
+  // The element's real mute state, which can diverge from the viewer's
+  // intention when the browser refuses an unmuted autoplay. Kept local so a
+  // forced mute never rewrites what the user actually asked for.
   const [actualMuted, setActualMuted] = useState(muted);
   const [ended, setEnded] = useState(false);
   const [userPaused, setUserPaused] = useState(false);
@@ -81,14 +93,6 @@ export function ImmersiveSlide({
     (forced: boolean) => setActualMuted(forced),
     [],
   );
-
-  // Read inside the handoff effect without making `muted` a dependency of it —
-  // that effect consumes a one-shot baton, so re-running it on every mute
-  // change would just read an already-empty slot.
-  const mutedRef = useRef(muted);
-  useEffect(() => {
-    mutedRef.current = muted;
-  }, [muted]);
 
   const { videoRef, buffering, playing } = useHlsVideo(
     hlsUrl,
@@ -122,19 +126,9 @@ export function ImmersiveSlide({
     // One-shot: reading it clears it, so a later revisit uses the shared
     // resume map like any other slide.
     if (!didSeekRef.current) {
+      // Only the resume position is claimed here. The sound decision is the
+      // viewer's, taken before the first paint — see the `muted` prop.
       const handoff = takeImmersiveHandoff(post.id);
-
-      // A baton means the user tapped a card to get here, so the document has
-      // user activation and an unmuted play will be honoured. Opening a video
-      // full-screen is a request to watch it, not to keep browsing in silence,
-      // so sound goes on regardless of what the feed was doing — the feed is
-      // muted by default and inheriting that made every tap-through silent.
-      //
-      // This writes the shared preference rather than a local flag, so sound
-      // stays on for the rest of the session the way it does after any manual
-      // unmute. A cold load from a shared link has no baton and no activation,
-      // and stays muted.
-      if (handoff && mutedRef.current) setVideoMuted(false);
 
       if (handoff && handoff.time > 0) {
         const seek = () => {
@@ -174,7 +168,7 @@ export function ImmersiveSlide({
       video.removeEventListener("loadedmetadata", restore);
       video.removeEventListener("canplay", restore);
     };
-  }, [active, post.id, videoRef, setVideoMuted]);
+  }, [active, post.id, videoRef]);
 
   // Leaving the slide clears the transient playback flags so returning to it
   // autoplays rather than resuming a pause. Deferred so we don't setState
@@ -240,8 +234,11 @@ export function ImmersiveSlide({
       if (!next) video.play().catch(() => {});
     }
     setActualMuted(next);
-    setVideoMuted(next);
-  }, [actualMuted, setVideoMuted, videoRef]);
+    // The viewer owns the decision, so every other slide follows. Without this
+    // the tap only changed the slide in front of you and the next swipe
+    // reverted it.
+    onToggleMuted();
+  }, [actualMuted, onToggleMuted, videoRef]);
 
   const togglePlayback = useCallback(() => {
     if (ended) return;

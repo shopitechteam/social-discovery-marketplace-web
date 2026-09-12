@@ -35,6 +35,8 @@ import { ImmersiveActions } from "./ImmersiveActions";
 import { ImmersiveMeta } from "./ImmersiveMeta";
 import { BufferSpinner } from "../BufferSpinner";
 import { posterOf } from "../../lib/videoSource";
+import { hasImmersiveHandoff } from "../../lib/immersiveHandoff";
+import { useFeedPreferencesStore } from "@/stores/feedPreferences";
 import {
   onVideoPrefetchChange,
   videoPrefetchAllowed,
@@ -101,6 +103,34 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
   });
 
   const activePost = items[index];
+
+  // ── Sound, for the whole viewer ──────────────────────────────────────────
+  // One decision shared by every slide, and resolved in this initialiser so it
+  // is already true on the first paint. Doing it in an effect was the bug the
+  // user hit: the opened slide mounted muted, the unmute arrived a tick later,
+  // and the browser was free to refuse it — so the video you tapped played
+  // silent while the ones you swiped to (which mounted with sound already on)
+  // played correctly.
+  //
+  // Tapping a card is user activation, and opening a video full-screen is a
+  // request to watch it, so sound goes on. A cold load from a shared link has
+  // no activation and no baton, so it honours the stored preference instead —
+  // an unmuted autoplay there would be refused anyway.
+  const setVideoMuted = useFeedPreferencesStore((s) => s.setVideoMuted);
+  const [muted, setMuted] = useState(() =>
+    hasImmersiveHandoff()
+      ? false
+      : useFeedPreferencesStore.getState().videoMuted,
+  );
+
+  // Mirror it into the shared preference so the feed behind and the next
+  // session agree with what the viewer is doing — the same thing the mute
+  // button already did before sound moved up here.
+  useEffect(() => {
+    setVideoMuted(muted);
+  }, [muted, setVideoMuted]);
+
+  const toggleMuted = useCallback(() => setMuted((value) => !value), []);
 
   // ── Take over playback from the feed still mounted behind us ─────────────
   // The card's click handler already suspended once, synchronously, so the
@@ -320,6 +350,8 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
               post={post}
               state={slideStates[i]}
               prefetch={i === prefetchIndex}
+              muted={muted}
+              onToggleMuted={toggleMuted}
               lang={lang}
               desktop={desktop}
               onOpenComments={() => setCommentsOpen(true)}
@@ -417,6 +449,8 @@ function SlideContainer({
   post,
   state,
   prefetch,
+  muted,
+  onToggleMuted,
   lang,
   desktop,
   onOpenComments,
@@ -425,6 +459,8 @@ function SlideContainer({
   post: ContentCardFieldsFragment;
   state: SlideState;
   prefetch: boolean;
+  muted: boolean;
+  onToggleMuted: () => void;
   lang: string;
   desktop: boolean;
   onOpenComments: () => void;
@@ -493,6 +529,8 @@ function SlideContainer({
       post={post}
       state={state}
       prefetch={prefetch}
+      muted={muted}
+      onToggleMuted={onToggleMuted}
       onRequestNext={onRequestNext}
       // Mobile only — ImmersiveSlide renders this subtree under `md:hidden`.
       // The rail takes over on desktop, where the comments panel already
