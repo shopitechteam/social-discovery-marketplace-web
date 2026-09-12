@@ -43,12 +43,16 @@ export function ImmersiveActions({
   tone,
 }: Props) {
   const column = orientation === "column";
+  // The mobile column sits over the video on a ~400px-wide screen, where 28px
+  // glyphs crowded the frame and pushed the meta block down. The desktop rail
+  // has room, so it keeps its size.
+  const icon = column ? "h-6 w-6" : "h-7 w-7";
 
   return (
     <div
       className={cn(
         "pointer-events-auto flex items-center",
-        column ? "flex-col gap-5" : "flex-row gap-6",
+        column ? "flex-col gap-4" : "flex-row gap-6",
       )}
     >
       <ActionButton
@@ -59,7 +63,7 @@ export function ImmersiveActions({
         tone={tone}
       >
         <Heart
-          className={cn("h-7 w-7", liked && "fill-red-500 text-red-500")}
+          className={cn(icon, liked && "fill-red-500 text-red-500")}
           strokeWidth={liked ? 0 : 2}
         />
       </ActionButton>
@@ -71,7 +75,7 @@ export function ImmersiveActions({
         column={column}
         tone={tone}
       >
-        <MessageCircle className="h-7 w-7" />
+        <MessageCircle className={icon} />
       </ActionButton>
 
       <ActionButton
@@ -81,13 +85,13 @@ export function ImmersiveActions({
         tone={tone}
       >
         <Bookmark
-          className={cn("h-7 w-7", saved && "fill-current")}
+          className={cn(icon, saved && "fill-current")}
           strokeWidth={saved ? 0 : 2}
         />
       </ActionButton>
 
       <ActionButton label="Share" onClick={onShare} column={column} tone={tone}>
-        <Share2 className="h-7 w-7" />
+        <Share2 className={icon} />
       </ActionButton>
     </div>
   );
@@ -126,7 +130,14 @@ function ActionButton({
     >
       {children}
       {count !== undefined && count > 0 && (
-        <span className="text-xs font-semibold">{fmtCompact(count)}</span>
+        <span
+          className={cn(
+            "font-semibold",
+            column ? "text-[0.7rem]" : "text-xs",
+          )}
+        >
+          {fmtCompact(count)}
+        </span>
       )}
     </button>
   );

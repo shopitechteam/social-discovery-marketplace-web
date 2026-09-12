@@ -399,15 +399,29 @@ export function ImmersiveSlide({
           </button>
         )}
 
-        {/* Mobile overlay sits over the video; on desktop the rail takes it. */}
+        {/* Mobile overlay sits over the video; on desktop the rail takes it.
+            The scrim behind it is what lets the chrome be small: white text
+            over an unknown video frame needs either heavy per-glyph shadows or
+            a gradient behind it, and the gradient is the cheaper, cleaner of
+            the two — shadows on every line made the block look muddy at these
+            sizes. Sized to the text, not the frame, so the video is barely
+            dimmed. */}
         {overlay && (
-          <div className="pointer-events-none absolute inset-0 z-20 md:hidden">
-            {overlay}
-          </div>
+          <>
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-2/5 bg-linear-to-t from-black/85 via-black/45 to-transparent md:hidden"
+            />
+            <div className="pointer-events-none absolute inset-0 z-20 md:hidden">
+              {overlay}
+            </div>
+          </>
         )}
 
+        {/* Bottom inset comes from the viewer so the scrubber clears the
+            iPhone home indicator instead of sitting under it. */}
         {active && hlsUrl && (
-          <div className="absolute inset-x-4 bottom-4 z-30 md:bottom-5">
+          <div className="absolute inset-x-4 bottom-[var(--immersive-bottom,1rem)] z-30 md:bottom-5">
             <VideoProgressBar videoRef={videoRef} active={active} showTime />
           </div>
         )}

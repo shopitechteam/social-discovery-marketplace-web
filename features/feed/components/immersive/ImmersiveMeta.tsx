@@ -7,15 +7,21 @@ import { MapPin } from "lucide-react";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { avatarGradient, idInitials } from "@/lib/avatar";
 import { profileHref } from "@/lib/profile-url";
-import { PriceTag } from "../PriceTag";
+import { PriceTag, priceLabel } from "../PriceTag";
 import { cn } from "@/lib/utils";
 
 /**
  * Who posted it and what it is — the text half of the viewer's chrome.
  *
  * Shared by the mobile overlay (over the video, light-on-dark) and the desktop
- * rail (beside it, on its own dark surface), so a seller's name, price and
+ * rail (beside it, on its own themed surface), so a seller's name, price and
  * caption read the same in both.
+ *
+ * The two variants are not the same layout at different sizes. The overlay is
+ * a full-width stack ending in a primary action, because on a phone this block
+ * is the whole product page: seller, price, where it is, what it is, and one
+ * way to reach the seller. The rail has the comments panel below it and does
+ * not carry the action, so it stays a compact column.
  */
 export function ImmersiveMeta({
   post,
@@ -23,12 +29,15 @@ export function ImmersiveMeta({
   onFollow,
   following,
   variant,
+  cta,
 }: {
   post: ContentCardFieldsFragment;
   lang: string;
   onFollow?: () => void;
   following?: boolean;
   variant: "overlay" | "rail";
+  /** Primary action, rendered full-width at the end of the overlay variant. */
+  cta?: React.ReactNode;
 }) {
   const creator = post.creator;
   const displayName =
@@ -39,17 +48,120 @@ export function ImmersiveMeta({
     "Seller";
   const avatar = creator?.profile?.avatar;
   const overlay = variant === "overlay";
+  // A zero amount means the seller never entered a price, so there is nothing
+  // to show. It does NOT mean free — PriceTag's "Free" label is for surfaces
+  // that want it; here a blank space is the honest answer.
+  const hasPrice = (post.price?.amount ?? 0) > 0;
+  // De-duplicated, so a listing whose area and county carry the same name
+  // reads "Kiambu" rather than "Kiambu, Kiambu".
+  const place = [post.location?.subregion, post.location?.county]
+    .map((part) => part?.trim())
+    .filter((part, index, parts): part is string =>
+      Boolean(part) && parts.indexOf(part) === index,
+    )
+    .join(", ");
 
+  if (overlay) {
+    return (
+      // The block must not swallow taps — pause is the whole-frame gesture, and
+      // a caption column eating the bottom third of the video would feel
+      // broken. Only the genuinely interactive children opt back in.
+      <div className="pointer-events-none flex flex-col gap-2.5 text-white">
+        {/* Seller, with Follow pushed to the far edge */}
+        <div className="flex items-center gap-2.5">
+          <Link
+            href={profileHref(lang, creator)}
+            className="pointer-events-auto flex min-w-0 flex-1 items-center gap-2"
+          >
+            {avatar ? (
+              <Image
+                src={avatar}
+                alt={displayName}
+                width={32}
+                height={32}
+                className="h-8 w-8 shrink-0 rounded-full object-cover"
+              />
+            ) : (
+              <span
+                className={cn(
+                  "flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-linear-to-br text-[0.65rem] font-bold text-white",
+                  avatarGradient(creator?.id ?? post.creatorId),
+                )}
+              >
+                {idInitials(creator?.id ?? post.creatorId)}
+              </span>
+            )}
+            <span className="truncate text-[0.8rem] font-semibold">
+              {displayName}
+            </span>
+          </Link>
+
+          {onFollow && !post.isMyContent && (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onFollow();
+              }}
+              className={cn(
+                "pointer-events-auto shrink-0 rounded-full px-3.5 py-1.5 text-[0.72rem] font-bold transition-transform active:scale-95",
+                following
+                  ? "border border-white/45 text-white"
+                  : "bg-white text-black",
+              )}
+            >
+              {following ? "Following" : "Follow"}
+            </button>
+          )}
+        </div>
+
+        {/* Price, with the place as a pill beside it. The price is the most
+            scanned thing on a marketplace video so it stays the largest type
+            here, but only when there is one: amount 0 means the seller left it
+            blank, not that the item is free, and labelling a plot of land
+            "Free" is worse than showing nothing. */}
+        {(hasPrice || place) && (
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+            {hasPrice && (
+              <span className="font-display text-[1.25rem] font-bold leading-none tracking-[-0.01em]">
+                {priceLabel(post.price!.amount, post.price!.currency)}
+                {post.price!.negotiable && (
+                  <span className="ml-1 align-middle text-[0.7rem] font-semibold opacity-75">
+                    · neg
+                  </span>
+                )}
+              </span>
+            )}
+            {place && (
+              <span className="flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-[0.7rem] font-semibold backdrop-blur-sm">
+                <MapPin className="h-3 w-3 shrink-0" />
+                {place}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Title and caption read as one sentence, the title carrying the
+            weight — two separately styled blocks wasted vertical space the
+            video needs. */}
+        {(post.title || post.caption) && (
+          <ExpandableCaption
+            title={post.title}
+            caption={post.caption ?? ""}
+            overlay
+          />
+        )}
+
+        {cta}
+      </div>
+    );
+  }
+
+  // ── Desktop rail ────────────────────────────────────────────────────────
+  // A normal themed panel with the comments list under it, so it stays a
+  // compact column and carries no primary action of its own.
   return (
-    // Over the video the block itself must not swallow taps — pause is the
-    // whole-frame gesture, and a caption column eating the bottom third of it
-    // would feel broken. Only the genuinely interactive children opt back in.
-    <div
-      className={cn(
-        "flex flex-col gap-2",
-        overlay ? "pointer-events-none text-white" : "text-default",
-      )}
-    >
+    <div className="flex flex-col gap-2 text-default">
       <div className="flex items-center gap-2">
         <Link
           href={profileHref(lang, creator)}
@@ -85,13 +197,9 @@ export function ImmersiveMeta({
             }}
             className={cn(
               "pointer-events-auto rounded-full px-3 py-1 text-xs font-semibold transition-colors",
-              overlay
-                ? following
-                  ? "border border-white/40 text-white/80"
-                  : "bg-white text-black"
-                : following
-                  ? "border border-default text-muted"
-                  : "bg-primary text-white",
+              following
+                ? "border border-default text-muted"
+                : "bg-primary text-white",
             )}
           >
             {following ? "Following" : "Follow"}
@@ -103,32 +211,22 @@ export function ImmersiveMeta({
         <p className="text-sm font-semibold leading-snug">{post.title}</p>
       )}
 
-      {post.price && post.price.amount > 0 && (
+      {hasPrice && (
         <div>
           <PriceTag
-            amount={post.price.amount}
-            currency={post.price.currency}
-            negotiable={post.price.negotiable}
-            inverted={overlay}
+            amount={post.price!.amount}
+            currency={post.price!.currency}
+            negotiable={post.price!.negotiable}
           />
         </div>
       )}
 
-      {post.caption && (
-        <ExpandableCaption caption={post.caption} overlay={overlay} />
-      )}
+      {post.caption && <ExpandableCaption caption={post.caption} />}
 
-      {post.location?.county && (
-        <p
-          className={cn(
-            "flex items-center gap-1 text-xs",
-            overlay ? "text-white/80" : "text-muted",
-          )}
-        >
+      {place && (
+        <p className="flex items-center gap-1 text-xs text-muted">
           <MapPin className="h-3.5 w-3.5" />
-          {[post.location.subregion, post.location.county]
-            .filter(Boolean)
-            .join(", ")}
+          {place}
         </p>
       )}
     </div>
@@ -145,11 +243,14 @@ export function ImmersiveMeta({
  * the pattern the feed card already uses.
  */
 function ExpandableCaption({
+  title,
   caption,
-  overlay,
+  overlay = false,
 }: {
+  /** Rendered bold at the head of the same paragraph, when there is one. */
+  title?: string | null;
   caption: string;
-  overlay: boolean;
+  overlay?: boolean;
 }) {
   const ref = useRef<HTMLParagraphElement>(null);
   const [expanded, setExpanded] = useState(false);
@@ -165,21 +266,25 @@ function ExpandableCaption({
     });
     observer.observe(el);
     return () => observer.disconnect();
-  }, [caption, expanded]);
+  }, [title, caption, expanded]);
 
   return (
     <div>
       <p
         ref={ref}
         className={cn(
-          "text-sm leading-snug whitespace-pre-line",
+          "leading-snug whitespace-pre-line",
+          overlay ? "text-[0.8rem]" : "text-sm",
           !expanded && "line-clamp-2",
           // Expanded captions can be long, so cap the height and let them
           // scroll instead of pushing the action row off a phone screen.
-          expanded && "pointer-events-auto max-h-40 overflow-y-auto no-scroll-indicator",
+          expanded &&
+            "pointer-events-auto max-h-32 overflow-y-auto no-scroll-indicator",
           overlay ? "text-white/90" : "text-default",
         )}
       >
+        {title && <span className="font-bold">{title}</span>}
+        {title && caption ? " " : null}
         {caption}
       </p>
       {(overflows || expanded) && (
@@ -190,8 +295,8 @@ function ExpandableCaption({
             setExpanded((value) => !value);
           }}
           className={cn(
-            "pointer-events-auto mt-0.5 text-sm font-bold transition-opacity active:opacity-60",
-            overlay ? "text-white/80" : "text-muted",
+            "pointer-events-auto mt-0.5 font-bold underline transition-opacity active:opacity-60",
+            overlay ? "text-[0.75rem] text-white/90" : "text-sm text-muted",
           )}
         >
           {expanded ? "less" : "more"}
