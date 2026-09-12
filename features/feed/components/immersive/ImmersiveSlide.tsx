@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Play, RotateCcw, Volume2, VolumeX } from "lucide-react";
-import { useHlsVideo } from "@/lib/useHlsVideo";
+import { isAutoplayRefusal, useHlsVideo } from "@/lib/useHlsVideo";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { BufferSpinner } from "../BufferSpinner";
 import { VideoProgressBar } from "../VideoProgressBar";
@@ -56,8 +56,15 @@ interface Props {
    * ones you swiped to played with sound.
    */
   muted: boolean;
-  /** Flip sound for the whole viewer. */
-  onToggleMuted: () => void;
+  /**
+   * Set sound for the whole viewer to an explicit value.
+   *
+   * Explicit rather than a toggle on purpose. When the browser has force-muted
+   * a slide the element and the intent disagree, and a blind flip moved them
+   * further apart — the icon read "unmute", the tap unmuted the element, and
+   * the viewer's intent flipped to muted at the same time.
+   */
+  onSetMuted: (next: boolean) => void;
   /** Rendered over the video on mobile, beside it on desktop. */
   overlay?: React.ReactNode;
   rail?: React.ReactNode;
@@ -69,7 +76,7 @@ export function ImmersiveSlide({
   state,
   prefetch = false,
   muted,
-  onToggleMuted,
+  onSetMuted,
   overlay,
   rail,
   onRequestNext,
@@ -184,30 +191,47 @@ export function ImmersiveSlide({
   }, [active]);
 
   // ── Mute ────────────────────────────────────────────────────────────────
+  //
+  // Every attached element carries the viewer's intent, including a prefetched
+  // one that is not playing yet. It used to be pinned muted while inactive, on
+  // the theory that a silent neighbour is safer — but a paused element cannot
+  // make a sound, so that bought nothing and broke the handover:
+  //
+  //   1. the prefetched element sat with muted = true
+  //   2. the swipe made it active, and useHlsVideo's play effect runs BEFORE
+  //      this one (the hook is called first, so its effects register first)
+  //   3. that effect reads the element to decide what the caller wanted, saw
+  //      muted = true, and played it muted without ever trying to unmute
+  //   4. this effect then set muted = false on an element that was already
+  //      playing, which browsers ignore or undo without fresh activation
+  //
+  // So every paginated slide came up silent no matter what the user had
+  // chosen. Keeping intent on the element from the moment it mounts means the
+  // play attempt starts from the right state instead of correcting afterwards.
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    // A prefetched slide is attached only to fill a buffer. It is held muted
-    // unconditionally: the mute preference belongs to the slide being watched,
-    // and a neighbour that somehow started would be heard over it.
-    if (!active) {
-      video.muted = true;
-      video.defaultMuted = true;
-      return;
-    }
-
     video.muted = muted;
     video.defaultMuted = muted;
     setActualMuted(video.muted);
-    if (!muted && !ended && !userPaused) {
+
+    if (active && !muted && !ended && !userPaused) {
       // An unmuted play can still be refused — on the tap-through path the
       // activation is sticky rather than fresh, and some browsers are stricter
       // about that. Falling back to muted playback keeps the video moving and
       // surfaces "Tap for sound", which the user can recover from in one tap.
       // Leaving it paused, which is what the bare catch used to do, they
       // cannot.
-      video.play().catch(() => {
+      video.play().catch((error: unknown) => {
+        // Only a policy refusal justifies giving up the sound. A seek — the
+        // resume handoff, or the user scrubbing — also rejects this promise,
+        // and muting for that reason is what silenced the slide opened from
+        // the feed.
+        if (!isAutoplayRefusal(error)) {
+          video.play().catch(() => {});
+          return;
+        }
         video.muted = true;
         setActualMuted(true);
         video.play().catch(() => {});
@@ -224,8 +248,44 @@ export function ImmersiveSlide({
     return () => video.removeEventListener("volumechange", sync);
   }, [videoRef]);
 
+  // ── Recover sound on the first gesture ──────────────────────────────────
+  // Opening this screen from a shared link has no user activation behind it,
+  // and no browser will autoplay with sound in that state — that part is not
+  // ours to override. What we can do is stop making the user hunt for the
+  // speaker icon: while sound is wanted but the browser has forced a mute, the
+  // next touch, click, key or scroll anywhere turns it on. One-shot, and it
+  // unbinds the moment the mismatch resolves, so it never fights a user who
+  // deliberately muted.
+  useEffect(() => {
+    if (!active) return;
+    // Wanted on, actually off — i.e. the browser refused.
+    if (muted || !actualMuted) return;
+    const video = videoRef.current;
+    if (!video) return;
+
+    const recover = () => {
+      video.muted = false;
+      video.defaultMuted = false;
+      setActualMuted(video.muted);
+      video.play().catch(() => {});
+    };
+
+    const events = ["pointerdown", "touchstart", "keydown", "wheel"] as const;
+    for (const type of events) {
+      window.addEventListener(type, recover, { once: true, passive: true });
+    }
+    return () => {
+      for (const type of events) {
+        window.removeEventListener(type, recover);
+      }
+    };
+  }, [active, muted, actualMuted, videoRef]);
+
   const toggleMuted = useCallback(() => {
     const video = videoRef.current;
+    // Flip what the user can actually hear, which is the element's state and
+    // what the icon is showing — not the stored intent, which may have been
+    // overridden by a refused autoplay.
     const next = !(video?.muted ?? actualMuted);
     if (video) {
       video.muted = next;
@@ -234,11 +294,10 @@ export function ImmersiveSlide({
       if (!next) video.play().catch(() => {});
     }
     setActualMuted(next);
-    // The viewer owns the decision, so every other slide follows. Without this
-    // the tap only changed the slide in front of you and the next swipe
-    // reverted it.
-    onToggleMuted();
-  }, [actualMuted, onToggleMuted, videoRef]);
+    // The viewer owns the decision, so every other slide follows. Sent as an
+    // explicit value so the intent always ends up agreeing with the element.
+    onSetMuted(next);
+  }, [actualMuted, onSetMuted, videoRef]);
 
   const togglePlayback = useCallback(() => {
     if (ended) return;
@@ -304,10 +363,19 @@ export function ImmersiveSlide({
         {attached && (
           <video
             ref={videoRef}
-            // The muted attribute must be present from the first paint or iOS
-            // can refuse autoplay outright. A prefetched slide is always muted;
-            // see the mute effect.
-            muted={active ? actualMuted : true}
+            // Driven by the viewer's INTENT, not by `actualMuted`.
+            //
+            // React writes this during commit, which is before any effect
+            // runs — including useHlsVideo's play attempt. That ordering is
+            // the whole point: the element is already in the right state when
+            // playback starts, so an unmuted slide genuinely starts unmuted
+            // instead of starting muted and being corrected too late.
+            //
+            // Binding it to `actualMuted` instead would feed the browser's own
+            // forced mute straight back into the element and latch it there.
+            // The attribute must also be present from the first paint or iOS
+            // can refuse autoplay outright.
+            muted={muted}
             playsInline
             // Tells the native HLS path (iOS) to buffer rather than stop at
             // metadata, which is the whole point on a prefetched slide.
