@@ -59,7 +59,7 @@ export function SubcategoryRow({
             color: "rgb(var(--color-text-main))",
           }}
         >
-          Shop by type
+          Browse by type
         </h2>
         {selected && (
           <button
