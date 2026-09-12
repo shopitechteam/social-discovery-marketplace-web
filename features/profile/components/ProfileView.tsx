@@ -369,7 +369,6 @@ export function ProfileView({ lang }: Props) {
 
       {tab === "saved" && (
         <PostsGrid
-          variant="saved"
           posts={savedPosts}
           hasMore={savedHasMore}
           onLoadMore={handleLoadMoreSaved}

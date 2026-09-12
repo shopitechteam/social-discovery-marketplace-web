@@ -13,7 +13,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { shortTime } from "@/features/messaging/lib/helpers";
+import { listTimestamp } from "@/features/messaging/lib/helpers";
 import { useInfiniteScroll } from "@/features/feed/hooks/useInfiniteScroll";
 import type { NotificationItem } from "../types";
 
@@ -187,7 +187,7 @@ export function NotificationList({
                         {notification.body}
                       </p>
                       <span className="shrink-0 text-xs text-muted">
-                        {shortTime(notification.updatedAt)}
+                        {listTimestamp(notification.updatedAt)}
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-muted">
