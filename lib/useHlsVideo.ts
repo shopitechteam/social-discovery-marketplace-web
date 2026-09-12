@@ -91,14 +91,30 @@ export function useHlsVideo(
     let hls: import("hls.js").default | null = null;
     let destroyed = false;
 
-    // Does this browser play HLS natively (iOS/macOS Safari)? If so we must NOT
+    // Does this browser play HLS natively (iPhone Safari)? If so we must NOT
     // do the "empty source + load()" reset below: on iOS, calling load() on a
     // src-less element and THEN reassigning src wedges the native media loader
     // at networkState=2/readyState=0 — it starts loading and never commits to
     // the new source (the video spins forever, no error). We also skip the
     // hls.js dynamic import entirely on that path (it's unsupported there), so
     // playback isn't delayed behind a chunk download that can't help.
-    const canNativeHls = v.canPlayType("application/vnd.apple.mpegurl") !== "";
+    //
+    // canPlayType alone is NOT a usable test. Chrome answers "maybe" for the
+    // HLS MIME type and then fails the load outright with
+    // DEMUXER_ERROR_COULD_NOT_PARSE, so testing it on its own sent every
+    // Chrome user down the native path and no video played at all — on desktop
+    // or on Android, which is most of this audience.
+    //
+    // Media Source Extensions is the reliable discriminator, and it is
+    // synchronous, so the iOS fast path keeps its head start. hls.js needs MSE;
+    // where MSE exists hls.js is the right engine, and the only mainstream
+    // browser without it is iPhone Safari, which is exactly the case the native
+    // path exists for. `ManagedMediaSource` is deliberately not consulted:
+    // iOS 17.1+ exposes it instead of MediaSource, and that device should stay
+    // on native HLS.
+    const hasMse = typeof window !== "undefined" && "MediaSource" in window;
+    const canNativeHls =
+      !hasMse && v.canPlayType("application/vnd.apple.mpegurl") !== "";
 
     // Reset video element state fully before attaching new source. Native HLS
     // gets a direct, single src assignment instead (see below).

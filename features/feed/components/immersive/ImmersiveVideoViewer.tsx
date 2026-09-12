@@ -29,6 +29,10 @@ import { ImmersiveActions } from "./ImmersiveActions";
 import { ImmersiveMeta } from "./ImmersiveMeta";
 import { BufferSpinner } from "../BufferSpinner";
 import { posterOf } from "../../lib/videoSource";
+import {
+  onVideoPrefetchChange,
+  videoPrefetchAllowed,
+} from "../../lib/videoPrefetch";
 
 const CommentsDrawer = dynamic(() =>
   import("../CommentsDrawer").then((mod) => mod.CommentsDrawer),
@@ -216,6 +220,18 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
     img.src = src;
   }, [items, index]);
 
+  // ── Warm the next stream ─────────────────────────────────────────────────
+  // Resolved after mount, and re-resolved when the connection changes, so a
+  // viewer left open while the user loses signal stops prefetching. Starts
+  // false because the check reads navigator, which does not exist on the
+  // server.
+  const [prefetchAllowed, setPrefetchAllowed] = useState(false);
+  useEffect(() => {
+    const sync = () => setPrefetchAllowed(videoPrefetchAllowed());
+    sync();
+    return onVideoPrefetchChange(sync);
+  }, []);
+
   const slideStates = useMemo(
     () =>
       items.map((_, i): SlideState => {
@@ -224,6 +240,11 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
       }),
     [items, index],
   );
+
+  // Exactly one slide ahead. Two would double the idle bandwidth for a slide
+  // the user is unlikely to reach before it needs rebuffering anyway, and the
+  // slide behind is already warm from having been played.
+  const prefetchIndex = prefetchAllowed ? index + 1 : -1;
 
   if (loading) {
     return (
@@ -288,6 +309,7 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
             <SlideContainer
               post={post}
               state={slideStates[i]}
+              prefetch={i === prefetchIndex}
               lang={lang}
               desktop={desktop}
               onOpenComments={() => setCommentsOpen(true)}
@@ -384,6 +406,7 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
 function SlideContainer({
   post,
   state,
+  prefetch,
   lang,
   desktop,
   onOpenComments,
@@ -391,6 +414,7 @@ function SlideContainer({
 }: {
   post: ContentCardFieldsFragment;
   state: SlideState;
+  prefetch: boolean;
   lang: string;
   desktop: boolean;
   onOpenComments: () => void;
@@ -448,6 +472,7 @@ function SlideContainer({
     <ImmersiveSlide
       post={post}
       state={state}
+      prefetch={prefetch}
       onRequestNext={onRequestNext}
       overlay={
         <div className="flex h-full w-full items-end justify-between gap-3 p-4 pb-16">
