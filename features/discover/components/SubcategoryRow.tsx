@@ -51,17 +51,13 @@ export function SubcategoryRow({
     <section
       className={cn("px-4 pb-3 pt-4 lg:px-0 lg:pb-7 lg:pt-5", className)}
     >
-      <div className="mb-3 flex items-baseline justify-between gap-3 lg:mb-4">
-        <h2
-          className="font-semibold"
-          style={{
-            fontSize: "var(--text-sm)",
-            color: "rgb(var(--color-text-main))",
-          }}
-        >
-          Browse by type
-        </h2>
-        {selected && (
+      {/* No heading. A row of round product photos under the category chips
+          reads as "narrow this down" on its own, and "Browse by type" was a
+          label for something already obvious — on a phone it cost a line the
+          tiles could use. Clear stays, because nothing else undoes the filter.
+          It is right-aligned alone so the row keeps its shape either way. */}
+      {selected && (
+        <div className="mb-2 flex justify-end lg:mb-3">
           <button
             type="button"
             onClick={() => onSelect(null)}
@@ -70,8 +66,8 @@ export function SubcategoryRow({
           >
             Clear
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Base is the phone: exactly four across, two tidy rows, sized for a
           thumb. One `lg` override handles desktop, where the page picks up its
