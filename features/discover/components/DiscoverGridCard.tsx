@@ -103,19 +103,28 @@ function getThumb(post: ContentCardFieldsFragment): string | null {
 type TileSignal = {
   label: string;
   icon?: typeof Flame;
-  /** Live is the one signal urgent enough to break the glass-chip pattern. */
-  urgent?: boolean;
-  /** Promoted is disclosure, not a hook — it sits back. */
-  quiet?: boolean;
 };
 
 /**
  * At most one chip, chosen by how much it should change the user's next tap.
  * Stacking badges is how a clean grid turns into a noticeboard.
+ *
+ * Deliberately derived only from `stats.saves` and `createdAt` — the two fields
+ * every query that feeds this tile actually selects.
+ *
+ * It used to lead with `isLive`, and before that fall back to `boost`. Neither
+ * is selected by the Discover query, so on /explore those branches were dead
+ * and the chip was always Popular or New. The moment the Saved tab started
+ * feeding the same tile from a fuller fragment, every live listing there wore a
+ * red pulsing "Live" badge that the identical listing never wore on /explore.
+ * A tile that renders differently for the same post depending on which query
+ * loaded it is a bug, so the signal now depends only on fields that are always
+ * there.
+ *
+ * Note for later: reinstating a "Promoted" disclosure means selecting `boost`
+ * in BOTH queries, not just adding the branch back here.
  */
 function tileSignal(post: ContentCardFieldsFragment): TileSignal | null {
-  if (post.isLive) return { label: "Live", urgent: true };
-
   if ((post.stats?.saves ?? 0) >= POPULAR_SAVES)
     return { label: "Popular", icon: Flame };
 
@@ -129,8 +138,6 @@ function tileSignal(post: ContentCardFieldsFragment): TileSignal | null {
   )
     return { label: "New" };
 
-  if (post.boost?.isBoosted) return { label: "Promoted", quiet: true };
-
   return null;
 }
 
@@ -142,10 +149,19 @@ function DiscoverGridCardImpl({
   post,
   lang,
   priority,
+  showSave = true,
 }: {
   post: ContentCardFieldsFragment;
   lang: string;
   priority: boolean;
+  /**
+   * Whether to draw the save button.
+   *
+   * The Saved tab turns it off: every tile there is saved already, so a save
+   * control says nothing about the state it is in and only adds a target to
+   * mis-tap. Everywhere else it stays, because that is where saving happens.
+   */
+  showSave?: boolean;
 }) {
   // Some legacy listings point at media that 404s. Without this the tile shows
   // the browser's broken-image chrome plus raw alt text — a dead tile in the
@@ -262,39 +278,36 @@ function DiscoverGridCardImpl({
             className={cn(
               GLASS,
               "absolute left-1.5 top-1.5 h-6 px-2 text-[11px] font-semibold leading-none",
-              signal.urgent && "bg-[#EF4444] backdrop-blur-none",
-              signal.quiet && "font-medium text-white/80",
             )}
           >
-            {signal.urgent && (
-              <span
-                className="h-1.5 w-1.5 animate-pulse rounded-full bg-white"
-                aria-hidden
-              />
-            )}
             {signal.icon && <signal.icon size={11} aria-hidden />}
             {signal.label}
           </span>
         )}
 
         {/* Top-right: save, without leaving the grid. */}
-        <button
-          type="button"
-          onClick={onSaveTap}
-          aria-pressed={saved}
-          aria-label={saved ? "Remove from saved" : `Save ${post.title}`}
-          className={cn(
-            "absolute right-1.5 top-1.5 flex h-9 w-9 items-center justify-center rounded-full backdrop-blur-[2px] transition active:scale-90",
-            saved ? "bg-white text-primary" : "bg-black/40 text-white",
-          )}
-        >
-          <Bookmark
-            size={16}
-            strokeWidth={2.2}
-            fill={saved ? "currentColor" : "none"}
-            aria-hidden
-          />
-        </button>
+        {showSave && (
+          <button
+            type="button"
+            onClick={onSaveTap}
+            aria-pressed={saved}
+            aria-label={saved ? "Remove from saved" : `Save ${post.title}`}
+            className={cn(
+              "absolute right-1.5 top-1.5 flex h-9 w-9 items-center justify-center rounded-full backdrop-blur-[2px] transition active:scale-90",
+              // Saved is a confirmation, so it reads green. In brand pink it was
+              // indistinguishable from the app's ordinary call-to-action colour —
+              // the one state that means "done" looked like another thing to tap.
+              saved ? "bg-white text-success" : "bg-black/40 text-white",
+            )}
+          >
+            <Bookmark
+              size={16}
+              strokeWidth={2.2}
+              fill={saved ? "currentColor" : "none"}
+              aria-hidden
+            />
+          </button>
+        )}
 
         {/* Bottom row: where it is, and what kind of media it is. */}
         <div className="pointer-events-none absolute inset-x-1.5 bottom-1.5 flex items-end justify-between gap-1.5">

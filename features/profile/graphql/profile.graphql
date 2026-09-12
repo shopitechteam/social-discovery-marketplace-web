@@ -94,12 +94,20 @@ query GetMyPosts($limit: Int, $afterId: String) {
   }
 }
 
+# Saved posts use ContentCardFields, not ProfilePostFields.
+#
+# The Saved tab renders the same tile as /explore, and that tile needs fields
+# the profile fragment does not carry: isSavedByMe (so its save button starts
+# pressed), isLive and boost (the context chip), and the media duration. Reusing
+# the discover fragment keeps the tile and its data in step — extending
+# ProfilePostFields instead would have loaded those fields into the two
+# inventory queries that have no use for them.
 query GetMySavedContent($limit: Int, $afterId: String) {
   mySavedContent(limit: $limit, afterId: $afterId) {
     hasMore
     nextCursor
     items {
-      ...ProfilePostFields
+      ...ContentCardFields
     }
   }
 }

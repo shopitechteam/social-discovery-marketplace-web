@@ -178,10 +178,22 @@ function toneClasses(
   }
 }
 
-function visibilityLabel(visibility: ManagedPost["visibility"]) {
-  return visibility === "PUBLIC" ? "Shown" : "Hidden";
-}
-
+/**
+ * One listing in the seller's inventory.
+ *
+ * Designed around the job: a seller scans this grid looking for problems, not
+ * for reassurance. So the media stays clean and the chrome is spent on
+ * exceptions — a status badge appears only when a post is NOT live, and the
+ * helper line only when there is something to act on. A grid of green "Live"
+ * pills told the seller nothing and buried the one rejected post.
+ *
+ * The previous card carried the same facts twice: a dark gradient over the
+ * image with title, date and price, then another block below it with stat
+ * chips, a helper sentence and an "Insights" button. That made every tile tall
+ * and noisy, and the button was redundant because the whole card already opens
+ * insights. Title and price now live below the image as ordinary type, which
+ * reads faster and lets the photo be a photo.
+ */
 function InventoryCard({
   post,
   lang,
@@ -196,21 +208,29 @@ function InventoryCard({
   const thumb = getPostThumb(post);
   const isVideo = post.type === "VIDEO";
   const status = statusCopy(post);
+  const isLive = post.status === "ACTIVE" && post.isLive;
+  const isHidden = post.visibility !== "PUBLIC";
+  // Rejection reasons are the one helper worth interrupting for; otherwise the
+  // badge already says what the state is.
+  const problem =
+    post.status === "REJECTED" || post.status === "FAILED"
+      ? (post.approval?.rejectionReason ?? status.helper)
+      : null;
 
   return (
     <article
-      className="overflow-hidden rounded-[20px] border"
+      className="group relative flex flex-col overflow-hidden rounded-2xl border transition-colors"
       style={{
         borderColor: "rgb(var(--color-border))",
         backgroundColor: "rgb(var(--color-bg-elevated))",
-        boxShadow: "var(--shadow-sm)",
       }}
     >
-      <div className="relative aspect-[0.94]">
+      <div className="relative aspect-4/5 overflow-hidden">
+        {/* The whole tile opens insights. Sits under the menu button's z-30. */}
         <Link
           href={`/${lang}/profile/posts/${post.id}`}
           className="absolute inset-0 z-10"
-          aria-label={`Open insights for ${post.title}`}
+          aria-label={`Open insights for ${post.title || "untitled post"}`}
         />
 
         {thumb ? (
@@ -218,7 +238,7 @@ function InventoryCard({
             src={thumb}
             alt={post.title}
             fill
-            className="object-cover"
+            className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
             priority={priority}
             loading={priority ? "eager" : "lazy"}
@@ -233,7 +253,7 @@ function InventoryCard({
             <span
               className="px-4 text-center font-medium"
               style={{
-                fontSize: "var(--text-sm)",
+                fontSize: "var(--text-xs)",
                 color: "rgb(var(--color-text-muted))",
               }}
             >
@@ -242,106 +262,108 @@ function InventoryCard({
           </div>
         )}
 
-        <div className="absolute inset-x-0 top-0 z-20 flex items-start justify-between p-2">
-          <div className="flex flex-wrap gap-1.5">
-            <span
-              className={cn(
-                "rounded-full border px-2 py-0.75 text-[10px] font-semibold backdrop-blur",
-                toneClasses(status.tone),
-              )}
-            >
-              {status.label}
-            </span>
-            <span className="rounded-full border border-black/10 bg-white/88 px-2 py-0.75 text-[10px] font-semibold text-slate-700 backdrop-blur">
-              {visibilityLabel(post.visibility)}
-            </span>
+        {/* Exceptions only. A live, public post shows nothing here. */}
+        {(!isLive || isHidden) && (
+          <div className="absolute inset-x-0 top-0 z-20 flex flex-wrap gap-1.5 p-2 pr-11">
+            {!isLive && (
+              <span
+                className={cn(
+                  "rounded-full border px-2 py-0.5 text-[10px] font-semibold backdrop-blur-sm",
+                  toneClasses(status.tone),
+                )}
+              >
+                {status.label}
+              </span>
+            )}
+            {isHidden && (
+              <span className="rounded-full border border-black/10 bg-white/85 px-2 py-0.5 text-[10px] font-semibold text-slate-700 backdrop-blur-sm">
+                Hidden
+              </span>
+            )}
           </div>
+        )}
 
-          <button
-            type="button"
-            onClick={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              onOpenActions(post);
-            }}
-            className="relative z-30 flex h-8 w-8 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur transition-transform active:scale-95"
-            aria-label={`Manage ${post.title}`}
-          >
-            <MoreHorizontal size={16} />
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onOpenActions(post);
+          }}
+          className="absolute right-2 top-2 z-30 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-transform active:scale-95"
+          aria-label={`Manage ${post.title || "post"}`}
+        >
+          <MoreHorizontal size={16} />
+        </button>
 
         {isVideo && (
-          <span className="absolute inset-0 flex items-center justify-center">
-            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white">
-              <Play
-                size={20}
-                fill="currentColor"
-                strokeWidth={0}
-                className="ml-0.5"
-              />
+          <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm">
+              <Play size={16} fill="currentColor" strokeWidth={0} className="ml-0.5" />
             </span>
           </span>
         )}
-
-        <div className="absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/78 via-black/30 to-transparent p-2.5 text-white">
-          <div className="flex items-end justify-between gap-3">
-            <div className="min-w-0">
-              <p className="line-clamp-1 text-[13px] font-semibold sm:text-sm">
-                {post.title || "Untitled post"}
-              </p>
-              <p className="mt-0.5 text-[10px] text-white/80 sm:text-[11px]">
-                Updated {formatDate(post.updatedAt)}
-              </p>
-            </div>
-            <p className="shrink-0 text-[13px] font-bold sm:text-sm">
-              {formatPrice(post.price.amount, post.price.currency)}
-            </p>
-          </div>
-        </div>
       </div>
 
-      <div className="space-y-2.5 p-2.5 sm:p-3">
-        <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground sm:text-xs">
-          <span className="inline-flex items-center gap-1 rounded-full bg-[rgb(var(--color-bg-subtle))] px-2 py-1">
-            <Eye size={12} />
-            {formatCompact(post.stats.views)}
-          </span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-[rgb(var(--color-bg-subtle))] px-2 py-1">
-            <Bookmark size={12} />
-            {formatCompact(post.stats.saves)}
-          </span>
+      {/* Price leads, because it is the field sellers check and change most. */}
+      <div className="flex min-w-0 flex-col gap-1 p-2.5 sm:p-3">
+        <div className="flex items-baseline gap-1.5">
+          <p
+            className="min-w-0 truncate font-bold"
+            style={{
+              fontSize: "var(--text-sm)",
+              color: "rgb(var(--color-text))",
+            }}
+          >
+            {post.price.amount > 0
+              ? formatPrice(post.price.amount, post.price.currency)
+              : "No price"}
+          </p>
           {post.price.negotiable && (
-            <span className="inline-flex items-center rounded-full bg-[rgb(var(--brand-primary)_/_0.1)] px-2 py-1 text-[10px] font-semibold text-[rgb(var(--brand-primary))] sm:text-[11px]">
-              Negotiable
+            <span
+              className="shrink-0 text-[10px] font-semibold"
+              style={{ color: "rgb(var(--color-text-muted))" }}
+            >
+              · neg
             </span>
           )}
         </div>
 
-        <div className="flex items-start justify-between gap-3">
-          <p
-            className="min-w-0 line-clamp-2"
-            style={{
-              fontSize: "12px",
-              color: "rgb(var(--color-text-muted))",
-            }}
-          >
-            {post.approval?.rejectionReason && post.status === "REJECTED"
-              ? post.approval.rejectionReason
-              : status.helper}
-          </p>
+        <p
+          className="line-clamp-2 leading-snug"
+          style={{
+            fontSize: "var(--text-xs)",
+            color: "rgb(var(--color-text-muted))",
+          }}
+        >
+          {post.title || "Untitled post"}
+        </p>
 
-          <Link
-            href={`/${lang}/profile/posts/${post.id}`}
-            className="shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-semibold transition-colors hover:bg-surface sm:text-[11px]"
-            style={{
-              borderColor: "rgb(var(--color-border))",
-              color: "rgb(var(--color-text))",
-            }}
-          >
-            Insights
-          </Link>
+        <div
+          className="mt-0.5 flex items-center gap-2.5"
+          style={{
+            fontSize: "var(--text-xs)",
+            color: "rgb(var(--color-text-muted))",
+          }}
+        >
+          <span className="flex items-center gap-1">
+            <Eye size={12} aria-hidden />
+            {formatCompact(post.stats.views)}
+          </span>
+          <span className="flex items-center gap-1">
+            <Bookmark size={12} aria-hidden />
+            {formatCompact(post.stats.saves)}
+          </span>
+          <span className="ml-auto shrink-0 truncate">
+            {formatDate(post.updatedAt)}
+          </span>
         </div>
+
+        {problem && (
+          <p className="mt-1 line-clamp-2 rounded-lg bg-rose-500/10 px-2 py-1.5 text-[11px] font-medium leading-snug text-rose-700">
+            {problem}
+          </p>
+        )}
       </div>
     </article>
   );
@@ -650,8 +672,7 @@ export function ManagedPostsGrid({
           <div
             className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl"
             style={{
-              background:
-                "linear-gradient(135deg, rgb(var(--brand-primary) / 0.14), rgb(var(--brand-secondary) / 0.18))",
+              backgroundColor: "rgb(var(--brand-primary) / 0.1)",
               color: "rgb(var(--brand-primary))",
             }}
           >
@@ -678,11 +699,7 @@ export function ManagedPostsGrid({
           </p>
           <Link
             href={`/${lang}/upload`}
-            className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 font-semibold text-white"
-            style={{
-              background:
-                "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)))",
-            }}
+            className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-primary px-5 font-semibold text-white transition-transform active:scale-[0.98]"
           >
             <Plus size={16} />
             Create post
@@ -700,14 +717,10 @@ export function ManagedPostsGrid({
         right={
           <Link
             href={`/${lang}/upload`}
-            className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl px-3.5 font-semibold text-white"
-            style={{
-              fontSize: "13px",
-              background:
-                "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)))",
-            }}
+            className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-full bg-primary px-4 font-semibold text-white transition-transform active:scale-[0.98]"
+            style={{ fontSize: "13px" }}
           >
-            <Plus size={16} />
+            <Plus size={15} strokeWidth={2.4} />
             Create
           </Link>
         }

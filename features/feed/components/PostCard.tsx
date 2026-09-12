@@ -30,11 +30,7 @@ import Shimmer, {
   SHIMMER_AVATAR,
   SHIMMER_PORTRAIT,
 } from "@/lib/shimmer";
-import {
-  registerVideo,
-  suspendVideoElection,
-  updateRatio,
-} from "@/lib/activeVideo";
+import { pauseAllVideos, registerVideo, updateRatio } from "@/lib/activeVideo";
 import { useHlsVideo } from "@/lib/useHlsVideo";
 import { useFeedPreferencesStore } from "@/stores/feedPreferences";
 import {
@@ -1303,17 +1299,21 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
   /**
    * Tapping a video card enters the immersive viewer.
    *
-   * Order matters. The election is suspended SYNCHRONOUSLY, inside the click
-   * handler, so every feed video is already paused before the route changes —
-   * on iOS that measurably improves the odds the viewer's first `play()` is
-   * honoured. The handoff carries the frame and sound state so the first slide
-   * resumes rather than restarting. `{ scroll: false }` plus the remembered
-   * scroll position is what makes the back button land exactly where we left.
+   * Order matters. Every feed video is paused SYNCHRONOUSLY here, inside the
+   * click handler, so the outgoing element is already stopped before the route
+   * changes — on iOS that measurably improves the odds the viewer's first
+   * `play()` is honoured. A plain pause, not a suspension: the viewer takes the
+   * lock in its own mount effect and releases it on unmount, so suspending here
+   * as well left the count permanently above zero and every card stuck
+   * inactive once you came back. The handoff carries the frame and sound state
+   * so the first slide resumes rather than restarting. `{ scroll: false }` plus
+   * the remembered scroll position is what makes the back button land exactly
+   * where we left.
    */
   const openVideo = useCallback(
     (time: number, videoMuted: boolean) => {
       setImmersiveHandoff(post.id, { time, muted: videoMuted });
-      suspendVideoElection();
+      pauseAllVideos();
       rememberScrollBeforeNavigation();
       // Slug path, so the URL the user can copy straight out of the address
       // bar is already the canonical one. The handoff stays keyed by id.

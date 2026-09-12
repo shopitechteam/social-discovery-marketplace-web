@@ -14,12 +14,34 @@ import { useEffect, useRef, useState } from "react";
  * change it. Callers should treat this as local element state, not as the user's
  * persisted mute preference.
  */
+/**
+ * Did the browser refuse on autoplay-policy grounds, or did something just
+ * interrupt the request?
+ *
+ * This distinction is load-bearing. `play()` also rejects with AbortError when
+ * a seek or a new load interrupts the pending request, and that has nothing to
+ * do with permission to make sound. Treating every rejection as a refusal is
+ * what kept the video opened from the feed silent: it is the one slide that
+ * seeks to the position handed over from the card, that seek aborted the play
+ * promise, and the handler below dutifully muted a video the browser had been
+ * perfectly willing to play out loud. Slides reached by swiping never seek, so
+ * they always worked — which is exactly the asymmetry that was reported.
+ */
+export function isAutoplayRefusal(error: unknown): boolean {
+  return (error as { name?: string } | null)?.name === "NotAllowedError";
+}
+
 function playWithUnmuteFallback(
   v: HTMLVideoElement,
   onMutedChange?: (muted: boolean) => void,
 ): void {
   const wantedMuted = v.muted;
-  v.play().catch(() => {
+  v.play().catch((error: unknown) => {
+    // Interrupted, not refused. Ask again and keep the sound.
+    if (!isAutoplayRefusal(error)) {
+      v.play().catch(() => {});
+      return;
+    }
     if (wantedMuted) return; // already muted and still blocked — nothing to do
     // Retry muted so it at least plays, then try to unmute again.
     v.muted = true;
@@ -30,7 +52,8 @@ function playWithUnmuteFallback(
         v.muted = false;
         onMutedChange?.(false);
         // If unmuting re-pauses it (rare), fall back to muted playback.
-        v.play().catch(() => {
+        v.play().catch((retryError: unknown) => {
+          if (!isAutoplayRefusal(retryError)) return;
           v.muted = true;
           onMutedChange?.(true);
           v.play().catch(() => {});

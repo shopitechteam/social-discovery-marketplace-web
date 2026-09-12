@@ -12,7 +12,7 @@ import {
   initialsForUser,
   participantName,
   previewLabel,
-  shortTime,
+  listTimestamp,
 } from "../lib/helpers";
 
 interface Props {
@@ -253,7 +253,7 @@ export function ConversationList({
                       {participantName(conversation.otherParticipant)}
                     </p>
                     <span className="shrink-0 text-muted text-xs">
-                      {shortTime(conversation.lastMessageAt)}
+                      {listTimestamp(conversation.lastMessageAt)}
                     </span>
                   </div>
                   <p className="truncate text-sm font-semibold">

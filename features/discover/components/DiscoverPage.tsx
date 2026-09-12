@@ -1429,21 +1429,23 @@ export function DiscoverPage({ lang }: { lang: string }) {
 
           {!isReloading && items.length > 0 ? (
             <div className="px-4 pb-6 pt-3 lg:px-0">
-              <div className="mb-3 flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-default">
-                    {query
-                      ? `Results for “${query}”`
-                      : "Listings picked for discovery"}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {selectedWard?.name ??
-                      selectedSubCounty?.name ??
-                      selectedCounty?.name ??
-                      "Across Kenya"}
-                  </p>
-                </div>
-              </div>
+              {/* Only a search gets a heading now. The old one labelled the
+                  default state "Listings picked for discovery" over "Across
+                  Kenya", which restated what the page already is and what the
+                  location control already shows — two lines of chrome above
+                  every visit. A hairline does the separating instead. */}
+              {query ? (
+                <p className="mb-3 text-sm font-semibold text-default">
+                  Results for “{query}”
+                </p>
+              ) : (
+                // `border-border`, not `border-default`: the latter is a
+                // hand-written class in globals.css rather than a theme token,
+                // so Tailwind cannot apply an opacity modifier to it — the
+                // `/60` was dropped and the border fell back to currentColor,
+                // which painted a near-black line instead of a hairline.
+                <div className="mb-4 border-t border-border/60" />
+              )}
 
               <div className="grid grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-3 md:gap-x-4 md:gap-y-6 xl:grid-cols-4 min-[90rem]:grid-cols-5">
                 {items.map((post, index) => (

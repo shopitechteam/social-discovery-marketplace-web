@@ -35,7 +35,6 @@ import { ImmersiveActions } from "./ImmersiveActions";
 import { ImmersiveMeta } from "./ImmersiveMeta";
 import { BufferSpinner } from "../BufferSpinner";
 import { posterOf } from "../../lib/videoSource";
-import { hasImmersiveHandoff } from "../../lib/immersiveHandoff";
 import { useFeedPreferencesStore } from "@/stores/feedPreferences";
 import {
   onVideoPrefetchChange,
@@ -105,23 +104,22 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
   const activePost = items[index];
 
   // ── Sound, for the whole viewer ──────────────────────────────────────────
-  // One decision shared by every slide, and resolved in this initialiser so it
-  // is already true on the first paint. Doing it in an effect was the bug the
-  // user hit: the opened slide mounted muted, the unmute arrived a tick later,
-  // and the browser was free to refuse it — so the video you tapped played
-  // silent while the ones you swiped to (which mounted with sound already on)
-  // played correctly.
+  // One decision shared by every slide, so unmuting anywhere unmutes
+  // everywhere, and set here in the initialiser so it is already correct on the
+  // first paint rather than arriving a tick later in an effect.
   //
-  // Tapping a card is user activation, and opening a video full-screen is a
-  // request to watch it, so sound goes on. A cold load from a shared link has
-  // no activation and no baton, so it honours the stored preference instead —
-  // an unmuted autoplay there would be refused anyway.
+  // This screen is a request to watch something, however it was reached, so it
+  // starts with sound on in every case — a tap from the feed, a shared link, a
+  // refresh. That is what people expect from a full-screen video feed, and it
+  // is why this does NOT read the stored mute preference: that preference
+  // exists for the browse feed, where silent autoplay is the right default,
+  // and inheriting it here is what kept making this screen silent.
+  //
+  // A cold load has no user activation, so the browser may refuse the unmuted
+  // start. The slide handles that: it falls back to muted playback, shows
+  // "Tap for sound", and turns sound on at the first gesture.
   const setVideoMuted = useFeedPreferencesStore((s) => s.setVideoMuted);
-  const [muted, setMuted] = useState(() =>
-    hasImmersiveHandoff()
-      ? false
-      : useFeedPreferencesStore.getState().videoMuted,
-  );
+  const [muted, setMuted] = useState(false);
 
   // Mirror it into the shared preference so the feed behind and the next
   // session agree with what the viewer is doing — the same thing the mute
@@ -130,7 +128,7 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
     setVideoMuted(muted);
   }, [muted, setVideoMuted]);
 
-  const toggleMuted = useCallback(() => setMuted((value) => !value), []);
+  const setMutedIntent = useCallback((next: boolean) => setMuted(next), []);
 
   // ── Take over playback from the feed still mounted behind us ─────────────
   // The card's click handler already suspended once, synchronously, so the
@@ -351,7 +349,7 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
               state={slideStates[i]}
               prefetch={i === prefetchIndex}
               muted={muted}
-              onToggleMuted={toggleMuted}
+              onSetMuted={setMutedIntent}
               lang={lang}
               desktop={desktop}
               onOpenComments={() => setCommentsOpen(true)}
@@ -450,7 +448,7 @@ function SlideContainer({
   state,
   prefetch,
   muted,
-  onToggleMuted,
+  onSetMuted,
   lang,
   desktop,
   onOpenComments,
@@ -460,7 +458,7 @@ function SlideContainer({
   state: SlideState;
   prefetch: boolean;
   muted: boolean;
-  onToggleMuted: () => void;
+  onSetMuted: (next: boolean) => void;
   lang: string;
   desktop: boolean;
   onOpenComments: () => void;
@@ -530,7 +528,7 @@ function SlideContainer({
       state={state}
       prefetch={prefetch}
       muted={muted}
-      onToggleMuted={onToggleMuted}
+      onSetMuted={onSetMuted}
       onRequestNext={onRequestNext}
       // Mobile only — ImmersiveSlide renders this subtree under `md:hidden`.
       // The rail takes over on desktop, where the comments panel already

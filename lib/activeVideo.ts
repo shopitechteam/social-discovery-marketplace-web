@@ -53,11 +53,31 @@ function elect() {
 }
 
 /**
+ * Pause every registered video once, right now, without taking a suspension.
+ *
+ * This is what the handler that opens a takeover surface wants: the outgoing
+ * element paused synchronously, before the route changes, which measurably
+ * improves the odds iOS honours the incoming element's play(). It deliberately
+ * does NOT hold the lock — the surface being opened takes that in its own
+ * mount effect and releases it on unmount.
+ *
+ * Using `suspendVideoElection` here instead was a leak. The card suspended on
+ * click and the viewer suspended again on mount, so the count reached two,
+ * while only the viewer's unmount ever resumed — leaving the count stuck at
+ * one for the rest of the session. Every card was then told it was inactive
+ * forever, which killed feed autoplay and the per-card mute button along with
+ * it once you came back from a video.
+ */
+export function pauseAllVideos() {
+  for (const [, entry] of registry) entry.listener(false);
+}
+
+/**
  * Pause every registered video until the matching resume.
  *
- * Call this synchronously in the handler that opens the takeover surface, not
- * in that surface's mount effect: having the outgoing element already paused
- * measurably improves the odds iOS honours the incoming element's play().
+ * Every call must be paired with exactly one `resumeVideoElection`, so this
+ * belongs in a mount effect's setup/cleanup pair and nowhere else. To pause
+ * playback without owning a lock, use `pauseAllVideos`.
  */
 export function suspendVideoElection() {
   suspendCount += 1;
