@@ -37,6 +37,7 @@ import {
 } from "@/types/__generated__/graphql";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { useAuthGuard } from "../hooks/useAuthGuard";
+import { useAppBack } from "@/lib/useAppBack";
 import { useSellerPhone } from "../hooks/useSellerPhone";
 import { formatStoredPhone } from "@/lib/phone";
 import { useHlsVideo } from "@/lib/useHlsVideo";
@@ -128,7 +129,7 @@ function MobileImageCarousel({
     <div
       ref={trackRef}
       onScroll={handleScroll}
-      className="flex h-full overflow-x-auto snap-x snap-mandatory scrollbar-hide"
+      className="flex h-full overflow-x-auto snap-x snap-mandatory no-scroll-indicator"
       style={{ scrollSnapType: "x mandatory" }}
     >
       {media.map((item, i) => {
@@ -482,7 +483,10 @@ export function ContentDetail({
   initialPost,
 }: Props) {
   const router = useRouter();
-  const goBack = onRequestClose ?? (() => router.back());
+  // A listing link shared into WhatsApp opens with no app history behind it,
+  // so a plain back() leaves the user stuck on the page. Land on the feed.
+  const backOrFeed = useAppBack(`/${lang}/feed`);
+  const goBack = onRequestClose ?? backOrFeed;
   const { requireAuth } = useAuthGuard(lang);
   const isSheet = desktopMode === "sheet";
   // Stored in state (not a ref) so the Popover portal target is stable across

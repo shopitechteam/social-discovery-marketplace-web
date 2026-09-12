@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useAppBack } from "@/lib/useAppBack";
 import {
   ArrowLeft,
   Bookmark,
@@ -357,7 +357,9 @@ interface Props {
 }
 
 export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
-  const router = useRouter();
+  // A profile link opened from outside has no app history to return to, so
+  // back would be a dead button. Send those to the feed.
+  const goBack = useAppBack(`/${lang}/feed`);
 
   const firstName = user.profile?.firstName ?? "";
   const lastName = user.profile?.lastName ?? "";
@@ -479,7 +481,7 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
           {/* Back button */}
           <div>
             <button
-              onClick={() => router.back()}
+              onClick={goBack}
               className="mb-4 inline-flex items-center gap-1.5 font-semibold transition-opacity active:opacity-60 lg:mb-6"
               style={{
                 fontSize: "var(--text-sm)",

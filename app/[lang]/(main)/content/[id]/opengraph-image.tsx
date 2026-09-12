@@ -3,13 +3,13 @@ import { query } from "@/lib/apollo/ApolloClient";
 import { GetContentDocument } from "@/types/__generated__/graphql";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { siteConfig } from "@/config/site";
-import { firstOgDecodableImage } from "@/lib/og-image";
+import { ogImageDataUri, ogJpegResponse } from "@/lib/og-image";
 
 // Node runtime so we can reuse the Apollo `query` helper to fetch the listing.
 export const runtime = "nodejs";
 export const revalidate = 3600;
 export const size = { width: 1200, height: 630 };
-export const contentType = "image/png";
+export const contentType = "image/jpeg";
 
 type Post = ContentCardFieldsFragment;
 
@@ -25,20 +25,36 @@ async function fetchPost(id: string): Promise<Post | null> {
   }
 }
 
-function primaryImage(post: Post): string | null {
+/** The panel the photo fills on the card, and the size we decode it to. */
+const IMAGE_BOX = { width: 560, height: 630 };
+
+/**
+ * The listing's lead photo as a data URI satori can draw.
+ *
+ * Every R2 variant is .webp and satori has no webp decoder, so the candidates
+ * are converted rather than filtered — filtering left nothing and every card
+ * rendered the placeholder. Mux video thumbnails come back as .jpg and pass
+ * through the same path unharmed.
+ */
+async function primaryImage(post: Post): Promise<string | null> {
   const m = [...(post.media ?? [])].sort(
     (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
   )[0];
   if (!m) return null;
-  // Walk every candidate rather than taking the best-quality one blindly: the
-  // "large" R2 variant is often .webp, which satori cannot decode.
-  return firstOgDecodableImage([
-    m.r2Variants?.find((v) => v.variant === "large")?.url,
-    ...(m.r2Variants ?? []).map((v) => v.url),
-    m.imageUrl,
-    m.muxMeta?.thumbnailUrl,
-    m.thumbnailUrl,
-  ]);
+
+  return ogImageDataUri(
+    [
+      // Large first: it is the closest to the card panel, so the resize is a
+      // downscale rather than an upscale of a thumbnail.
+      m.r2Variants?.find((v) => v.variant === "large")?.url,
+      ...(m.r2Variants ?? []).map((v) => v.url),
+      m.imageUrl,
+      // Videos: Mux renders a still for the playback ID.
+      m.muxMeta?.thumbnailUrl,
+      m.thumbnailUrl,
+    ],
+    IMAGE_BOX,
+  );
 }
 
 function priceLabel(post: Post): string | null {
@@ -81,12 +97,12 @@ export default async function ContentOgImage({ params }: ImageParams) {
   const { id } = await params;
   const post = await fetchPost(id);
 
-  const image = post ? primaryImage(post) : null;
+  const image = post ? await primaryImage(post) : null;
   const title = post?.title ?? "Shopi";
   const price = post ? priceLabel(post) : null;
   const loc = post ? locationName(post) : null;
 
-  return new ImageResponse(
+  const rendered = new ImageResponse(
     (
       <div
         style={{
@@ -202,4 +218,8 @@ export default async function ContentOgImage({ params }: ImageParams) {
     ),
     { ...size },
   );
+
+  // Photo-heavy card: PNG measured 791 KB, which is past what WhatsApp will
+  // reliably fetch for a link preview. See ogJpegResponse.
+  return ogJpegResponse(rendered);
 }

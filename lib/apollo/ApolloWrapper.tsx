@@ -204,6 +204,15 @@ function createClient() {
               keyArgs: [],
               merge: mergeFeedPage,
             },
+            videoFeed: {
+              // seedId MUST key. Two seeds are two differently ordered lists
+              // with different item 0s. Sharing one entry would send the
+              // second open down mergeFeedPage's "first page on a populated
+              // cache" branch, which preserves the FIRST seed's order — the
+              // viewer would open on the wrong video.
+              keyArgs: ["seedId", "latitude", "longitude"],
+              merge: mergeFeedPage,
+            },
             localFeed: {
               // Each location/radius is its own list; cursor args don't key it.
               keyArgs: ["latitude", "longitude", "radiusKm", "county", "subregion"],

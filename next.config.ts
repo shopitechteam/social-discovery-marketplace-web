@@ -155,12 +155,21 @@ const nextConfig: NextConfig = {
   /* config options here */
   devIndicators: false,
 
-  // Shopi is Tailwind-based and mobile-first. Inlining the ~23 KB compressed
-  // stylesheet removes two render-blocking request round trips for first-time
-  // visitors, directly addressing the Lighthouse CSS opportunity.
-  experimental: {
-    inlineCss: true,
-  },
+  // `experimental.inlineCss` is deliberately OFF.
+  //
+  // Inlining saved two render-blocking round trips, but Next emits the inline
+  // <style> before the metadata, and the uncompressed stylesheet is ~180 KB.
+  // That pushed og:title/og:image to byte ~191,000 of a 193 KB <head>. Link
+  // scrapers only parse a prefix of the document — WhatsApp gives up within
+  // the first few tens of KB — so every shared Shopi URL came back with no
+  // title, no description and no image, even though the tags were present and
+  // the page returned 200. WhatsApp is the main sharing channel in this market,
+  // so a working preview on every shared listing is worth far more than the
+  // CSS round trips. The stylesheet goes back to a <link>, and the head drops
+  // to a few KB with the meta tags near the top.
+  //
+  // If this is ever re-enabled, check the byte offset of og:title in the
+  // response HTML before shipping.
 
   // Send hardening headers on every route. Next prefixes each source with the
   // configured locales automatically, and "/(.*)" covers everything else.
