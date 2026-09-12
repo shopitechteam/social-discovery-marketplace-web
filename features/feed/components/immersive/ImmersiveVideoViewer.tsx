@@ -10,7 +10,13 @@ import {
 } from "react";
 import dynamic from "next/dynamic";
 import { createPortal } from "react-dom";
-import { ChevronDown, ChevronLeft, ChevronUp } from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronUp,
+  MessageCircle,
+} from "lucide-react";
 import { useApolloClient } from "@apollo/client/react";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { resumeVideoElection, suspendVideoElection } from "@/lib/activeVideo";
@@ -60,8 +66,7 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
   // slug. Treating the prop as live would re-key the query on every swipe.
   const [seed] = useState(() => seedProp);
 
-  const { items, loading, loadingMore, hasMore, loadMore } =
-    useVideoFeed(seed);
+  const { items, loading, loadingMore, hasMore, loadMore } = useVideoFeed(seed);
   const [commentsOpen, setCommentsOpen] = useState(false);
   // ssrDefault:false keeps the first paint mobile-first, matching how the
   // feed page decides its own layout.
@@ -264,6 +269,11 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
       style={
         {
           "--immersive-top": "max(env(safe-area-inset-top, 0px), 16px)",
+          // Bottom counterpart, published for the same reason: the progress
+          // bar lives in the slide and the overlay's padding is set here, and
+          // both have to clear the iPhone home indicator by the same amount or
+          // the scrubber ends up under it.
+          "--immersive-bottom": "max(env(safe-area-inset-bottom, 0px), 16px)",
           // Rail width, shared with the slide's grid so the paging chevrons
           // land over the video column instead of on top of the rail.
           "--immersive-rail": "400px",
@@ -420,6 +430,7 @@ function SlideContainer({
   onOpenComments: () => void;
   onRequestNext: () => void;
 }) {
+  const router = useRouter();
   const { requireAuth } = useAuthGuard(lang);
   const {
     liked,
@@ -430,6 +441,15 @@ function SlideContainer({
     handleShare,
     fireView,
   } = useInteractions(post, { requireAuth });
+
+  // Straight to the conversation for this listing. `source=content` tells the
+  // messaging screen to create-or-reuse the thread in place, so it never
+  // flashes the inbox list — the same contract the feed card and the product
+  // page both use.
+  const openContact = useCallback(() => {
+    if (!requireAuth({ contentId: post.id })) return;
+    router.push(`/${lang}/notifications/${post.id}?source=content`);
+  }, [requireAuth, router, lang, post.id]);
 
   const { following, toggle: handleFollow } = useFollow({
     userId: post.creator?.id ?? post.creatorId,
@@ -474,21 +494,47 @@ function SlideContainer({
       state={state}
       prefetch={prefetch}
       onRequestNext={onRequestNext}
+      // Mobile only — ImmersiveSlide renders this subtree under `md:hidden`.
+      // The rail takes over on desktop, where the comments panel already
+      // carries the composer and a full-width button would be wrong.
       overlay={
-        <div className="flex h-full w-full items-end justify-between gap-3 p-4 pb-16">
-          {/* No pointer-events-auto here: ImmersiveMeta opts its own
-              interactive children in, so the rest of the frame stays tappable
-              for play/pause. */}
-          <div className="min-w-0 flex-1">
-            <ImmersiveMeta
-              post={post}
-              lang={lang}
-              variant="overlay"
-              following={following}
-              onFollow={handleFollow}
-            />
-          </div>
-          {actions}
+        <div className="flex h-full w-full flex-col justify-end gap-3 p-4 pb-[calc(var(--immersive-bottom)+2.25rem)]">
+          {/* Action rail sits above the text block rather than beside it, so
+              the meta below can use the full width for the price and the
+              action button. No pointer-events-auto on the wrappers:
+              ImmersiveMeta and ImmersiveActions opt their own interactive
+              children in, leaving the rest of the frame tappable for
+              play/pause. */}
+          <div className="flex justify-end">{actions}</div>
+
+          <ImmersiveMeta
+            post={post}
+            lang={lang}
+            variant="overlay"
+            following={following}
+            onFollow={handleFollow}
+            cta={
+              // Hidden on your own listing — there is nobody to contact.
+              post.isMyContent ? null : (
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    openContact();
+                  }}
+                  className="pointer-events-auto mt-0.5 mb-3 flex w-full items-center justify-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-[0.8rem] font-bold text-white transition-transform active:scale-[0.98]"
+                >
+                  <MessageCircle className="h-4 w-4" strokeWidth={2.2} />
+                  {/* Deliberately not "Chat to Buy". Half this marketplace is
+                      not a purchase in that sense — a shamba, a plot, a rental,
+                      a service, a quote — and a buy-now label misreads all of
+                      them. "Contact seller" is the one phrase that fits every
+                      listing type, and it matches the feed card's button. */}
+                  Contact seller
+                </button>
+              )
+            }
+          />
         </div>
       }
       // Gated on a real media query, not `hidden md:block`. CSS still mounts
