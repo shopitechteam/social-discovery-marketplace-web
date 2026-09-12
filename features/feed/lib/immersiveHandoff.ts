@@ -37,6 +37,23 @@ export function setImmersiveHandoff(
 }
 
 /**
+ * Was this arrival a tap from the feed? Does NOT consume the baton.
+ *
+ * The viewer needs this during its very first render, before any slide exists
+ * to claim the baton by id, because it decides whether sound starts on. That
+ * has to be settled before the first paint: a <video> that mounts muted and is
+ * unmuted afterwards is at the mercy of the autoplay policy, and the first
+ * slide would keep coming up silent while later ones played with sound.
+ *
+ * The id is not checked here. Any fresh baton means the user got here by
+ * tapping something, which is the only fact this answers.
+ */
+export function hasImmersiveHandoff(): boolean {
+  if (!pending) return false;
+  return Date.now() - pending.at <= MAX_AGE_MS;
+}
+
+/**
  * Reads and clears the baton, but only for the video it was set for. A
  * mismatched id means the user arrived some other way (deep link, forward
  * navigation), so there is nothing to hand off.

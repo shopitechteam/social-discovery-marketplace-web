@@ -51,11 +51,11 @@ export function ImmersiveActions({
   return (
     <div
       className={cn(
-        "pointer-events-auto flex items-center",
+        "pointer-events-auto flex mb-4 items-center",
         column ? "flex-col gap-4" : "flex-row gap-6",
       )}
     >
-      <ActionButton
+      {/* <ActionButton
         label={liked ? "Unlike" : "Like"}
         count={likeCount}
         onClick={onLike}
@@ -66,7 +66,7 @@ export function ImmersiveActions({
           className={cn(icon, liked && "fill-red-500 text-red-500")}
           strokeWidth={liked ? 0 : 2}
         />
-      </ActionButton>
+      </ActionButton> */}
 
       <ActionButton
         label="Comments"
@@ -131,10 +131,7 @@ function ActionButton({
       {children}
       {count !== undefined && count > 0 && (
         <span
-          className={cn(
-            "font-semibold",
-            column ? "text-[0.7rem]" : "text-xs",
-          )}
+          className={cn("font-semibold", column ? "text-[0.7rem]" : "text-xs")}
         >
           {fmtCompact(count)}
         </span>
