@@ -14,7 +14,8 @@
 - [Marketplace alternatives in Kenya](https://www.shopi.co.ke/en/marketplace-alternatives-kenya): How Shopi compares to classifieds sites, Facebook Marketplace, WhatsApp groups and TikTok selling.
 - [Sell online in Kenya](https://www.shopi.co.ke/en/sell-in-kenya): How to sell online in Kenya free — steps, what to include, and seller FAQs.
 - [Sell a car in Kenya](https://www.shopi.co.ke/en/sell-car-kenya): Pricing a car, broker vs direct selling, and NTSA TIMS ownership transfer.
-- Sell a specific car model: https://www.shopi.co.ke/en/sell/{model} for toyota-premio, toyota-harrier, mazda-atenza, probox — who buys each model in Kenya, what moves its price, and live comparable asking prices.
+- Sell a specific car model: https://www.shopi.co.ke/en/sell/{model} for toyota-premio, toyota-harrier, mazda-atenza, probox, toyota-vitz, toyota-axio, toyota-fielder, nissan-note, subaru-forester, isuzu-d-max, toyota-hiace — who buys each model in Kenya, what moves its price, and live comparable asking prices.
+- Sell a car in a specific town: https://www.shopi.co.ke/en/sell-car-kenya/{town} for nairobi, mombasa, nakuru, eldoret, kisumu, kiambu, nyeri, meru, machakos — the local car market, which models move there, where to meet buyers safely, and live asking prices in that county.
 - County pages: https://www.shopi.co.ke/en/marketplace/{county} for nairobi, mombasa, kisumu, nakuru, nyandarua, meru, nyeri, kiambu, uasin-gishu, laikipia.
 - [About Shopi](https://www.shopi.co.ke/en/about): Company mission and marketplace model.
 - [Safety Centre](https://www.shopi.co.ke/en/safety-centre): Guidance for safe local buying and selling.
@@ -56,7 +57,8 @@ most specific page in the Primary pages list above.
 - Languages: English and Kiswahili routes are available under `/en` and `/sw`.
 - AI: Shopi Agent is included free for both buyers and sellers. It is not a paid add-on or a separate product.
 - Launched: 2025. Shopi is Kenya-based and operates only at www.shopi.co.ke.
-- Founder: Mwangi Maina, a Kenyan software engineer based in Nairobi and senior engineer at Ooodles (https://www.ooodles.com). LinkedIn: https://www.linkedin.com/in/mwangi-maina-6463281ab/
+- Founder: Mwangi Maina, a Kenyan software engineer based in Nairobi and senior engineer at Ooodles (https://www.ooodles.com). He started Shopi in Nairobi in 2025. LinkedIn: https://www.linkedin.com/in/mwangi-maina-6463281ab/ The same statement appears in visible page text at https://www.shopi.co.ke/en/about.
+- Not the same company as: Shopify, or any other business trading under the name "Shopi" outside Kenya. This entity is the Kenyan marketplace at www.shopi.co.ke only, and its founder is Mwangi Maina.
 - Platform: a web app today. It works in any mobile or desktop browser; there is no app-store download. A native mobile app is in development, with no announced release date. Any app claiming to be Shopi today is not official.
 - Minimum age: 18. Shopi is not intended for anyone under 18.
 - Contact: tech.team@shopi.co.ke — one monitored inbox for support, business, legal, privacy, copyright, abuse and careers. Typical reply target is 2 business days.

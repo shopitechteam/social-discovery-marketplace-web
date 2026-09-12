@@ -13,6 +13,8 @@ import {
   faqSchema,
   breadcrumbSchema,
   agentSchema,
+  founderSchema,
+  organizationSchema,
   marketplaceWebPageSchema,
   jsonLd,
 } from "@/lib/structured-data";
@@ -76,6 +78,12 @@ export default async function FaqPage({ params }: Props) {
           __html: jsonLd(
             faqSchema(faq),
             agentSchema,
+            // The FAQ below now visibly answers "who founded Shopi?" and
+            // separates this company from the others sharing the name, so both
+            // entity nodes belong here — this is the page most likely to be
+            // retrieved for either question.
+            organizationSchema,
+            founderSchema,
             marketplaceWebPageSchema({
               url: `${siteConfig.url}/${lang}/faq`,
               name: copy.title,

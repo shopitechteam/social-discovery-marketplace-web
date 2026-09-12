@@ -1382,12 +1382,18 @@ export function DiscoverPage({ lang }: { lang: string }) {
 
           {/* Subcategory tiles — the second level of the taxonomy, and the only
               way to narrow inside a category. Renders itself away when the
-              category has too few subcategories to be worth a row. */}
-          <SubcategoryRow
-            subcategories={subcategories}
-            selected={subcategory}
-            onSelect={setSelectedSubcategory}
-          />
+              category has too few subcategories to be worth a row.
+
+              Hidden entirely on "All": types only mean something underneath a
+              chosen category, and offering them across the whole catalogue
+              mixes unrelated levels of the taxonomy into one row. */}
+          {selectedCategory && (
+            <SubcategoryRow
+              subcategories={subcategories}
+              selected={subcategory}
+              onSelect={setSelectedSubcategory}
+            />
+          )}
 
           {error && items.length === 0 ? (
             <div className="px-4 py-12 lg:px-0">

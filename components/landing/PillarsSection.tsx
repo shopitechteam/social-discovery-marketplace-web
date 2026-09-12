@@ -41,18 +41,18 @@ export function PillarsSection({ dict }: { dict: Dictionary }) {
   return (
     <section id="features" className="px-(--landing-page-x) pb-18 md:pb-24">
       <div className="mx-auto max-w-(--landing-page-max)">
+        {/* Header copy lives in the dictionary — it used to be hardcoded
+            English, which left Kiswahili visitors reading an untranslated
+            section in the middle of a translated page. */}
         <div className="mb-8 max-w-3xl">
           <p className="mb-3 text-xs font-bold uppercase tracking-normal text-primary md:text-sm">
-            Why Shopi
+            {t.eyebrow}
           </p>
           <h2 className="font-display text-[clamp(1.65rem,2.8vw,2.5rem)] font-bold leading-tight tracking-normal text-foreground">
-            More than a marketplace. A smarter way to buy and sell locally.
+            {t.headline}
           </h2>
           <p className="mt-4 max-w-2xl text-base leading-normal text-muted">
-            Discover nearby products in a personalized social feed, chat
-            directly with buyers and sellers, or let Shopi Agent help you create
-            listings and find exactly what you&apos;re looking for. No
-            commissions. No middleman. Just local commerce made effortless.
+            {t.intro}
           </p>
         </div>
 

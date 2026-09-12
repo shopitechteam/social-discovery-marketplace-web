@@ -54,14 +54,13 @@ export function MarketplaceCategoriesSection({ lang }: { lang: string }) {
             Start selling
           </p>
           <h2 className="font-display text-[clamp(1.65rem,2.8vw,2.5rem)] font-bold leading-tight tracking-normal text-foreground">
-            Selling should be as easy as having a conversation.
+            Whatever you have, someone nearby is looking for it.
           </h2>
           <p className="mt-4 max-w-2xl text-base leading-normal text-muted">
-            Create listings the way that works for you. Post manually or chat
-            with Shopi Agent, which can turn a photo into a complete listing
-            with a title, description, category and product details. It&apos;s
-            free to post, there&apos;s no commission on your sales, and you deal
-            directly with buyers from first message to final payment.
+            The phone you upgraded from. The plot you inherited. The car you
+            are done with. The skincare you sell from home. Post it manually or
+            let Shopi Agent turn a photo into a complete listing, then deal with
+            buyers yourself from the first message to the final shilling.
           </p>
         </div>
 
@@ -107,7 +106,7 @@ export function MarketplaceCategoriesSection({ lang }: { lang: string }) {
             href={`/${lang}/upload`}
             className="bg-primary px-7 py-3.5 text-white hover:opacity-90"
           >
-            Post your first item
+            Post your first item — free
           </Pill>
           <Pill href={`/${lang}/sell-in-kenya`} variant="outline">
             How selling works

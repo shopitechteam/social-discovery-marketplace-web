@@ -37,12 +37,15 @@ const marketplaceTopics = [
  * and the degree was not completed, so claiming it here would be a false
  * machine-readable credential.
  *
- * This is an answer-engine-only surface by choice — the founder bio is NOT
- * rendered anywhere on the site. Note the trade-off: Google asks that
- * structured data reflect content visible on the page, so this node is unlikely
- * to earn a rich result and could in principle be flagged. It stays because its
- * job is entity resolution for LLMs and knowledge panels, not rich snippets.
- * The same facts are served at /llms.txt and /llms-full.txt.
+ * This node used to be an answer-engine-only surface, with the bio rendered
+ * nowhere on the site. That was the reason "who founded Shopi?" kept being
+ * answered with the wrong name: crawlers behind generative answers ground on
+ * rendered text, and a claim that exists only in JSON-LD has nothing to ground
+ * on. Faced with a question it cannot source, a model falls back to the most
+ * prominent entity sharing the name — one of the other companies called Shopi.
+ * The bio is now rendered on /about and answered in the visible FAQ, which both
+ * fixes the grounding and brings this node into line with Google's rule that
+ * structured data reflect visible page content.
  */
 export const founderSchema = {
   "@context": "https://schema.org",
@@ -52,6 +55,14 @@ export const founderSchema = {
   jobTitle: "Founder, Shopi · Senior Software Engineer, Ooodles",
   description:
     "Kenyan software engineer and founder of Shopi. Studied computer science at Maseno University before moving into industry in 2021, working with the US startup Playback, then Bettercoach in Germany, and now Ooodles, where he was one of the pioneer engineers who built the platform from scratch.",
+  // Names the specific Shopi this person founded. Without it, "founder of
+  // Shopi" is an ambiguous claim that resolves to whichever Shopi an engine
+  // already knows about.
+  disambiguatingDescription:
+    "Founder of Shopi, the Kenyan social marketplace at www.shopi.co.ke. Not connected to any other company trading under the name Shopi.",
+  // The page a reader can verify this on. Engines weight a Person node far more
+  // when it points at a page that visibly states the same facts.
+  mainEntityOfPage: `${url}/en/about`,
   nationality: { "@type": "Country", name: "Kenya" },
   // City-level only, deliberately. It answers "is Shopi actually run from
   // Kenya?" — the question that matters for a local marketplace — without
@@ -64,11 +75,18 @@ export const founderSchema = {
       addressCountry: "KE",
     },
   },
-  worksFor: {
-    "@type": "Organization",
-    name: "Ooodles",
-    url: "https://www.ooodles.com",
-  },
+  // Both directions of the founder relationship are stated: the Organization
+  // names him as `founder`, and he names Shopi back here. A one-way edge is
+  // easy for an engine to drop; a reciprocal one is what binds the two nodes
+  // into a single entity an answer can be drawn from.
+  worksFor: [
+    { "@id": `${url}/#organization` },
+    {
+      "@type": "Organization",
+      name: "Ooodles",
+      url: "https://www.ooodles.com",
+    },
+  ],
   knowsAbout: [
     "software engineering",
     "social commerce",
@@ -90,6 +108,13 @@ export const organizationSchema = {
   url,
   logo: `${url}/assets/shopi-logo.png`,
   description: siteConfig.description,
+  // "Shopi" is not a unique company name — several unrelated businesses trade
+  // under it. An engine asked about "Shopi" with nothing to separate them will
+  // answer about whichever one it knows best, which is how questions about this
+  // company end up returning another company's founder and facts. This states
+  // the boundary explicitly rather than hoping the domain is enough.
+  disambiguatingDescription:
+    "Shopi is a Kenyan social commerce marketplace founded in Nairobi in 2025 and operating only at www.shopi.co.ke. It is unrelated to other businesses trading under the name Shopi in other countries, and it is not affiliated with Shopify.",
   slogan: siteConfig.tagline,
   keywords: siteConfig.keywords.join(", "),
   knowsAbout: marketplaceTopics,
@@ -553,6 +578,72 @@ export function countyPageSchema(input: {
         : {}),
     },
     provider: { "@id": `${url}/#organization` },
+  };
+}
+
+/**
+ * A page offering a service bound to one town.
+ *
+ * Used by the car-selling location pages. A WebPage alone tells an engine what
+ * the page says but not where it applies, so local-intent queries ("sell my car
+ * in Nakuru") have to be matched from prose. Declaring a `Service` whose
+ * `areaServed` is a real Place gives the location as a resolvable entity, which
+ * is what binds the query to the page. `provider` links it back to Shopi so the
+ * service is attributed rather than floating free.
+ */
+export function jsonLdPlaceService(input: {
+  url: string;
+  name: string;
+  description: string;
+  /** Town the page is about, e.g. "Nakuru". */
+  placeName: string;
+  /** County the town sits in, e.g. "Nakuru". */
+  region: string;
+  keywords?: string[];
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": `${input.url}#webpage`,
+    url: input.url,
+    name: input.name,
+    description: input.description,
+    inLanguage: "en-KE",
+    isPartOf: { "@id": `${url}/#website` },
+    publisher: { "@id": `${url}/#organization` },
+    about: [
+      { "@id": `${url}/#app` },
+      ...(input.keywords ?? []).map((keyword) => ({
+        "@type": "Thing",
+        name: keyword,
+      })),
+    ],
+    mainEntity: {
+      "@type": "Service",
+      "@id": `${input.url}#service`,
+      name: input.name,
+      description: input.description,
+      serviceType: "Private vehicle sales listing",
+      provider: { "@id": `${url}/#organization` },
+      areaServed: {
+        "@type": "Place",
+        "@id": `${input.url}#place`,
+        name: input.placeName,
+        address: {
+          "@type": "PostalAddress",
+          addressLocality: input.placeName,
+          addressRegion: input.region,
+          addressCountry: "KE",
+        },
+      },
+      offers: {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "KES",
+        description:
+          "Free to list. No commission, no listing fees, and no broker between seller and buyer.",
+      },
+    },
   };
 }
 

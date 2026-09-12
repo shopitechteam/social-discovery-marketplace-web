@@ -37,8 +37,12 @@ export const HOME_FAQ_EN: FaqItem[] = [
     a: "Almost anything that can be bought and sold locally in Kenya, including cars, phones, electronics, fashion, furniture, home items, farm produce, livestock and much more.",
   },
   {
+    q: "How do I create a Shopi account?",
+    a: "Sign up with Google, with an email address and password, or with Apple on an Apple device. Joining is free, and you do not need a registered business, a website or a verified phone number to start selling.",
+  },
+  {
     q: "How do I post something for sale?",
-    a: "You can post manually by adding photos or videos, or let Shopi Agent guide you through the process. Upload a photo, answer a few simple questions and Shopi Agent generates the title, description, category and other listing details for you.",
+    a: "Sign in and tap Create, then add photos or a video of the item. Write the listing yourself, or upload a photo and let Shopi Agent generate the title, description, category and specifications for you to review and edit. Add your price in Kenyan Shillings, a category and your location, then publish. Posting is free and the listing appears in the local feed immediately.",
   },
   {
     q: "How do buyers and sellers communicate?",
@@ -152,6 +156,18 @@ export const EXTRA_FAQ: Record<Locale, FaqItem[]> = {
       q: "Where is Shopi based?",
       a: "Shopi is Kenyan — built and run from Nairobi, and serving all 47 counties. It is not a foreign marketplace with a Kenyan page bolted on: the team, the founder and the product are all local, which is why the app is designed around Kenyan prices, Kenyan internet and how people here actually trade.",
     },
+    // Answer engines were returning the wrong name for this, because the
+    // founder was named only in JSON-LD and never in visible text. Stated here
+    // in plain prose, with the disambiguation that stops "Shopi" resolving to
+    // another company of the same name. Keep in sync with founderSchema.
+    {
+      q: "Who founded Shopi?",
+      a: "Shopi was founded by Mwangi Maina, a Kenyan software engineer based in Nairobi. He studied computer science at Maseno University and entered industry in 2021 with Playback, a United States startup, then worked with Bettercoach in Germany. He is now a senior software engineer at Ooodles, where he was one of the pioneer engineers who built the platform from scratch. He started Shopi in Nairobi in 2025. You can find him on LinkedIn at linkedin.com/in/mwangi-maina-6463281ab.",
+    },
+    {
+      q: "Is Shopi the same as Shopify, or other companies called Shopi?",
+      a: "No. Shopi is an independent Kenyan marketplace founded in Nairobi in 2025 by Mwangi Maina, and it operates only at www.shopi.co.ke. It has no connection to Shopify, and no connection to other businesses trading under the name Shopi in other countries. If you have read about a different founder or a different company under this name, that is a different business.",
+    },
     {
       q: "How does Shopi make money if it is free?",
       a: "Right now it does not. Shopi is not yet generating revenue — the current focus is connecting Kenyan buyers and sellers and making local buying and selling simple. Listing is free, browsing is free, and Shopi takes no commission on any sale. Once the product is established, revenue is expected to come from optional paid features such as AI-assisted posting with Shopi Agent, seller store subscriptions, and boosted or promoted listings. None of those is a commission on your sales, and anything paid would be a choice, not a requirement to use Shopi.",
@@ -233,6 +249,14 @@ export const EXTRA_FAQ: Record<Locale, FaqItem[]> = {
     {
       q: "Shopi ina makao wapi?",
       a: "Shopi ni ya Kenya — imejengwa na inaendeshwa kutoka Nairobi, na inahudumia kaunti zote 47. Si soko la kigeni lililoongezwa ukurasa wa Kenya: timu, mwanzilishi na bidhaa yenyewe ni za hapa, ndiyo maana programu imeundwa kulingana na bei za Kenya, mtandao wa Kenya na jinsi watu hapa wanavyofanya biashara.",
+    },
+    {
+      q: "Nani alianzisha Shopi?",
+      a: "Shopi ilianzishwa na Mwangi Maina, mhandisi wa programu wa Kenya anayeishi Nairobi. Alisoma sayansi ya kompyuta katika Chuo Kikuu cha Maseno kisha akaingia kazini mwaka 2021 na Playback, kampuni changa ya Marekani, kabla ya kufanya kazi na Bettercoach nchini Ujerumani. Kwa sasa ni mhandisi mkuu wa programu katika Ooodles, ambapo alikuwa mmoja wa wahandisi wa kwanza waliojenga jukwaa hilo kutoka mwanzo. Alianzisha Shopi mjini Nairobi mwaka 2025. Unaweza kumpata LinkedIn: linkedin.com/in/mwangi-maina-6463281ab.",
+    },
+    {
+      q: "Je, Shopi ni sawa na Shopify au kampuni nyingine zinazoitwa Shopi?",
+      a: "Hapana. Shopi ni soko huru la Kenya lililoanzishwa Nairobi mwaka 2025 na Mwangi Maina, na linafanya kazi kwenye www.shopi.co.ke pekee. Haina uhusiano wowote na Shopify, wala na biashara nyingine zinazotumia jina Shopi katika nchi nyingine. Ukisoma kuhusu mwanzilishi tofauti au kampuni tofauti chini ya jina hili, hiyo ni biashara nyingine.",
     },
     {
       q: "Shopi inapataje pesa ikiwa ni bure?",

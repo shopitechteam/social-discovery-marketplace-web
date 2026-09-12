@@ -34,7 +34,9 @@ function base64ToUint8Array(value: string): Uint8Array {
 }
 
 async function getRegistration(): Promise<ServiceWorkerRegistration> {
-  return navigator.serviceWorker.register("/shopi-push-sw.js");
+  return navigator.serviceWorker.register("/shopi-push-sw.js", {
+    updateViaCache: "none",
+  });
 }
 
 function uint8ToBase64Url(buffer: ArrayBuffer): string {
@@ -69,7 +71,11 @@ export function usePushNotifications(lang: string) {
   const autoSyncRef = useRef(false);
 
   useEffect(() => {
-    if (browserSupportsPush()) setPermission(Notification.permission);
+    if (!browserSupportsPush()) return;
+    const handle = window.setTimeout(() => {
+      setPermission(Notification.permission);
+    }, 0);
+    return () => window.clearTimeout(handle);
   }, []);
 
   const { data, refetch } = useQuery(MY_WEB_PUSH_STATUS, {
