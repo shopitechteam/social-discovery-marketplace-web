@@ -1771,11 +1771,22 @@ export function ContentDetail({
                   a six-figure laptop is not helped by being told nobody else has
                   spoken up. Zeros are dropped rather than displayed, and the
                   comment count is left to the Comments heading further down,
-                  which already carries it. */}
-              {(post.stats.views > 0 || resolvedSaveCount > 0) && (
+                  which already carries it.
+
+                  Views are shown to the seller only. On a young marketplace the
+                  true number is usually small, and "3 views" tells a buyer the
+                  listing is being ignored — a signal that discourages the
+                  contact we want, about a figure that says nothing about the
+                  product. The seller still needs it, so it stays on their own
+                  listings and in their analytics; it is hidden from everyone
+                  else, not removed. */}
+              {((isOwnPost && post.stats.views > 0) ||
+                resolvedSaveCount > 0) && (
                 <p className="mt-3 text-xs font-medium text-muted-foreground">
                   {[
-                    post.stats.views > 0 ? `${fmt(post.stats.views)} views` : null,
+                    isOwnPost && post.stats.views > 0
+                      ? `${fmt(post.stats.views)} views`
+                      : null,
                     resolvedSaveCount > 0
                       ? `${fmt(resolvedSaveCount)} saved`
                       : null,

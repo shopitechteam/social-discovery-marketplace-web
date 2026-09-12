@@ -325,7 +325,12 @@ function PostTile({
           </p>
         )}
 
-        {/* Performance — views lead (reach), saves signal buying intent */}
+        {/* Saves signal buying intent, so they stay. Views do not appear here:
+            this is somebody else's profile, seen by a shopper, and on a young
+            marketplace the honest number is usually low enough to read as "no
+            one is interested" — which discourages the contact we want and says
+            nothing about the product. The seller still sees views on their own
+            profile and in analytics; the figure is hidden here, not removed. */}
         <div
           className="mt-1.5 flex items-center gap-3"
           style={{
@@ -333,9 +338,6 @@ function PostTile({
             color: "rgb(var(--color-text-muted))",
           }}
         >
-          <span className="flex items-center gap-1">
-            <Eye size={12} /> {formatCompact(post.stats.views)}
-          </span>
           <span className="flex items-center gap-1">
             <Bookmark size={12} /> {formatCompact(post.stats.saves)}
           </span>
@@ -667,14 +669,16 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
                 </a>
               )}
 
-              <div className="mt-5 grid grid-cols-3 gap-2 sm:gap-3 lg:mt-6 lg:max-w-3xl">
+              {/* Followers and listings only. Total views is deliberately not
+                  shown to shoppers: on a young marketplace a new seller's real
+                  figure reads as "nobody comes here", which undercuts the
+                  seller we are trying to send buyers to. The seller still sees
+                  it on their own profile and in analytics — `user.totalViews`
+                  is still fetched, just not surfaced here. */}
+              <div className="mt-5 grid grid-cols-2 gap-2 sm:gap-3 lg:mt-6 lg:max-w-2xl">
                 <StatCard
                   label="Followers"
                   value={formatCompact(followerCount)}
-                />
-                <StatCard
-                  label="Views"
-                  value={formatCompact(user.totalViews)}
                 />
                 <StatCard
                   label="Listings"
