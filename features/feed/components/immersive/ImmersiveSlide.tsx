@@ -20,9 +20,9 @@ import { hlsUrlOf, posterOf } from "../../lib/videoSource";
  * How much of a slide is materialised, by distance from the active one.
  *
  *  - `active`: hls.js attached and playing.
- *  - `near`:   the poster and chrome, but NO video source. Attaching HLS for
- *              neighbours would triple cellular usage, which is precisely what
- *              useHlsVideo's active-gating exists to prevent.
+ *  - `near`:   the poster and chrome. The slide immediately below the active
+ *              one also gets its player attached but held paused — see
+ *              `prefetch` below. Other neighbours carry no video source.
  *  - `far`:    nothing but a sized box, so the compositor can skip it.
  */
 export type SlideState = "active" | "near" | "far";
@@ -30,6 +30,21 @@ export type SlideState = "active" | "near" | "far";
 interface Props {
   post: ContentCardFieldsFragment;
   state: SlideState;
+  /**
+   * Warm this slide's stream even though it is not active yet.
+   *
+   * Set by the viewer for the next slide only, and only when the connection
+   * can afford it. Attaching the player early is what removes the manifest
+   * round trip and the first-fragment wait from a swipe: by the time the slide
+   * becomes active it already has a few seconds buffered, so playback starts
+   * on the next frame instead of after a spinner.
+   *
+   * Crucially this passes the SAME `attached` flag into useHlsVideo that the
+   * active slide uses. The hook tears its player down when that flag goes
+   * false, so flipping a prefetched slide to active must not change it —
+   * otherwise becoming active would destroy the very buffer we just filled.
+   */
+  prefetch?: boolean;
   /** Rendered over the video on mobile, beside it on desktop. */
   overlay?: React.ReactNode;
   rail?: React.ReactNode;
@@ -39,6 +54,7 @@ interface Props {
 export function ImmersiveSlide({
   post,
   state,
+  prefetch = false,
   overlay,
   rail,
   onRequestNext,
@@ -46,6 +62,10 @@ export function ImmersiveSlide({
   const active = state === "active";
   const hlsUrl = hlsUrlOf(post);
   const poster = posterOf(post);
+
+  // "Has a player" rather than "is playing". Stays true across the transition
+  // from prefetched to active, which is what preserves the warmed buffer.
+  const attached = Boolean(hlsUrl) && (active || (state === "near" && prefetch));
 
   const muted = useFeedPreferencesStore((s) => s.videoMuted);
   const setVideoMuted = useFeedPreferencesStore((s) => s.setVideoMuted);
@@ -62,9 +82,20 @@ export function ImmersiveSlide({
     [],
   );
 
+  // Read inside the handoff effect without making `muted` a dependency of it —
+  // that effect consumes a one-shot baton, so re-running it on every mute
+  // change would just read an already-empty slot.
+  const mutedRef = useRef(muted);
+  useEffect(() => {
+    mutedRef.current = muted;
+  }, [muted]);
+
   const { videoRef, buffering, playing } = useHlsVideo(
     hlsUrl,
-    active,
+    attached,
+    // A prefetched slide is attached but not active, so it lands here as
+    // paused: the player loads the manifest and fills its buffer, and never
+    // calls play(). Becoming active flips only this flag.
     ended || userPaused || !active,
     onMutedChange,
   );
@@ -92,6 +123,19 @@ export function ImmersiveSlide({
     // resume map like any other slide.
     if (!didSeekRef.current) {
       const handoff = takeImmersiveHandoff(post.id);
+
+      // A baton means the user tapped a card to get here, so the document has
+      // user activation and an unmuted play will be honoured. Opening a video
+      // full-screen is a request to watch it, not to keep browsing in silence,
+      // so sound goes on regardless of what the feed was doing — the feed is
+      // muted by default and inheriting that made every tap-through silent.
+      //
+      // This writes the shared preference rather than a local flag, so sound
+      // stays on for the rest of the session the way it does after any manual
+      // unmute. A cold load from a shared link has no baton and no activation,
+      // and stays muted.
+      if (handoff && mutedRef.current) setVideoMuted(false);
+
       if (handoff && handoff.time > 0) {
         const seek = () => {
           if (didSeekRef.current) return;
@@ -130,7 +174,7 @@ export function ImmersiveSlide({
       video.removeEventListener("loadedmetadata", restore);
       video.removeEventListener("canplay", restore);
     };
-  }, [active, post.id, videoRef]);
+  }, [active, post.id, videoRef, setVideoMuted]);
 
   // Leaving the slide clears the transient playback flags so returning to it
   // autoplays rather than resuming a pause. Deferred so we don't setState
@@ -149,11 +193,31 @@ export function ImmersiveSlide({
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
+
+    // A prefetched slide is attached only to fill a buffer. It is held muted
+    // unconditionally: the mute preference belongs to the slide being watched,
+    // and a neighbour that somehow started would be heard over it.
+    if (!active) {
+      video.muted = true;
+      video.defaultMuted = true;
+      return;
+    }
+
     video.muted = muted;
     video.defaultMuted = muted;
     setActualMuted(video.muted);
-    if (!muted && active && !ended && !userPaused) {
-      video.play().catch(() => {});
+    if (!muted && !ended && !userPaused) {
+      // An unmuted play can still be refused — on the tap-through path the
+      // activation is sticky rather than fresh, and some browsers are stricter
+      // about that. Falling back to muted playback keeps the video moving and
+      // surfaces "Tap for sound", which the user can recover from in one tap.
+      // Leaving it paused, which is what the bare catch used to do, they
+      // cannot.
+      video.play().catch(() => {
+        video.muted = true;
+        setActualMuted(true);
+        video.play().catch(() => {});
+      });
     }
   }, [muted, active, ended, userPaused, videoRef]);
 
@@ -240,14 +304,24 @@ export function ImmersiveSlide({
           />
         )}
 
-        {active && hlsUrl && (
+        {attached && (
           <video
             ref={videoRef}
             // The muted attribute must be present from the first paint or iOS
-            // can refuse autoplay outright.
-            muted={actualMuted}
+            // can refuse autoplay outright. A prefetched slide is always muted;
+            // see the mute effect.
+            muted={active ? actualMuted : true}
             playsInline
-            className="relative max-h-full max-w-full object-contain"
+            // Tells the native HLS path (iOS) to buffer rather than stop at
+            // metadata, which is the whole point on a prefetched slide.
+            preload="auto"
+            className={`relative max-h-full max-w-full object-contain ${
+              // Kept in the layout but invisible until the slide is active, so
+              // the poster underneath still shows. `display:none` would be
+              // wrong here — several browsers stop buffering a hidden element,
+              // which would defeat the prefetch.
+              active ? "" : "pointer-events-none opacity-0"
+            }`}
           />
         )}
 

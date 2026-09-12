@@ -473,6 +473,7 @@ export function useCommentThread({
   // mobile PDP bottom bar) — both are focusable, which is all we need.
   const inputRef = useRef<HTMLTextAreaElement | HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const fetchingMoreRef = useRef(false);
   const client = useApolloClient();
 
   const { user } = useAuthSession();
@@ -488,6 +489,7 @@ export function useCommentThread({
   const [addComment] = useMutation(AddCommentDocument);
   const [deleteCommentMutation] = useMutation(DeleteCommentDocument);
   const [optimistic, setOptimistic] = useState<CommentItem[]>([]);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const serverItems = data?.comments?.items ?? [];
   const hasMore = data?.comments?.hasMore ?? false;
@@ -819,8 +821,20 @@ export function useCommentThread({
 
   function handleScroll() {
     const el = listRef.current;
-    if (!el || !contentId || !hasMore || !endCursor) return;
-    if (el.scrollTop < 80) {
+    if (
+      !el ||
+      !contentId ||
+      !hasMore ||
+      !endCursor ||
+      fetchingMoreRef.current
+    ) {
+      return;
+    }
+
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    if (distanceFromBottom < 120) {
+      fetchingMoreRef.current = true;
+      setLoadingMore(true);
       fetchMore({
         variables: { contentId, limit: 20, after: endCursor },
         updateQuery: (prev, { fetchMoreResult }) => {
@@ -836,6 +850,9 @@ export function useCommentThread({
           });
           return { comments: { ...fetchMoreResult.comments, items: deduped } };
         },
+      }).finally(() => {
+        fetchingMoreRef.current = false;
+        setLoadingMore(false);
       });
     }
   }
@@ -846,6 +863,7 @@ export function useCommentThread({
     loading,
     hasResult: Boolean(data?.comments),
     hasMore,
+    loadingMore,
     /** Composer text + setter. */
     text,
     setText,
@@ -896,6 +914,7 @@ function CommentList({
     loading,
     hasResult,
     hasMore,
+    loadingMore,
     expandedParentId,
     setExpandedParentId,
     listRef,
@@ -944,7 +963,7 @@ function CommentList({
       ))}
       {hasMore && (
         <div className="flex justify-center py-3 text-xs text-muted-foreground">
-          Scroll up to load more
+          {loadingMore ? "Loading more comments…" : "Scroll down to load more"}
         </div>
       )}
     </div>
@@ -1091,9 +1110,9 @@ export function CommentThread({
 }: Props) {
   const thread = useCommentThread({ contentId, onCommentAdded, lang });
   return (
-    <>
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <CommentList thread={thread} contentCreatorId={contentCreatorId} />
       <CommentComposer thread={thread} keyboardAvoiding={keyboardAvoiding} />
-    </>
+    </div>
   );
 }

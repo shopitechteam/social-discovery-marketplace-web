@@ -29,6 +29,10 @@ import { ImmersiveActions } from "./ImmersiveActions";
 import { ImmersiveMeta } from "./ImmersiveMeta";
 import { BufferSpinner } from "../BufferSpinner";
 import { posterOf } from "../../lib/videoSource";
+import {
+  onVideoPrefetchChange,
+  videoPrefetchAllowed,
+} from "../../lib/videoPrefetch";
 
 const CommentsDrawer = dynamic(() =>
   import("../CommentsDrawer").then((mod) => mod.CommentsDrawer),
@@ -38,8 +42,6 @@ const CommentsDrawer = dynamic(() =>
 const NEAR_WINDOW = 1;
 /** How long after the index settles before the URL is rewritten. */
 const URL_DEBOUNCE_MS = 150;
-/** One slide per trackpad gesture; inertial wheel events arrive in bursts. */
-const WHEEL_COOLDOWN_MS = 350;
 
 interface Props {
   /**
@@ -180,11 +182,11 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [goTo, index, close]);
 
-  // ── Trackpad (desktop only) ──────────────────────────────────────────────
-  // Inertial wheel events would otherwise fling several slides at once under
-  // `mandatory` snap. Attached imperatively because React's synthetic onWheel
-  // is passive and cannot preventDefault.
-  const wheelLockedUntil = useRef(0);
+  // ── Mouse wheel (desktop only) ───────────────────────────────────────────
+  // Desktop video paging is intentionally button/key driven. Wheel gestures
+  // vary wildly across mice and trackpads, so swallowing them over the video
+  // keeps the viewer from skipping or flickering. The comments rail is allowed
+  // to keep its own normal wheel scrolling.
   useEffect(() => {
     // Keyed on the element, not [], because the scroller does not exist on the
     // first commit — the viewer renders a loading tree until the feed lands.
@@ -193,17 +195,19 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
     if (window.matchMedia("(pointer: coarse)").matches) return;
 
     const onWheel = (event: WheelEvent) => {
+      if (
+        event.target instanceof Element &&
+        event.target.closest("[data-immersive-rail]")
+      ) {
+        return;
+      }
       if (Math.abs(event.deltaY) < 4) return;
       event.preventDefault();
-      const now = Date.now();
-      if (now < wheelLockedUntil.current) return;
-      wheelLockedUntil.current = now + WHEEL_COOLDOWN_MS;
-      goTo(index + Math.sign(event.deltaY));
     };
 
     scrollerEl.addEventListener("wheel", onWheel, { passive: false });
     return () => scrollerEl.removeEventListener("wheel", onWheel);
-  }, [goTo, index, scrollerEl]);
+  }, [scrollerEl]);
 
   // Warm only the next poster. Anything more and the decoded-bitmap cost grows
   // without making the next slide meaningfully faster.
@@ -216,6 +220,18 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
     img.src = src;
   }, [items, index]);
 
+  // ── Warm the next stream ─────────────────────────────────────────────────
+  // Resolved after mount, and re-resolved when the connection changes, so a
+  // viewer left open while the user loses signal stops prefetching. Starts
+  // false because the check reads navigator, which does not exist on the
+  // server.
+  const [prefetchAllowed, setPrefetchAllowed] = useState(false);
+  useEffect(() => {
+    const sync = () => setPrefetchAllowed(videoPrefetchAllowed());
+    sync();
+    return onVideoPrefetchChange(sync);
+  }, []);
+
   const slideStates = useMemo(
     () =>
       items.map((_, i): SlideState => {
@@ -224,6 +240,11 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
       }),
     [items, index],
   );
+
+  // Exactly one slide ahead. Two would double the idle bandwidth for a slide
+  // the user is unlikely to reach before it needs rebuffering anyway, and the
+  // slide behind is already warm from having been played.
+  const prefetchIndex = prefetchAllowed ? index + 1 : -1;
 
   if (loading) {
     return (
@@ -288,6 +309,7 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
             <SlideContainer
               post={post}
               state={slideStates[i]}
+              prefetch={i === prefetchIndex}
               lang={lang}
               desktop={desktop}
               onOpenComments={() => setCommentsOpen(true)}
@@ -325,26 +347,26 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
           disagree about whether that column exists. */}
       {desktop && (
         <div
-          className="absolute top-1/2 z-40 flex -translate-y-1/2 flex-col gap-3"
-          style={{ right: "calc(var(--immersive-rail) + 1.5rem)" }}
+          className="absolute top-1/2 z-40 flex -translate-y-1/2 flex-col gap-4"
+          style={{ right: "calc(var(--immersive-rail) + 2rem)" }}
         >
           <button
             type="button"
             onClick={() => goTo(index - 1)}
             disabled={index === 0}
             aria-label="Previous video"
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm transition-colors hover:bg-white/20 disabled:opacity-30"
+            className="flex h-14 w-14 items-center justify-center rounded-full border border-white/20 bg-white/18 text-white shadow-[0_12px_32px_rgba(0,0,0,0.35)] backdrop-blur-md transition-[background-color,transform,opacity] hover:scale-105 hover:bg-white/28 active:scale-95 disabled:pointer-events-none disabled:opacity-35"
           >
-            <ChevronUp className="h-5 w-5" />
+            <ChevronUp className="h-7 w-7" strokeWidth={2.6} />
           </button>
           <button
             type="button"
             onClick={() => goTo(index + 1)}
             disabled={index >= items.length - 1}
             aria-label="Next video"
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm transition-colors hover:bg-white/20 disabled:opacity-30"
+            className="flex h-14 w-14 items-center justify-center rounded-full border border-white/20 bg-white/18 text-white shadow-[0_12px_32px_rgba(0,0,0,0.35)] backdrop-blur-md transition-[background-color,transform,opacity] hover:scale-105 hover:bg-white/28 active:scale-95 disabled:pointer-events-none disabled:opacity-35"
           >
-            <ChevronDown className="h-5 w-5" />
+            <ChevronDown className="h-7 w-7" strokeWidth={2.6} />
           </button>
         </div>
       )}
@@ -384,6 +406,7 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
 function SlideContainer({
   post,
   state,
+  prefetch,
   lang,
   desktop,
   onOpenComments,
@@ -391,6 +414,7 @@ function SlideContainer({
 }: {
   post: ContentCardFieldsFragment;
   state: SlideState;
+  prefetch: boolean;
   lang: string;
   desktop: boolean;
   onOpenComments: () => void;
@@ -448,6 +472,7 @@ function SlideContainer({
     <ImmersiveSlide
       post={post}
       state={state}
+      prefetch={prefetch}
       onRequestNext={onRequestNext}
       overlay={
         <div className="flex h-full w-full items-end justify-between gap-3 p-4 pb-16">
@@ -471,8 +496,11 @@ function SlideContainer({
       // round trip per slide for a panel nobody can see.
       rail={
         desktop ? (
-          <div className="flex h-full flex-col">
-            <div className="border-b border-default p-4">
+          <div
+            data-immersive-rail
+            className="flex h-full min-h-0 flex-col overflow-hidden"
+          >
+            <div className="shrink-0 border-b border-default p-4">
               <ImmersiveMeta
                 post={post}
                 lang={lang}

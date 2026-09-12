@@ -17,27 +17,6 @@
  * a route that 500s and leaves the share with no image at all.
  */
 
-/** Formats satori can decode without help. */
-const DECODABLE = /\.(png|jpe?g|gif)(\?|#|$)/i;
-
-/** The URL if satori can decode it from the extension alone, otherwise null. */
-export function ogDecodableImage(url?: string | null): string | null {
-  const trimmed = url?.trim();
-  if (!trimmed) return null;
-  return DECODABLE.test(trimmed) ? trimmed : null;
-}
-
-/** The first candidate satori can decode from its extension. */
-export function firstOgDecodableImage(
-  candidates: (string | null | undefined)[],
-): string | null {
-  for (const candidate of candidates) {
-    const usable = ogDecodableImage(candidate);
-    if (usable) return usable;
-  }
-  return null;
-}
-
 /** First non-empty candidate, whatever its format. */
 function firstUrl(candidates: (string | null | undefined)[]): string | null {
   for (const candidate of candidates) {
