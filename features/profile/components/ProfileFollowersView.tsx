@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useAppBack } from "@/lib/useAppBack";
 import { ArrowLeft } from "lucide-react";
 import { useQuery } from "@apollo/client/react";
 import {
@@ -180,7 +181,9 @@ interface Props {
 
 /** "Followers" — users who follow me. Paginated, infinite-scroll. Owner-only. */
 export function ProfileFollowersView({ lang }: Props) {
-  const router = useRouter();
+  // Owner-only, but still a linkable URL — an arrival with no app history
+  // behind it would otherwise get a back button that does nothing.
+  const goBack = useAppBack(`/${lang}/feed`);
   const { data, loading, networkStatus, fetchMore } = useQuery(
     MyFollowersDocument,
     {
@@ -266,7 +269,7 @@ export function ProfileFollowersView({ lang }: Props) {
         <div className="mx-auto flex w-full max-w-2xl items-center gap-3 px-4 py-3 md:max-w-3xl lg:max-w-full xl:max-w-full">
           <button
             type="button"
-            onClick={() => router.back()}
+            onClick={goBack}
             className="flex h-9 w-9 items-center justify-center rounded-full transition-opacity active:opacity-60"
             style={{ color: "rgb(var(--color-text))" }}
             aria-label="Back"

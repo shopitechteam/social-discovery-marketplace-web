@@ -3,14 +3,14 @@ import { query } from "@/lib/apollo/ApolloClient";
 import { GetUserProfileDocument } from "@/types/__generated__/graphql";
 import type { ProfileUserFieldsFragment } from "@/types/__generated__/graphql";
 import { siteConfig } from "@/config/site";
-import { ogDecodableImage } from "@/lib/og-image";
+import { ogImageDataUri, ogJpegResponse } from "@/lib/og-image";
 
 // Node runtime so we can reuse the Apollo `query` helper to fetch the profile.
 export const runtime = "nodejs";
 export const revalidate = 3600;
 export const alt = "Shopi seller profile";
 export const size = { width: 1200, height: 630 };
-export const contentType = "image/png";
+export const contentType = "image/jpeg";
 
 type Profile = ProfileUserFieldsFragment;
 
@@ -53,9 +53,13 @@ export default async function ProfileOgImage({
 
   const name = profile ? displayName(profile) : "Shopi";
   const handleLabel = profile?.username ? `@${profile.username}` : "";
-  // Avatars are usually .webp, which satori cannot decode — those fall back
-  // to the initials tile instead of an empty circle.
-  const avatar = ogDecodableImage(profile?.profile?.avatar);
+  // Avatars are served as .webp and satori has no webp decoder, so the image
+  // is converted to a JPEG data URI rather than skipped. If anything about
+  // that fails, this stays null and the initials tile renders instead.
+  const avatar = await ogImageDataUri([profile?.profile?.avatar], {
+    width: 200,
+    height: 200,
+  });
   const initials = name.slice(0, 2).toUpperCase();
 
   const stats = [
@@ -65,12 +69,12 @@ export default async function ProfileOgImage({
     typeof profile?.followerCount === "number"
       ? { label: "Followers", value: fmtCount(profile.followerCount) }
       : null,
-    typeof profile?.totalViews === "number"
-      ? { label: "Views", value: fmtCount(profile.totalViews) }
-      : null,
+    // No view count. This card is what a shopper sees when a seller link is
+    // shared, and the profile itself stopped showing views to shoppers for the
+    // same reason: a young seller's real number reads as "nobody comes here".
   ].filter(Boolean) as { label: string; value: string }[];
 
-  return new ImageResponse(
+  const rendered = new ImageResponse(
     (
       <div
         style={{
@@ -189,4 +193,7 @@ export default async function ProfileOgImage({
     ),
     { ...size },
   );
+
+  // JPEG for the same reason as the listing card — see ogJpegResponse.
+  return ogJpegResponse(rendered);
 }

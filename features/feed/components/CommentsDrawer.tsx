@@ -14,6 +14,13 @@ interface Props {
   onOpenChange?: (open: boolean) => void;
   onCommentAdded?: () => void;
   desktopInline?: boolean;
+  /**
+   * Whether opening the sheet should pin `document.body`. Default true.
+   * Set false when the caller already covers the viewport with its own
+   * scroller, where the lock buys nothing and costs a reflow of whatever is
+   * still mounted behind.
+   */
+  lockBody?: boolean;
   /** Locale, forwarded to the thread so guests can be routed to auth. */
   lang: string;
 }
@@ -31,6 +38,7 @@ export function CommentsDrawer({
   onOpenChange,
   onCommentAdded,
   desktopInline = false,
+  lockBody = true,
   lang,
 }: Props) {
   // Keep the comment thread mounted after the first open. Reopening the drawer
@@ -58,12 +66,22 @@ export function CommentsDrawer({
 
   // Lock the page behind the sheet so it can't scroll while open. Restores the
   // exact scroll position on close (position:fixed would otherwise jump to top).
+  //
+  // The class is applied either way — it only hides the bottom nav and gates
+  // the feed's infinite-scroll sentinel, which is wanted regardless. The
+  // position:fixed lock is what `lockBody` opts out of: a caller that already
+  // covers the viewport (the immersive viewer) gains nothing from it and would
+  // pay a full reflow of the still-mounted feed on every open and close.
   useEffect(() => {
     if (desktopInline || !open) return;
-    document.body.classList.add("comments-open");
+    const { body } = document;
+    body.classList.add("comments-open");
+
+    if (!lockBody) {
+      return () => body.classList.remove("comments-open");
+    }
 
     const scrollY = window.scrollY;
-    const { body } = document;
     const prev = {
       position: body.style.position,
       top: body.style.top,
@@ -89,7 +107,7 @@ export function CommentsDrawer({
       body.style.overflow = prev.overflow;
       window.scrollTo(0, scrollY);
     };
-  }, [desktopInline, open]);
+  }, [desktopInline, open, lockBody]);
 
   if (desktopInline) {
     return (

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
+import { goBackOr } from "@/lib/useAppBack";
 
 import {
   Sheet,
@@ -47,9 +48,11 @@ export function ContentDetailSheet({
       }
       setOpen(false);
       setChatOpen(false);
-      window.setTimeout(() => router.back(), 300);
+      // Delayed so the sheet finishes sliding out first. goBackOr keeps a
+      // directly-opened listing from dismissing into nothing.
+      window.setTimeout(() => goBackOr(router, `/${lang}/feed`), 300);
     },
-    [router]
+    [router, lang]
   );
 
   const close = useCallback(() => handleOpenChange(false), [handleOpenChange]);
