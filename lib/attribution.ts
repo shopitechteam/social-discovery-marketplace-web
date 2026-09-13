@@ -55,6 +55,9 @@ const REFERRER_RULES: Array<[RegExp, { source: string; medium: string }]> = [
   [/(^|\.)tiktok\./, { source: "tiktok", medium: "social" }],
   [/(^|\.)(twitter|x)\.com$/, { source: "twitter", medium: "social" }],
   [/(^|\.)linkedin\./, { source: "linkedin", medium: "social" }],
+  // LinkedIn wraps every outbound link in this shortener, so most real
+  // LinkedIn clicks arrive with lnkd.in as the referrer, never linkedin.com.
+  [/(^|\.)lnkd\.in$/, { source: "linkedin", medium: "social" }],
   [/(^|\.)(youtube|youtu)\./, { source: "youtube", medium: "social" }],
   [/(^|\.)pinterest\./, { source: "pinterest", medium: "social" }],
   [/(^|\.)reddit\./, { source: "reddit", medium: "social" }],
@@ -101,14 +104,37 @@ function normalizeSource(
   return { source: normalized, medium };
 }
 
+/**
+ * Our own sign-in plumbing. Returning from one of these is not an acquisition.
+ *
+ * This is what mislabelled the reported signup. LinkedIn strips the referrer
+ * on its apps and through lnkd.in, so the landing stored `direct`. Tapping
+ * "Continue with Google" then came back with a referrer of
+ * accounts.google.com, which read as organic Google — a stronger source than
+ * `direct` — and the upgrade rule below replaced the record. The signup was
+ * filed under google.
+ */
+const AUTH_PROVIDER_HOSTS =
+  /^(accounts\.google\.com|accounts\.youtube\.com|appleid\.apple\.com|login\.microsoftonline\.com|oauth\.telegram\.org)$/;
+
+/** Facebook and TikTok are real sources too, so only their OAuth paths count. */
+const AUTH_PATHS = /\/(oauth|dialog\/oauth|login|v2\/auth|signin|authorize)(\/|$|\?)/;
+
 function classifyReferrer(referrer: string): { source: string; medium: string } {
   if (!referrer) return { source: "direct", medium: "direct" };
 
   let host: string;
+  let path = "";
   try {
-    host = new URL(referrer).hostname.toLowerCase();
+    const url = new URL(referrer);
+    host = url.hostname.toLowerCase();
+    path = url.pathname.toLowerCase();
   } catch {
     return { source: "unknown", medium: "referral" };
+  }
+
+  if (AUTH_PROVIDER_HOSTS.test(host) || AUTH_PATHS.test(path)) {
+    return { source: "internal", medium: "internal" };
   }
 
   // Same-site navigation isn't an acquisition source.
@@ -156,6 +182,12 @@ export function captureAttribution(): Attribution | null {
   if (typeof window === "undefined") return null;
 
   const existing = readStored();
+
+  // Belt and braces with the auth-host rule above. Every OAuth round trip
+  // lands back on an /auth/ route, so nothing observed there can be an
+  // acquisition source — whatever provider is added next is covered without
+  // having to list its hostname.
+  if (existing && /\/auth(\/|$)/.test(window.location.pathname)) return existing;
   const params = new URLSearchParams(window.location.search);
 
   const explicitSource =
