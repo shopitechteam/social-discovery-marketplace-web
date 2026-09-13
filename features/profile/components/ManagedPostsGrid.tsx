@@ -11,10 +11,10 @@ import {
   Globe,
   Loader2,
   MoreHorizontal,
-  Pencil,
   Play,
   Plus,
-  Trash2,
+  ChevronRight,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { SHIMMER_PORTRAIT } from "@/lib/shimmer";
@@ -264,25 +264,32 @@ function InventoryCard({
           </div>
         )}
 
-        {/* Exceptions only. A live, public post shows nothing here. */}
+        {/* Exceptions only, and only ever one of them. A tile carrying both a
+            status pill and a "Hidden" pill spent its top edge explaining
+            itself; hidden IS the status when it applies. A live, public post
+            shows nothing at all. */}
         {(!isLive || isHidden) && (
-          <div className="absolute inset-x-0 top-0 z-20 flex flex-wrap gap-1.5 p-2 pr-11">
-            {!isLive && (
-              <span
-                className={cn(
-                  "rounded-full border px-2 py-0.5 text-[10px] font-semibold backdrop-blur-sm",
-                  toneClasses(status.tone),
-                )}
-              >
-                {status.label}
-              </span>
-            )}
-            {isHidden && (
-              <span className="rounded-full border border-black/10 bg-white/85 px-2 py-0.5 text-[10px] font-semibold text-slate-700 backdrop-blur-sm">
-                Hidden
-              </span>
-            )}
+          <div className="absolute inset-x-0 top-0 z-20 flex p-2 pr-11">
+            <span
+              className={cn(
+                "truncate rounded-full border px-2 py-0.5 text-[10px] font-semibold backdrop-blur-sm",
+                isHidden
+                  ? "border-black/10 bg-white/85 text-slate-700"
+                  : toneClasses(status.tone),
+              )}
+            >
+              {isHidden ? "Hidden" : status.label}
+            </span>
           </div>
+        )}
+
+        {/* A dimmed cover is the fastest read for "this is not on the store" —
+            faster than any label, and it works down at thumbnail size. */}
+        {isHidden && (
+          <span
+            className="pointer-events-none absolute inset-0 z-10 bg-black/35"
+            aria-hidden
+          />
         )}
 
         <button
@@ -292,10 +299,12 @@ function InventoryCard({
             event.stopPropagation();
             onOpenActions(post);
           }}
-          className="absolute right-2 top-2 z-30 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-transform active:scale-95"
+          // 36px, up from 32: this is the only control on the tile and it sat
+          // under the 44px a thumb actually needs.
+          className="absolute right-1.5 top-1.5 z-30 flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm transition-transform active:scale-90"
           aria-label={`Manage ${post.title || "post"}`}
         >
-          <MoreHorizontal size={16} />
+          <MoreHorizontal size={18} />
         </button>
 
         {isVideo && (
@@ -307,8 +316,12 @@ function InventoryCard({
         )}
       </div>
 
-      {/* Price leads, because it is the field sellers check and change most. */}
-      <div className="flex min-w-0 flex-col gap-1 px-0.5 pt-2">
+      {/* Price leads, because it is the field sellers check and change most.
+          The block is a fixed three rows tall so tiles line up across the grid:
+          it previously grew by a line whenever a title wrapped or a rejection
+          note appeared, which left every row of the grid ragged and made the
+          whole tab look unfinished. */}
+      <div className="flex min-w-0 flex-col gap-0.5 px-0.5 pt-2">
         <div className="flex items-baseline gap-1.5">
           <p
             className="min-w-0 truncate font-bold"
@@ -331,8 +344,11 @@ function InventoryCard({
           )}
         </div>
 
+        {/* One line, not two. At two columns on a phone a wrapped title pushed
+            the stats out of alignment with the tile beside it for no gain —
+            the photo already says what the thing is. */}
         <p
-          className="line-clamp-2 leading-snug"
+          className="truncate leading-snug"
           style={{
             fontSize: "var(--text-xs)",
             color: "rgb(var(--color-text-muted))",
@@ -341,30 +357,32 @@ function InventoryCard({
           {post.title || "Untitled post"}
         </p>
 
-        <div
-          className="mt-0.5 flex items-center gap-2.5"
-          style={{
-            fontSize: "var(--text-xs)",
-            color: "rgb(var(--color-text-muted))",
-          }}
-        >
-          <span className="flex items-center gap-1">
-            <Eye size={12} aria-hidden />
-            {formatCompact(post.stats.views)}
-          </span>
-          <span className="flex items-center gap-1">
-            <Bookmark size={12} aria-hidden />
-            {formatCompact(post.stats.saves)}
-          </span>
-          <span className="ml-auto shrink-0 truncate">
-            {formatDate(post.updatedAt)}
-          </span>
-        </div>
-
-        {problem && (
-          <p className="mt-1 line-clamp-2 rounded-lg bg-rose-500/10 px-2 py-1.5 text-[11px] font-medium leading-snug text-rose-700">
+        {/* Either the numbers or the problem, never stacked. A rejected post
+            has nothing worth reporting about its views. */}
+        {problem ? (
+          <p className="truncate text-[11px] font-medium leading-snug text-rose-600">
             {problem}
           </p>
+        ) : (
+          <div
+            className="flex items-center gap-2.5"
+            style={{
+              fontSize: "var(--text-xs)",
+              color: "rgb(var(--color-text-muted))",
+            }}
+          >
+            <span className="flex items-center gap-1">
+              <Eye size={12} aria-hidden />
+              {formatCompact(post.stats.views)}
+            </span>
+            <span className="flex items-center gap-1">
+              <Bookmark size={12} aria-hidden />
+              {formatCompact(post.stats.saves)}
+            </span>
+            <span className="ml-auto shrink-0 truncate">
+              {formatDate(post.updatedAt)}
+            </span>
+          </div>
         )}
       </div>
     </article>
@@ -617,6 +635,19 @@ export function ManagedPostsGrid({
     [posts, statusFilter],
   );
 
+  // Save stays disabled until something actually differs from what is stored,
+  // and the discard prompt only fires when there is something to lose.
+  const editDirty = useMemo(() => {
+    if (!editingPost || !editState) return false;
+    return (
+      editState.title !== (editingPost.title ?? "") ||
+      editState.caption !== (editingPost.caption ?? "") ||
+      editState.amount !== String(editingPost.price.amount ?? 0) ||
+      editState.negotiable !== (editingPost.price.negotiable ?? false) ||
+      editState.categoryId !== (editingPost.categoryId ?? null)
+    );
+  }, [editingPost, editState]);
+
   const actionItems = useMemo(() => {
     if (!actionsPost) return [];
     return [
@@ -782,69 +813,44 @@ export function ManagedPostsGrid({
         onClose={() => setActionsPost(null)}
       >
         {actionsPost && (
-          <div className="space-y-2">
-            {actionItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.key}
-                  href={item.href}
-                  className="flex min-h-13 items-center gap-3 rounded-2xl border px-4 py-3 transition-colors hover:bg-surface"
-                  style={{ borderColor: "rgb(var(--color-border))" }}
-                  onClick={() => setActionsPost(null)}
-                >
-                  <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[rgb(var(--color-bg-subtle))]">
-                    <Icon size={18} />
-                  </span>
-                  <span className="font-semibold">{item.label}</span>
-                </Link>
-              );
-            })}
-
-            <button
-              type="button"
+          // A native action list: full-bleed rows, label left, chevron right,
+          // hairline between. The boxed cards with icon chips this replaces
+          // read as five separate widgets stacked up; a phone user reads this
+          // as one menu, which is what it is.
+          <div className="flex flex-col">
+            <ActionRow
+              label="Edit post"
               onClick={() => actionsPost && openEdit(actionsPost)}
-              className="flex min-h-13 w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-colors hover:bg-surface"
-              style={{ borderColor: "rgb(var(--color-border))" }}
-            >
-              <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[rgb(var(--color-bg-subtle))]">
-                <Pencil size={18} />
-              </span>
-              <span className="font-semibold">Edit post</span>
-            </button>
-
-            <button
-              type="button"
-              disabled={mutationBusy}
-              onClick={() =>
-                actionsPost && void handleToggleHidden(actionsPost)
+            />
+            <ActionRow
+              label={
+                actionsPost.visibility === "PUBLIC"
+                  ? "Hide from store"
+                  : "Show in store"
               }
-              className="flex min-h-13 w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-colors hover:bg-surface disabled:opacity-60"
-              style={{ borderColor: "rgb(var(--color-border))" }}
-            >
-              <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[rgb(var(--color-bg-subtle))]">
-                <Globe size={18} />
-              </span>
-              <span className="font-semibold">
-                {actionsPost.visibility === "PUBLIC"
-                  ? "Hide post"
-                  : "Show post"}
-              </span>
-            </button>
-
-            <button
-              type="button"
+              disabled={mutationBusy}
+              onClick={() => actionsPost && void handleToggleHidden(actionsPost)}
+            />
+            {actionItems.map((item) => (
+              <ActionRow
+                key={item.key}
+                label={item.label}
+                href={item.href}
+                onNavigate={() => setActionsPost(null)}
+              />
+            ))}
+            {/* Set apart, not just coloured: the gap is what stops a thumb
+                travelling down the list from landing on it. */}
+            <div className="h-2.5" />
+            <ActionRow
+              label="Remove from store"
+              tone="danger"
+              last
               onClick={() => {
                 setDeletePost(actionsPost);
                 setActionsPost(null);
               }}
-              className="flex min-h-13 w-full items-center gap-3 rounded-2xl border border-rose-200 px-4 py-3 text-left text-rose-600 transition-colors hover:bg-rose-50"
-            >
-              <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-50">
-                <Trash2 size={18} />
-              </span>
-              <span className="font-semibold">Delete post</span>
-            </button>
+            />
           </div>
         )}
       </ActionSurface>
@@ -853,6 +859,7 @@ export function ManagedPostsGrid({
         desktop={isDesktop}
         open={Boolean(editingPost && editState)}
         busy={mutationBusy}
+        dirty={editDirty}
         onClose={() => {
           setEditingPost(null);
           setEditState(null);
@@ -860,11 +867,69 @@ export function ManagedPostsGrid({
         onSubmit={() => void handleSaveEdit()}
       >
         {editState && (
-          <div className="space-y-4">
-            <FieldBlock label="Title">
+          // Price first: it is the field sellers open this sheet to change,
+          // and putting it above the fold means the common edit needs no
+          // scrolling at all.
+          <div className="flex flex-col gap-5">
+            <FieldBlock label="Price" hint={editState.currency}>
+              <Input
+                inputMode="decimal"
+                value={editState.amount}
+                placeholder="0"
+                className="h-12 rounded-xl"
+                onChange={(event) =>
+                  setEditState((current) =>
+                    current
+                      ? { ...current, amount: event.target.value }
+                      : current,
+                  )
+                }
+              />
+            </FieldBlock>
+
+            {/* A settings row, not a labelled box with a switch shoved in the
+                corner — the old layout put "Negotiable" above an empty
+                bordered rectangle and left the control unexplained. */}
+            <button
+              type="button"
+              onClick={() =>
+                setEditState((current) =>
+                  current
+                    ? { ...current, negotiable: !current.negotiable }
+                    : current,
+                )
+              }
+              className="flex min-h-14 items-center justify-between gap-4 rounded-xl border border-default px-4 text-left"
+            >
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold text-default">
+                  Negotiable
+                </span>
+                <span className="block text-xs text-muted-foreground">
+                  Buyers can make an offer
+                </span>
+              </span>
+              <Switch
+                checked={editState.negotiable}
+                onCheckedChange={(checked) =>
+                  setEditState((current) =>
+                    current ? { ...current, negotiable: checked } : current,
+                  )
+                }
+                // The whole row is the target; the switch itself must not
+                // double-fire on top of it.
+                onClick={(event) => event.stopPropagation()}
+              />
+            </button>
+
+            <FieldBlock
+              label="Title"
+              hint={`${editState.title.length}/140`}
+            >
               <Input
                 value={editState.title}
                 maxLength={140}
+                className="h-12 rounded-xl"
                 onChange={(event) =>
                   setEditState((current) =>
                     current
@@ -875,11 +940,15 @@ export function ManagedPostsGrid({
               />
             </FieldBlock>
 
-            <FieldBlock label="Description">
+            <FieldBlock
+              label="Description"
+              hint={`${editState.caption.length}/2000`}
+            >
               <Textarea
                 value={editState.caption}
                 maxLength={2000}
-                className="min-h-28"
+                rows={5}
+                className="min-h-32 resize-none rounded-xl leading-relaxed"
                 onChange={(event) =>
                   setEditState((current) =>
                     current
@@ -904,39 +973,13 @@ export function ManagedPostsGrid({
               />
             </FieldBlock>
 
-            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
-              <FieldBlock label="Price">
-                <Input
-                  inputMode="decimal"
-                  value={editState.amount}
-                  onChange={(event) =>
-                    setEditState((current) =>
-                      current
-                        ? { ...current, amount: event.target.value }
-                        : current,
-                    )
-                  }
-                />
-              </FieldBlock>
-
-              <FieldBlock label="Negotiable">
-                <div className="flex h-11 items-center justify-end rounded-2xl border px-3">
-                  <Switch
-                    checked={editState.negotiable}
-                    onCheckedChange={(checked) =>
-                      setEditState((current) =>
-                        current ? { ...current, negotiable: checked } : current,
-                      )
-                    }
-                  />
-                </div>
-              </FieldBlock>
-            </div>
-
-            <div className="rounded-2xl border border-dashed border-[rgb(var(--color-border))] bg-[rgb(var(--color-bg-subtle))] px-4 py-3 text-sm text-muted-foreground">
-              Media and location are locked after publishing so buyers always
-              see the same asset and pickup context.
-            </div>
+            {/* One quiet line. This was a dashed callout box competing with
+                the fields for attention, to say something nothing here can
+                change anyway. */}
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              Photos and location stay as published, so buyers always see the
+              same item and pickup point.
+            </p>
           </div>
         )}
       </EditSurface>
@@ -1004,16 +1047,84 @@ function InventoryToolbar({
 
 function FieldBlock({
   label,
+  hint,
   children,
 }: {
   label: string;
+  /** Right-aligned counter or unit, sitting on the label's own line. */
+  hint?: string;
   children: React.ReactNode;
 }) {
   return (
     <label className="block space-y-1.5">
-      <span className="text-sm font-semibold text-foreground">{label}</span>
+      <span className="flex items-baseline justify-between gap-2">
+        <span className="text-sm font-semibold text-foreground">{label}</span>
+        {hint && (
+          <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+            {hint}
+          </span>
+        )}
+      </span>
       {children}
     </label>
+  );
+}
+
+/**
+ * One row of a native-style action list.
+ *
+ * Deliberately plain: a label, a chevron, and a hairline underneath. The
+ * chevron is there because every row leads somewhere — a screen, a sheet, or a
+ * confirmation — and it is the affordance a phone user already reads as "this
+ * does something" without needing an icon to decode.
+ */
+function ActionRow({
+  label,
+  href,
+  onClick,
+  onNavigate,
+  disabled,
+  tone = "default",
+  last,
+}: {
+  label: string;
+  href?: string;
+  onClick?: () => void;
+  onNavigate?: () => void;
+  disabled?: boolean;
+  tone?: "default" | "danger";
+  last?: boolean;
+}) {
+  const danger = tone === "danger";
+  const className = cn(
+    "flex min-h-14 w-full items-center justify-between gap-4 px-5 text-left transition-colors active:bg-surface disabled:opacity-50",
+    !last && "border-b border-default",
+    danger ? "text-rose-600" : "text-default",
+  );
+  const body = (
+    <>
+      <span className="min-w-0 truncate text-[15px] font-medium">{label}</span>
+      <ChevronRight
+        size={20}
+        strokeWidth={2}
+        className={cn("shrink-0", danger ? "text-rose-400" : "text-muted-foreground")}
+        aria-hidden
+      />
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link href={href} onClick={onNavigate} className={className}>
+        {body}
+      </Link>
+    );
+  }
+
+  return (
+    <button type="button" onClick={onClick} disabled={disabled} className={className}>
+      {body}
+    </button>
   );
 }
 
@@ -1031,8 +1142,8 @@ function ActionSurface({
   children: React.ReactNode;
 }) {
   const title = post?.title || "Manage post";
-  const subtitle =
-    "Quick actions for editing, visibility, deletion, and performance review.";
+  // No subtitle. The rows say what they do, and a paragraph of explanation
+  // above a five-item menu is the opposite of the native feel this is after.
 
   if (desktop) {
     return (
@@ -1040,9 +1151,11 @@ function ActionSurface({
         <DialogContent className="w-[min(92vw,520px)] rounded-[28px] border border-default bg-app p-0">
           <DialogHeader className="border-b border-default px-6 py-5 text-left">
             <DialogTitle className="pr-8">{title}</DialogTitle>
-            <DialogDescription>{subtitle}</DialogDescription>
+            <DialogDescription className="sr-only">
+              Actions for this post
+            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-2 px-6 py-5">{children}</div>
+          <div className="py-2">{children}</div>
           <DialogFooter className="border-t border-default px-6 py-4">
             <Button variant="outline" onClick={onClose} disabled={busy}>
               Close
@@ -1056,13 +1169,13 @@ function ActionSurface({
   return (
     <Drawer open={Boolean(post)} onOpenChange={(open) => !open && onClose()}>
       <DrawerContent className="mx-auto max-w-107.5 rounded-t-[28px] border-default bg-app">
-        <DrawerHeader className="pb-1 text-left">
-          <DrawerTitle className="pr-6 text-[15px]">{title}</DrawerTitle>
-          <DrawerDescription className="text-[12px] leading-relaxed">
-            {subtitle}
+        <DrawerHeader className="px-5 pb-3 text-left">
+          <DrawerTitle className="truncate pr-6 text-[15px]">{title}</DrawerTitle>
+          <DrawerDescription className="sr-only">
+            Actions for this post
           </DrawerDescription>
         </DrawerHeader>
-        <div className="space-y-2 px-4 pb-5">{children}</div>
+        <div className="pb-[max(env(safe-area-inset-bottom),1rem)]">{children}</div>
       </DrawerContent>
     </Drawer>
   );
@@ -1072,6 +1185,7 @@ function EditSurface({
   desktop,
   open,
   busy,
+  dirty,
   onClose,
   onSubmit,
   children,
@@ -1079,67 +1193,151 @@ function EditSurface({
   desktop: boolean | null;
   open: boolean;
   busy: boolean;
+  /** Whether anything actually changed — gates Save and the discard prompt. */
+  dirty: boolean;
   onClose: () => void;
   onSubmit: () => void;
   children: React.ReactNode;
 }) {
   const title = "Edit post";
-  const description =
-    "You can update price, negotiable, title, description, and category.";
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+
+  // Swiping the sheet away used to bin the edits without a word. Anything
+  // typed is worth one question.
+  const requestClose = () => {
+    if (busy) return;
+    if (dirty) {
+      setConfirmDiscard(true);
+      return;
+    }
+    onClose();
+  };
+
+  const discardPrompt = (
+    <Dialog open={confirmDiscard} onOpenChange={setConfirmDiscard}>
+      <DialogContent className="max-w-xs">
+        <DialogHeader>
+          <DialogTitle>Discard changes?</DialogTitle>
+          <DialogDescription>
+            Your edits to this post will not be saved.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="flex-row justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => setConfirmDiscard(false)}
+            className="h-10 rounded-full border border-border px-4 text-sm font-semibold text-default"
+          >
+            Keep editing
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setConfirmDiscard(false);
+              onClose();
+            }}
+            className="h-10 rounded-full bg-rose-600 px-4 text-sm font-semibold text-white"
+          >
+            Discard
+          </button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 
   if (desktop) {
     return (
-      <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-        <DialogContent className="w-[min(92vw,680px)] rounded-[28px] border border-default bg-app p-0">
-          <DialogHeader className="border-b border-default px-6 py-5 text-left">
-            <DialogTitle>{title}</DialogTitle>
-            <DialogDescription>{description}</DialogDescription>
-          </DialogHeader>
-          <div className="px-6 py-5">{children}</div>
-          <DialogFooter className="border-t border-default px-6 py-4">
-            <Button variant="outline" onClick={onClose} disabled={busy}>
-              Cancel
-            </Button>
-            <Button className="text-white" onClick={onSubmit} disabled={busy}>
-              {busy ? <Loader2 className="animate-spin" /> : null}
-              Save changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <>
+        <Dialog open={open} onOpenChange={(next) => !next && requestClose()}>
+          <DialogContent className="flex max-h-[86vh] w-[min(92vw,680px)] flex-col rounded-[28px] border border-default bg-app p-0">
+            <DialogHeader className="shrink-0 border-b border-default px-6 py-5 text-left">
+              <DialogTitle>{title}</DialogTitle>
+              <DialogDescription>
+                Price, title, description and category. Photos and location stay
+                as published.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+              {children}
+            </div>
+            <DialogFooter className="shrink-0 border-t border-default px-6 py-4">
+              <Button variant="outline" onClick={requestClose} disabled={busy}>
+                Cancel
+              </Button>
+              <Button
+                className="text-white"
+                onClick={onSubmit}
+                disabled={busy || !dirty}
+              >
+                {busy ? <Loader2 className="animate-spin" /> : null}
+                Save changes
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        {discardPrompt}
+      </>
     );
   }
 
   return (
-    <Drawer open={open} onOpenChange={(next) => !next && onClose()}>
-      <DrawerContent className="mx-auto max-w-107.5 rounded-t-[28px] border-default bg-app">
-        <DrawerHeader className="text-left">
-          <DrawerTitle className="text-[15px]">{title}</DrawerTitle>
-          <DrawerDescription className="text-[12px] leading-relaxed">
-            {description}
-          </DrawerDescription>
-        </DrawerHeader>
-        <div className="px-4 pb-4">{children}</div>
-        <DrawerFooter className="border-t border-default px-4 pt-3">
-          <Button
-            className="h-10 rounded-xl text-white text-[13px]"
-            onClick={onSubmit}
-            disabled={busy}
+    <>
+      <Drawer open={open} onOpenChange={(next) => !next && requestClose()}>
+        {/*
+          A fixed-height sheet with its own scroller, rather than a drawer that
+          grows to fit. The form is five fields plus a textarea, so on a phone
+          the old version ran off the bottom of the screen and pushed Save out
+          of reach the moment the keyboard opened. 88dvh leaves the tile grid
+          visible behind it, which is what keeps it feeling like a sheet over
+          the page instead of a second page.
+        */}
+        <DrawerContent className="mx-auto flex h-[88dvh] max-w-107.5 flex-col rounded-t-[28px] border-default bg-app">
+          <DrawerHeader className="shrink-0 flex-row items-center justify-between gap-3 border-b border-default px-4 py-3 text-left">
+            <div className="min-w-0">
+              <DrawerTitle className="text-[16px] font-bold">{title}</DrawerTitle>
+              <DrawerDescription className="sr-only">
+                Update the price, title, description and category of this post
+              </DrawerDescription>
+            </div>
+            <button
+              type="button"
+              onClick={requestClose}
+              disabled={busy}
+              aria-label="Close"
+              className="-mr-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-surface"
+            >
+              <X size={20} />
+            </button>
+          </DrawerHeader>
+
+          {/* The only scrolling region. overscroll-contain stops a flick at the
+              end of the form from dragging the page behind it. */}
+          {/* pb-8 so the last field clears the sticky footer's edge instead of
+              ending flush against it, which reads as content being cut off. */}
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-8 pt-4">
+            {children}
+          </div>
+
+          {/* Sticky, full width, thumb height, and clear of the home
+              indicator. Save is the only button here — Cancel is the X above
+              and the swipe-down everyone already tries. */}
+          <div
+            className="shrink-0 border-t border-default px-4 pt-3"
+            style={{ paddingBottom: "max(env(safe-area-inset-bottom), 0.75rem)" }}
           >
-            {busy ? <Loader2 className="animate-spin" /> : null}
-            Save changes
-          </Button>
-          <Button
-            variant="outline"
-            className="h-10 rounded-xl text-[13px]"
-            onClick={onClose}
-            disabled={busy}
-          >
-            Cancel
-          </Button>
-        </DrawerFooter>
-      </DrawerContent>
-    </Drawer>
+            <Button
+              className="h-12 w-full rounded-full text-[15px] font-bold text-white"
+              onClick={onSubmit}
+              disabled={busy || !dirty}
+            >
+              {busy ? <Loader2 className="animate-spin" /> : null}
+              {busy ? "Saving…" : "Save changes"}
+            </Button>
+          </div>
+        </DrawerContent>
+      </Drawer>
+      {discardPrompt}
+    </>
   );
 }
 
