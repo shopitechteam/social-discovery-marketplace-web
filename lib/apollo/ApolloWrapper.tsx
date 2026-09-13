@@ -115,6 +115,17 @@ function mergeFeedPage(
   };
 }
 
+/**
+ * Take the incoming value, unless it is null and we already know better.
+ *
+ * The replacement for `merge: false` on fields that some queries select but
+ * do not populate. Undefined means the field was not part of the response at
+ * all, which Apollo handles before reaching a merge function.
+ */
+function keepUnlessNull<T>(existing: T, incoming: T): T {
+  return incoming == null && existing != null ? existing : incoming;
+}
+
 type CachedMedia = Record<string, unknown> | null | undefined;
 
 /**
@@ -364,12 +375,20 @@ function createClient() {
         Content: {
           keyFields: ["id"],
           fields: {
-            // These are FieldResolver values that differ per-viewer.
-            // merge: false tells Apollo to always take the incoming value
-            // rather than trying to deep-merge, which prevents stale data.
-            isLikedByMe: { merge: false },
-            isMyContent: { merge: false },
-            creator: { merge: false },
+            // These are FieldResolver values that differ per-viewer, so the
+            // incoming value must win rather than being deep-merged — that is
+            // what keeps a guest-fetched entity from going stale once the same
+            // item is refetched as a signed-in user.
+            //
+            // A NULL incoming value is the exception. Not every query resolves
+            // these: `userPosts`, for one, returns `creator: null` while still
+            // selecting it, and taking that literally wiped the seller from
+            // every one of their posts in the feed — cards fell back to
+            // "Seller bb9868". Absent is not the same as "there is nobody".
+            isLikedByMe: { merge: keepUnlessNull },
+            isMyContent: { merge: keepUnlessNull },
+            isSavedByMe: { merge: keepUnlessNull },
+            creator: { merge: keepUnlessNull },
             // EngagementStats / ContentLocation have no IDs of their own and
             // different queries select different subsets of their fields.
             // Without merge:true an incoming subset REPLACES the cached object

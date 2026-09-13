@@ -69,6 +69,16 @@ export function RouteScrollRestoration() {
   const latestYRef = useRef(0);
   const latestYByKeyRef = useRef(new Map<string, number>());
   const pendingNavigationRef = useRef<PendingNavigation | null>(null);
+  // Which key is allowed to restore a saved offset: the one a back/forward
+  // step is landing on, or — on the very first run, which covers a reload —
+  // whatever we load into. Following a link is a fresh visit and belongs at
+  // the top, even for somewhere visited earlier in the session.
+  //
+  // Keyed rather than a bare boolean because the restore effect can run more
+  // than once for a single navigation (the key settles, then searchParams
+  // resolve). A boolean got consumed by the first run and the second then
+  // scrolled the restored page back to the top.
+  const restoreKeyRef = useRef<string | null>(key);
 
   useInsertionEffect(() => {
     // Route commits can synchronously change document height. If a short route
@@ -76,6 +86,18 @@ export function RouteScrollRestoration() {
     // should belong to the incoming route, not overwrite /feed's saved position.
     currentKeyRef.current = key;
   }, [key]);
+
+  // popstate fires ahead of the re-render for that navigation, so the flag is
+  // already set by the time the restore effect below reads it.
+  useEffect(() => {
+    const onPopState = () => {
+      // location is already updated by the time popstate fires, so this is the
+      // key we are landing on.
+      restoreKeyRef.current = currentWindowScrollKey();
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
 
   useEffect(() => {
     if ("scrollRestoration" in window.history) {
@@ -98,10 +120,13 @@ export function RouteScrollRestoration() {
     }
 
     currentKeyRef.current = key;
-    latestYRef.current = readSavedY(key);
-    latestYByKey.set(key, latestYRef.current);
+    const saved = readSavedY(key);
+    latestYRef.current = saved;
+    latestYByKey.set(key, saved);
 
-    const targetY = latestYRef.current;
+    // A pushed navigation starts at the top; only back/forward and the first
+    // load (a reload included) resume where the page was left.
+    const targetY = restoreKeyRef.current === key ? saved : 0;
     let frame = 0;
     let attempts = 0;
 

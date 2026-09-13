@@ -2,9 +2,10 @@
 
 import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import { locales } from "@/i18n/config";
+import { RouteScrollRestoration } from "@/components/layout/RouteScrollRestoration";
 import { GlobalPushBootstrap } from "@/components/providers/GlobalPushBootstrap";
 import { GlobalPushToastBridge } from "@/components/providers/GlobalPushToastBridge";
 
@@ -49,6 +50,21 @@ export function RouteProviders({ children }: { children: React.ReactNode }) {
 
   return (
     <ThemeProvider>
+      {/* Scroll restoration belongs to every route, not just the ones in the
+          (main) group.
+          It used to live in MainShell, so anything outside that group — a
+          seller profile at /{lang}/@handle, the blog, the marketplace and sell
+          landing pages — had nothing resetting the scroll. Since navigations
+          across the app deliberately pass `scroll: false` and let this
+          component own the position, those pages opened at whatever offset the
+          previous page happened to be at: leave a deep feed, land halfway down
+          a profile.
+
+          Suspense because it reads useSearchParams, which would otherwise opt
+          every route into a client-render bail. */}
+      <Suspense fallback={null}>
+        <RouteScrollRestoration />
+      </Suspense>
       <GlobalPushBootstrap lang={pathname.split("/")[1] || "en"} />
       <GlobalPushToastBridge />
       {isLandingPage ? (
