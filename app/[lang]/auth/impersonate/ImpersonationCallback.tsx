@@ -71,6 +71,7 @@ export function ImpersonationCallback({
 
   useEffect(() => {
     if (!token) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError("Missing impersonation token.");
       return;
     }

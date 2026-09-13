@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useState } from "react";
 import {
   Bookmark,
   ChartColumn,
@@ -180,8 +181,43 @@ const tabConfig: { key: Tab; label: string; icon: TabIcon }[] = [
   { key: "settings", label: "Settings", icon: Settings },
 ];
 
+function isTab(value: string | null): value is Tab {
+  return !!value && tabConfig.some((item) => item.key === value);
+}
+
 export function ProfileView({ lang }: Props) {
-  const [tab, setTab] = useState<Tab>("posts");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // The active sub-tab lives in the URL so leaving and coming back returns to
+  // it. Settings is the tab this matters most for: every row in it navigates
+  // away (Edit profile, Followers, and so on), and landing back on Posts each
+  // time meant re-finding the tab after every single one.
+  //
+  // Read once, as the initial value. Coming back is a fresh mount, so the
+  // param is picked up then; making it a live subscription instead would fight
+  // the replace() below on every tab press.
+  const [tab, setTab] = useState<Tab>(() => {
+    const requested = searchParams.get("tab");
+    return isTab(requested) ? requested : "posts";
+  });
+
+  // replace, not push: a tab is a view of this page, not a place in history.
+  // Pushing would mean back stepped through every tab the user had tried
+  // before it left the profile at all.
+  const selectTab = useCallback(
+    (next: Tab) => {
+      setTab(next);
+      const params = new URLSearchParams(searchParams.toString());
+      if (next === "posts") params.delete("tab");
+      else params.set("tab", next);
+      const query = params.toString();
+      router.replace(`/${lang}/profile${query ? `?${query}` : ""}`, {
+        scroll: false,
+      });
+    },
+    [router, lang, searchParams],
+  );
   const [postsLimit] = useState(18);
 
   const {
@@ -297,7 +333,7 @@ export function ProfileView({ lang }: Props) {
                   aria-selected={active}
                   aria-label={item.label}
                   title={item.label}
-                  onClick={() => setTab(item.key)}
+                  onClick={() => selectTab(item.key)}
                   className="relative flex h-12 min-w-0 items-center justify-center transition-opacity active:opacity-60"
                   style={{
                     color: active
@@ -333,7 +369,7 @@ export function ProfileView({ lang }: Props) {
                     type="button"
                     role="tab"
                     aria-selected={active}
-                    onClick={() => setTab(item.key)}
+                    onClick={() => selectTab(item.key)}
                     className={cn(
                       "inline-flex h-11 min-w-34 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition-colors",
                       active

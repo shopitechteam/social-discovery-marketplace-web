@@ -2,7 +2,15 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ExternalLink, PenLine } from "lucide-react";
+import {
+  ExternalLink,
+  Eye,
+  LayoutGrid,
+  PenLine,
+  UserPlus,
+  Users,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SHIMMER_AVATAR } from "@/lib/shimmer";
 import type { ProfileUserFieldsFragment } from "@/types/__generated__/graphql";
@@ -47,44 +55,76 @@ function VerifiedBadge() {
   );
 }
 
+/**
+ * The tints behind each stat card.
+ *
+ * Derived from the theme's own tokens at low alpha rather than hardcoded
+ * pastels, so the set stays coherent in dark mode instead of turning into six
+ * bright rectangles on a dark ground. The hue only distinguishes one card from
+ * the next — the number and icon stay brand pink throughout, which is what
+ * makes the group read as one panel rather than six unrelated badges.
+ */
+const STAT_TINTS = {
+  primary: "rgb(var(--brand-primary) / 0.09)",
+  secondary: "rgb(var(--brand-secondary) / 0.11)",
+  accent: "rgb(var(--brand-accent) / 0.11)",
+  success: "rgb(var(--color-success) / 0.11)",
+} as const;
+
+type StatTint = keyof typeof STAT_TINTS;
+
 function StatTile({
   label,
   value,
+  icon: Icon,
+  tint,
   href,
 }: {
   label: string;
   value: string;
+  icon: LucideIcon;
+  tint: StatTint;
   href?: string;
 }) {
   const inner = (
     <>
-      <p
-        className="truncate font-bold leading-none"
-        style={{
-          fontSize: "var(--text-base)",
-          color: "rgb(var(--color-text))",
-        }}
-      >
-        {value}
-      </p>
-      <p
-        className="mt-1 truncate font-semibold leading-tight"
-        style={{
-          fontSize: "var(--text-xs)",
-          color: "rgb(var(--color-text-muted))",
-        }}
-      >
-        {label}
-      </p>
+      <Icon
+        size={26}
+        strokeWidth={1.9}
+        className="shrink-0"
+        style={{ color: "rgb(var(--brand-primary))" }}
+        aria-hidden
+      />
+      {/* Right-aligned so the numbers line up down each column, which is what
+          makes a grid of figures scannable. */}
+      <span className="ml-auto min-w-0 text-right">
+        <span
+          className="block truncate font-bold leading-none"
+          style={{
+            fontSize: "var(--text-xl)",
+            color: "rgb(var(--brand-primary))",
+          }}
+        >
+          {value}
+        </span>
+        <span
+          className="mt-1 block truncate font-semibold leading-tight"
+          style={{
+            fontSize: "var(--text-xs)",
+            color: "rgb(var(--color-text))",
+          }}
+        >
+          {label}
+        </span>
+      </span>
     </>
   );
 
+  // No border. The tint is the container, and a border around a tinted card
+  // reads as two boxes stacked.
   const className =
-    "block min-w-0 rounded-md border px-2 py-2 text-center lg:rounded-2xl lg:px-4 lg:py-3 lg:text-left";
-  const style = {
-    backgroundColor: "rgb(var(--color-bg-elevated) / 0.78)",
-    borderColor: "rgb(var(--color-border))",
-  } as const;
+    "flex min-h-20 items-center gap-3 rounded-2xl px-3.5 py-3 md:px-4";
+  const style = { backgroundColor: STAT_TINTS[tint] } as const;
 
   if (href) {
     return (
@@ -261,23 +301,35 @@ export function ProfileHeader({ user, editHref, lang }: Props) {
 
               <ProfileViewsCluster lang={lang} className="mt-3 lg:hidden" />
 
-              <div className="mt-3 grid grid-cols-3 gap-1.5 md:max-w-xl md:gap-2 lg:mt-5 lg:max-w-none lg:grid-cols-4 lg:gap-3">
-                <StatTile label="Posts" value={formatCompact(user.postCount)} />
+              {/* Two up on a phone. Following used to be desktop-only because
+                  a third column left no room for it; at two columns all four
+                  fit as a tidy 2x2 with nothing hidden. */}
+              <div className="mt-3 grid grid-cols-2 gap-2.5 md:max-w-xl lg:mt-5 lg:max-w-none lg:grid-cols-4 lg:gap-3">
+                <StatTile
+                  label="Posts"
+                  value={formatCompact(user.postCount)}
+                  icon={LayoutGrid}
+                  tint="primary"
+                />
                 <StatTile
                   label="Followers"
                   value={formatCompact(user.followerCount)}
+                  icon={Users}
+                  tint="secondary"
                   href={`/${lang}/profile/followers`}
                 />
                 <StatTile
                   label="Views"
                   value={formatCompact(user.totalViews)}
+                  icon={Eye}
+                  tint="success"
                 />
-                <div className="hidden lg:block">
-                  <StatTile
-                    label="Following"
-                    value={formatCompact(user.followingCount)}
-                  />
-                </div>
+                <StatTile
+                  label="Following"
+                  value={formatCompact(user.followingCount)}
+                  icon={UserPlus}
+                  tint="accent"
+                />
               </div>
             </div>
           </div>

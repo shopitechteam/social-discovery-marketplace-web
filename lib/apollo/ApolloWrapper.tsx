@@ -435,6 +435,15 @@ function createClient() {
           fields: {
             isFollowedByMe: { merge: false },
             followerCount: { merge: false },
+            // Embedded objects with no id of their own, so an incoming subset
+            // would REPLACE the cached one and drop the rest. Real case: the
+            // TikTok status query asks only for authProviders.tiktok while the
+            // settings list needs authProviders.local — without this the two
+            // knock each other out and the read goes incomplete. Same class of
+            // bug as Content.media, same fix.
+            authProviders: { merge: true },
+            profile: { merge: true },
+            location: { merge: true },
             posts: {
               keyArgs: ["first", "after"],
               merge(existing, incoming, { args }) {
