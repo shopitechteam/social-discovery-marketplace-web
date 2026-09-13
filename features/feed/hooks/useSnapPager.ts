@@ -10,6 +10,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 const PROGRAMMATIC_SETTLE_MS = 400;
 /** When to check a smooth scroll actually arrived. See `goTo`. */
 const LANDING_CHECK_MS = 500;
+/**
+ * How many frames an instant jump re-asserts itself against the browser's own
+ * scroll restoration, which lands after layout. Long enough to outlast it,
+ * short enough that it can never fight a real swipe.
+ */
+const INSTANT_HOLD_FRAMES = 10;
 /** Quiet period after the last scroll event that counts as "the fling ended". */
 const SETTLE_DEBOUNCE_MS = 120;
 
@@ -50,10 +56,17 @@ export function useSnapPager({ count, onSettle }: Options) {
   }, []);
   const [index, setIndex] = useState(0);
 
-  // Set while a programmatic scroll is in flight, so the intermediate scroll
-  // events it generates don't drag the index through every slide it passes.
-  const programmaticRef = useRef(false);
-  const programmaticTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // When to start trusting scroll events again, as a timestamp rather than a
+  // flag cleared by a timer.
+  //
+  // A flag plus a timer can latch on: if anything cancels the timer before it
+  // fires — a cleanup, a StrictMode remount — the flag stays true for the life
+  // of the component and every later scroll is ignored. That is what left the
+  // pager pinned to the slide it had been restored to while the user scrolled
+  // past it: no index changes, so no active slide moved, no video played and
+  // the URL never followed. A deadline cannot leak, because nothing has to run
+  // to clear it.
+  const ignoreScrollUntilRef = useRef(0);
   const frameRef = useRef(0);
   const indexRef = useRef(0);
   const onSettleRef = useRef(onSettle);
@@ -82,19 +95,14 @@ export function useSnapPager({ count, onSettle }: Options) {
       const height = el.clientHeight;
       if (height <= 0) return;
 
-      programmaticRef.current = true;
+      ignoreScrollUntilRef.current = Date.now() + PROGRAMMATIC_SETTLE_MS;
       // This jump supersedes whatever the finger was doing.
       gestureStartRef.current = null;
-      if (programmaticTimer.current) clearTimeout(programmaticTimer.current);
 
       // Never scrollIntoView: it walks ancestors and can scroll the feed still
       // mounted behind the viewer.
       el.scrollTo({ top: clamped * height, behavior });
       commitIndex(clamped);
-
-      programmaticTimer.current = setTimeout(() => {
-        programmaticRef.current = false;
-      }, PROGRAMMATIC_SETTLE_MS);
 
       if (behavior === "smooth") {
         // Safari cancels smooth scroll animations inside a mandatory snap
@@ -109,6 +117,30 @@ export function useSnapPager({ count, onSettle }: Options) {
             scroller.scrollTop = clamped * h;
           }
         }, LANDING_CHECK_MS);
+      } else {
+        // An instant jump needs defending, not just checking.
+        //
+        // On a back navigation the browser restores this scroller's own
+        // scrollTop, and it does that AFTER layout — which is after this jump.
+        // The restore silently wins, so the pager believed it was on the slide
+        // it had jumped to (that slide had the audio) while the scroller sat on
+        // the one the browser put back (that slide filled the screen). Correct
+        // sound, wrong picture.
+        //
+        // Re-asserted for a few frames so the browser's restore loses, then
+        // stops so it can never fight a real swipe.
+        let frames = 0;
+        const hold = () => {
+          const scroller = nodeRef.current;
+          if (!scroller) return;
+          const h = scroller.clientHeight;
+          if (h > 0 && Math.round(scroller.scrollTop / h) !== clamped) {
+            scroller.scrollTop = clamped * h;
+          }
+          frames += 1;
+          if (frames < INSTANT_HOLD_FRAMES) requestAnimationFrame(hold);
+        };
+        requestAnimationFrame(hold);
       }
     },
     [count, commitIndex],
@@ -142,7 +174,7 @@ export function useSnapPager({ count, onSettle }: Options) {
     frameRef.current = requestAnimationFrame(() => {
       frameRef.current = 0;
       const el = nodeRef.current;
-      if (!el || programmaticRef.current) return;
+      if (!el || Date.now() < ignoreScrollUntilRef.current) return;
       const height = el.clientHeight;
       if (height <= 0) return;
       commitIndex(Math.round(el.scrollTop / height));
@@ -163,7 +195,6 @@ export function useSnapPager({ count, onSettle }: Options) {
   useEffect(
     () => () => {
       if (frameRef.current) cancelAnimationFrame(frameRef.current);
-      if (programmaticTimer.current) clearTimeout(programmaticTimer.current);
       if (settleTimer.current) clearTimeout(settleTimer.current);
     },
     [],
