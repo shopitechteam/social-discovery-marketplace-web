@@ -20,6 +20,7 @@ import {
 import { useFollow } from "@/features/feed/hooks/useFollow";
 import { useAuthStore } from "@/stores/auth";
 import { Skeleton } from "@/components/ui/skeleton";
+import { appendUnique } from "../lib/appendUnique";
 
 function formatCompact(value: number | null | undefined) {
   if (value == null) return "0";
@@ -143,10 +144,10 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
               return {
                 userPosts: {
                   ...fetchMoreResult.userPosts,
-                  posts: [
-                    ...prev.userPosts.posts,
-                    ...fetchMoreResult.userPosts.posts,
-                  ],
+                  posts: appendUnique(
+              prev.userPosts.posts,
+              fetchMoreResult.userPosts.posts,
+            ),
                 },
               };
             },

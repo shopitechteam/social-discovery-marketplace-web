@@ -34,6 +34,7 @@ import { AnalyticsPanel } from "./AnalyticsPanel";
 import { TiktokImportPanel } from "./TiktokImportPanel";
 import { cn } from "@/lib/utils";
 import { SettingsList } from "./SettingsList";
+import { appendUnique } from "../lib/appendUnique";
 
 type Tab = "posts" | "drafts" | "saved" | "analytics" | "tiktok" | "settings";
 
@@ -262,10 +263,10 @@ export function ProfileView({ lang }: Props) {
         return {
           myManagedContent: {
             ...fetchMoreResult.myManagedContent,
-            items: [
-              ...prev.myManagedContent.items,
-              ...fetchMoreResult.myManagedContent.items,
-            ],
+            items: appendUnique(
+              prev.myManagedContent.items,
+              fetchMoreResult.myManagedContent.items,
+            ),
           },
         };
       },
@@ -285,10 +286,10 @@ export function ProfileView({ lang }: Props) {
         return {
           mySavedContent: {
             ...fetchMoreResult.mySavedContent,
-            items: [
-              ...prev.mySavedContent.items,
-              ...fetchMoreResult.mySavedContent.items,
-            ],
+            items: appendUnique(
+              prev.mySavedContent.items,
+              fetchMoreResult.mySavedContent.items,
+            ),
           },
         };
       },

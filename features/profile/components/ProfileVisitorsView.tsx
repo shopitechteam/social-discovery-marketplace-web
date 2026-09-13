@@ -14,6 +14,7 @@ import { useFollow } from "@/features/feed/hooks/useFollow";
 import { SHIMMER_AVATAR } from "@/lib/shimmer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { profileHref } from "@/lib/profile-url";
+import { appendUnique } from "../lib/appendUnique";
 
 const PAGE_SIZE = 20;
 
@@ -207,10 +208,10 @@ export function ProfileVisitorsView({ lang }: Props) {
         return {
           myProfileVisitors: {
             ...fetchMoreResult.myProfileVisitors,
-            visitors: [
-              ...prev.myProfileVisitors.visitors,
-              ...fetchMoreResult.myProfileVisitors.visitors,
-            ],
+            visitors: appendUnique(
+              prev.myProfileVisitors.visitors,
+              fetchMoreResult.myProfileVisitors.visitors,
+            ),
           },
         };
       },
