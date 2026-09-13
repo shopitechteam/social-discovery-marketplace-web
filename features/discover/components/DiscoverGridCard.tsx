@@ -294,10 +294,11 @@ function DiscoverGridCardImpl({
             aria-label={saved ? "Remove from saved" : `Save ${post.title}`}
             className={cn(
               "absolute right-1.5 top-1.5 flex h-9 w-9 items-center justify-center rounded-full backdrop-blur-[2px] transition active:scale-90",
-              // Saved is a confirmation, so it reads green. In brand pink it was
-              // indistinguishable from the app's ordinary call-to-action colour —
-              // the one state that means "done" looked like another thing to tap.
-              saved ? "bg-white text-success" : "bg-black/40 text-white",
+              // Saved fills in the brand colour. It was green — a clearer
+              // "done" signal in isolation, but a colour the app uses nowhere
+              // else, so on a grid of tiles it read as an unrelated status
+              // rather than as this product's own saved state.
+              saved ? "bg-white text-primary" : "bg-black/40 text-white",
             )}
           >
             <Bookmark

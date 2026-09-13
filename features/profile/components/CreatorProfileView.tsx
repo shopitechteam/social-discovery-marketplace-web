@@ -1,36 +1,25 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { useAppBack } from "@/lib/useAppBack";
+import { DiscoverGridCard } from "@/features/discover/components/DiscoverGridCard";
 import {
   ArrowLeft,
-  Bookmark,
   ExternalLink,
-  Eye,
-  Link2,
-  MapPin,
   Play,
-  Share2,
   Video,
 } from "lucide-react";
 import { useQuery, useMutation } from "@apollo/client/react";
-import { SHIMMER_AVATAR, SHIMMER_PORTRAIT } from "@/lib/shimmer";
+import { SHIMMER_AVATAR } from "@/lib/shimmer";
 import {
   GetUserPostsDocument,
   RecordProfileVisitDocument,
   type ProfileUserFieldsFragment,
-  type ProfilePostFieldsFragment,
 } from "@/types/__generated__/graphql";
 import { useFollow } from "@/features/feed/hooks/useFollow";
-import {
-  HoverVideoPreview,
-  useHoverPreview,
-} from "@/features/video/components/HoverVideoPreview";
 import { useAuthStore } from "@/stores/auth";
 import { Skeleton } from "@/components/ui/skeleton";
-import { absoluteContentUrl, contentPath } from "@/lib/content-url";
 
 function formatCompact(value: number | null | undefined) {
   if (value == null) return "0";
@@ -39,59 +28,12 @@ function formatCompact(value: number | null | undefined) {
   return String(value);
 }
 
-function formatDate(value: unknown) {
-  const date = new Date(String(value));
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleDateString("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
 /** "KSh 12,500" — grouped thousands, no decimals. */
-function formatPrice(amount: number, currency: string) {
-  return `${currency} ${Math.round(amount).toLocaleString("en-KE")}`;
-}
-
 /**
  * Readable location for a card: county first, then the more specific area, e.g.
  * "Nairobi, Westlands". Falls back gracefully and de-dupes when the area and
  * county are the same (so we never show "Nairobi, Nairobi").
  */
-function locationLabel(loc: {
-  placeName?: string | null;
-  subregion?: string | null;
-  county?: string | null;
-}): string | null {
-  const county = loc.county?.trim() || null;
-  const area = loc.placeName?.trim() || loc.subregion?.trim() || null;
-  const parts = [county, area].filter(
-    (p, i, arr): p is string => Boolean(p) && arr.indexOf(p) === i, // drop falsy + duplicates
-  );
-  return parts.length ? parts.join(", ") : null;
-}
-
-function getThumb(post: ProfilePostFieldsFragment): string | null {
-  const m = post.media?.[0];
-
-  // For videos, fall back to a Mux-derived thumbnail when no stored cover exists.
-  const muxPlaybackId = m?.muxMeta?.playbackId;
-  const muxDerivedThumb = muxPlaybackId
-    ? `https://image.mux.com/${muxPlaybackId}/thumbnail.jpg?time=0&width=540&fit_mode=smartcrop`
-    : null;
-
-  return (
-    m?.muxMeta?.thumbnailUrl ??
-    m?.thumbnailUrl ??
-    m?.r2Variants?.find((v) => v.variant === "thumbnail")?.url ??
-    m?.r2Variants?.[0]?.url ??
-    m?.url ??
-    muxDerivedThumb ??
-    null
-  );
-}
-
 // ── Stat pill ─────────────────────────────────────────────────────────────────
 
 function StatCard({ label, value }: { label: string; value: string }) {
@@ -112,238 +54,6 @@ function StatCard({ label, value }: { label: string; value: string }) {
       >
         {label}
       </span>
-    </div>
-  );
-}
-
-// ── Post tile ─────────────────────────────────────────────────────────────────
-
-function PostTile({
-  post,
-  lang,
-  onShare,
-  onCopyLink,
-}: {
-  post: ProfilePostFieldsFragment;
-  lang: string;
-  onShare: (post: ProfilePostFieldsFragment) => void;
-  onCopyLink: (post: ProfilePostFieldsFragment) => void;
-}) {
-  const thumb = getThumb(post);
-  const isVideo = post.type === "VIDEO";
-  const playbackId = post.media?.[0]?.muxMeta?.playbackId ?? null;
-  const { previewing, bind } = useHoverPreview(isVideo && !!playbackId);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const priceText =
-    post.price.amount <= 0
-      ? "Custom"
-      : formatPrice(post.price.amount, post.price.currency);
-  const place = post.location ? locationLabel(post.location) : null;
-
-  return (
-    <div className="group overflow-hidden rounded-xl border border-[rgb(229_231_235)] bg-[rgb(var(--color-bg-elevated))]">
-      {/* Thumbnail */}
-      <div className="relative aspect-9/10" {...bind}>
-        {/* Whole thumbnail navigates to content detail */}
-        <Link
-          href={contentPath(lang, post)}
-          scroll={false}
-          className="absolute inset-0 z-10"
-          aria-label={post.title}
-        />
-
-        {thumb && isVideo ? (
-          <Image
-            src={thumb}
-            alt={post.title}
-            fill
-            className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-            sizes="(max-width: 767px) 50vw, (max-width: 1279px) 33vw, 280px"
-            placeholder="blur"
-            blurDataURL={SHIMMER_PORTRAIT}
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center">
-            <Image
-              src={
-                post.media.filter((m) => m.mediaType === "IMAGE")[0]
-                  ?.r2Variants?.[0]?.url ??
-                thumb ??
-                "/images/placeholder.png"
-              }
-              alt={post.title}
-              fill
-              className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-              sizes="(max-width: 767px) 50vw, (max-width: 1279px) 33vw, 280px"
-              placeholder="blur"
-              blurDataURL={SHIMMER_PORTRAIT}
-            />
-          </div>
-        )}
-
-        {/* Hover preview — under the z-10 Link overlay so clicks still
-            navigate; the thumbnail stays mounted behind it. */}
-        {previewing && playbackId && (
-          <HoverVideoPreview playbackId={playbackId} />
-        )}
-
-        {/* Play affordance for video posts */}
-        {isVideo && thumb && !previewing && (
-          <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white">
-              <Play
-                size={20}
-                fill="currentColor"
-                strokeWidth={0}
-                className="ml-0.5"
-              />
-            </span>
-          </span>
-        )}
-
-        {/* Price badge — primary marketplace signal. pointer-events-none so the
-            full-thumbnail Link overlay still handles taps. "Custom" when unpriced. */}
-        <span
-          className="pointer-events-none absolute bottom-2 left-2 z-20 rounded-lg bg-black/70 px-2 py-1 font-bold leading-none text-white backdrop-blur-sm"
-          style={{ fontSize: "var(--text-sm)" }}
-        >
-          {priceText}
-        </span>
-
-        {/* action menu — sits above the Link overlay */}
-        <div className="absolute right-2 top-2 z-20 opacity-0 transition-opacity group-hover:opacity-100">
-          <div className="relative">
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                setMenuOpen((v) => !v);
-              }}
-              className="inline-flex h-7 w-7 items-center justify-center rounded-lg border text-white"
-              style={{
-                backgroundColor: "rgba(0,0,0,0.5)",
-                borderColor: "rgba(255,255,255,0.2)",
-                backdropFilter: "blur(8px)",
-              }}
-              aria-label="Post actions"
-            >
-              <span className="flex flex-col items-center gap-0.5">
-                {[0, 1, 2].map((i) => (
-                  <span
-                    key={i}
-                    className="block h-0.5 w-0.5 rounded-full bg-white"
-                  />
-                ))}
-              </span>
-            </button>
-            {menuOpen && (
-              <div
-                className="absolute right-0 top-8 z-20 w-36 overflow-hidden rounded-xl border py-1 shadow-xl"
-                style={{
-                  backgroundColor: "rgb(var(--color-bg-elevated))",
-                  borderColor: "rgb(229 231 235)",
-                }}
-                onMouseLeave={() => setMenuOpen(false)}
-              >
-                <Link
-                  href={contentPath(lang, post)}
-                  scroll={false}
-                  className="flex items-center gap-2 px-3 py-2 font-medium transition-colors hover:bg-surface"
-                  style={{
-                    fontSize: "var(--text-sm)",
-                    color: "rgb(var(--color-text))",
-                  }}
-                >
-                  <Eye size={14} />
-                  View
-                </Link>
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    onShare(post);
-                    setMenuOpen(false);
-                  }}
-                  className="flex w-full items-center gap-2 px-3 py-2 font-medium transition-colors hover:bg-surface"
-                  style={{
-                    fontSize: "var(--text-sm)",
-                    color: "rgb(var(--color-text))",
-                  }}
-                >
-                  <Share2 size={14} />
-                  Share
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    onCopyLink(post);
-                    setMenuOpen(false);
-                  }}
-                  className="flex w-full items-center gap-2 px-3 py-2 font-medium transition-colors hover:bg-surface"
-                  style={{
-                    fontSize: "var(--text-sm)",
-                    color: "rgb(var(--color-text))",
-                  }}
-                >
-                  <Link2 size={14} />
-                  Copy link
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Meta — title / location / performance (matches /profile cards) */}
-      <Link
-        href={contentPath(lang, post)}
-        scroll={false}
-        className="block p-2.5"
-      >
-        {post.title && (
-          <p
-            className="line-clamp-1 leading-tight"
-            style={{
-              fontSize: "var(--text-sm)",
-              color: "rgb(var(--color-text))",
-              fontWeight: 600,
-            }}
-          >
-            {post.title}
-          </p>
-        )}
-
-        {/* Location — where the buyer would collect it */}
-        {place && (
-          <p
-            className="mt-1 flex items-center gap-1 line-clamp-1"
-            style={{
-              fontSize: "var(--text-xs)",
-              color: "rgb(var(--color-text-muted))",
-            }}
-          >
-            <MapPin size={12} aria-hidden className="shrink-0" />
-            <span className="truncate">{place}</span>
-          </p>
-        )}
-
-        {/* Saves signal buying intent, so they stay. Views do not appear here:
-            this is somebody else's profile, seen by a shopper, and on a young
-            marketplace the honest number is usually low enough to read as "no
-            one is interested" — which discourages the contact we want and says
-            nothing about the product. The seller still sees views on their own
-            profile and in analytics; the figure is hidden here, not removed. */}
-        <div
-          className="mt-1.5 flex items-center gap-3"
-          style={{
-            fontSize: "var(--text-xs)",
-            color: "rgb(var(--color-text-muted))",
-          }}
-        >
-          <span className="flex items-center gap-1">
-            <Bookmark size={12} /> {formatCompact(post.stats.saves)}
-          </span>
-          <span className="ml-auto shrink-0">{formatDate(post.createdAt)}</span>
-        </div>
-      </Link>
     </div>
   );
 }
@@ -449,25 +159,7 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
     return () => observer.disconnect();
   }, [hasMore, postsLoading, nextCursor, fetchMore, user.id]);
 
-  const handleShare = useCallback(
-    (post: ProfilePostFieldsFragment) => {
-      const url = absoluteContentUrl(window.location.origin, lang, post);
-      if (navigator.share) {
-        navigator.share({ title: post.title, url }).catch(() => {});
-      } else {
-        navigator.clipboard.writeText(url).catch(() => {});
-      }
-    },
-    [lang],
-  );
 
-  const handleCopyLink = useCallback(
-    (post: ProfilePostFieldsFragment) => {
-      const url = absoluteContentUrl(window.location.origin, lang, post);
-      navigator.clipboard.writeText(url).catch(() => {});
-    },
-    [lang],
-  );
 
   return (
     <div
@@ -747,14 +439,15 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:gap-3 xl:grid-cols-5 min-[90rem]:grid-cols-6">
-              {posts.map((post) => (
-                <PostTile
+            {/* The same tile as /explore and the Saved tab, so a listing looks
+                identical wherever it is browsed. */}
+            <div className="grid grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-3 md:gap-x-4 md:gap-y-6 xl:grid-cols-4 min-[90rem]:grid-cols-5">
+              {posts.map((post, index) => (
+                <DiscoverGridCard
                   key={post.id}
                   post={post}
                   lang={lang}
-                  onShare={handleShare}
-                  onCopyLink={handleCopyLink}
+                  priority={index < 4}
                 />
               ))}
             </div>
@@ -764,9 +457,9 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
 
             {/* Skeleton tiles while fetching the next page */}
             {postsLoading && posts.length > 0 && (
-              <div className="mt-2 grid grid-cols-2 gap-2 md:grid-cols-3 lg:gap-3 xl:grid-cols-5 min-[90rem]:grid-cols-6">
+              <div className="mt-5 grid grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-3 md:gap-x-4 md:gap-y-6 xl:grid-cols-4 min-[90rem]:grid-cols-5">
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <Skeleton key={i} className="aspect-9/10 rounded-xl" />
+                  <Skeleton key={i} className="aspect-3/4 w-full rounded-xl md:aspect-4/5" />
                 ))}
               </div>
             )}
