@@ -1,19 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import {
   Bookmark,
   ChartColumn,
   FileEdit,
   LayoutGrid,
-  LogOut,
-  Palette,
   Plus,
   Settings,
   UserRound,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 
 // Icon may be a lucide icon or a custom SVG component (both take size/className)
 type TabIcon = React.ComponentType<{
@@ -34,10 +31,8 @@ import { ManagedPostsGrid } from "./ManagedPostsGrid";
 import { DraftsGrid } from "./DraftsGrid";
 import { AnalyticsPanel } from "./AnalyticsPanel";
 import { TiktokImportPanel } from "./TiktokImportPanel";
-import { LogoutButton } from "@/features/auth/components/LogoutButton";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { cn } from "@/lib/utils";
-import type { ProfileUserFieldsFragment } from "@/types/__generated__/graphql";
+import { SettingsList } from "./SettingsList";
 
 type Tab = "posts" | "drafts" | "saved" | "analytics" | "tiktok" | "settings";
 
@@ -464,198 +459,7 @@ export function ProfileView({ lang }: Props) {
 
       {tab === "tiktok" && <TiktokImportPanel lang={lang} />}
 
-      {tab === "settings" && <SettingsPanel lang={lang} user={user} />}
-    </div>
-  );
-}
-
-function SettingsPanel({
-  lang,
-  user,
-}: {
-  lang: string;
-  user: ProfileUserFieldsFragment;
-}) {
-  return (
-    <section className="w-full px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
-      {/* ── Mobile / tablet — single stacked list, unchanged ── */}
-      <div className="mx-auto lg:hidden">
-        <div className="mb-4">
-          <h2
-            className="font-bold leading-tight"
-            style={{
-              fontSize: "var(--text-base)",
-              color: "rgb(var(--color-text))",
-            }}
-          >
-            Settings
-          </h2>
-          <p
-            className="mt-1"
-            style={{
-              fontSize: "var(--text-sm)",
-              color: "rgb(var(--color-text-muted))",
-            }}
-          >
-            Account preferences
-          </p>
-        </div>
-
-        <div
-          className="overflow-hidden rounded-lg border"
-          style={{
-            backgroundColor: "rgb(var(--color-bg-elevated))",
-            borderColor: "rgb(var(--color-border))",
-            boxShadow: "var(--shadow-sm)",
-          }}
-        >
-          <SettingsRow
-            icon={Palette}
-            label="Appearance"
-            description="Light and dark theme"
-            tone="--brand-accent"
-          >
-            <ThemeToggle />
-          </SettingsRow>
-
-          {/* Desktop signs out from the SideNav user card; this row only
-              renders in the mobile/tablet block above (lg:hidden). */}
-          <div
-            style={{ height: 1, backgroundColor: "rgb(var(--color-border))" }}
-          />
-
-          <SettingsRow
-            icon={LogOut}
-            label="Sign out"
-            description="End this session"
-            tone="--color-error"
-          >
-            <LogoutButton lang={lang} />
-          </SettingsRow>
-        </div>
-      </div>
-
-      {/* ── Desktop — grouped cards with an account summary rail ── */}
-      <div className="hidden lg:block">
-        <div className="grid grid-cols-[minmax(0,320px)_minmax(0,1fr)] gap-6">
-          {/* Account summary card */}3{/* Settings groups */}
-          <div className="flex flex-col gap-5">
-            <SettingsGroup label="Appearance">
-              <SettingsRow
-                icon={Palette}
-                label="Theme"
-                description="Switch between light and dark mode"
-                tone="--brand-accent"
-              >
-                <ThemeToggle />
-              </SettingsRow>
-            </SettingsGroup>
-
-            <SettingsGroup label="Account">
-              <SettingsRow
-                icon={UserRound}
-                label="Profile details"
-                description="Name, bio, avatar, and links"
-                tone="--brand-primary"
-              >
-                <Link
-                  href={`/${lang}/profile/edit`}
-                  className="inline-flex h-9 items-center justify-center rounded-lg border px-3.5 font-semibold transition-colors hover:bg-surface"
-                  style={{
-                    fontSize: "var(--text-sm)",
-                    borderColor: "rgb(var(--color-border))",
-                    color: "rgb(var(--color-text))",
-                  }}
-                >
-                  Edit
-                </Link>
-              </SettingsRow>
-            </SettingsGroup>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function SettingsGroup({
-  label,
-  children,
-}: {
-  label: string;
-  children: ReactNode;
-}) {
-  return (
-    <div>
-      <p
-        className="mb-2.5 px-1 font-semibold tracking-wide uppercase"
-        style={{
-          fontSize: "var(--text-xs)",
-          color: "rgb(var(--color-text-muted))",
-          letterSpacing: "0.06em",
-        }}
-      >
-        {label}
-      </p>
-      <div
-        className="overflow-hidden rounded-2xl border"
-        style={{
-          backgroundColor: "rgb(var(--color-bg-elevated))",
-          borderColor: "rgb(var(--color-border))",
-          boxShadow: "var(--shadow-sm)",
-        }}
-      >
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function SettingsRow({
-  icon: Icon,
-  label,
-  description,
-  children,
-  tone,
-}: {
-  icon: LucideIcon;
-  label: string;
-  description: string;
-  children?: ReactNode;
-  tone: string;
-}) {
-  return (
-    <div className="flex items-center gap-3 p-4">
-      <div
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
-        style={{
-          backgroundColor: `rgb(var(${tone}) / 0.12)`,
-          color: `rgb(var(${tone}))`,
-        }}
-      >
-        <Icon size={18} strokeWidth={2.2} />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p
-          className="font-bold leading-tight"
-          style={{
-            fontSize: "var(--text-base)",
-            color: "rgb(var(--color-text))",
-          }}
-        >
-          {label}
-        </p>
-        <p
-          className="mt-1"
-          style={{
-            fontSize: "var(--text-sm)",
-            color: "rgb(var(--color-text-muted))",
-          }}
-        >
-          {description}
-        </p>
-      </div>
-      {children && <div className="shrink-0">{children}</div>}
+      {tab === "settings" && <SettingsList lang={lang} />}
     </div>
   );
 }

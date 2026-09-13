@@ -45,14 +45,26 @@ async function exchangeImpersonationToken(token: string): Promise<AuthPayload> {
     errors?: Array<{ message?: string }>;
   };
 
-  if (!res.ok || json.errors?.length || !json.data?.exchangeImpersonationToken) {
-    throw new Error(json.errors?.[0]?.message ?? "Unable to start impersonation session");
+  if (
+    !res.ok ||
+    json.errors?.length ||
+    !json.data?.exchangeImpersonationToken
+  ) {
+    throw new Error(
+      json.errors?.[0]?.message ?? "Unable to start impersonation session",
+    );
   }
 
   return json.data.exchangeImpersonationToken;
 }
 
-export function ImpersonationCallback({ lang, token }: { lang: string; token: string }) {
+export function ImpersonationCallback({
+  lang,
+  token,
+}: {
+  lang: string;
+  token: string;
+}) {
   const router = useRouter();
   const setAuth = useAuthStore((s) => s.setAuth);
   const [error, setError] = useState<string | null>(null);
@@ -73,7 +85,11 @@ export function ImpersonationCallback({ lang, token }: { lang: string; token: st
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        setError(err instanceof Error ? err.message : "Unable to start impersonation session");
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Unable to start impersonation session",
+        );
       });
 
     return () => {
