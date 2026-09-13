@@ -140,8 +140,14 @@ export const siteConfig = {
     "Nakuru marketplace",
     "Meru marketplace",
 
-    // Competitor searches
+    // Competitor searches. People look for the name they already know, so the
+    // comparison page has to be reachable by it.
     "Jiji alternative Kenya",
+    "sites like Jiji Kenya",
+    "PigiaMe alternative",
+    "alternative to Jiji and PigiaMe",
+    "best site to sell online in Kenya",
+    "free classifieds Kenya",
     "Facebook Marketplace Kenya",
     "TikTok marketplace Kenya",
   ],
