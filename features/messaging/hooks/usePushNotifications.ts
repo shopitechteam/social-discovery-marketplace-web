@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { useAuthStore } from "@/stores/auth";
 import {
   MY_WEB_PUSH_STATUS,
-  REMOVE_WEB_PUSH_SUBSCRIPTION,
+  REMOVE_ALL_WEB_PUSH_SUBSCRIPTIONS,
   SAVE_WEB_PUSH_SUBSCRIPTION,
 } from "../graphql/operations";
 
@@ -69,6 +69,11 @@ export function usePushNotifications(lang: string) {
   const [permission, setPermission] = useState<PermissionState>("unsupported");
   const [isUpdating, setIsUpdating] = useState(false);
   const autoSyncRef = useRef(false);
+  // Set the moment the user turns the toggle off. Permission is still granted
+  // at that point, so without this the auto-sync effect below sees "granted
+  // but not enabled", re-registers the browser subscription, and the switch
+  // flicks straight back on.
+  const disabledByUserRef = useRef(false);
 
   useEffect(() => {
     if (!browserSupportsPush()) return;
@@ -85,7 +90,7 @@ export function usePushNotifications(lang: string) {
   });
 
   const [saveSubscription] = useMutation(SAVE_WEB_PUSH_SUBSCRIPTION);
-  const [removeSubscription] = useMutation(REMOVE_WEB_PUSH_SUBSCRIPTION);
+  const [removeAllSubscriptions] = useMutation(REMOVE_ALL_WEB_PUSH_SUBSCRIPTIONS);
 
   const status = (
     data as
@@ -147,7 +152,8 @@ export function usePushNotifications(lang: string) {
       permission !== "granted" ||
       !isAvailable ||
       isEnabled ||
-      autoSyncRef.current
+      autoSyncRef.current ||
+      disabledByUserRef.current
     ) {
       return;
     }
@@ -176,6 +182,7 @@ export function usePushNotifications(lang: string) {
     }
 
     setIsUpdating(true);
+    disabledByUserRef.current = false;
     try {
       let nextPermission = Notification.permission;
       if (nextPermission !== "granted") {
@@ -243,22 +250,37 @@ export function usePushNotifications(lang: string) {
   }, [lang, refetch, saveSubscription, status]);
 
   const disable = useCallback(async () => {
-    if (!browserSupportsPush()) return false;
-
+    // Deliberately not gated on browserSupportsPush(). The account can hold
+    // subscriptions registered by other devices, and the user must be able to
+    // switch those off from here even if this browser cannot do push at all.
     setIsUpdating(true);
+    disabledByUserRef.current = true;
     try {
-      const registration = await getRegistration();
-      const subscription = await registration.pushManager.getSubscription();
-      if (subscription?.endpoint) {
-        await removeSubscription({
-          variables: { endpoint: subscription.endpoint },
-        });
-        await subscription.unsubscribe();
+      // Drop this browser's own registration first, so the OS stops treating
+      // the site as subscribed. Best-effort: a missing or already-removed
+      // subscription is not a failure, and must not stop the server-side clear
+      // below — that combination was exactly what left the toggle stuck on.
+      if (browserSupportsPush()) {
+        try {
+          const registration = await getRegistration();
+          const subscription = await registration.pushManager.getSubscription();
+          if (subscription) {
+            await subscription.unsubscribe().catch(() => {});
+          }
+        } catch {
+          // Service worker unavailable — the server-side clear still stands.
+        }
       }
+
+      // The authoritative step. `isEnabled` counts active subscriptions across
+      // every device, so anything short of clearing them all leaves it true.
+      await removeAllSubscriptions();
       await refetch();
       toast.success("Message alerts disabled");
       return true;
     } catch (error) {
+      // The intent did not take effect, so allow auto-sync to work again.
+      disabledByUserRef.current = false;
       toast.error(
         error instanceof Error
           ? error.message
@@ -268,7 +290,7 @@ export function usePushNotifications(lang: string) {
     } finally {
       setIsUpdating(false);
     }
-  }, [refetch, removeSubscription]);
+  }, [refetch, removeAllSubscriptions]);
 
   const toggle = useCallback(async () => {
     if (isEnabled) return disable();

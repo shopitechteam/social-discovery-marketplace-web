@@ -4,6 +4,14 @@ fragment ProfileUserFields on User {
   email
   isVerified
   tiktokOpenId
+  # Drives which account rows Settings can offer: changing a password only
+  # means something for an account that has one.
+  authProviders {
+    local
+    google
+    facebook
+    apple
+  }
   profile {
     firstName
     lastName
@@ -273,4 +281,54 @@ query GetTiktokConnectStatus {
 
 mutation GetTiktokConnectUrl($returnUrl: String) {
   tiktokConnectUrl(returnUrl: $returnUrl)
+}
+
+# ── Account security ─────────────────────────────────────────────────────────
+
+# Returns a fresh token pair: changing the password revokes every other
+# session, including the one that made this call, so the client must swap in
+# the new tokens or it signs itself out.
+mutation ChangePassword($input: ChangePasswordInput!) {
+  changePassword(input: $input) {
+    accessToken
+    refreshToken
+    user {
+      id
+    }
+  }
+}
+
+# `password` is required for accounts that have one and ignored for social-only
+# sign-ins, which have nothing to verify against.
+mutation DeleteMyAccount($password: String) {
+  deleteMyAccount(password: $password)
+}
+
+# ── Rate us ──────────────────────────────────────────────────────────────────
+
+fragment AppRatingFields on AppRating {
+  id
+  stars
+  comment
+  updatedAt
+}
+
+query MyAppRating {
+  myAppRating {
+    ...AppRatingFields
+  }
+}
+
+query AppRatingSummary {
+  appRatingSummary {
+    average
+    total
+    distribution
+  }
+}
+
+mutation SubmitAppRating($input: SubmitAppRatingInput!) {
+  submitAppRating(input: $input) {
+    ...AppRatingFields
+  }
 }

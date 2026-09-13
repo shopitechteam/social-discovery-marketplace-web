@@ -448,6 +448,22 @@ export const REMOVE_WEB_PUSH_SUBSCRIPTION = gql`
   }
 `;
 
+/**
+ * Turning the toggle off has to clear every subscription, not just this
+ * browser's. `isEnabled` is account-wide, so removing one endpoint left the
+ * count above zero and the switch snapped back on.
+ */
+export const REMOVE_ALL_WEB_PUSH_SUBSCRIPTIONS = gql`
+  mutation RemoveAllWebPushSubscriptionsInbox {
+    removeAllWebPushSubscriptions {
+      isAvailable
+      isEnabled
+      activeSubscriptionCount
+      publicKey
+    }
+  }
+`;
+
 export const LINK_PREVIEW = gql`
   query LinkPreviewInbox($url: String!) {
     linkPreview(url: $url) {

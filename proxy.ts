@@ -18,6 +18,11 @@ const PRIVATE_PROFILE_PATHS = [
   "/profile/followers",
   "/profile/visitors",
   "/profile/posts",
+  // Account settings sub-pages. These are static segments so they beat the
+  // /profile/{username} dynamic route, but they must also be listed here or a
+  // signed-out visitor reaches them instead of the sign-in screen.
+  "/profile/change-password",
+  "/profile/rate",
 ];
 
 // Routes a logged-in user shouldn't see — the auth flows. They're redirected

@@ -5,12 +5,13 @@ import Link from "next/link";
 import { Camera, Check, ChevronLeft, Loader2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { HTMLAttributes } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { SHIMMER_AVATAR } from "@/lib/shimmer";
 import { cn } from "@/lib/utils";
 import type { ProfileUserFieldsFragment } from "@/types/__generated__/graphql";
 import { useAuthStore } from "@/stores/auth";
+import { profileReturnHref } from "../lib/settingsReturn";
 import {
   useCheckUsername,
   useMyProfile,
@@ -89,6 +90,7 @@ function getDisplayName(user: ProfileUserFieldsFragment, form: FormValues) {
 }
 
 function EditProfileSkeleton({ lang }: { lang: string }) {
+  const backHref = useProfileBackHref(lang);
   return (
     <div className="min-h-svh animate-pulse bg-app">
       <div
@@ -99,7 +101,7 @@ function EditProfileSkeleton({ lang }: { lang: string }) {
         }}
       >
         <Link
-          href={`/${lang}/profile`}
+          href={backHref}
           className="flex h-10 w-10 items-center justify-center rounded-md"
           aria-label="Back to profile"
         >
@@ -147,6 +149,16 @@ function EditProfileSkeleton({ lang }: { lang: string }) {
   );
 }
 
+/**
+ * Back out to wherever this screen was opened from — Settings keeps its tab.
+ * Read from the URL rather than history so a refresh or a shared link behaves
+ * the same as an in-app tap.
+ */
+function useProfileBackHref(lang: string): string {
+  const searchParams = useSearchParams();
+  return profileReturnHref(lang, searchParams.get("from"));
+}
+
 export function EditProfileScreen({ lang }: { lang: string }) {
   const { data, loading } = useMyProfile();
 
@@ -163,6 +175,7 @@ function EditProfileForm({
   user: ProfileUserFieldsFragment;
   lang: string;
 }) {
+  const backHref = useProfileBackHref(lang);
   const router = useRouter();
   const [form, setForm] = useState<FormValues>(() => getInitialForm(user));
   const [usernameState, setUsernameState] = useState<
@@ -291,7 +304,7 @@ function EditProfileForm({
           className="h-14 w-14 rounded-md"
           style={{ color: "rgb(var(--color-text))" }}
         >
-          <Link href={`/${lang}/profile`} aria-label="Back to profile">
+          <Link href={backHref} aria-label="Back to profile">
             <ChevronLeft size={38} strokeWidth={2.5} />
           </Link>
         </Button>

@@ -22,8 +22,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { Switch } from "@/components/ui/switch";
 import { usePushNotifications } from "@/features/messaging/hooks/usePushNotifications";
 import { useLogout } from "@/features/auth/hooks/useLogout";
+import { useMyProfile } from "../hooks/useMyProfile";
+import { useMutation } from "@apollo/client/react";
+import { DeleteMyAccountDocument } from "@/types/__generated__/graphql";
+import { useAuthStore } from "@/stores/auth";
+import { settingsSubPageHref } from "../lib/settingsReturn";
 import { cn } from "@/lib/utils";
 
 /**
@@ -152,7 +158,13 @@ function SettingsRow({
 export function SettingsList({ lang }: { lang: string }) {
   const push = usePushNotifications(lang);
   const { logout, loading: loggingOut } = useLogout(lang);
+  const { data: profileData } = useMyProfile();
+  // Undefined while the profile loads. Treated as "no password" so the row
+  // appears once we know it belongs there, rather than flashing in and out.
+  const hasPassword = profileData?.me?.authProviders?.local === true;
+
   const [confirmLogout, setConfirmLogout] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   return (
     <section className="w-full px-4 py-5 sm:px-6 lg:px-8">
@@ -162,7 +174,7 @@ export function SettingsList({ lang }: { lang: string }) {
             icon={UserRound}
             label="Edit profile"
             tone="brand"
-            href={`/${lang}/profile/edit`}
+            href={settingsSubPageHref(lang, "/profile/edit")}
           />
           <SettingsRow icon={Palette} label="Appearance" control={<ThemeToggle />} />
           {/* Only offered where the browser can actually do it. A dead toggle
@@ -172,28 +184,20 @@ export function SettingsList({ lang }: { lang: string }) {
               icon={Bell}
               label="Push notifications"
               control={
-                <button
-                  type="button"
-                  onClick={() => void push.toggle()}
+                // The same Switch the Appearance row uses. The hand-rolled
+                // version this replaces positioned its knob with translate
+                // utilities that no longer resolved, so the thumb sat outside
+                // the track and the row read as broken.
+                <Switch
+                  checked={push.isEnabled}
+                  onCheckedChange={() => void push.toggle()}
                   disabled={push.isUpdating}
-                  aria-pressed={push.isEnabled}
                   aria-label={
                     push.isEnabled
                       ? "Turn off push notifications"
                       : "Turn on push notifications"
                   }
-                  className={cn(
-                    "relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-60",
-                    push.isEnabled ? "bg-primary" : "bg-slate-400/40",
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform",
-                      push.isEnabled ? "translate-x-5.5" : "translate-x-0.5",
-                    )}
-                  />
-                </button>
+                />
               }
             />
           )}
@@ -205,20 +209,30 @@ export function SettingsList({ lang }: { lang: string }) {
             label="Safety centre"
             href={`/${lang}/safety-centre`}
           />
-          <SettingsRow icon={Star} label="Rate us" href={`/${lang}/contact`} />
+          <SettingsRow
+            icon={Star}
+            label="Rate us"
+            href={settingsSubPageHref(lang, "/profile/rate")}
+          />
         </SettingsGroup>
 
         <SettingsGroup>
-          <SettingsRow
-            icon={KeyRound}
-            label="Change password"
-            href={`/${lang}/auth/forgot-password`}
-          />
+          {/* Only for accounts with a password to change. Someone who signed
+              up through Google or Apple has none, and the server rejects the
+              mutation for them — so offering the row would just be a dead end
+              with an error at the bottom of it. */}
+          {hasPassword && (
+            <SettingsRow
+              icon={KeyRound}
+              label="Change password"
+              href={settingsSubPageHref(lang, "/profile/change-password")}
+            />
+          )}
           <SettingsRow
             icon={Trash2}
             label="Delete my account permanently"
             tone="danger"
-            href={`/${lang}/contact`}
+            onClick={() => setConfirmDelete(true)}
           />
           <SettingsRow
             icon={LogOut}
@@ -261,6 +275,130 @@ export function SettingsList({ lang }: { lang: string }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <DeleteAccountDialog
+        lang={lang}
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+      />
     </section>
+  );
+}
+
+/**
+ * Closing an account. The guard is typing the word: it is deliberate enough to
+ * rule out the mis-tap this row is one position away from (Log out sits
+ * directly above it), without asking for a password that a Google or Apple
+ * account does not have in the first place.
+ */
+const CONFIRM_WORD = "DELETE";
+
+function DeleteAccountDialog({
+  lang,
+  open,
+  onOpenChange,
+}: {
+  lang: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const [typed, setTyped] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [deleteAccount, { loading }] = useMutation(DeleteMyAccountDocument);
+
+  const confirmed = typed.trim().toUpperCase() === CONFIRM_WORD;
+
+  async function handleDelete() {
+    if (!confirmed || loading) return;
+    setError(null);
+    try {
+      // The signed-in session is the proof of ownership; the typed word above
+      // is the proof of intent.
+      await deleteAccount({ variables: { password: null } });
+      // Straight out, not through the logout mutation — the account is gone and
+      // a full reload is the only way to be sure nothing cached survives.
+      useAuthStore.getState().clearAuth();
+      window.location.href = `/${lang}/feed`;
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "Could not delete your account. Try again.",
+      );
+    }
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (loading) return;
+        if (!next) {
+          setTyped("");
+          setError(null);
+        }
+        onOpenChange(next);
+      }}
+    >
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Delete your account?</DialogTitle>
+          <DialogDescription>
+            This cannot be undone. Your listings, comments and saved items stop
+            being visible, and you are signed out everywhere.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="delete-confirm"
+              className="text-sm font-semibold text-default"
+            >
+              Type {CONFIRM_WORD} to confirm
+            </label>
+            <input
+              id="delete-confirm"
+              value={typed}
+              autoComplete="off"
+              onChange={(event) => setTyped(event.target.value)}
+              className="h-11 w-full rounded-xl border border-border bg-elevated px-3 font-medium text-default outline-none"
+            />
+          </div>
+
+          {error && (
+            <p
+              role="alert"
+              className="rounded-xl px-3 py-2 text-sm font-medium"
+              style={{
+                backgroundColor: "rgb(var(--color-error) / 0.1)",
+                color: "rgb(var(--color-error))",
+              }}
+            >
+              {error}
+            </p>
+          )}
+        </div>
+
+        <DialogFooter className="flex-row justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            disabled={loading}
+            className="h-10 rounded-full border border-border px-4 text-sm font-semibold text-default transition-colors hover:bg-surface disabled:opacity-60"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleDelete()}
+            disabled={!confirmed || loading}
+            className="h-10 rounded-full bg-rose-600 px-4 text-sm font-semibold text-white transition-opacity active:opacity-80 disabled:opacity-50"
+          >
+            {loading ? "Deleting…" : "Delete account"}
+          </button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
