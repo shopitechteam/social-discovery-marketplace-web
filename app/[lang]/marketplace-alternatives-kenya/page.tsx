@@ -19,7 +19,7 @@ type Props = { params: Promise<{ lang: string }> };
 
 const TITLE = "Online Marketplaces in Kenya — How Shopi Compares";
 const DESCRIPTION =
-  "Comparing the ways Kenyans buy and sell online: classifieds sites, Facebook Marketplace, WhatsApp groups and TikTok. How Shopi differs — a local discovery feed, AI listings, direct chat and zero commission.";
+  "Comparing the ways Kenyans buy and sell online: Jiji, PigiaMe and other classifieds, Facebook Marketplace, WhatsApp groups and TikTok. How Shopi differs — a local discovery feed, AI listings, direct chat and zero commission.";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { lang } = await params;
@@ -40,7 +40,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
  */
 const COMPARISONS = [
   {
-    channel: "Classifieds marketplaces",
+    // Named, not just described. Someone searching "Jiji alternative" or
+    // "sites like PigiaMe" is looking for the name they already know; a page
+    // that only says "classifieds marketplaces" never meets that query.
+    channel: "Classifieds sites (Jiji, PigiaMe)",
     how: "You search a category tree, filter, and contact sellers through the platform. Discovery is driven by what you already know to look for.",
     shopi:
       "Shopi leads with a feed instead of a search box. You come across things you weren't searching for, ranked by what's near you and what you've shown interest in — and you can still search when you know exactly what you want.",
