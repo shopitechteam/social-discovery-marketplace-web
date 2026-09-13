@@ -15,6 +15,10 @@ import {
 import { useAuthStore } from "@/stores/auth";
 import { trackSignup, trackAuthSuccess } from "@/lib/analytics";
 import { attributionInput } from "@/lib/attribution";
+import {
+  authDestination,
+  navigateAfterAuth,
+} from "@/features/auth/lib/postAuthNavigate";
 
 interface RegisterFormValues {
   firstName: string;
@@ -122,7 +126,7 @@ export function RegisterForm({ from, lang, footer }: RegisterFormProps) {
       if ("accessToken" in payload) {
         trackSignup("email");
         setAuth(payload);
-        router.replace(from && from.startsWith("/") ? from : `/${lang}/feed`);
+        navigateAfterAuth(router, authDestination(from, lang));
       }
     } catch (err: unknown) {
       setServerError(
@@ -175,7 +179,7 @@ export function RegisterForm({ from, lang, footer }: RegisterFormProps) {
       // and just gained a password, so it's an auth, not a signup.
       trackAuthSuccess("email", "register");
       setAuth(payload);
-      router.replace(from && from.startsWith("/") ? from : `/${lang}/feed`);
+      navigateAfterAuth(router, authDestination(from, lang));
     } catch (err: unknown) {
       setServerError(
         err instanceof Error ? err.message : "Something went wrong.",

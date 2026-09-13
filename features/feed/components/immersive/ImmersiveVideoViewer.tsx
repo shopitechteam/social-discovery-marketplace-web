@@ -21,8 +21,13 @@ import {
 import { useApolloClient } from "@apollo/client/react";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { resumeVideoElection, suspendVideoElection } from "@/lib/activeVideo";
-import { invalidateVideoFeedCache } from "@/lib/apollo/feedCache";
-import { videoPath } from "@/lib/content-url";
+import { pruneVideoFeedCache } from "@/lib/apollo/feedCache";
+import { contentSlugSegment, videoPath } from "@/lib/content-url";
+import {
+  clearViewerSlide,
+  rememberViewerSlide,
+  viewerSlideFor,
+} from "../../lib/viewerPosition";
 import { useAppBack } from "@/lib/useAppBack";
 import { VIDEO_FEED_PREFETCH_AHEAD } from "@/features/feed/constants";
 import { useVideoFeed } from "../../hooks/useVideoFeed";
@@ -67,7 +72,29 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
   // Frozen on purpose. Swiping rewrites the address bar with replaceState,
   // which Next never sees, so the route segment keeps rendering the original
   // slug. Treating the prop as live would re-key the query on every swipe.
-  const [seed] = useState(() => seedProp);
+  //
+  // The address bar wins over the route param when the two disagree. Swiping
+  // rewrites the URL with replaceState, and Next deliberately keeps its own
+  // route tree pointing at the slug the route was opened with — it restores
+  // that tree on back whatever the address bar says, and passing `null` as the
+  // history state does not change that. So returning from a conversation handed
+  // the viewer the slug it was FIRST opened with while the URL showed the one
+  // the user had swiped to: the address bar said one video and the screen
+  // played another.
+  //
+  // Read once, in the initialiser, rather than tracked: the swipe effect below
+  // rewrites the URL constantly, and following it live would re-key the query
+  // on every slide. On the server there is no address bar, and the first paint
+  // is the same loading panel either way, so there is nothing to mismatch.
+  // Kept as the route's own slug, NOT the slide the user was last on.
+  //
+  // Re-seeding on the remembered slide looked right and was wrong: `videoFeed`
+  // is cached per seed, so a different seed is a cache miss, and the viewer
+  // renders a full-screen black panel while it refetches. The list for this
+  // seed is already in cache, so keeping it means the slides paint instantly —
+  // and the position is restored by jumping to the right index within that
+  // list instead. See the restore effect below.
+  const [seed] = useState(seedProp);
 
   const { items, loading, loadingMore, hasMore, loadMore } = useVideoFeed(seed);
   const [commentsOpen, setCommentsOpen] = useState(false);
@@ -104,6 +131,38 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
   });
 
   const activePost = items[index];
+
+  // ── Resume the slide the user left from ──────────────────────────────────
+  // Next restores its router tree, so a remount always hands us the slug the
+  // route was OPENED with — not the one the user had swiped to. The address
+  // bar knows, but reading it here is a race: on a back navigation the mount
+  // can happen before the browser commits the restored URL. So the slide is
+  // recorded when the user taps away (see openContact) and looked up here.
+  //
+  // A jump within the already-cached list, not a re-seed: re-seeding would be
+  // a cache miss and a black loading panel, which is the other half of this
+  // bug report.
+  const restoredRef = useRef(false);
+  useEffect(() => {
+    if (restoredRef.current || items.length === 0) return;
+    restoredRef.current = true;
+
+    const wanted = viewerSlideFor(seedProp);
+    const target = wanted
+      ? items.findIndex((item) => contentSlugSegment(item) === wanted)
+      : -1;
+
+    // Always set the landing position, even when it is slide 0. Browsers
+    // restore the scrollTop of a scrollable element on a back navigation, but
+    // `index` starts at 0 — so leaving it alone puts the user on a slide the
+    // pager thinks is far away, which renders as an empty black box. This is
+    // the single owner of where the viewer lands, so the two can never
+    // disagree.
+    //
+    // Instant: a restore should be in place before the first frame, not
+    // animated in front of the user.
+    goTo(target > 0 ? target : 0, "instant");
+  }, [items, seedProp, goTo]);
 
   // ── Sound, for the whole viewer ──────────────────────────────────────────
   // One decision shared by every slide, so unmuting anywhere unmutes
@@ -142,14 +201,12 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
   }, []);
 
   // Per-seed cache entries would otherwise pile up, one list per tap, for the
-  // life of the session. gc is reference-aware, so the Content entities the
-  // feed still points at survive.
-  useEffect(
-    () => () => {
-      invalidateVideoFeedCache(client.cache);
-    },
-    [client],
-  );
+  // life of the session. Pruned on OPEN, keeping this viewer's own list: doing
+  // it on close meant coming back — from a conversation, most obviously — always
+  // found an empty cache and sat on a black loading panel while it refetched.
+  useEffect(() => {
+    pruneVideoFeedCache(client.cache, seed);
+  }, [client, seed]);
 
   // ── URL follows the swipe, without a navigation ──────────────────────────
   // Writes the canonical slug path, the same one the feed card pushes and the
@@ -178,7 +235,13 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
   // A shared video link is the common way into this screen, and that arrival
   // has no app history behind it — a plain back() would do nothing at all and
   // trap the viewer open. Fall through to the feed instead.
-  const close = useAppBack(`/${lang}/feed`);
+  const closeViewer = useAppBack(`/${lang}/feed`);
+  // Closing is a deliberate exit, so the remembered slide goes with it —
+  // reopening this video later should start at the top, not mid-list.
+  const close = useCallback(() => {
+    clearViewerSlide();
+    closeViewer();
+  }, [closeViewer]);
 
   // ── Keyboard (desktop) ───────────────────────────────────────────────────
   useEffect(() => {
@@ -359,6 +422,7 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
               post={post}
               state={slideStates[i]}
               prefetch={i === prefetchIndex}
+              routeSlug={seedProp}
               muted={muted}
               onSetMuted={setMutedIntent}
               lang={lang}
@@ -458,6 +522,7 @@ function SlideContainer({
   post,
   state,
   prefetch,
+  routeSlug,
   muted,
   onSetMuted,
   lang,
@@ -468,6 +533,8 @@ function SlideContainer({
   post: ContentCardFieldsFragment;
   state: SlideState;
   prefetch: boolean;
+  /** The route's slug, used to key this slide's remembered position. */
+  routeSlug: string;
   muted: boolean;
   onSetMuted: (next: boolean) => void;
   lang: string;
@@ -493,8 +560,15 @@ function SlideContainer({
   // page both use.
   const openContact = useCallback(() => {
     if (!requireAuth({ contentId: post.id })) return;
+    // Recorded here, from the slide that is actually sending the user away,
+    // rather than from the viewer's active index. The index is derived from
+    // scroll, and the scroller resets as the viewer tears down — that reset
+    // fired one last index change and overwrote the position with a
+    // neighbouring slide, which is why coming back landed near the right video
+    // instead of on it.
+    rememberViewerSlide(routeSlug, contentSlugSegment(post));
     router.push(`/${lang}/notifications/${post.id}?source=content`);
-  }, [requireAuth, router, lang, post.id]);
+  }, [requireAuth, router, lang, post, routeSlug]);
 
   const { following, toggle: handleFollow } = useFollow({
     userId: post.creator?.id ?? post.creatorId,

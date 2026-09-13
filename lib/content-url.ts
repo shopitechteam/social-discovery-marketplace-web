@@ -50,6 +50,19 @@ export function videoPath(lang: string, content: SluggableContent): string {
   return `/${lang}/video/${contentSlugSegment(content)}`;
 }
 
+/**
+ * The slug out of a `/{lang}/video/{slug}` pathname, or null for anything else.
+ *
+ * The immersive viewer rewrites the address bar as the user swipes, so the URL
+ * is the only record of which video they were actually on — Next's router tree
+ * keeps pointing at the one the route was opened with. Reading the slug back
+ * out is how the viewer recovers its position when it is restored.
+ */
+export function videoSlugFromPath(pathname: string): string | null {
+  const match = /^\/[^/]+\/video\/([^/?#]+)/.exec(pathname);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
 export function absoluteVideoUrl(
   origin: string,
   lang: string,

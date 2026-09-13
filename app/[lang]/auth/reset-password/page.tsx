@@ -4,7 +4,7 @@ import Link from "next/link";
 
 import { ResetPasswordForm } from "@/features/auth/components/ResetPasswordForm";
 import { AuthDesktopShell } from "@/features/auth/components/AuthDesktopShell";
-import { ChevronLeftIcon, HomeIcon } from "lucide-react";
+import { ChevronLeftIcon } from "lucide-react";
 import { ShopiLogo } from "@/features/auth/components/AuthIcons";
 
 export const metadata = { title: "Set a new password" };
@@ -33,13 +33,6 @@ export default async function ResetPasswordPage({
             className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-surface text-muted active:opacity-70 transition-opacity"
           >
             <ChevronLeftIcon />
-          </Link>
-          <Link
-            href={`/${lang}`}
-            className="inline-flex items-center gap-2 rounded-full bg-surface px-3 py-2 text-sm font-medium text-muted transition-opacity active:opacity-70"
-          >
-            <HomeIcon className="h-4 w-4" />
-            Home
           </Link>
         </div>
         <div

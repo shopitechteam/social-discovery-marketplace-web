@@ -46,6 +46,32 @@ function currentWindowScrollKey() {
   return scrollKey(window.location.pathname, window.location.search);
 }
 
+/**
+ * A navigation that is *returning* the user somewhere, set by the caller.
+ *
+ * Restoration is normally reserved for back/forward, because following a link
+ * should start at the top. Signing in is the exception: the guard pushed the
+ * user off the feed mid-scroll, and landing them back at the top of it would
+ * lose the position they were interrupted at. The destination cannot be reached
+ * with `back()` either — auth-welcome to login is another push, so history has
+ * two entries to unwind, not one.
+ *
+ * Module scope so it survives the unmount/mount across the navigation, and
+ * one-shot so it can never resurrect an old offset on an unrelated visit.
+ */
+let pendingRestoreKey: string | null = null;
+
+/** Mark the next arrival at `href` as a return, not a fresh visit. */
+export function markScrollRestore(href: string) {
+  if (typeof window === "undefined") return;
+  try {
+    const url = new URL(href, window.location.origin);
+    pendingRestoreKey = scrollKey(url.pathname, url.search.replace(/^\?/, ""));
+  } catch {
+    pendingRestoreKey = null;
+  }
+}
+
 export function rememberScrollBeforeNavigation() {
   if (typeof window === "undefined") return;
 
@@ -124,8 +150,16 @@ export function RouteScrollRestoration() {
     latestYRef.current = saved;
     latestYByKey.set(key, saved);
 
-    // A pushed navigation starts at the top; only back/forward and the first
-    // load (a reload included) resume where the page was left.
+    // A caller can declare this arrival a return rather than a fresh visit —
+    // see markScrollRestore. Consumed here so it applies exactly once.
+    if (pendingRestoreKey === key) {
+      restoreKeyRef.current = key;
+      pendingRestoreKey = null;
+    }
+
+    // A pushed navigation starts at the top; only back/forward, a marked
+    // return, and the first load (a reload included) resume where the page was
+    // left.
     const targetY = restoreKeyRef.current === key ? saved : 0;
     let frame = 0;
     let attempts = 0;

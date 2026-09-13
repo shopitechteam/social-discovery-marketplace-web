@@ -17,6 +17,7 @@ import {
   getSuspendedAccountMessage,
 } from "@/lib/apollo/suspended-account";
 import { SuspendedAccountDialogProvider } from "@/components/providers/SuspendedAccountDialogProvider";
+import { RefetchOnAuthChange } from "./RefetchOnAuthChange";
 
 let clientSingleton: ReturnType<typeof createClient> | undefined;
 
@@ -481,6 +482,7 @@ function createClient() {
 export function ApolloWrapper({ children }: React.PropsWithChildren) {
   return (
     <ApolloNextAppProvider makeClient={makeClient}>
+      <RefetchOnAuthChange />
       {children}
       <SuspendedAccountDialogProvider />
     </ApolloNextAppProvider>
