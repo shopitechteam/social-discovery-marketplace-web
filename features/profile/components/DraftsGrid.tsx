@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { toast } from "sonner";
-import { FileEdit, Plus, Send, Trash2, Play } from "lucide-react";
+import { FileEdit, ImagePlus, Plus, Send, Trash2, Play } from "lucide-react";
 import {
   MyDraftsDocument,
   PublishDraftDocument,
@@ -184,77 +184,85 @@ export function DraftsGrid({ lang }: Props) {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3 xl:grid-cols-5 xl:gap-4">
+        {/* Same columns as Explore, Saved and Posts, so a draft sits in the
+            same grid rhythm as everything else the profile shows. */}
+        <div className="grid grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-3 md:gap-x-4 md:gap-y-6 xl:grid-cols-4 min-[90rem]:grid-cols-5">
           {drafts.map((draft) => {
             const busy = busyId === draft.id;
             const isVideo = mapType(draft.type) === "video";
+            const cover = draft.coverThumbnailUrl;
+            // The server only publishes a draft that reached READY, and
+            // rejects anything earlier with a step name in the message. Tapping
+            // Post on a half-finished draft therefore produced a toast reading
+            // "Draft must be at READY step to publish. Current step:
+            // media_upload". Offer the action that actually applies instead.
+            const readyToPost = draft.currentStep === "READY";
             return (
-              <div
-                key={draft.id}
-                className="flex flex-col overflow-hidden rounded-xl border"
-                style={{
-                  backgroundColor: "rgb(var(--color-bg-elevated))",
-                  borderColor: "rgb(var(--color-border))",
-                }}
-              >
-                {/* Thumbnail — tap to continue editing */}
+              // Photo-first, no card border. The bordered panel this replaces
+              // wrapped every tile in chrome and made a grid of six drafts
+              // read as a spreadsheet rather than a shelf of work in progress.
+              <article key={draft.id} className="group flex flex-col">
                 <button
                   type="button"
                   onClick={() => continueEditing(draft)}
-                  className="relative block aspect-9/10 w-full overflow-hidden bg-black/5"
-                  aria-label="Continue editing draft"
+                  className="relative block aspect-3/4 w-full overflow-hidden rounded-xl md:aspect-4/5"
+                  style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
+                  aria-label={`Continue editing ${draft.title?.trim() || "untitled draft"}`}
                 >
-                  {draft.coverThumbnailUrl ? (
+                  {cover ? (
                     <Image
-                      src={draft.coverThumbnailUrl}
+                      src={cover}
                       alt={draft.title ?? "Draft"}
                       fill
-                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1536px) 25vw, 22vw"
+                      sizes="(max-width: 767px) 50vw, (max-width: 1279px) 33vw, 20vw"
                       className="object-cover"
                     />
                   ) : (
-                    <div
-                      className="flex h-full w-full items-center justify-center"
-                      style={{ color: "rgb(var(--color-text-muted))" }}
-                    >
-                      <FileEdit size={28} />
-                    </div>
-                  )}
-
-                  {isVideo && draft.coverThumbnailUrl && (
-                    <span className="absolute inset-0 flex items-center justify-center">
-                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-white">
-                        <Play size={15} fill="currentColor" />
+                    // An empty draft is the normal state for one abandoned at
+                    // the upload step, so it says so. A bare grey icon was
+                    // indistinguishable from a cover that had failed to load.
+                    <span className="flex h-full w-full flex-col items-center justify-center gap-1.5 px-3 text-center">
+                      <ImagePlus
+                        size={22}
+                        strokeWidth={1.8}
+                        style={{ color: "rgb(var(--color-text-muted))" }}
+                        aria-hidden
+                      />
+                      <span
+                        className="text-[11px] font-medium leading-tight"
+                        style={{ color: "rgb(var(--color-text-muted))" }}
+                      >
+                        No photos yet
                       </span>
                     </span>
                   )}
 
-                  {/* Draft badge */}
-                  <span
-                    className="absolute left-2 top-2 rounded-full px-2 py-0.5 font-semibold text-white"
-                    style={{
-                      fontSize: "11px",
-                      backgroundColor: "rgb(0 0 0 / 0.6)",
-                    }}
-                  >
+                  {isVideo && cover && (
+                    <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm">
+                        <Play size={15} fill="currentColor" strokeWidth={0} className="ml-0.5" />
+                      </span>
+                    </span>
+                  )}
+
+                  <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm">
                     Draft
                   </span>
                 </button>
 
-                {/* Meta — title / date (matches TikTok & Posts cards) */}
-                <div className="px-2.5 pt-2.5">
+                {/* Fixed two rows, like the Posts tiles, so the grid stays
+                    aligned whatever the title length. */}
+                <div className="flex min-w-0 flex-col gap-0.5 px-0.5 pt-2">
                   <p
-                    className="line-clamp-2 leading-tight"
+                    className="truncate font-semibold"
                     style={{
                       fontSize: "var(--text-sm)",
                       color: "rgb(var(--color-text))",
-                      fontWeight: 500,
                     }}
                   >
                     {draft.title?.trim() || "Untitled draft"}
                   </p>
                   <p
-                    className="mt-1"
                     style={{
                       fontSize: "var(--text-xs)",
                       color: "rgb(var(--color-text-muted))",
@@ -264,35 +272,50 @@ export function DraftsGrid({ lang }: Props) {
                   </p>
                 </div>
 
-                {/* Actions */}
-                <div className="mt-2 flex items-center gap-2 px-2.5 pb-3">
-                  <button
-                    type="button"
-                    onClick={() => handlePublish(draft)}
-                    disabled={busy}
-                    className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg font-semibold text-white disabled:opacity-60"
-                    style={{
-                      fontSize: "var(--text-sm)",
-                      backgroundColor: "rgb(var(--brand-primary))",
-                    }}
-                  >
-                    <Send size={14} /> {busy ? "Posting…" : "Post"}
-                  </button>
+                <div className="mt-2 flex items-center gap-2 px-0.5">
+                  {readyToPost ? (
+                    <button
+                      type="button"
+                      onClick={() => handlePublish(draft)}
+                      disabled={busy}
+                      className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full font-semibold text-white transition-opacity active:opacity-80 disabled:opacity-60"
+                      style={{
+                        fontSize: "var(--text-sm)",
+                        backgroundColor: "rgb(var(--brand-primary))",
+                      }}
+                    >
+                      <Send size={14} /> {busy ? "Posting…" : "Post"}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => continueEditing(draft)}
+                      disabled={busy}
+                      className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full border font-semibold transition-opacity active:opacity-80 disabled:opacity-60"
+                      style={{
+                        fontSize: "var(--text-sm)",
+                        borderColor: "rgb(var(--color-border))",
+                        color: "rgb(var(--color-text))",
+                      }}
+                    >
+                      <FileEdit size={14} /> Continue
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => handleDiscard(draft)}
                     disabled={busy}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg disabled:opacity-60"
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-opacity active:opacity-80 disabled:opacity-60"
                     style={{
                       color: "rgb(var(--color-error))",
                       backgroundColor: "rgb(var(--color-error) / 0.1)",
                     }}
-                    aria-label="Discard draft"
+                    aria-label={`Discard ${draft.title?.trim() || "untitled draft"}`}
                   >
                     <Trash2 size={15} />
                   </button>
                 </div>
-              </div>
+              </article>
             );
           })}
         </div>
