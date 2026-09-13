@@ -218,14 +218,16 @@ function InventoryCard({
       : null;
 
   return (
-    <article
-      className="group relative flex flex-col overflow-hidden rounded-2xl border transition-colors"
-      style={{
-        borderColor: "rgb(var(--color-border))",
-        backgroundColor: "rgb(var(--color-bg-elevated))",
-      }}
-    >
-      <div className="relative aspect-4/5 overflow-hidden">
+    <article className="group relative flex flex-col">
+      {/* Same shape as the Discover and Saved tiles: the photo IS the tile, no
+          panel or border behind it, and the text sits underneath. A bordered
+          card around forty small thumbnails reads as a spreadsheet. Only the
+          seller chrome on top — status, the actions menu — is different, and it
+          is different because this grid has a different job. */}
+      <div
+        className="relative aspect-3/4 w-full overflow-hidden rounded-xl md:aspect-4/5"
+        style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
+      >
         {/* The whole tile opens insights. Sits under the menu button's z-30. */}
         <Link
           href={`/${lang}/profile/posts/${post.id}`}
@@ -306,7 +308,7 @@ function InventoryCard({
       </div>
 
       {/* Price leads, because it is the field sellers check and change most. */}
-      <div className="flex min-w-0 flex-col gap-1 p-2.5 sm:p-3">
+      <div className="flex min-w-0 flex-col gap-1 px-0.5 pt-2">
         <div className="flex items-baseline gap-1.5">
           <p
             className="min-w-0 truncate font-bold"
@@ -639,7 +641,7 @@ export function ManagedPostsGrid({
         title="Manage posts"
         subtitle="Loading your seller inventory"
       >
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3 xl:grid-cols-5 xl:gap-4">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-3 md:gap-x-4 md:gap-y-6 xl:grid-cols-4 min-[90rem]:grid-cols-5">
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
@@ -752,7 +754,7 @@ export function ManagedPostsGrid({
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3 xl:grid-cols-4 2xl:grid-cols-5 2xl:gap-4">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-3 md:gap-x-4 md:gap-y-6 xl:grid-cols-4 min-[90rem]:grid-cols-5">
             {visiblePosts.map((post, index) => (
               <InventoryCard
                 key={post.id}
