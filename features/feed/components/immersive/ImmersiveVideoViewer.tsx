@@ -9,6 +9,7 @@ import {
   type CSSProperties,
 } from "react";
 import dynamic from "next/dynamic";
+import { usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
@@ -61,6 +62,7 @@ interface Props {
 
 export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
   const client = useApolloClient();
+  const pathname = usePathname();
 
   // Frozen on purpose. Swiping rewrites the address bar with replaceState,
   // which Next never sees, so the route segment keeps rendering the original
@@ -278,6 +280,15 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
   // the user is unlikely to reach before it needs rebuffering anyway, and the
   // slide behind is already warm from having been played.
   const prefetchIndex = prefetchAllowed ? index + 1 : -1;
+
+  // Parallel routes keep an unmatched slot's last content mounted across a
+  // soft navigation. Without this the viewer stayed on screen — fixed and
+  // full-bleed at z-100 — covering whatever we pushed to, which is why
+  // "Contact seller" looked like it did nothing at all: the chat had opened
+  // underneath it. usePathname is deliberate: swipes rewrite the URL with
+  // replaceState, which Next never sees, so this only changes on a real
+  // navigation away.
+  if (!pathname.includes("/video/")) return null;
 
   if (loading) {
     return (
@@ -604,6 +615,18 @@ function SlideContainer({
                   tone="surface"
                 />
               </div>
+              {/* The rail had no primary action at all, so on desktop there
+                  was no way to reach the seller from a video. */}
+              {!post.isMyContent && (
+                <button
+                  type="button"
+                  onClick={openContact}
+                  className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-white transition-transform active:scale-[0.98]"
+                >
+                  <MessageCircle className="h-4 w-4" strokeWidth={2.2} />
+                  Contact seller
+                </button>
+              )}
             </div>
             <div className="min-h-0 flex-1 overflow-hidden">
               {state === "active" && (

@@ -1693,16 +1693,11 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
         </div>
       )}
 
-      {/* Hairline above the actions, inset so it reads as part of the card
-          rather than slicing it in two. On a post with no engagement yet the
-          summary row above is absent, so the divider needs its own breathing
-          room or it sits flush against the media. */}
-      <div
-        className={cn(
-          "mx-3 border-t border-border",
-          !hasEngagement && "mt-2.5",
-        )}
-      />
+      {/* No divider above the actions — the row reads as part of the card on
+          its own. The spacing still has to be reserved though: on a post with
+          no engagement the summary row above is absent, and without this the
+          buttons sit flush against the media. */}
+      {!hasEngagement && <div className="mt-2.5" />}
 
       {/* ── Action bar ──────────────────────────────────────────────────
           Flat, evenly-split buttons under a divider, the shape people already

@@ -115,6 +115,73 @@ function mergeFeedPage(
   };
 }
 
+type CachedMedia = Record<string, unknown> | null | undefined;
+
+/**
+ * Identity for one media item, which has no id of its own.
+ *
+ * Two entries are "the same picture" when they point at the same asset. The
+ * Mux playback id is the strongest signal, then the source URL; sortOrder is
+ * the last resort and only agrees when the media type does too.
+ */
+function sameMediaItem(a: CachedMedia, b: CachedMedia): boolean {
+  if (!a || !b) return false;
+  const mux = (m: CachedMedia) =>
+    (m?.muxMeta as { playbackId?: string } | undefined)?.playbackId;
+  const aMux = mux(a);
+  const bMux = mux(b);
+  if (aMux && bMux) return aMux === bMux;
+  if (a.url && b.url) return a.url === b.url;
+  if (a.imageUrl && b.imageUrl) return a.imageUrl === b.imageUrl;
+  return a.sortOrder != null && a.sortOrder === b.sortOrder && a.mediaType === b.mediaType;
+}
+
+/**
+ * Merge `Content.media` field-wise instead of replacing it.
+ *
+ * `MediaItem` has no id, so Apollo stores it inline and, by default, an
+ * incoming array REPLACES the cached one. Different screens select different
+ * media subsets — the profile grid asks for a handful of fields, the feed card
+ * asks for `imageUrl`, `displayWidth/Height`, `muxMeta.duration` and more — so
+ * simply visiting a profile used to overwrite every shared Content entity with
+ * the narrower shape.
+ *
+ * That was silent but severe: the feed's own cache read then went INCOMPLETE,
+ * Apollo treated it as a miss, and coming back from a profile refetched page
+ * one, throwing away an accumulated feed and the scroll position with it.
+ *
+ * Merging per element fixes it, but only when the two entries are the same
+ * asset — otherwise a post whose media genuinely changed would end up a
+ * chimera of the old and new item. When they differ, incoming wins outright.
+ * The result always has the incoming length, so removals still take effect.
+ */
+function mergeMediaList(
+  existing: readonly CachedMedia[] | undefined,
+  incoming: readonly CachedMedia[] | undefined,
+): readonly CachedMedia[] | undefined {
+  if (!incoming) return existing;
+  if (!existing?.length) return incoming;
+
+  return incoming.map((item, index) => {
+    // Same position first (the common case), then anywhere in the old list —
+    // a reordered gallery should still keep its richer cached fields.
+    const previous = sameMediaItem(existing[index], item)
+      ? existing[index]
+      : existing.find((candidate) => sameMediaItem(candidate, item));
+    if (!previous || !item) return item;
+
+    const merged: Record<string, unknown> = { ...previous, ...item };
+    // muxMeta is itself an embedded object, so it needs the same treatment or
+    // a narrow selection of it wipes duration/animatedThumbnailUrl.
+    const previousMux = previous.muxMeta as Record<string, unknown> | undefined;
+    const incomingMux = item.muxMeta as Record<string, unknown> | undefined;
+    if (previousMux && incomingMux) {
+      merged.muxMeta = { ...previousMux, ...incomingMux };
+    }
+    return merged;
+  });
+}
+
 function createClient() {
   const httpLink = new HttpLink({
     uri: `${process.env.NEXT_PUBLIC_API_URL}/graphql`,
@@ -311,6 +378,17 @@ function createClient() {
             stats: { merge: true },
             location: { merge: true },
             price: { merge: true },
+            // Same hazard as the three above, and the one that actually bit.
+            // `ranking` and `boost` are embedded objects with no id, and
+            // `tiktokEmbed` likewise; a query selecting a subset of any of
+            // them would otherwise wipe the rest.
+            ranking: { merge: true },
+            boost: { merge: true },
+            tiktokEmbed: { merge: true },
+            // `media` is a LIST of embedded objects with no ids, so the same
+            // rule applies per element — see mergeMediaList for why a plain
+            // replace corrupted the feed.
+            media: { merge: mergeMediaList },
           },
         },
 

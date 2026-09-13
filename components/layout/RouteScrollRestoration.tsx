@@ -165,10 +165,17 @@ export function RouteScrollRestoration() {
       }, SCROLL_SAVE_INTERVAL_MS - elapsed);
     };
 
-    const remember = () => {
+    const remember = (scheduledKey: string) => {
       frame = 0;
 
       const key = currentKeyRef.current;
+      // The route changed between this sample being scheduled and the frame
+      // running. The reading belongs to the page we just left, and
+      // rememberScrollBeforeNavigation already saved that one — attributing it
+      // to the incoming route is what made a fresh page open at the previous
+      // page's offset (feed scrolled deep, then Explore opens mid-list).
+      if (scheduledKey !== key) return;
+
       const pending = pendingNavigationRef.current;
       if (pending?.fromKey === key) {
         latestYByKeyRef.current.set(key, pending.fromY);
@@ -183,7 +190,10 @@ export function RouteScrollRestoration() {
 
     const onScroll = () => {
       if (frame) return;
-      frame = requestAnimationFrame(remember);
+      // Captured now, not when the frame runs, so a navigation landing in
+      // between cannot misfile this sample under the new route.
+      const scheduledKey = currentKeyRef.current;
+      frame = requestAnimationFrame(() => remember(scheduledKey));
     };
 
     // Leaving the page is the one moment the value MUST already be in storage,

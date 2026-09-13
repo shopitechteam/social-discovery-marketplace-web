@@ -74,12 +74,16 @@ query GetUserProfile($username: String!) {
   }
 }
 
+# A seller's public grid renders the same tile as /explore and the Saved tab,
+# so it reads with the same fragment they do. Beyond matching the tile, this
+# keeps the shared Content entities in one shape: a narrower selection here
+# used to overwrite the feed's cached media and silently invalidate its cache.
 query GetUserPosts($userId: String!, $limit: Int, $afterId: String) {
   userPosts(userId: $userId, limit: $limit, afterId: $afterId) {
     hasMore
     nextCursor
     posts {
-      ...ProfilePostFields
+      ...ContentCardFields
     }
   }
 }
