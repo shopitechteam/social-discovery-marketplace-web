@@ -13,6 +13,10 @@ import {
   type LoginWithEmailMutation,
 } from "@/types/__generated__/graphql";
 import { getSuspendedAccountMessage } from "@/lib/apollo/suspended-account";
+import {
+  authDestination,
+  navigateAfterAuth,
+} from "@/features/auth/lib/postAuthNavigate";
 
 interface FormValues {
   email: string;
@@ -69,12 +73,7 @@ export function LoginForm({ from, lang }: LoginFormProps) {
 
       setAuth(payload);
 
-      const destination = from && from.startsWith("/") ? from : `/${lang}/feed`;
-      if (typeof window !== "undefined") {
-        window.location.assign(destination);
-      } else {
-        router.replace(destination);
-      }
+      navigateAfterAuth(router, authDestination(from, lang));
     } catch (err: unknown) {
       if (getSuspendedAccountMessage(err)) {
         useAuthStore.getState().clearAuth();

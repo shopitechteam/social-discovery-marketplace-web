@@ -5,7 +5,7 @@ import Link from "next/link";
 
 import { SocialButtons } from "@/features/auth/components/SocialButtons";
 import { AuthDesktopShell } from "@/features/auth/components/AuthDesktopShell";
-import { ChevronLeftIcon, HomeIcon } from "lucide-react";
+import { ChevronLeftIcon } from "lucide-react";
 import { Divider, ShopiLogo } from "@/features/auth/components/AuthIcons";
 
 export const metadata = { title: "Sign in" };
@@ -43,23 +43,16 @@ export default async function LoginPage({
   );
 
   return (
-    <AuthDesktopShell lang={lang}>
+    <AuthDesktopShell lang={lang} from={from}>
       {/* ── Mobile layout ─────────────────────────────────────── */}
       <div className="relative mx-auto flex min-h-svh max-w-107.5 flex-col bg-app px-4 pb-6 pt-4 lg:hidden">
         <div className="flex items-center justify-between">
           <Link
-            href={`/${lang}/auth/auth-welcome`}
+            href={`/${lang}/auth/auth-welcome${from ? `?from=${encodeURIComponent(from)}` : ""}`}
             aria-label="Back"
             className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-elevated text-muted shadow-sm transition-opacity active:opacity-70"
           >
             <ChevronLeftIcon className="h-5 w-5" />
-          </Link>
-          <Link
-            href={`/${lang}`}
-            className="inline-flex h-10 items-center gap-2 rounded-full border border-border bg-elevated px-3 text-sm font-semibold text-muted shadow-sm transition-opacity active:opacity-70"
-          >
-            <HomeIcon className="h-4 w-4" />
-            Home
           </Link>
         </div>
 

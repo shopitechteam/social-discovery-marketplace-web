@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Divider } from "@/features/auth/components/AuthIcons";
 import { SocialButtons } from "@/features/auth/components/SocialButtons";
 import { AuthDesktopShell } from "@/features/auth/components/AuthDesktopShell";
-import { HomeIcon } from "lucide-react";
+import { AuthExitButton } from "@/features/auth/components/AuthExitButton";
 
 export const metadata = { title: "Welcome" };
 
@@ -93,19 +93,19 @@ export default async function WelcomePage({
   );
 
   return (
-    <AuthDesktopShell lang={lang}>
+    <AuthDesktopShell lang={lang} from={from}>
       {/* ── Mobile layout ─────────────────────────────────────── */}
       <div
         className="relative mx-auto flex h-svh max-w-107.5 flex-col overflow-hidden bg-app lg:hidden"
       >
-        <div className="flex items-center justify-end px-6 pt-5 shrink-0">
-          <Link
-            href={`/${lang}`}
-            className="inline-flex items-center gap-2 rounded-full bg-surface px-3 py-2 text-sm font-medium text-muted transition-opacity active:opacity-70"
-          >
-            <HomeIcon className="h-4 w-4" />
-            Home
-          </Link>
+        {/* Left-aligned: this is a back control now, and back controls live on
+            the left. */}
+        <div className="flex items-center justify-start px-6 pt-5 shrink-0">
+          <AuthExitButton
+            lang={lang}
+            from={from}
+            className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-2 text-sm font-medium text-muted transition-opacity active:opacity-70"
+          />
         </div>
         {/* Subtle brand glow top-right */}
         <div

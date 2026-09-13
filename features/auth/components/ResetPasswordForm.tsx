@@ -12,6 +12,7 @@ import {
   type ResetPasswordMutation,
 } from "@/types/__generated__/graphql";
 import { useAuthStore } from "@/stores/auth";
+import { navigateAfterAuth } from "@/features/auth/lib/postAuthNavigate";
 
 interface FormValues {
   newPassword: string;
@@ -78,12 +79,7 @@ export function ResetPasswordForm({ token, lang }: ResetPasswordFormProps) {
 
       // Password reset succeeded — the API signs us in and revokes other sessions.
       setAuth(payload);
-      const destination = `/${lang}/feed`;
-      if (typeof window !== "undefined") {
-        window.location.assign(destination);
-      } else {
-        router.replace(destination);
-      }
+      navigateAfterAuth(router, `/${lang}/feed`);
     } catch (err: unknown) {
       setServerError(
         err instanceof Error ? err.message : "Something went wrong.",

@@ -13,6 +13,7 @@ import { useCallback, useState } from "react";
 import { getSuspendedAccountMessage } from "@/lib/apollo/suspended-account";
 import { trackAuthSuccess, trackSignup } from "@/lib/analytics";
 import { attributionInput } from "@/lib/attribution";
+import { navigateAfterAuth } from "@/features/auth/lib/postAuthNavigate";
 
 export function useOAuthMutation(
   lang: string,
@@ -47,23 +48,18 @@ export function useOAuthMutation(
     return from && from.startsWith("/") ? from : `/${lang}/feed`;
   }
 
-  // After a successful social login we MUST land on the destination — every time.
-  //
-  // Why a hard navigation instead of router.replace(): the destination is often a
-  // proxy-guarded route (see proxy.ts) that checks the "shopi-auth-hint" cookie.
-  // setAuth() writes that cookie via document.cookie, but a soft client navigation
-  // can fire its RSC request before the cookie write is committed/sent — so the
-  // proxy sees no session and bounces back to auth-welcome (the "reload fixes it"
-  // bug). A full-document navigation guarantees the freshly-set cookie is sent with
-  // the request, so the proxy always sees the session. It also gives the server a
-  // clean render with the new auth state (equivalent to the manual reload).
+  /**
+   * Land on the destination after a social sign-in.
+   *
+   * This was a hard `window.location.assign`, to guarantee the freshly written
+   * `shopi-auth-hint` cookie reached the proxy — a soft navigation that raced
+   * the write got bounced back to auth. navigateAfterAuth keeps that guarantee
+   * by checking the cookie is readable first and only then navigating
+   * client-side, so the Apollo cache (and the feed position inside it) is no
+   * longer thrown away on every sign-in.
+   */
   function goToDestination() {
-    const dest = getDestination();
-    if (typeof window !== "undefined") {
-      window.location.assign(dest);
-    } else {
-      router.replace(dest);
-    }
+    navigateAfterAuth(router, getDestination());
   }
 
   function extractError(error: unknown): string {
