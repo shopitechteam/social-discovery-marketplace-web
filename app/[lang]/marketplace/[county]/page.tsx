@@ -40,7 +40,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     lang,
     path: `/marketplace/${county.slug}`,
     title: `Buy & Sell in ${county.label} — Free Marketplace`,
-    description: `Buy and sell locally in ${county.label}, Kenya. Browse listings from nearby sellers in ${county.towns.slice(0, 3).join(", ")} and across the county, then message the seller directly. Free to post, zero commission.`,
+    // Kept under 155 chars for every county, so engines show it untruncated.
+    description: `Buy and sell in ${county.label}, Kenya. Browse local listings from ${county.towns.slice(0, 2).join(" to ")} and message sellers directly. Free to post, zero commission.`,
   });
 }
 

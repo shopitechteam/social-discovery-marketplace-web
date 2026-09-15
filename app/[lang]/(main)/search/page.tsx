@@ -23,7 +23,7 @@ export async function generateMetadata({
   const path = siteConfig.routes.search.path;
   const term = q?.trim();
   const title = term
-    ? `${term} — ${siteConfig.routes.search.title}`
+    ? `${term} — Search`
     : siteConfig.routes.search.title;
   const description = term
     ? `Search results for "${term}" on ${siteConfig.name}. ${siteConfig.routes.search.description}`

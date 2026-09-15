@@ -1,16 +1,25 @@
 export type BlogPost = {
   slug: string;
   title: string;
-  description: string; // meta description ~155 chars
-  excerpt: string;     // card teaser
+  /**
+   * The one search query this post is written to rank for. It has to appear
+   * verbatim (case-insensitive) in the title, the excerpt — rendered as the
+   * lead paragraph — the body copy and the meta description.
+   * `npm run seo:audit` checks all four.
+   */
+  primaryKeyword: string;
+  description: string; // meta description, 155 chars max
+  excerpt: string;     // card teaser, and the lead paragraph on the post page
   category: string;
   readTime: string;
   publishedAt: string; // ISO date
   /**
    * ISO date of the last substantive edit. Feeds `dateModified` in the Article
-   * schema — generative engines weight recency when choosing between sources,
-   * and an undated page loses to a dated one on the same topic. Falls back to
-   * publishedAt when a post has never been revised.
+   * schema, the sitemap's lastmod and the visible "Updated" date — generative
+   * engines weight recency when choosing between sources, and an undated page
+   * loses to a dated one on the same topic. Falls back to publishedAt when a
+   * post has never been revised. Bump it only for real content changes, never
+   * for typo fixes; `npm run seo:audit` flags posts due for a review.
    */
   updatedAt?: string;
   author: { name: string; role: string; initials: string; color: string };
@@ -31,6 +40,7 @@ export const blogPosts: BlogPost[] = [
   {
     slug: "how-shopi-agent-helps-kenyan-buyers-and-sellers-every-day",
     title: "How Shopi Agent Helps Kenyan Buyers and Sellers Every Day",
+    primaryKeyword: "Shopi Agent",
     description:
       "Shopi Agent is the free AI assistant inside Shopi. Learn how it helps Kenyan sellers create listings and buyers find products through everyday language.",
     excerpt:
@@ -158,10 +168,11 @@ export const blogPosts: BlogPost[] = [
   {
     slug: "why-social-discovery-is-the-future-of-shopping-in-kenya",
     title: "Why Social Discovery Is the Future of Shopping in Kenya",
+    primaryKeyword: "social discovery",
     description:
-      "Kenyan shoppers are skipping search engines and heading straight to social feeds. Discover why social discovery is reshaping e-commerce in Nairobi and beyond.",
+      "Kenyan shoppers are skipping search and heading straight to social feeds. See why social discovery is reshaping how Nairobi and the rest of Kenya shop.",
     excerpt:
-      "Search is dead for product discovery. Kenyan buyers now find what they want by scrolling — not typing. Here's why that changes everything.",
+      "Search is dead for product discovery. Kenyan buyers now find what they want by scrolling — not typing. Here's why social discovery changes everything.",
     category: "Trends",
     readTime: "6 min read",
     publishedAt: "2026-05-10",
@@ -224,6 +235,18 @@ export const blogPosts: BlogPost[] = [
     ],
     relatedLinks: [
       {
+        label: "Explore Shopi listings",
+        url: "/explore",
+        description:
+          "See social discovery in practice: browse products from local sellers across Kenya by category and location.",
+      },
+      {
+        label: "Video commerce vs traditional e-commerce",
+        url: "/blog/video-commerce-vs-traditional-e-commerce-which-wins-in-africa",
+        description:
+          "Why short product videos build the trust that catalogue listings struggle to, and where catalogues still win.",
+      },
+      {
         label: "TikTok — Short-form video discovery",
         url: "https://www.tiktok.com",
         description: "The platform that proved video-first discovery works at scale. Shopi brings the same scroll-to-discover experience to local commerce in Kenya.",
@@ -240,13 +263,15 @@ export const blogPosts: BlogPost[] = [
   {
     slug: "how-to-sell-on-shopi-complete-guide-for-kenyan-sellers",
     title: "How to Sell on Shopi: The Complete Guide for Kenyan Sellers",
+    primaryKeyword: "how to sell on Shopi",
     description:
-      "Everything a Kenyan seller needs to start selling on Shopi — from setting up your profile to creating videos that convert browsers into buyers.",
+      "How to sell on Shopi, step by step: build a trusted profile, let Shopi Agent draft your listing, film videos that sell and close deals safely in Kenya.",
     excerpt:
-      "From your first post to your first sale in under 24 hours. A practical, no-fluff guide for Kenyan sellers ready to take their business online.",
+      "Here is how to sell on Shopi, from your first post to your first sale — a practical, no-fluff guide for Kenyan sellers ready to take their business online.",
     category: "Seller Guide",
-    readTime: "8 min read",
+    readTime: "11 min read",
     publishedAt: "2026-05-14",
+    updatedAt: "2026-09-15",
     author: { name: "Shopi Team", role: "Seller Guides", initials: "S", color: "#10b981" },
     keywords: [
       "how to sell on Shopi",
@@ -261,7 +286,7 @@ export const blogPosts: BlogPost[] = [
     sections: [
       {
         heading: "Step 1 — Set up a seller profile that builds trust",
-        body: "Your profile is your storefront. Buyers scan it in under three seconds before deciding whether to message you. A strong seller profile on Shopi includes a clear face photo (not a logo — people buy from people), your real location, and a one-line description of what you sell.\n\nGetting started on Shopi takes minutes: create your account, tag your location so the feed can surface you to buyers nearby, and post your first product. There is no fee to join and nothing to pay to start selling.",
+        body: "Your profile is your storefront. Buyers scan it in under three seconds before deciding whether to message you. A strong seller profile on Shopi includes a clear face photo (not a logo — people buy from people), your real location, and a one-line description of what you sell.\n\nLearning how to sell on Shopi starts here, and it takes minutes: create your account, tag your location so the feed can surface you to buyers nearby, and post your first product. There is no fee to join and nothing to pay to start selling.",
         list: [
           "Use a real face photo — not a logo or stock image",
           "Add your exact neighbourhood (e.g. 'Gikomba, Nairobi')",
@@ -270,7 +295,28 @@ export const blogPosts: BlogPost[] = [
         ],
       },
       {
-        heading: "Step 2 — Create video posts that actually sell",
+        heading: "Step 2 — Choose how to create your listing",
+        body: "When you tap create, Shopi gives you more than one way to get a product in front of buyers, and the right one depends on what you already have.\n\nIf you have a product in front of you and no time to write, use Shopi Agent. Take or upload a photo and the guided setup drafts the title, description, category and specifications for you. Nothing is published until you have checked it, so treat the draft as a strong first version: correct anything the photo cannot prove, such as condition, storage size or what is included in the box.\n\nIf you prefer full control, create the listing manually and fill in each field yourself. And if you already sell on TikTok, you do not need to film everything again — import your existing TikTok videos and turn them into Shopi posts that local buyers can message you about.",
+        list: [
+          "Shopi Agent — upload a photo and review the listing it drafts",
+          "Manual — full control over every field from the start",
+          "Import from TikTok — reuse videos you have already made",
+          "Photos, a short clip or a text post — pick the format that shows the item best",
+        ],
+      },
+      {
+        heading: "Step 3 — Write a title and details buyers can find",
+        body: "Buyers on Shopi search with the words they would say out loud to a shopkeeper: 'Samsung A15 used', 'three-seater sofa Ruiru', 'Toyota Vitz 2014'. Your title should contain those words. Lead with the item, then the brand and model, then the detail that decides the sale — size, capacity, year or condition. Clever or vague titles such as 'Amazing deal!!' tell a buyer nothing and never match a search.\n\nThen complete the rest of the listing properly. Pick the most specific category and subcategory, because buyers browsing a category never see a listing filed in the wrong place. Add specifications where Shopi offers them. Enter the price in KES and switch on 'negotiable' only if you genuinely are, so buyers know where they stand before the first message. Set your location accurately, and check that the post's audience is set to Everyone — a post limited to friends or to yourself will not reach new buyers.",
+        list: [
+          "Title: item, brand and model, then the detail that decides the sale",
+          "The most specific category and subcategory available",
+          "Specifications buyers compare on — size, storage, year, condition",
+          "Price in KES, marked negotiable only if it really is",
+          "Accurate location, and the audience set to Everyone",
+        ],
+      },
+      {
+        heading: "Step 4 — Create video posts that actually sell",
         body: "The best-performing videos on Shopi follow a simple formula: show the product in use in the first two seconds, reveal the price before the five-second mark, and end with a direct call to action ('DM me to order'). You do not need a ring light or a studio. Natural light from a window, a clean background, and steady hands are enough.\n\nFilm in portrait mode. Keep videos between 15 and 45 seconds. Post at peak hours: 7–9 AM, 12–1 PM, and 7–9 PM East Africa Time.",
         list: [
           "Show the product in use within the first 2 seconds",
@@ -280,25 +326,48 @@ export const blogPosts: BlogPost[] = [
         ],
       },
       {
-        heading: "Step 3 — Price and communicate clearly",
+        heading: "Step 5 — Price and communicate clearly",
         body: "Ambiguous pricing kills sales. State your price in the video and in the caption. Offer clear delivery or pickup options so buyers know what to expect. On Shopi you and the buyer agree everything between yourselves — Shopi does not handle payment, take a commission, or hold your money.\n\nWhen a buyer messages you, reply quickly. Response speed is one of the strongest predictors of whether a chat turns into a sale. Treating every message like a real customer standing in front of you is the simplest way to win deals.",
       },
       {
-        heading: "Step 4 — Build repeat customers, not just transactions",
+        heading: "Step 6 — Close the deal safely",
+        body: "Because Shopi does not sit in the middle of the transaction, the last step is yours to manage, and a few habits protect you on every sale. Agree the price, the payment method and the handover in chat before anyone travels, so there are no surprises on the day and you have a written record of what was agreed.\n\nFor collection in person, meet somewhere public and busy during daylight. For delivery, agree who pays the courier or boda and when. Whatever the method, confirm the money has actually arrived in your M-PESA or bank account before the item leaves your hands. A screenshot or a forwarded SMS is not payment — check your own balance or statement. Be cautious of buyers who offer more than your asking price, insist on a courier you did not choose, or rush to move the conversation away from Shopi before you have agreed anything.",
+        list: [
+          "Agree price, payment and handover in writing before meeting",
+          "Meet in a public, busy place during daylight",
+          "Check your own M-PESA or bank balance — never trust a screenshot",
+          "Walk away from overpayments and unusual courier requests",
+        ],
+      },
+      {
+        heading: "Step 7 — Build repeat customers, not just transactions",
         body: "One-time buyers are expensive to acquire. Repeat customers cost nothing extra. After every successful sale, send the buyer a follow-up message a day later asking if they are happy with the product. This simple step generates more referrals and more repeat business than any ad spend.\n\nKeep posting consistently so your followers see your new stock in their feed. The buyers who already trust you are your easiest next sale.",
       },
       {
         heading: "Common mistakes new Shopi sellers make",
-        body: "The most common reasons new sellers stall are: posting infrequently (less than three times a week), using only product photos instead of video, writing captions without prices, and being slow to respond to messages. Fix these four things and your first deals will follow.",
+        body: "The most common reasons new sellers stall are: posting infrequently (less than three times a week), using only product photos instead of video, writing captions without prices, and being slow to respond to messages. Fix these four things and your first deals will follow.\n\nOne more mistake is worth calling out because it is invisible to the seller: publishing a Shopi Agent draft without reading it. The draft is usually a good start, but only you know the real condition of the item, what is included, and whether the price is firm. A listing that promises something the product cannot deliver wins a message and loses the sale.",
         list: [
           "Posting fewer than 3 times per week — consistent sellers stay visible in the feed",
           "Hiding the price — always lead with the number",
           "Ignoring questions in chat — every reply is a chance to close a deal",
           "Not using location tags — local discovery is your biggest edge",
+          "Publishing an AI draft unchecked — correct condition, extras and price first",
         ],
       },
     ],
     faq: [
+      {
+        q: "How do I start selling on Shopi?",
+        a: "Create a free account, add your location, then tap create. Upload a photo and let Shopi Agent draft the listing, create it manually, or import a TikTok video. Check the title, price, category and location, then publish. Buyers message you directly.",
+      },
+      {
+        q: "Can Shopi Agent write my listing for me?",
+        a: "Yes. Upload a product photo and Shopi Agent drafts the title, description, category and specifications. You review and edit everything before it is published, so correct anything the photo cannot show, such as condition or accessories.",
+      },
+      {
+        q: "Can I import my TikTok videos to Shopi?",
+        a: "Yes. Shopi can import videos from your TikTok account so you can reuse content you have already made and reach local buyers without filming again.",
+      },
       {
         q: "Is selling on Shopi free?",
         a: "Yes. Posting products and messaging buyers is completely free. Shopi does not charge a fee, take a commission on your sales, or hold your money.",
@@ -318,6 +387,24 @@ export const blogPosts: BlogPost[] = [
     ],
     relatedLinks: [
       {
+        label: "Shopi Agent",
+        url: "/shopi-agent",
+        description:
+          "How the AI assistant turns one product photo into a listing draft you can check and publish.",
+      },
+      {
+        label: "How Nairobi's local sellers can win online with short videos",
+        url: "/blog/how-nairobi-local-sellers-are-winning-online-with-short-videos",
+        description:
+          "A deeper playbook for the video step: what to film, how to show condition honestly, and the habits that compound.",
+      },
+      {
+        label: "Safety Centre",
+        url: "/safety-centre",
+        description:
+          "Practical guidance on meeting buyers, confirming payment and spotting common scams.",
+      },
+      {
         label: "Jiji Kenya — See how classifieds work",
         url: "https://jiji.co.ke",
         description: "Jiji is a great reference point for text-and-image listings. Shopi builds on that foundation by adding video posts, follower feeds, and direct messaging in one place.",
@@ -334,6 +421,7 @@ export const blogPosts: BlogPost[] = [
   {
     slug: "video-commerce-vs-traditional-e-commerce-which-wins-in-africa",
     title: "Video Commerce vs Traditional E-Commerce: Which Wins in Africa?",
+    primaryKeyword: "video commerce",
     description:
       "A head-to-head comparison of video commerce and traditional e-commerce for African markets — covering trust, conversion, cost, and mobile-first behaviour.",
     excerpt:
@@ -404,6 +492,18 @@ export const blogPosts: BlogPost[] = [
     ],
     relatedLinks: [
       {
+        label: "Why social discovery is the future of shopping in Kenya",
+        url: "/blog/why-social-discovery-is-the-future-of-shopping-in-kenya",
+        description:
+          "The buyer side of the same shift: why Kenyans increasingly find products by scrolling rather than searching.",
+      },
+      {
+        label: "Online marketplaces in Kenya compared",
+        url: "/marketplace-alternatives-kenya",
+        description:
+          "How classifieds, social media, WhatsApp groups and Shopi differ for the people actually buying and selling.",
+      },
+      {
         label: "TikTok — The benchmark for video discovery",
         url: "https://www.tiktok.com",
         description: "TikTok pioneered scroll-based video discovery at a global scale. Shopi applies the same model specifically to product discovery and local commerce in East Africa.",
@@ -419,11 +519,12 @@ export const blogPosts: BlogPost[] = [
   // ─────────────────────────────────────────────────────────────────
   {
     slug: "how-nairobi-local-sellers-are-winning-online-with-short-videos",
-    title: "How Nairobi's Local Sellers Can Win Online With Short Videos",
+    title: "How Nairobi Sellers Can Win Online With Short Videos",
+    primaryKeyword: "Nairobi sellers",
     description:
       "A practical playbook for Nairobi sellers — from Gikomba fashion to Luthuli Avenue electronics — on using 30-second videos to find buyers and build trust.",
     excerpt:
-      "From Gikomba fabric traders to Luthuli Avenue electronics dealers — a practical playbook for taking a Nairobi stall online, one short video at a time.",
+      "From Gikomba fabric traders to Luthuli Avenue electronics dealers — a practical playbook for Nairobi sellers taking a stall online, one short video at a time.",
     category: "Seller Guide",
     readTime: "5 min read",
     publishedAt: "2026-05-21",
@@ -441,7 +542,7 @@ export const blogPosts: BlogPost[] = [
     sections: [
       {
         heading: "Your stall already has everything a video needs",
-        body: "A Gikomba fashion trader flipping through today's sourcing, a Luthuli Avenue dealer booting up a phone to show it works, a South B home cook lifting the lid off a sufuria — these are the videos local buyers actually want to watch. Nothing about them requires a studio.\n\nThe sellers best placed to win online are the ones already doing the physical version of the pitch every day. A short video is the same pitch, recorded once, shown to every buyer who scrolls past.",
+        body: "A Gikomba fashion trader flipping through today's sourcing, a Luthuli Avenue dealer booting up a phone to show it works, a South B home cook lifting the lid off a sufuria — these are the videos local buyers actually want to watch. Nothing about them requires a studio.\n\nThe Nairobi sellers best placed to win online are the ones already doing the physical version of the pitch every day. A short video is the same pitch, recorded once, shown to every buyer who scrolls past.",
       },
       {
         heading: "What makes a selling video work",
@@ -490,19 +591,47 @@ export const blogPosts: BlogPost[] = [
         a: "Yes. Sellers and buyers agree delivery directly in chat — many use couriers and matatu parcel services to reach Mombasa, Kisumu, Nakuru, and beyond. Shopi connects you; you arrange the rest on your own terms.",
       },
     ],
+    relatedLinks: [
+      {
+        label: "How to sell on Shopi: the complete guide",
+        url: "/blog/how-to-sell-on-shopi-complete-guide-for-kenyan-sellers",
+        description:
+          "Every step from profile to first sale — creating the listing, pricing, and closing the deal safely.",
+      },
+      {
+        label: "Buy and sell in Nairobi",
+        url: "/marketplace/nairobi",
+        description:
+          "The latest listings from sellers across Nairobi County, from Westlands to Embakasi.",
+      },
+      {
+        label: "Phones and electronics in Kenya",
+        url: "/phones-electronics-kenya",
+        description:
+          "Where buyers look for Samsung, iPhone, TVs and laptops — and what sellers should include in the listing.",
+      },
+      {
+        label: "TikTok video downloader",
+        url: "/tiktok-downloader",
+        description:
+          "Save a clean, watermark-free copy of your own TikTok product video to repost on WhatsApp status or a Shopi listing.",
+      },
+    ],
   },
 
   // ─────────────────────────────────────────────────────────────────
   {
     slug: "where-to-sell-used-items-in-kenya",
     title: "Where to Sell Used Items in Kenya: A Practical Guide",
+    primaryKeyword: "sell used items in Kenya",
     description:
-      "Comparing the real options for selling second-hand items in Kenya — marketplaces, WhatsApp groups, social media and physical dealers — and when each one actually makes sense.",
+      "Where to sell used items in Kenya: marketplaces, WhatsApp, social media or dealers? What each channel costs you and when each one actually makes sense.",
     excerpt:
-      "Not every selling channel suits every item. Here's an honest comparison of where Kenyans sell used goods, what each one costs you, and how to pick.",
+      "Not every selling channel suits every item. Here's an honest comparison of where to sell used items in Kenya, what each option costs you, and how to pick.",
     category: "Seller Guide",
-    readTime: "9 min read",
+    readTime: "11 min read",
     publishedAt: "2026-08-27",
+    updatedAt: "2026-09-15",
     author: {
       name: "Shopi Team",
       role: "Seller Guides",
@@ -546,6 +675,16 @@ export const blogPosts: BlogPost[] = [
         body: "Dealers give you speed and certainty. You walk in, you walk out with money, and the item is gone. For anyone who needs cash this week, that is worth something real.\n\nWhat it costs is the margin. A dealer has to resell at a profit, so expect meaningfully less than a private buyer would pay. This is a fair trade when you genuinely need speed, and a poor one when you have a few weeks to wait.",
       },
       {
+        heading: "What to sell where: a quick guide by item type",
+        body: "The best way to sell used items in Kenya changes with the category, because buyers for a phone, a fridge and a baby stroller behave completely differently.\n\nPhones, laptops and tablets are high value and easy to carry, so buyers will travel and will compare several listings before messaging. Use a marketplace where they can search by model. State the storage, battery health, whether the device is locked to a network or account, and what comes with it — charger, box, receipt. A short video of the phone switching on and the screen responding removes most of the doubt. Before the handover, back up the device, sign out of your Google or Apple account and factory reset it: a phone still linked to your account can lock the buyer out, and it leaves your photos, messages and M-PESA history on a stranger's device.\n\nFurniture and large appliances are the opposite: low value per kilo and painful to move. Your buyer is almost always someone nearby who can collect, so your location matters more than your reach. Give measurements in the listing, say whether you can help with transport, and for fridges, cookers and washing machines show them running.\n\nClothes, shoes and baby items move fastest through people who already know you, which is where WhatsApp status and social feeds do well. Bundle small items together, give sizes clearly, and for baby gear such as car seats and strollers be upfront about age and wear, because parents ask. Cars, land and other high-value assets are a different kind of sale altogether, where the paperwork decides the deal as much as the price.",
+        list: [
+          "Phones and laptops — marketplace search, model details, proof it works",
+          "Furniture and appliances — sell locally, give measurements, show it running",
+          "Clothes and baby items — WhatsApp and social feeds, bundles, clear sizes",
+          "Cars and land — documentation first; see the dedicated guides linked below",
+        ],
+      },
+      {
         heading: "How to price a second-hand item in Kenya",
         body: "Do not start from what you paid. Start from what comparable items are being advertised for right now — same model, same age, roughly the same condition — and position yourself inside that range.\n\nIf you want a fast sale, price a little under the middle of the range and say the price is firm. If you can wait, price near the top and expect negotiation. What kills sales is pricing above the range with no explanation, because a buyer comparing five listings will simply skip yours.",
         list: [
@@ -585,6 +724,30 @@ export const blogPosts: BlogPost[] = [
         q: "How do I avoid scams when selling second-hand in Kenya?",
         a: "Meet in a public place in daylight, confirm payment has cleared in your account before handing over the item, and be cautious of buyers offering more than you asked or pushing for an unusual delivery arrangement. Keep the conversation on-platform until you are confident.",
       },
+      {
+        q: "What sells fastest second-hand in Kenya?",
+        a: "Items that are useful, easy to verify and fairly priced — phones, small electronics, furniture and household appliances usually move quickly when the listing shows the item working and states the price. Bulky items sell fastest to buyers nearby who can collect the same day.",
+      },
+    ],
+    relatedLinks: [
+      {
+        label: "Sell online in Kenya",
+        url: "/sell-in-kenya",
+        description:
+          "List cars, phones, furniture, fashion or farm produce free on Shopi and message buyers directly.",
+      },
+      {
+        label: "How to sell on Shopi: the complete guide",
+        url: "/blog/how-to-sell-on-shopi-complete-guide-for-kenyan-sellers",
+        description:
+          "Step by step from your first listing to your first sale, including how to close the deal safely.",
+      },
+      {
+        label: "How to sell your car in Kenya without a broker",
+        url: "/blog/how-to-sell-your-car-in-kenya-without-a-broker",
+        description:
+          "For the biggest used item most people ever sell: pricing, viewings and the NTSA TIMS transfer.",
+      },
     ],
   },
 
@@ -592,13 +755,15 @@ export const blogPosts: BlogPost[] = [
   {
     slug: "how-to-sell-your-car-in-kenya-without-a-broker",
     title: "How to Sell Your Car in Kenya Without a Broker",
+    primaryKeyword: "sell your car in Kenya",
     description:
-      "A step-by-step guide to selling your car privately in Kenya — pricing it correctly, writing the listing, handling viewings safely, and transferring ownership through NTSA TIMS.",
+      "How to sell your car in Kenya without a broker: price it right, write a listing that filters time-wasters, show it safely and do the NTSA TIMS transfer.",
     excerpt:
-      "Brokers take a cut and control the conversation. Here's how to price, list, show and transfer your car yourself — and what the trade-offs really are.",
+      "Brokers take a cut and control the conversation. Here's how to sell your car in Kenya yourself — price, list, show and transfer it — and what the trade-offs really are.",
     category: "Seller Guide",
-    readTime: "11 min read",
+    readTime: "12 min read",
     publishedAt: "2026-08-27",
+    updatedAt: "2026-09-15",
     author: {
       name: "Shopi Team",
       role: "Seller Guides",
@@ -657,6 +822,17 @@ export const blogPosts: BlogPost[] = [
         body: "Do not release the car until payment has actually cleared in your account. A screenshot, an SMS or a pending transfer notification is not payment. For a sum of this size, arrange to complete the transaction at a bank where the payment can be confirmed on the spot.\n\nSign a simple sale agreement recording both parties' details, the vehicle registration, the price and the date, and keep a copy. Then complete the transfer through NTSA TIMS. Until the transfer is done, the car is still legally yours — which means any offence committed in it is still your problem. Do not let this step drift.",
       },
       {
+        heading: "Step 7 — Tie up the loose ends after the sale",
+        body: "Most guides stop at the handover, but a private sale is not finished when the buyer drives away. A few small tasks in the following days protect you from problems that can surface weeks later.\n\nFirst, confirm the transfer has actually completed on NTSA TIMS rather than assuming the buyer accepted it. Keep your copy of the sale agreement, the payment confirmation and the transfer record together, because if the car is later involved in an accident or a traffic offence, those documents are how you show it was no longer yours. Then speak to your insurer about cancelling or adjusting your cover; a policy on a car you no longer own protects nobody, and you may be due a partial refund.\n\nBefore handover, remove everything personal: documents in the glovebox, parking cards, and any phone paired with the car's Bluetooth or infotainment system. Hand over the spare key and the service records you advertised, since both were part of what the buyer paid for. Finally, mark your listing as sold or remove it, so you are not fielding messages about a car that is gone.\n\nIt is a short list, but when you sell your car in Kenya without a broker there is nobody else to do it for you.",
+        list: [
+          "Confirm the NTSA TIMS transfer shows as complete",
+          "Keep the sale agreement, payment proof and transfer record together",
+          "Contact your insurer to cancel or adjust cover",
+          "Clear personal documents, cards and paired phones from the car",
+          "Hand over spare keys and service records, then take the listing down",
+        ],
+      },
+      {
         heading: "When a broker is still the right call",
         body: "Selling privately is not free — it costs you time, several evenings of viewings, and the patience to deal with people who never intended to buy. If you are relocating in two weeks, or you simply do not want the process, a broker or a dealer buying outright is a legitimate choice.\n\nThe point is to make it a decision rather than a default. Know roughly what your car is worth privately, then decide whether the convenience is worth the difference. For many sellers it is not, and the gap is a significant amount of money for a few weekends of effort.",
       },
@@ -686,6 +862,10 @@ export const blogPosts: BlogPost[] = [
         q: "Is it free to list my car on Shopi?",
         a: "Yes. Listing a car on Shopi is free and Shopi takes no commission. Buyers message you directly, and you agree price, inspection, payment and transfer between yourselves.",
       },
+      {
+        q: "What should I do after selling my car in Kenya?",
+        a: "Confirm the NTSA TIMS transfer has completed, keep the sale agreement and payment proof, contact your insurer about cancelling your cover, and remove your listing. Until the transfer completes, the car is still legally yours.",
+      },
     ],
     relatedLinks: [
       {
@@ -713,10 +893,11 @@ export const blogPosts: BlogPost[] = [
   {
     slug: "how-much-is-my-car-worth-in-kenya",
     title: "How Much Is My Car Worth in Kenya? A Seller's Pricing Guide",
+    primaryKeyword: "how much is my car worth in Kenya",
     description:
-      "How to price a used car in Kenya before you advertise — what actually moves the number, how to read comparable listings honestly, and the pricing mistakes that leave cars unsold for months.",
+      "How much is my car worth in Kenya? Price it before you advertise: what moves the number, how to read comparable listings and the mistakes to avoid.",
     excerpt:
-      "Almost every car that sits unsold for months is priced wrong, not marketed wrong. Here is how to work out what yours is genuinely worth before you advertise.",
+      "Almost every car that sits unsold for months is priced wrong, not marketed wrong. Here is how to answer \"how much is my car worth in Kenya?\" honestly, before you advertise.",
     category: "Seller Guide",
     readTime: "10 min read",
     publishedAt: "2026-09-11",
@@ -738,7 +919,7 @@ export const blogPosts: BlogPost[] = [
     sections: [
       {
         heading: "Why this is the only question that matters first",
-        body: "A car that is priced correctly sells. A car that is priced wrong does not sell no matter how good the photographs are, how many platforms it is listed on, or how quickly the owner replies to messages. Everything else in a private sale is secondary to this one number.\n\nThe difficulty is that most owners do not price from the market. They price from what they paid, from what they still owe, or from what they need for the next car. None of those figures has any bearing on what a buyer will pay, and a buyer comparing five listings will simply skip the one that sits above the others without explaining why.",
+        body: "A car that is priced correctly sells. A car that is priced wrong does not sell no matter how good the photographs are, how many platforms it is listed on, or how quickly the owner replies to messages. Everything else in a private sale is secondary to this one number, so the first question to answer is simply: how much is my car worth in Kenya right now, to a buyer comparing it with other listings?\n\nThe difficulty is that most owners do not price from the market. They price from what they paid, from what they still owe, or from what they need for the next car. None of those figures has any bearing on what a buyer will pay, and a buyer comparing five listings will simply skip the one that sits above the others without explaining why.",
       },
       {
         heading: "Start from comparable listings, not from what you paid",
@@ -853,10 +1034,11 @@ export const blogPosts: BlogPost[] = [
   {
     slug: "where-to-sell-your-car-in-kenya-city-by-city",
     title: "Where to Sell Your Car in Kenya: A City-by-City Guide",
+    primaryKeyword: "where to sell your car in Kenya",
     description:
-      "Car buyers differ by town in Kenya. A guide to selling in Nairobi, Mombasa, Nakuru, Eldoret, Kisumu, Thika, Nyeri, Meru and Machakos — who buys, what sells, and where to meet safely.",
+      "Where to sell your car in Kenya, town by town: who buys in Nairobi, Mombasa, Nakuru, Eldoret, Kisumu and beyond, what sells, and where to meet safely.",
     excerpt:
-      "A Probox sells differently in Eldoret than in Nairobi, and a Vitz differently in Kisumu than in Nyeri. Where you sell changes who turns up and what they pay.",
+      "A Probox sells differently in Eldoret than in Nairobi, and a Vitz differently in Kisumu than in Nyeri. Deciding where to sell your car in Kenya changes who turns up and what they pay.",
     category: "Seller Guide",
     readTime: "12 min read",
     publishedAt: "2026-09-11",
@@ -879,7 +1061,7 @@ export const blogPosts: BlogPost[] = [
     sections: [
       {
         heading: "Cars are the most location-bound thing you can sell",
-        body: "Most second-hand items travel. Someone will courier a phone from Nairobi to Kisumu without much thought. A car is different: a buyer has to come and see it, drive it, and usually bring a mechanic. That physical constraint is what makes the town you are selling from matter more for a car than for anything else.\n\nIt also means the local buyer pool is your real market, not the national one. A buyer will cross a county to inspect the right car, and sometimes further for something unusual or high-value, but the great majority of private car sales in Kenya happen within a couple of hours' drive. Understanding who is in that radius is most of the work.",
+        body: "Most second-hand items travel. Someone will courier a phone from Nairobi to Kisumu without much thought. A car is different: a buyer has to come and see it, drive it, and usually bring a mechanic. That physical constraint is what makes the town you are selling from matter more for a car than for anything else.\n\nIt also means the local buyer pool is your real market, not the national one. A buyer will cross a county to inspect the right car, and sometimes further for something unusual or high-value, but the great majority of private car sales in Kenya happen within a couple of hours' drive. Understanding who is in that radius is most of the work of deciding where to sell your car in Kenya.",
       },
       {
         heading: "Nairobi — deepest market, most competition",
@@ -1009,6 +1191,36 @@ export const blogPosts: BlogPost[] = [
 
 export function getBlogPost(slug: string): BlogPost | undefined {
   return blogPosts.find((p) => p.slug === slug);
+}
+
+/**
+ * Posts most related to `post`, for the "More from Shopi" sidebar. Ranked by
+ * shared category, then shared keywords, then recency — so a car-selling guide
+ * points at the other car guides rather than at whichever posts happen to be
+ * first in the array. Posts already linked from `relatedLinks` are skipped to
+ * spread links across more of the blog.
+ */
+export function getRelatedPosts(post: BlogPost, count: number): BlogPost[] {
+  const linked = new Set(post.relatedLinks?.map((link) => link.url));
+  const keywords = new Set(post.keywords.map((k) => k.toLowerCase()));
+
+  return blogPosts
+    .filter((p) => p.slug !== post.slug && !linked.has(`/blog/${p.slug}`))
+    .map((p) => ({
+      p,
+      score:
+        (p.category === post.category ? 10 : 0) +
+        p.keywords.filter((k) => keywords.has(k.toLowerCase())).length,
+    }))
+    .sort(
+      (a, b) =>
+        b.score - a.score ||
+        (b.p.updatedAt ?? b.p.publishedAt).localeCompare(
+          a.p.updatedAt ?? a.p.publishedAt,
+        ),
+    )
+    .slice(0, count)
+    .map(({ p }) => p);
 }
 
 export function getAllSlugs(): string[] {

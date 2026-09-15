@@ -20,6 +20,22 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Blog content: SEO checks and freshness
+
+Blog posts live in `lib/blog.ts`. Run the audit before merging content changes, and once a month:
+
+```bash
+npm run seo:audit                    # add -- --stale-days=120 to tighten the review window
+```
+
+It fails on hard rules: a meta description over 155 characters, `primaryKeyword` missing from the title, lead, body or description, a duplicate title, or a broken `/blog/` link. It warns about posts under ~1500 words, posts with fewer than two internal links, and posts not reviewed in 180 days.
+
+For each post flagged as due for review:
+
+1. Re-check anything that goes out of date: NTSA/TIMS steps, fees, prices, app features and screenshots of the flow.
+2. Update or expand the sections that have drifted, and add links to any newer posts or landing pages on the same topic.
+3. Set `updatedAt` to the date of the edit. This updates the sitemap `lastmod`, the Article schema `dateModified`, Open Graph `modifiedTime` and the "Updated" date on the page. Don't bump it for typo fixes.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

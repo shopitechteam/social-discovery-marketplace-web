@@ -19,13 +19,34 @@ function usernameFromHandle(handle: string): string | null {
   const username = decoded.slice(1).trim().toLowerCase();
   return /^[a-z0-9._-]{1,40}$/.test(username) ? username : null;
 }
+import { cache } from "react";
 import { CreatorProfilePage } from "@/features/profile/components/CreatorProfilePage";
 import { query } from "@/lib/apollo/ApolloClient";
-import { GetUserProfileDocument } from "@/types/__generated__/graphql";
-import type { ProfileUserFieldsFragment } from "@/types/__generated__/graphql";
+import {
+  GetUserPostsDocument,
+  GetUserProfileDocument,
+} from "@/types/__generated__/graphql";
+import type {
+  ContentCardFieldsFragment,
+  ProfileUserFieldsFragment,
+} from "@/types/__generated__/graphql";
 import { siteConfig } from "@/config/site";
-import { profilePageSchema, jsonLd } from "@/lib/structured-data";
+import { contentPath } from "@/lib/content-url";
+import {
+  jsonLd,
+  listingItemListSchema,
+  profilePageSchema,
+} from "@/lib/structured-data";
 import { localeAlternates } from "@/lib/metadata";
+import {
+  cleanPublicText,
+  META_DESCRIPTION_MAX,
+  truncateAtWord,
+} from "@/lib/seo/public-text";
+
+/** Matches the page size CreatorProfileView asks for, so the client's first
+ *  query hits the same shape the server already rendered. */
+const INITIAL_POSTS = 18;
 
 interface Props {
   params: Promise<{ lang: string; handle: string }>;
@@ -37,7 +58,8 @@ export const revalidate = 3600;
 
 type Profile = ProfileUserFieldsFragment;
 
-async function getProfile(username: string): Promise<Profile | null> {
+// cache(): generateMetadata and the page both need these, once per request.
+const getProfile = cache(async (username: string): Promise<Profile | null> => {
   try {
     const { data } = await query({
       query: GetUserProfileDocument,
@@ -47,6 +69,40 @@ async function getProfile(username: string): Promise<Profile | null> {
   } catch {
     return null;
   }
+});
+
+/**
+ * The storefront's first page, fetched on the server. Without it the grid only
+ * existed after client JavaScript ran, so crawlers and answer engines saw a
+ * seller page with a name and no products — nothing to rank for, and no links
+ * through to the listings themselves.
+ */
+const getInitialPosts = cache(
+  async (userId: string): Promise<ContentCardFieldsFragment[]> => {
+    try {
+      const { data } = await query({
+        query: GetUserPostsDocument,
+        variables: { userId, limit: INITIAL_POSTS },
+      });
+      return (data?.userPosts?.posts ?? []) as ContentCardFieldsFragment[];
+    } catch {
+      return [];
+    }
+  },
+);
+
+/** Where the seller sells from, read off their newest listing. */
+function sellerPlace(posts: ContentCardFieldsFragment[]): {
+  label: string | null;
+  county: string | null;
+} {
+  const location = posts.find((post) => post.location?.county)?.location;
+  const county = location?.county?.trim() || null;
+  const place = location?.placeName?.trim() || null;
+  const label =
+    [place, county].filter((part, i, parts) => part && parts.indexOf(part) === i).join(", ") ||
+    null;
+  return { label, county };
 }
 
 function displayName(p: Profile): string {
@@ -57,20 +113,21 @@ function displayName(p: Profile): string {
   return full || p.username || "Shopi seller";
 }
 
-function buildDescription(p: Profile): string {
-  if (p.profile?.bio?.trim()) return p.profile.bio.slice(0, 300);
+/**
+ * Written for the results page: what you can buy, from whom, where — then the
+ * seller's own words with contact details stripped (bios routinely carry phone
+ * numbers, which stay out of every public payload).
+ */
+function buildDescription(p: Profile, place: string | null): string {
   const name = displayName(p);
-  const stats: string[] = [];
-  if (typeof p.postCount === "number") {
-    stats.push(`${p.postCount} listing${p.postCount === 1 ? "" : "s"}`);
-  }
-  if (typeof p.followerCount === "number") {
-    stats.push(
-      `${p.followerCount} follower${p.followerCount === 1 ? "" : "s"}`,
-    );
-  }
-  const tail = stats.length ? ` · ${stats.join(" · ")}` : "";
-  return `${name} on ${siteConfig.name}, Kenya's social marketplace${tail}. Browse their listings and message them directly.`;
+  const count = p.postCount ?? 0;
+  const lead =
+    count > 0
+      ? `Shop ${count.toLocaleString("en-KE")} listing${count === 1 ? "" : "s"} from ${name} on ${siteConfig.name}${place ? ` in ${place}` : ""}.`
+      : `${name} on ${siteConfig.name}, Kenya's social marketplace${place ? `, in ${place}` : ""}.`;
+  const bio = cleanPublicText(p.profile?.bio);
+  const tail = bio || "Browse the listings and message the seller directly.";
+  return truncateAtWord(`${lead} ${tail}`, META_DESCRIPTION_MAX);
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -90,11 +147,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   }
 
+  const posts = await getInitialPosts(profile.id);
+  const place = sellerPlace(posts);
   const name = displayName(profile);
   const handleLabel = profile.username ? `@${profile.username}` : "";
-  const title = `${name}${handleLabel ? ` (${handleLabel})` : ""}`;
+  // "Name (@handle) · Nairobi" — the county is the local-intent term buyers
+  // add to a search ("phone accessories nairobi").
+  const title = `${name}${handleLabel ? ` (${handleLabel})` : ""}${place.county ? ` · ${place.county}` : ""}`;
   const shareTitle = `${title} | ${siteConfig.name}`;
-  const description = buildDescription(profile);
+  const description = buildDescription(profile, place.label);
 
   return {
     title,
@@ -103,6 +164,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       name,
       profile.username,
       `${name} Shopi`,
+      place.county ? `${name} ${place.county}` : null,
       "Shopi seller",
       "Kenya marketplace seller",
     ].filter(Boolean) as string[],
@@ -138,6 +200,7 @@ export default async function Page({ params }: Props) {
   if (!username) notFound();
 
   const profile = await getProfile(username);
+  const posts = profile ? await getInitialPosts(profile.id) : [];
   const canonical = `${siteConfig.url}/${lang}/@${username}`;
 
   return (
@@ -151,12 +214,27 @@ export default async function Page({ params }: Props) {
                 url: canonical,
                 displayName: displayName(profile),
                 username: profile.username,
-                bio: profile.profile?.bio,
+                // Cleaned: bios carry phone numbers, which stay out of JSON-LD.
+                bio: cleanPublicText(profile.profile?.bio) || null,
                 avatar: profile.profile?.avatar,
                 website: profile.profile?.website,
                 followerCount: profile.followerCount,
                 postCount: profile.postCount,
               }),
+              // The seller's products as an explicit list, so engines connect
+              // this profile to its listing pages without inferring it.
+              ...(posts.length
+                ? [
+                    listingItemListSchema({
+                      id: `${canonical}#listings`,
+                      name: `Listings by ${displayName(profile)} on ${siteConfig.name}`,
+                      items: posts.map((post) => ({
+                        name: post.title,
+                        url: `${siteConfig.url}${contentPath(lang, post)}`,
+                      })),
+                    }),
+                  ]
+                : []),
             ),
           }}
         />
@@ -165,6 +243,7 @@ export default async function Page({ params }: Props) {
         username={username}
         lang={lang}
         initialProfile={profile}
+        initialPosts={posts}
       />
     </>
   );

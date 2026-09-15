@@ -24,9 +24,9 @@ const useCases: {
   {
     node: (
       <>
-        A farmer in Kiambu films the animals in the shamba, adds a price and a
-        location, and posts. Buyers see it in the local feed and message
-        directly, so no broker sets the price or the conversation.
+        A farmer in Kiambu films the animals in the shamba, sets the price and
+        posts. Buyers nearby message directly, so the price is the
+        farmer&apos;s to set, not a broker&apos;s.
       </>
     ),
     who: "Farm produce & livestock",

@@ -58,6 +58,10 @@ export function LandingFooter({
                 { label: "The Feed", href: `/${lang}#dive-feed` },
                 { label: "Shopi Agent", href: `/${lang}/shopi-agent` },
                 { label: "Sell on Shopi", href: `/${lang}#creators` },
+                {
+                  label: "TikTok video downloader",
+                  href: `/${lang}/tiktok-downloader`,
+                },
               ],
             },
             {

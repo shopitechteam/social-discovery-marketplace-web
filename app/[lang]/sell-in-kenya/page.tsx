@@ -4,6 +4,7 @@ import { LandingFooter } from "@/components/landing/LandingFooter";
 import { LegalNav } from "@/components/legal/LegalNav";
 import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import { CategoryCrossLinks } from "@/components/seo/CategoryCrossLinks";
+import { GuideLinks } from "@/components/seo/GuideLinks";
 import { siteConfig } from "@/config/site";
 import { isValidLocale } from "@/i18n/config";
 import { publicPageMetadata } from "@/lib/metadata";
@@ -75,7 +76,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     // that traffic is deciding WHERE to sell, not asking for a tutorial.
     title: "Sell Online in Kenya — Free Marketplace, No Commission",
     description:
-      "Sell online in Kenya free on Shopi. List cars, phones, furniture, fashion, land or farm produce in minutes and message buyers directly. No listing fees, no commission, no middleman.",
+      "Sell online in Kenya free on Shopi. List cars, phones, furniture, fashion or land in minutes and message buyers directly. No fees, no commission.",
   });
 }
 
@@ -252,6 +253,17 @@ export default async function SellInKenyaPage({ params }: Props) {
             </ol>
           </div>
         </section>
+
+        <GuideLinks
+          lang={safeLang}
+          heading="Seller guides"
+          intro="Go deeper before you post: where each kind of used item sells best in Kenya, and every step of selling on Shopi from first listing to first sale."
+          slugs={[
+            "where-to-sell-used-items-in-kenya",
+            "how-to-sell-on-shopi-complete-guide-for-kenyan-sellers",
+            "how-nairobi-local-sellers-are-winning-online-with-short-videos",
+          ]}
+        />
 
         <section className="mx-auto max-w-170 px-5 py-16">
           <h2 className="mb-8 font-display text-[clamp(1.5rem,3vw,2.2rem)] font-bold tracking-normal text-foreground">

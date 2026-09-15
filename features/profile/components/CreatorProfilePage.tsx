@@ -2,7 +2,10 @@
 
 import { useQuery } from "@apollo/client/react";
 import { GetUserProfileDocument } from "@/types/__generated__/graphql";
-import type { ProfileUserFieldsFragment } from "@/types/__generated__/graphql";
+import type {
+  ContentCardFieldsFragment,
+  ProfileUserFieldsFragment,
+} from "@/types/__generated__/graphql";
 import { useAuthStore } from "@/stores/auth";
 import { CreatorProfileView } from "./CreatorProfileView";
 
@@ -16,9 +19,16 @@ interface Props {
    * query that non-JS crawlers never run.
    */
   initialProfile?: ProfileUserFieldsFragment | null;
+  /** Server-fetched first page of the storefront, for the same reason. */
+  initialPosts?: ContentCardFieldsFragment[];
 }
 
-export function CreatorProfilePage({ username, lang, initialProfile }: Props) {
+export function CreatorProfilePage({
+  username,
+  lang,
+  initialProfile,
+  initialPosts,
+}: Props) {
   const currentUserId = useAuthStore((s) => s.user?.id);
 
   const { data, loading } = useQuery(GetUserProfileDocument, {
@@ -125,6 +135,7 @@ export function CreatorProfilePage({ username, lang, initialProfile }: Props) {
       user={profile}
       lang={lang}
       isOwnProfile={isOwnProfile}
+      initialPosts={initialPosts}
     />
   );
 }

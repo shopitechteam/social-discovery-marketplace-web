@@ -99,6 +99,23 @@
     "sectionLabel": "Nani hupost kwenye Shopi",
     "headline": "Wauzaji wa kawaida. Bidhaa halisi. Hakuna duka linalohitajika."
   },
+  "socialProof": {
+    "eyebrow": "Wanaouza kwenye Shopi sasa hivi",
+    "headline": "Usichukue neno letu tu. Tazama kilicho hewani leo.",
+    "intro": "Wauzaji halisi wenye bidhaa halisi. Kila bidhaa hapa chini ni tangazo lililo hai kwenye Shopi, lenye bei, mahali na muuzaji unayeweza kumtumia ujumbe.",
+    "featured": "Muuzaji aliyeangaziwa",
+    "verified": "Muuzaji aliyethibitishwa",
+    "listings": "matangazo hai",
+    "listingOne": "tangazo hai",
+    "views": "mara yametazamwa",
+    "followers": "wafuasi",
+    "since": "Kwenye Shopi tangu {date}",
+    "summary": "{name} ana matangazo {count} yaliyo hai kwenye Shopi.",
+    "summaryOne": "{name} ana tangazo 1 lililo hai kwenye Shopi.",
+    "latestFrom": "Mapya kutoka kwa {name}",
+    "visitShop": "Tembelea duka",
+    "seeAll": "Tazama matangazo yote {count}"
+  },
   "download": {
     "sectionLabel": "Anza kuuza",
     "headline": "Post leo. Acha wanunuzi wa karibu wakujie.",
@@ -260,18 +277,15 @@
       "messageNoName": "Karibu tena!",
       "cta": "Rudi kwenye feed yako",
       "dismiss": "Funga"
-    },
-    "tiktokSaver": {
-      "eyebrow": "Ukiwa hapa",
-      "title": "Unahitaji nakala safi ya video ya TikTok?",
-      "body": "Bandika link ya TikTok uhifadhi video kwenye kifaa chako bila watermark — inafaa unapotaka kutumia tena video zako za bidhaa kwenye Shopi, WhatsApp status, au popote pengine.",
-      "placeholder": "Bandika link ya TikTok…",
-      "button": "Pata video",
-      "fetching": "Inatafuta…",
-      "save": "Hifadhi video",
-      "tryAnother": "Jaribu link nyingine",
-      "error": "Imeshindwa kupata video hiyo. Angalia link kisha ujaribu tena.",
-      "disclaimer": "Hifadhi tu video ulizotengeneza au ulizo na ruhusa ya kuzitumia."
     }
+  },
+  "tiktokSaver": {
+    "placeholder": "Bandika link ya TikTok…",
+    "button": "Pata video",
+    "fetching": "Inatafuta…",
+    "save": "Hifadhi video",
+    "tryAnother": "Jaribu link nyingine",
+    "error": "Imeshindwa kupata video hiyo. Angalia link kisha ujaribu tena.",
+    "disclaimer": "Hifadhi tu video ulizotengeneza au ulizo na ruhusa ya kuzitumia."
   }
 }

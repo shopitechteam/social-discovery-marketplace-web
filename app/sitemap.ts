@@ -4,6 +4,7 @@ import { blogPosts } from "@/lib/blog";
 import { locales } from "@/i18n/config";
 import { contentPath } from "@/lib/content-url";
 import { COUNTIES } from "@/lib/counties";
+import { fetchSocialProofSellers } from "@/features/social-proof/queries/socialProofSellers";
 import {
   searchIntentPages,
   searchIntentPath,
@@ -217,6 +218,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly",
       priority: 0.9,
     },
+    { path: "/tiktok-downloader", changeFrequency: "monthly", priority: 0.7 },
     { path: "/contact", changeFrequency: "monthly", priority: 0.5 },
     { path: "/privacy", changeFrequency: "yearly", priority: 0.3 },
     { path: "/terms", changeFrequency: "yearly", priority: 0.3 },
@@ -286,7 +288,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const blogEntries: MetadataRoute.Sitemap = blogPosts.map((post) => ({
     url: langs("en", `/blog/${post.slug}`),
-    lastModified: new Date(post.publishedAt),
+    lastModified: new Date(post.updatedAt ?? post.publishedAt),
     changeFrequency: "monthly",
     priority: 0.75,
     alternates: alternates(`/blog/${post.slug}`),
@@ -309,7 +311,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     };
   });
 
+  // Sellers featured on the homepage (admin → Social proof) are the profiles we
+  // most want crawled, so they are always listed, at a higher priority, even
+  // when none of their listings fell inside this snapshot.
+  const featuredSellers = await fetchSocialProofSellers(12, 0);
+  const featuredUsernames = new Set(featuredSellers.map((s) => s.username));
+
   const sellerLastModified = new Map<string, Date>();
+  for (const seller of featuredSellers) sellerLastModified.set(seller.username, now);
   for (const item of listings) {
     const username = item.creator?.username?.trim();
     if (!username) continue;
@@ -319,17 +328,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         ? new Date(item.createdAt)
         : now;
     const previous = sellerLastModified.get(username);
-    if (!previous || modified > previous)
+    if (!previous || previous === now || modified > previous)
       sellerLastModified.set(username, modified);
   }
   const sellerEntries: MetadataRoute.Sitemap = [...sellerLastModified].map(
     ([username, lastModified]) => {
-      const path = `/profile/${username}`;
+      // The canonical profile URL. /profile/{username} is a legacy address that
+      // permanently redirects here, and engines skip redirecting sitemap URLs.
+      const path = `/@${username}`;
       return {
         url: langs("en", path),
         lastModified,
         changeFrequency: "daily" as const,
-        priority: 0.6,
+        priority: featuredUsernames.has(username) ? 0.8 : 0.6,
         alternates: alternates(path),
       };
     },

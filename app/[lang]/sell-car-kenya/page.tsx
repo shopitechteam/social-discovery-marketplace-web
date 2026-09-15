@@ -4,6 +4,7 @@ import { LandingFooter } from "@/components/landing/LandingFooter";
 import { LegalNav } from "@/components/legal/LegalNav";
 import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import { CategoryCrossLinks } from "@/components/seo/CategoryCrossLinks";
+import { GuideLinks } from "@/components/seo/GuideLinks";
 import { siteConfig } from "@/config/site";
 import { isValidLocale } from "@/i18n/config";
 import { publicPageMetadata } from "@/lib/metadata";
@@ -62,7 +63,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     path: "/sell-car-kenya",
     title: "Sell My Car in Kenya — Free, No Broker, No Commission",
     description:
-      "Want to sell your car in Kenya? List free on Shopi in minutes, price it against live listings, handle NTSA logbook transfer yourself and deal with buyers directly. No broker, no commission.",
+      "Want to sell your car in Kenya? List free on Shopi, price it against live listings and deal with buyers directly. No broker, no commission.",
   });
 }
 
@@ -396,6 +397,17 @@ export default async function SellCarKenyaPage({ params }: Props) {
             </div>
           </div>
         </section>
+
+        <GuideLinks
+          lang={safeLang}
+          heading="Car selling guides"
+          intro="The long-form answers: pricing your car honestly, running a private sale from listing to NTSA transfer, and how buyers differ from town to town."
+          slugs={[
+            "how-much-is-my-car-worth-in-kenya",
+            "how-to-sell-your-car-in-kenya-without-a-broker",
+            "where-to-sell-your-car-in-kenya-city-by-city",
+          ]}
+        />
 
         <section className="mx-auto max-w-170 px-5 py-16">
           <h2 className="mb-8 font-display text-[clamp(1.5rem,3vw,2.2rem)] font-bold tracking-normal text-foreground">
