@@ -20,6 +20,10 @@ type Props = { params: Promise<{ lang: string }> };
 const TITLE = "Online Marketplaces in Kenya — How Shopi Compares";
 const DESCRIPTION =
   "Comparing the ways Kenyans buy and sell online: Jiji, PigiaMe and other classifieds, Facebook Marketplace, WhatsApp groups and TikTok. How Shopi differs — a local discovery feed, AI listings, direct chat and zero commission.";
+// DESCRIPTION is also the on-page intro; the meta version is trimmed to fit
+// the ~155 characters a results page shows.
+const META_DESCRIPTION =
+  "Online marketplaces in Kenya compared: Jiji, PigiaMe, Facebook Marketplace, WhatsApp groups and TikTok — and how Shopi differs, with zero commission.";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { lang } = await params;
@@ -27,7 +31,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     lang,
     path: "/marketplace-alternatives-kenya",
     title: TITLE,
-    description: DESCRIPTION,
+    description: META_DESCRIPTION,
   });
 }
 

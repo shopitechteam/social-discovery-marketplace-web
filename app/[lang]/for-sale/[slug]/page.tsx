@@ -38,12 +38,21 @@ export function generateStaticParams() {
   );
 }
 
+// Rental labels already say what the listing is ("Houses for rent"), so
+// appending "for Sale" would produce "Houses for rent for Sale in Kenya".
+const isRental = (label: string) => /\bfor rent$/i.test(label);
+
 function pageTitle(label: string) {
-  return `${label} for Sale in Kenya`;
+  return isRental(label) ? `${label} in Kenya` : `${label} for Sale in Kenya`;
 }
 
+// The intro is already on the page; the meta description is written for the
+// results page and kept under 155 chars so it isn't truncated.
 function pageDescription(page: SearchIntentPageData) {
-  return `${page.intro} Browse listings, compare prices and chat with sellers directly.`;
+  const subject = isRental(page.label)
+    ? page.pluralLabel
+    : `${page.pluralLabel} for sale`;
+  return `Find ${subject} in Kenya from local sellers. Compare prices, photos and locations, then message the seller directly on Shopi.`;
 }
 
 function priceLabel(listing: {

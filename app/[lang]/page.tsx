@@ -12,7 +12,6 @@ import { MarketplaceCategoriesSection } from "@/components/landing/MarketplaceCa
 import { WelcomeBackBanner } from "@/components/landing/WelcomeBackBanner";
 //import { SupportChat } from "@/components/landing/SupportChat";
 import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
-import { TiktokSaverSection } from "@/components/landing/TiktokSaverSection"; //
 //import { VideoBubble } from "@/components/landing/VideoBubble";
 import { getDictionary } from "@/i18n/getDictionary";
 import { isValidLocale, locales, type Locale } from "@/i18n/config";
@@ -48,13 +47,13 @@ const HOME_META: Record<
   en: {
     title: `${siteConfig.name} — Buy and Sell Online in Kenya | Free Marketplace`,
     description:
-      "Buy and sell online in Kenya, free. Post a photo and Shopi Agent writes your listing. Buyers nearby find it in the feed and message you directly. No commission, no listing fees.",
+      "Buy and sell online in Kenya, free. Post a photo, Shopi Agent writes the listing and nearby buyers message you directly. No commission, no listing fees.",
     ogLocale: "en_KE",
   },
   sw: {
     title: `${siteConfig.name} — Nunua na Uuze Mtandaoni Kenya | Soko Bure`,
     description:
-      "Nunua na uuze mtandaoni Kenya bure. Piga picha na Shopi Agent ikuandikie tangazo. Wanunuzi wa karibu wanalipata kwenye feed na kukutumia ujumbe. Hakuna commission wala ada.",
+      "Nunua na uuze mtandaoni Kenya bure. Piga picha, Shopi Agent ikuandikie tangazo, na wanunuzi wa karibu wakutumie ujumbe. Hakuna commission wala ada.",
     ogLocale: "sw_KE",
   },
 };
@@ -192,9 +191,9 @@ export default async function Rootpage({ params }: PageProps<"/[lang]">) {
         <MarketplaceCategoriesSection lang={lang} />
         <DeepDivesSection dict={dict} lang={lang} />
         <TestimonialsSection dict={dict} lang={lang} />
-        {/* Side utility, intentionally low on the page — a "by the way" tool,
-            not a headline feature. */}
-        <TiktokSaverSection dict={dict} />
+        {/* The TikTok saver lives on /tiktok-downloader (linked from the
+            footer), so the funnel runs straight from proof to the FAQ and the
+            closing CTA. */}
         {/* <BlogSection dict={dict} /> */}
         {/* Visible FAQ — strong AEO signal and matches the FAQ structured data */}
         <HomeFaq items={faq} lang={lang} />
@@ -222,7 +221,7 @@ function HomeFaq({ items, lang }: { items: FaqItem[]; lang: Locale }) {
         <h2 className="font-display text-[clamp(1.6rem,3.2vw,2.5rem)] font-bold tracking-normal leading-tight text-foreground">
           {lang === "sw"
             ? "Majibu ya mambo unayoweza kujiuliza."
-            : "Everything you might be wondering."}
+            : "Still deciding? Start with these."}
         </h2>
       </div>
 

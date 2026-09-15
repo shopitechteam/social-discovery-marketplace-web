@@ -14,7 +14,7 @@ import { Pill } from "./Pill";
 const categories = [
   {
     title: "Phones and electronics",
-    body: "Sell the Samsung or iPhone you upgraded from, a spare laptop, a smart TV or speakers. Post the condition and price, and buyers message you about it.",
+    body: "The Samsung or iPhone you upgraded from loses value every month it sits in a drawer. Post it, or that spare laptop or TV, with the condition and price, and buyers message you directly.",
     items: ["Samsung", "iPhone", "Used phones", "Smart TVs", "Laptops"],
     href: "/phones-electronics-kenya",
     cta: "Sell phones and electronics",
@@ -28,7 +28,7 @@ const categories = [
   },
   {
     title: "Cars for sale",
-    body: "Post your car with real photos or a walkaround video, plus make, model, year, mileage and price. Serious buyers chat with you inside Shopi.",
+    body: "Skip the broker and keep what they would have taken. Post real photos or a walkaround video with the make, year, mileage and price, and serious buyers chat with you directly.",
     items: ["Used cars", "Saloons", "SUVs", "Pickups"],
     href: "/sell-car-kenya",
     cta: "Sell your car",

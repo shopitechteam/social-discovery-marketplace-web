@@ -39,7 +39,7 @@ function pageTitle(location: SellCarLocationData) {
 }
 
 function pageDescription(location: SellCarLocationData) {
-  return `Selling a car in ${location.town}? List free on Shopi, see what ${location.town} sellers are asking, and deal with buyers directly. No broker, no commission, NTSA transfer explained.`;
+  return `Sell your car in ${location.town}: list free on Shopi, see what local sellers are asking and deal with buyers directly. No broker, no commission.`;
 }
 
 function priceLabel(listing: {

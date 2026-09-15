@@ -39,7 +39,7 @@ function pageTitle(model: string) {
 }
 
 function pageDescription(page: SellCarPageData) {
-  return `Selling a ${page.model} in Kenya? Compare what other ${page.model} owners are asking, list free on Shopi in minutes, and deal with buyers directly. No commission, no broker.`;
+  return `Sell your ${page.model} in Kenya: see what other owners are asking, list it free on Shopi and deal with buyers directly. No broker, no commission.`;
 }
 
 function priceLabel(listing: {
