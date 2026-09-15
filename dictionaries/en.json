@@ -99,6 +99,23 @@
     "sectionLabel": "Who posts on Shopi",
     "headline": "Sound like you? You already have everything you need."
   },
+  "socialProof": {
+    "eyebrow": "Selling on Shopi right now",
+    "headline": "Don't take our word for it. Here's what's live today.",
+    "intro": "Real sellers with real stock. Every item below is a live listing on Shopi, with a price, a location and a seller you can message.",
+    "featured": "Featured seller",
+    "verified": "Verified seller",
+    "listings": "live listings",
+    "listingOne": "live listing",
+    "views": "listing views",
+    "followers": "followers",
+    "since": "On Shopi since {date}",
+    "summary": "{name} has {count} live listings on Shopi.",
+    "summaryOne": "{name} has 1 live listing on Shopi.",
+    "latestFrom": "Latest from {name}",
+    "visitShop": "Visit shop",
+    "seeAll": "See all {count} listings"
+  },
   "download": {
     "sectionLabel": "Start selling",
     "headline": "Post it today. Let nearby buyers come to you.",

@@ -1,3 +1,5 @@
+import { siteConfig } from "@/config/site";
+import { fetchSocialProofSellers } from "@/features/social-proof/queries/socialProofSellers";
 import { fetchMarketplaceCatalog } from "@/lib/seo/marketplace-catalog";
 
 function oneLine(value: string): string {
@@ -5,7 +7,10 @@ function oneLine(value: string): string {
 }
 
 export async function GET(): Promise<Response> {
-  const catalog = await fetchMarketplaceCatalog();
+  const [catalog, featuredSellers] = await Promise.all([
+    fetchMarketplaceCatalog(),
+    fetchSocialProofSellers(12, 0),
+  ]);
   const lines = [
     "# Shopi Current Marketplace Catalog",
     "",
@@ -16,6 +21,29 @@ export async function GET(): Promise<Response> {
     `[Machine-readable JSON](${catalog.canonicalUrl})`,
     "",
   ];
+
+  // Sellers the Shopi team features on the homepage. Stated as live counts so
+  // an answer engine asked "who sells X on Shopi" has a citable, current fact.
+  if (featuredSellers.length > 0) {
+    lines.push("## Featured sellers", "");
+    lines.push(
+      "Sellers featured on the Shopi homepage by the Shopi team. Counts are live public listings at generation time.",
+      "",
+    );
+    for (const seller of featuredSellers) {
+      const place = [seller.placeName, seller.county]
+        .filter((part, i, parts) => part && parts.indexOf(part) === i)
+        .join(", ");
+      lines.push(
+        `- [${oneLine(seller.displayName)} (@${seller.username})](${siteConfig.url}/en/@${seller.username})` +
+          `${seller.headline ? ` — ${oneLine(seller.headline)}` : ""}` +
+          `${place ? `; ${oneLine(place)}` : ""}` +
+          `; ${seller.listingCount.toLocaleString("en-KE")} live ${seller.listingCount === 1 ? "listing" : "listings"}` +
+          `${seller.isVerified ? "; verified on Shopi" : ""}`,
+      );
+    }
+    lines.push("", "## Recent listings", "");
+  }
 
   if (catalog.items.length === 0) {
     lines.push(

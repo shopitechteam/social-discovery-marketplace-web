@@ -99,6 +99,23 @@
     "sectionLabel": "Nani hupost kwenye Shopi",
     "headline": "Wauzaji wa kawaida. Bidhaa halisi. Hakuna duka linalohitajika."
   },
+  "socialProof": {
+    "eyebrow": "Wanaouza kwenye Shopi sasa hivi",
+    "headline": "Usichukue neno letu tu. Tazama kilicho hewani leo.",
+    "intro": "Wauzaji halisi wenye bidhaa halisi. Kila bidhaa hapa chini ni tangazo lililo hai kwenye Shopi, lenye bei, mahali na muuzaji unayeweza kumtumia ujumbe.",
+    "featured": "Muuzaji aliyeangaziwa",
+    "verified": "Muuzaji aliyethibitishwa",
+    "listings": "matangazo hai",
+    "listingOne": "tangazo hai",
+    "views": "mara yametazamwa",
+    "followers": "wafuasi",
+    "since": "Kwenye Shopi tangu {date}",
+    "summary": "{name} ana matangazo {count} yaliyo hai kwenye Shopi.",
+    "summaryOne": "{name} ana tangazo 1 lililo hai kwenye Shopi.",
+    "latestFrom": "Mapya kutoka kwa {name}",
+    "visitShop": "Tembelea duka",
+    "seeAll": "Tazama matangazo yote {count}"
+  },
   "download": {
     "sectionLabel": "Anza kuuza",
     "headline": "Post leo. Acha wanunuzi wa karibu wakujie.",

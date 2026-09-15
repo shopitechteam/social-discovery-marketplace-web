@@ -12,6 +12,7 @@ import { MarketplaceCategoriesSection } from "@/components/landing/MarketplaceCa
 import { WelcomeBackBanner } from "@/components/landing/WelcomeBackBanner";
 //import { SupportChat } from "@/components/landing/SupportChat";
 import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
+import { SocialProofSection } from "@/components/landing/SocialProofSection";
 //import { VideoBubble } from "@/components/landing/VideoBubble";
 import { getDictionary } from "@/i18n/getDictionary";
 import { isValidLocale, locales, type Locale } from "@/i18n/config";
@@ -27,6 +28,12 @@ import {
   marketplaceWebPageSchema,
   jsonLd,
 } from "@/lib/structured-data";
+
+// The featured-sellers section is admin-controlled, so the page regenerates
+// every minute: a seller featured in the admin appears without a deploy and
+// without waiting out a long cache. Keep in step with
+// SOCIAL_PROOF_REVALIDATE_SECONDS (a literal is required here by Next).
+export const revalidate = 60;
 
 const HOME_META: Record<
   Locale,
@@ -190,6 +197,10 @@ export default async function Rootpage({ params }: PageProps<"/[lang]">) {
         <StatsSection dict={dict} />
         <MarketplaceCategoriesSection lang={lang} />
         <DeepDivesSection dict={dict} lang={lang} />
+        {/* Real featured sellers (admin-controlled) before the illustrative
+            use cases: proof first, then "sound like you?". Renders nothing
+            when no seller is featured or the API is unreachable. */}
+        <SocialProofSection dict={dict} lang={lang} />
         <TestimonialsSection dict={dict} lang={lang} />
         {/* The TikTok saver lives on /tiktok-downloader (linked from the
             footer), so the funnel runs straight from proof to the FAQ and the
