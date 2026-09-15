@@ -15,6 +15,7 @@ import { SHIMMER_AVATAR } from "@/lib/shimmer";
 import {
   GetUserPostsDocument,
   RecordProfileVisitDocument,
+  type ContentCardFieldsFragment,
   type ProfileUserFieldsFragment,
 } from "@/types/__generated__/graphql";
 import { useFollow } from "@/features/feed/hooks/useFollow";
@@ -65,9 +66,20 @@ interface Props {
   user: ProfileUserFieldsFragment;
   lang: string;
   isOwnProfile: boolean;
+  /**
+   * First storefront page rendered on the server (public profile route). Shown
+   * until the client query answers, so the grid — and its links to every
+   * listing — is in the HTML crawlers read instead of arriving after JS.
+   */
+  initialPosts?: ContentCardFieldsFragment[];
 }
 
-export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
+export function CreatorProfileView({
+  user,
+  lang,
+  isOwnProfile,
+  initialPosts,
+}: Props) {
   // A profile link opened from outside has no app history to return to, so
   // back would be a dead button. Send those to the feed.
   const goBack = useAppBack(`/${lang}/feed`);
@@ -116,7 +128,7 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
     notifyOnNetworkStatusChange: true,
   });
 
-  const posts = data?.userPosts.posts ?? [];
+  const posts = data?.userPosts.posts ?? initialPosts ?? [];
   const hasMore = data?.userPosts.hasMore ?? false;
   const nextCursor = data?.userPosts.nextCursor ?? undefined;
 
@@ -457,7 +469,9 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
             <div ref={sentinelRef} className="h-1" />
 
             {/* Skeleton tiles while fetching the next page */}
-            {postsLoading && posts.length > 0 && (
+            {/* Only for a real next-page fetch — not while the client's first
+                query refreshes the server-rendered page. */}
+            {postsLoading && Boolean(data) && posts.length > 0 && (
               <div className="mt-5 grid grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-3 md:gap-x-4 md:gap-y-6 xl:grid-cols-4 min-[90rem]:grid-cols-5">
                 {Array.from({ length: 4 }).map((_, i) => (
                   <Skeleton key={i} className="aspect-3/4 w-full rounded-xl md:aspect-4/5" />
