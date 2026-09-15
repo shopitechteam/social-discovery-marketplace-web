@@ -23,6 +23,7 @@ export function InboxScreen({ lang }: { lang: string }) {
   return (
     <div className="min-h-svh bg-app">
       <ConversationList
+        lang={lang}
         conversations={inbox.conversations}
         selectedConversationId={inbox.selectedConversationId}
         conversationsLoading={inbox.conversationsLoading}

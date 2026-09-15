@@ -22,6 +22,7 @@ export const WS_EVENTS = {
   DM_TYPING_UPDATED: 'dm:typing:updated',
   AGENT_STREAM_DELTA: 'agent:stream:delta',
   AGENT_STREAM_DONE: 'agent:stream:done',
+  TEAM_MESSAGE_CREATED: 'team:message:created',
 } as const;
 
 export const WS_CLIENT_EVENTS = {
