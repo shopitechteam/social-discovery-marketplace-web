@@ -133,7 +133,10 @@ export function LandingNav({
         <div className="mx-auto flex h-full max-w-(--landing-page-max) items-center justify-between">
           {/* Left cluster — logo + section links, Tolstoy-style */}
           <div className="flex items-center gap-10">
-            <Link href="/" className="flex items-center gap-2 no-underline">
+            <Link
+              href={homeBase}
+              className="flex items-center gap-2 no-underline"
+            >
               <ShopiLogo height={72} />
             </Link>
 
