@@ -1353,8 +1353,11 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
   return (
     <article ref={cardRef} className="bg-elevated overflow-hidden">
       {/* ── Header ─────────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-3 px-4 pt-3.5 pb-2.5">
-        <button className="lg:cursor-pointer" onClick={openCreatorProfile}>
+      <div className="flex items-center gap-3 px-4 pt-3.5 pb-2.5 max-[360px]:gap-2 max-[360px]:px-3">
+        <button
+          className="shrink-0 lg:cursor-pointer"
+          onClick={openCreatorProfile}
+        >
           <Avatar
             creatorId={post.creatorId}
             avatarUrl={creator?.profile?.avatar}
@@ -1369,7 +1372,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
           {creatorName ? (
             <button
               onClick={openCreatorProfile}
-              className="font-bold text-base leading-tight hover:underline block"
+              className="block max-w-full truncate text-left text-[15px] font-bold leading-tight hover:underline max-[360px]:text-[14px]"
             >
               {creatorName}
             </button>
@@ -1377,12 +1380,12 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
             <div className="h-3.5 w-24 rounded-full bg-surface animate-pulse" />
           )}
           {post.location && locationTrail(post.location) && (
-            <p className="flex items-center gap-0.5 text-muted-foreground text-[11px] mt-0.5 leading-tight">
+            <p className="mt-0.5 flex min-w-0 items-center gap-0.5 text-[11px] leading-tight text-muted-foreground max-[360px]:text-[10.5px]">
               <MapPin className="w-3 h-3 shrink-0" />
               <span className="truncate">{locationTrail(post.location)}</span>
             </p>
           )}
-          <p className="text-muted-foreground text-[11px] mt-0.5">
+          <p className="mt-0.5 truncate text-[11px] text-muted-foreground max-[360px]:text-[10.5px]">
             {timeAgo(post.createdAt)}
           </p>
         </div>
@@ -1392,7 +1395,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
           <button
             onClick={handleFollow}
             className={[
-              "flex items-center lg:cursor-pointer gap-1 text-[13px] font-semibold px-3 py-1.5 rounded-full transition-all active:scale-95",
+              "flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-semibold transition-all active:scale-95 max-[360px]:px-2.5 max-[360px]:text-[12px] lg:cursor-pointer",
               following
                 ? "text-muted-foreground bg-surface"
                 : "text-primary-strong dark:text-primary bg-primary-soft hover:bg-primary/20",
@@ -1422,7 +1425,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
               type="button"
               onClick={(e) => e.stopPropagation()}
               className={cn(
-                "flex h-10 w-10 items-center justify-center rounded-full bg-surface/80 text-muted-foreground transition-colors lg:cursor-pointer hover:bg-surface hover:text-default active:bg-muted",
+                "flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface/80 text-muted-foreground transition-colors hover:bg-surface hover:text-default active:bg-muted max-[360px]:h-9 max-[360px]:w-9 lg:cursor-pointer",
                 menuOpen && "bg-surface text-default",
               )}
               aria-label="Post options"

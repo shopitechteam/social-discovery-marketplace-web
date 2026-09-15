@@ -151,7 +151,7 @@ export function FeedPage({ lang, visible = true, initialItems }: Props) {
 
       {/* ── Mobile: existing card feed with tabs ── */}
       {!desktop ? (
-        <div className="md:hidden min-h-svh">
+        <div className="feed-mobile-shell md:hidden min-h-svh">
           <FeedHeader
             activeTab={tab}
             onTabChange={handleTabChange}
