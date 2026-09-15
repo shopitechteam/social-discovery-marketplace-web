@@ -12,6 +12,38 @@ export type SearchIntentPage = {
 };
 
 export const searchIntentPages = [
+  // The generic car-buyer page, listed first so it is part of the site-wide
+  // "Popular product searches" links. "Second hand cars in Kenya" and "cars for
+  // sale in Kenya" are the largest non-brand queries Kenya's classifieds sites
+  // rank for, and the model pages below each only cover one car.
+  {
+    slug: "cars",
+    query: "car",
+    label: "Cars",
+    pluralLabel: "used cars",
+    category: "Cars",
+    intro:
+      "Find used and second hand cars for sale in Kenya from local sellers — Toyota, Mazda, Subaru, Nissan, Isuzu and more. Compare price, year, mileage and location, then message the seller directly on Shopi, with no broker in between.",
+    buyerTips: [
+      "Compare the same make, model, year and grade — not just the model name — before judging a price.",
+      "Ask whether the logbook is in the seller's name with no outstanding financing, and for service records.",
+      "Inspect in daylight with a mechanic you trust, and pay only once ownership transfer through NTSA TIMS is agreed.",
+    ],
+    sellerTips: [
+      "Put the make, model, year and grade in the title, and the mileage, price and location in the listing.",
+      "Add clear photos of all four corners, the interior, dashboard, tyres and engine bay, or a walkaround video.",
+      "Say whether the logbook is ready and whether the price is negotiable.",
+    ],
+    keywords: [
+      "cars for sale in Kenya",
+      "used cars for sale in Kenya",
+      "second hand cars in Kenya",
+      "second hand cars for sale in Kenya",
+      "cheap cars for sale in Kenya",
+      "car prices in Kenya",
+    ],
+    related: ["toyota-premio", "mazda-atenza", "toyota-vitz", "probox"],
+  },
   {
     slug: "mazda-atenza",
     query: "Mazda Atenza",

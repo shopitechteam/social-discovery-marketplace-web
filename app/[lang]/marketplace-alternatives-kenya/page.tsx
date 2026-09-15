@@ -175,6 +175,33 @@ export default async function AlternativesPage({ params }: Props) {
             </div>
           </section>
 
+          {/* Hub → spoke: the per-competitor pages own "jiji alternative" and
+              "pigiame alternative"; this hub owns the broader comparison. */}
+          <section className="mb-14 rounded-2xl border border-border bg-elevated p-6">
+            <h2 className="mb-2 font-display text-[1.25rem] font-bold text-foreground">
+              Looking for a Jiji or PigiaMe alternative?
+            </h2>
+            <p className="mb-4 text-[0.98rem] leading-[1.7] text-muted">
+              Side-by-side guides for the two classifieds sites Kenyan sellers ask about most:
+              what each offers, what&apos;s different on Shopi, and when the other site may suit
+              you better.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href={`/${lang}/jiji-alternative-kenya`}
+                className="rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-foreground no-underline"
+              >
+                Jiji alternative in Kenya
+              </Link>
+              <Link
+                href={`/${lang}/pigiame-alternative-kenya`}
+                className="rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-foreground no-underline"
+              >
+                PigiaMe alternative in Kenya
+              </Link>
+            </div>
+          </section>
+
           <section className="mb-14">
             <h2 className="mb-6 font-display text-[1.5rem] font-bold text-foreground">
               What Shopi does differently

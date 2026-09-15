@@ -107,6 +107,14 @@ export function LandingFooter({
                   label: "Compare marketplaces",
                   href: `/${lang}/marketplace-alternatives-kenya`,
                 },
+                {
+                  label: "Jiji alternative",
+                  href: `/${lang}/jiji-alternative-kenya`,
+                },
+                {
+                  label: "PigiaMe alternative",
+                  href: `/${lang}/pigiame-alternative-kenya`,
+                },
                 { label: "Blog", href: `/${lang}/blog` },
                 {
                   label: "Online selling jobs",
