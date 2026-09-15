@@ -8,6 +8,7 @@ import {
   CheckCheck,
   Loader2,
   Megaphone,
+  MessageSquareText,
   PlayCircle,
   Store,
   UserPlus,
@@ -15,6 +16,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { listTimestamp } from "@/features/messaging/lib/helpers";
 import { useInfiniteScroll } from "@/features/feed/hooks/useInfiniteScroll";
+import { TeamAvatar } from "@/features/team-messages/components/TeamAvatar";
 import type { NotificationItem } from "../types";
 
 interface Props {
@@ -144,7 +146,9 @@ export function NotificationList({
                   }}
                 >
                   <div className="relative h-12 w-12 shrink-0">
-                    {actor?.avatar ? (
+                    {notification.type === "TEAM_MESSAGE" ? (
+                      <TeamAvatar />
+                    ) : actor?.avatar ? (
                       <Image
                         src={actor.avatar}
                         alt={actor.displayName}
@@ -168,6 +172,8 @@ export function NotificationList({
                         <Megaphone size={13} />
                       ) : notification.type === "NEW_POST" ? (
                         <Store size={13} />
+                      ) : notification.type === "TEAM_MESSAGE" ? (
+                        <MessageSquareText size={13} />
                       ) : (
                         <UserPlus size={13} />
                       )}

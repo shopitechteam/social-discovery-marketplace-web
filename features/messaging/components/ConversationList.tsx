@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Bell, BellOff, Loader2, MessageCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { TeamThreadRow } from "@/features/team-messages/components/TeamThreadRow";
 import type { Conversation } from "../types";
 import {
   avatarGradient,
@@ -16,6 +17,8 @@ import {
 } from "../lib/helpers";
 
 interface Props {
+  /** Enables the pinned Shopi team row, which links to a locale-prefixed route. */
+  lang?: string;
   conversations: Conversation[];
   selectedConversationId: string | null;
   conversationsLoading: boolean;
@@ -34,6 +37,7 @@ const LONG_PRESS_MS = 450;
 
 /** Left-hand inbox: header + scrollable conversation rows. */
 export function ConversationList({
+  lang,
   conversations,
   selectedConversationId,
   conversationsLoading,
@@ -129,6 +133,7 @@ export function ConversationList({
       </div>
 
       <div className="flex-1 overflow-y-auto pb-14 md:pb-6">
+        {lang ? <TeamThreadRow lang={lang} /> : null}
         {conversationsLoading && conversations.length === 0 ? (
           <div className="space-y-3 px-4 py-4 md:px-6 md:py-5">
             {Array.from({ length: 12 }).map((_, index) => (
