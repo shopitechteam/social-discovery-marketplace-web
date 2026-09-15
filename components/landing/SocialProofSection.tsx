@@ -16,6 +16,7 @@ import {
 } from "@/features/social-proof/queries/socialProofSellers";
 import { Pill } from "./Pill";
 import { SellerAvatarImage } from "./SellerAvatarImage";
+import { SocialProofTracker } from "./SocialProofTracker";
 
 type Copy = Dictionary["socialProof"];
 
@@ -136,17 +137,20 @@ export async function SocialProofSection({
           </p>
         </div>
 
-        {sellers.length === 1 ? (
-          <SellerSpotlight seller={sellers[0]} lang={lang} locale={locale} t={t} />
-        ) : (
-          <ul className="grid list-none gap-5 p-0 md:grid-cols-2 xl:grid-cols-3">
-            {sellers.map((seller) => (
-              <li key={seller.id} className="flex">
-                <SellerCard seller={seller} lang={lang} locale={locale} t={t} />
-              </li>
-            ))}
-          </ul>
-        )}
+        {/* Impressions and clicks per seller → admin Social proof page. */}
+        <SocialProofTracker>
+          {sellers.length === 1 ? (
+            <SellerSpotlight seller={sellers[0]} lang={lang} locale={locale} t={t} />
+          ) : (
+            <ul className="grid list-none gap-5 p-0 md:grid-cols-2 xl:grid-cols-3">
+              {sellers.map((seller) => (
+                <li key={seller.id} className="flex">
+                  <SellerCard seller={seller} lang={lang} locale={locale} t={t} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </SocialProofTracker>
       </div>
     </section>
   );
@@ -169,7 +173,10 @@ function SellerSpotlight({
   const count = seller.listingCount.toLocaleString(locale);
 
   return (
-    <article className="overflow-hidden rounded-[1.4rem] border border-default bg-elevated shadow-sm">
+    <article
+      data-sp-seller={seller.id}
+      className="overflow-hidden rounded-[1.4rem] border border-default bg-elevated shadow-sm"
+    >
       {/* Side by side from md (tablets, narrow or zoomed desktop windows);
           stacked only on phones. */}
       <div className="grid md:grid-cols-[minmax(0,17rem)_minmax(0,1fr)] xl:grid-cols-[minmax(0,21rem)_minmax(0,1fr)]">
@@ -251,6 +258,7 @@ function SellerSpotlight({
             {withCoversFirst(seller.listings).map((listing, index) => (
               <li
                 key={listing.id}
+                data-sp-content={listing.id}
                 className={`w-[46%] shrink-0 snap-start @sm:w-auto ${ONE_ROW[index] ?? "@sm:hidden"}`}
               >
                 <ListingCard listing={listing} lang={lang} locale={locale} />
@@ -281,7 +289,10 @@ function SellerCard({
   const thumbs = withCoversFirst(seller.listings).slice(0, 3);
 
   return (
-    <article className="flex w-full flex-col rounded-[1.2rem] border border-default bg-elevated p-5 shadow-sm">
+    <article
+      data-sp-seller={seller.id}
+      className="flex w-full flex-col rounded-[1.2rem] border border-default bg-elevated p-5 shadow-sm"
+    >
       <div className="flex items-center gap-3">
         <SellerAvatar seller={seller} size={48} />
         <div className="min-w-0">
@@ -312,7 +323,7 @@ function SellerCard({
           {thumbs.map((listing) => {
             const cover = listingCover(listing);
             return (
-              <li key={listing.id}>
+              <li key={listing.id} data-sp-content={listing.id}>
                 <Link
                   href={contentPath(lang, listing)}
                   className="relative block aspect-square overflow-hidden rounded-xl border border-default bg-subtle"

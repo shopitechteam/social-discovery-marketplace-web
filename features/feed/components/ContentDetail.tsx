@@ -57,6 +57,7 @@ import { absoluteContentUrl } from "@/lib/content-url";
 import { ContentDetailDocument } from "../queries/contentDetail";
 import { ListingSeoSummary } from "./ListingSeoSummary";
 import { profileHref } from "@/lib/profile-url";
+import { trackSellerEvent } from "@/lib/seller-analytics";
 
 const MediaCarouselDialog = dynamic(() =>
   import("./MediaCarouselDialog").then((mod) => mod.MediaCarouselDialog),
@@ -571,12 +572,19 @@ export function ContentDetail({
   const muted = useFeedPreferencesStore((s) => s.videoMuted);
   const setVideoMuted = useFeedPreferencesStore((s) => s.setVideoMuted);
   const isDesktop = useIsDesktop();
+  /** Conversion intent: counted at the tap, before any sign-in prompt. */
+  const trackMessageIntent = useCallback(() => {
+    if (resolvedContentId) {
+      trackSellerEvent({ type: "MESSAGE_CLICK", contentId: resolvedContentId });
+    }
+  }, [resolvedContentId]);
   const openChat = useCallback(() => {
     if (!resolvedContentId) return;
+    trackMessageIntent();
     if (!requireAuth({ contentId: resolvedContentId })) return;
     setChatOpen(true);
     onChatOpenChange?.(true);
-  }, [requireAuth, resolvedContentId, onChatOpenChange]);
+  }, [requireAuth, resolvedContentId, onChatOpenChange, trackMessageIntent]);
   const openMessageRoute = useCallback(() => {
     if (!resolvedContentId) return;
     const href = `/${lang}/notifications/${resolvedContentId}?source=content`;
@@ -641,6 +649,16 @@ export function ContentDetail({
       () => {},
     );
   }, [resolvedContentId, viewMutation]);
+
+  // Seller funnel analytics (featured sellers): one listing view per listing,
+  // with the session's traffic source. Skipped on the seller's own listing.
+  const funnelViewTrackedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!post?.id || post.isMyContent || funnelViewTrackedRef.current === post.id)
+      return;
+    funnelViewTrackedRef.current = post.id;
+    trackSellerEvent({ type: "LISTING_VIEW", contentId: post.id });
+  }, [post?.id, post?.isMyContent]);
 
   // ── Video completion / replay tracking ────────────────────────────────────
   const handleVideoCompleted = useCallback(
@@ -1313,6 +1331,7 @@ export function ContentDetail({
               return;
             }
             if (!resolvedContentId) return;
+            trackMessageIntent();
             if (!requireAuth({ contentId: resolvedContentId })) return;
             openMessageRoute();
           }}
@@ -1807,6 +1826,7 @@ export function ContentDetail({
                     type="button"
                     onClick={() => {
                       if (!resolvedContentId) return;
+                      trackMessageIntent();
                       if (!requireAuth({ contentId: resolvedContentId }))
                         return;
                       openMessageRoute();

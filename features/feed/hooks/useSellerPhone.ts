@@ -14,6 +14,7 @@ import { useCallback, useState } from "react";
 import { useLazyQuery } from "@apollo/client/react";
 import { SellerContactPhoneDocument } from "@/types/__generated__/graphql";
 import { telHref } from "@/lib/phone";
+import { trackSellerEvent } from "@/lib/seller-analytics";
 
 export function useSellerPhone(contentId: string | null | undefined) {
   const [resolvedPhone, setResolvedPhone] = useState<{
@@ -50,6 +51,8 @@ export function useSellerPhone(contentId: string | null | undefined) {
       return null;
     }
     setResolvedPhone({ contentId, value: revealed });
+    // Conversion: a buyer asked for the number and got one.
+    trackSellerEvent({ type: "CONTACT_REVEAL", contentId });
     return revealed;
   }, [contentId, phone, fetchPhone]);
 
@@ -61,9 +64,10 @@ export function useSellerPhone(contentId: string | null | undefined) {
     (override?: string) => {
       const target = override ?? phone;
       if (!target) return;
+      if (contentId) trackSellerEvent({ type: "CALL_CLICK", contentId });
       window.location.href = telHref(target);
     },
-    [phone],
+    [phone, contentId],
   );
 
   return { phone, reveal, dial, loading, unavailable };

@@ -162,6 +162,85 @@ async function fetchRecentListings(): Promise<SitemapListing[]> {
   return listings.slice(0, LISTING_SITEMAP_MAX);
 }
 
+/** Per featured seller: a whole storefront is a few hundred URLs at most. */
+const FEATURED_SELLER_LISTINGS_MAX = 500;
+
+/**
+ * Every public listing of each homepage-featured seller.
+ *
+ * The recent-listings walk is newest-first and time-boxed, so a featured
+ * seller's older stock falls out of it as other sellers post — and their
+ * profile only exposes the first page of listings without JavaScript. These
+ * are the sellers we most want found when someone searches for an item they
+ * sell, so their full inventory is always submitted.
+ */
+async function fetchFeaturedSellerListings(sellerIds: string[]): Promise<SitemapListing[]> {
+  const api = process.env.NEXT_PUBLIC_API_URL;
+  if (!api || sellerIds.length === 0) return [];
+
+  const perSeller = await Promise.all(
+    sellerIds.map(async (userId) => {
+      const listings: SitemapListing[] = [];
+      let afterId: string | null = null;
+      try {
+        while (listings.length < FEATURED_SELLER_LISTINGS_MAX) {
+          const res: Response = await fetch(`${api}/graphql`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              query: `
+                query SitemapSellerListings($userId: String!, $limit: Int, $afterId: String) {
+                  userPosts(userId: $userId, limit: $limit, afterId: $afterId) {
+                    hasMore
+                    nextCursor
+                    posts {
+                      id
+                      slug
+                      title
+                      createdAt
+                      updatedAt
+                      creator { username }
+                      media {
+                        imageUrl
+                        thumbnailUrl
+                        sortOrder
+                        muxMeta { thumbnailUrl }
+                        r2Variants { url variant }
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: { userId, limit: LISTING_SITEMAP_PAGE, afterId },
+            }),
+            next: { revalidate: 3600 },
+          });
+          if (!res.ok) break;
+          const json = (await res.json()) as {
+            data?: {
+              userPosts?: {
+                hasMore?: boolean;
+                nextCursor?: string | null;
+                posts?: SitemapListing[];
+              };
+            };
+          };
+          const page = json.data?.userPosts;
+          if (!page?.posts?.length) break;
+          listings.push(...page.posts);
+          if (!page.hasMore || !page.nextCursor) break;
+          afterId = page.nextCursor;
+        }
+      } catch {
+        // Best-effort, like the recent-listings walk.
+      }
+      return listings;
+    }),
+  );
+
+  return perSeller.flat();
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   const { url } = siteConfig;
@@ -294,7 +373,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     alternates: alternates(`/blog/${post.slug}`),
   }));
 
-  const listings = await fetchRecentListings();
+  const [recentListings, featuredSellers] = await Promise.all([
+    fetchRecentListings(),
+    fetchSocialProofSellers(12, 0),
+  ]);
+  const featuredListings = await fetchFeaturedSellerListings(
+    featuredSellers.map((seller) => seller.id),
+  );
+  const listingIds = new Set<string>();
+  const listings = [...recentListings, ...featuredListings].filter((item) => {
+    if (!item?.id || listingIds.has(item.id)) return false;
+    listingIds.add(item.id);
+    return true;
+  });
   const listingEntries: MetadataRoute.Sitemap = listings.map((item) => {
     const path = contentPath("en", item).replace(/^\/en/, "");
     return {
@@ -314,7 +405,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Sellers featured on the homepage (admin → Social proof) are the profiles we
   // most want crawled, so they are always listed, at a higher priority, even
   // when none of their listings fell inside this snapshot.
-  const featuredSellers = await fetchSocialProofSellers(12, 0);
   const featuredUsernames = new Set(featuredSellers.map((s) => s.username));
 
   const sellerLastModified = new Map<string, Date>();
