@@ -142,7 +142,7 @@ export default async function SellCarKenyaPage({ params }: Props) {
                 Post your car free
               </Link>
               <Link
-                href={`/${safeLang}/search?q=cars`}
+                href={`/${safeLang}/for-sale/cars`}
                 className="rounded-full border border-border px-6 py-3 text-sm font-bold text-foreground no-underline"
               >
                 Browse cars

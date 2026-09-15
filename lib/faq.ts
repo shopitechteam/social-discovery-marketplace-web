@@ -14,7 +14,7 @@ export type FaqItem = { q: string; a: string };
 export const HOME_FAQ_EN: FaqItem[] = [
   {
     q: "What is Shopi?",
-    a: "Shopi is Kenya's free social marketplace where people discover, buy and sell locally. Browse a personalized feed of nearby products, chat directly with buyers and sellers, or use Shopi Agent to make buying and selling faster and easier.",
+    a: "Shopi is a free online marketplace in Kenya where people discover, buy and sell locally. Browse a personalized feed of nearby products, chat directly with buyers and sellers, or use Shopi Agent to make buying and selling faster and easier. Posting is free and there is no commission.",
   },
   {
     q: "What is Shopi Agent?",
@@ -27,6 +27,10 @@ export const HOME_FAQ_EN: FaqItem[] = [
   {
     q: "How is Shopi different from other marketplaces?",
     a: "Shopi combines a personalized social feed with AI-powered assistance. Instead of only searching or filling long forms, you can discover products naturally, use Shopi Agent to create listings or find products, and connect directly with nearby buyers and sellers.",
+  },
+  {
+    q: "Is Shopi an alternative to Jiji or PigiaMe?",
+    a: "Yes. Shopi is a free Kenyan marketplace you can use instead of, or alongside, classifieds sites like Jiji and PigiaMe. Listing is free with no commission, buyers near you find your post in a local feed, and they message you directly. Shopi is independent and not affiliated with either site.",
   },
   {
     q: "How does Shopi personalize my feed?",
