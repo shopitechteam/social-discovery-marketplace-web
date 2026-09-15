@@ -20,6 +20,7 @@ import {
 } from "@/types/__generated__/graphql";
 import { useFollow } from "@/features/feed/hooks/useFollow";
 import { useAuthStore } from "@/stores/auth";
+import { trackSellerEvent } from "@/lib/seller-analytics";
 import { Skeleton } from "@/components/ui/skeleton";
 import { appendUnique } from "../lib/appendUnique";
 
@@ -118,6 +119,15 @@ export function CreatorProfileView({
     visitTrackedRef.current = true;
     recordProfileVisit({ variables: { userId: user.id } }).catch(() => {});
   }, [user.id, isOwnProfile, isAuthenticated, recordProfileVisit]);
+
+  // Funnel analytics: every visitor, signed in or not (the visit above only
+  // sees signed-in users). The API ignores sellers it isn't tracking.
+  const funnelViewTrackedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (isOwnProfile || !user.id || funnelViewTrackedRef.current === user.id) return;
+    funnelViewTrackedRef.current = user.id;
+    trackSellerEvent({ type: "PROFILE_VIEW", sellerId: user.id });
+  }, [user.id, isOwnProfile]);
 
   const {
     data,
