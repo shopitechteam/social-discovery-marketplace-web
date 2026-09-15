@@ -363,6 +363,13 @@ body {
   color: rgb(var(--color-text-placeholder));
 }
 
+/* Android Chrome can auto-enlarge text inside narrow, media-heavy feeds. Keep
+   the feed's own calibrated scale stable without changing landing or form text. */
+.feed-mobile-shell {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 .btn-primary {
   background-color: rgb(var(--brand-primary));
   color: rgb(var(--color-text-on-brand));
