@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { gql, NetworkStatus, type TypedDocumentNode } from "@apollo/client";
 import { useQuery } from "@apollo/client/react";
 import {
@@ -394,13 +394,8 @@ const SORT_OPTIONS: Array<{
   },
 ];
 
-function pillButton(active: boolean) {
-  return cn(
-    "inline-flex h-9 items-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors",
-    active
-      ? "border-transparent bg-primary text-white shadow-sm"
-      : "border-default bg-app text-default",
-  );
+function isDiscoverySort(value: string | null): value is DiscoverySort {
+  return SORT_OPTIONS.some((option) => option.value === value);
 }
 
 /**
@@ -617,6 +612,8 @@ function locationSheetDepth(step: LocationSheetStep | null) {
 }
 
 export function DiscoverPage({ lang }: { lang: string }) {
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   // Seed the search box from a ?q= deep link (e.g. /search?q=iphone, and the
   // /explore?q= URL advertised in our WebSite SearchAction structured data).
@@ -642,12 +639,21 @@ export function DiscoverPage({ lang }: { lang: string }) {
   const [selectedSubCounty, setSelectedSubCounty] =
     useState<LocationFacet | null>(null);
   const [selectedWard, setSelectedWard] = useState<LocationFacet | null>(null);
-  const [sort, setSort] = useState<DiscoverySort>("RELEVANCE");
+  const [sort, setSort] = useState<DiscoverySort>(() => {
+    const value = searchParams.get("sort");
+    return isDiscoverySort(value) ? value : "RELEVANCE";
+  });
   // Keep raw strings for friendly number inputs; parsed values are sent to the
   // feed, facets and result-count queries below.
-  const [minPrice, setMinPrice] = useState("");
-  const [maxPrice, setMaxPrice] = useState("");
-  const [negotiableOnly, setNegotiableOnly] = useState(false);
+  const [minPrice, setMinPrice] = useState(
+    () => searchParams.get("minPrice") ?? "",
+  );
+  const [maxPrice, setMaxPrice] = useState(
+    () => searchParams.get("maxPrice") ?? "",
+  );
+  const [negotiableOnly, setNegotiableOnly] = useState(
+    () => searchParams.get("negotiable") === "1",
+  );
   const [locationStep, setLocationStep] = useState<LocationSheetStep | null>(
     null,
   );
@@ -656,6 +662,18 @@ export function DiscoverPage({ lang }: { lang: string }) {
   // mobile, so it needs its own open state.
   const [sortPopoverOpen, setSortPopoverOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [locationParamsApplied, setLocationParamsApplied] = useState(() => {
+    return !(
+      searchParams.get("countyId") ||
+      searchParams.get("subCountyId") ||
+      searchParams.get("wardId")
+    );
+  });
+  const initialLocationParams = useRef({
+    countyId: searchParams.get("countyId"),
+    subCountyId: searchParams.get("subCountyId"),
+    wardId: searchParams.get("wardId"),
+  });
 
   const parsedMinPrice = parsePriceFilter(minPrice);
   const parsedMaxPrice = parsePriceFilter(maxPrice);
@@ -1132,43 +1150,6 @@ export function DiscoverPage({ lang }: { lang: string }) {
     setQuery("");
   }, [categoryParam, categories]);
 
-  // Mirror the committed (debounced) search term back into the URL so the deep
-  // link stays truthful and shareable — replace, not push, so typing doesn't
-  // spam history. Runs alongside the category mirror below.
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const next = query || null;
-    if ((params.get("q") ?? null) === next) return;
-    if (next) params.set("q", next);
-    else params.delete("q");
-    const qs = params.toString();
-    window.history.replaceState(
-      window.history.state,
-      "",
-      `${window.location.pathname}${qs ? `?${qs}` : ""}`,
-    );
-  }, [query]);
-
-  // Mirror in-page category changes back into the URL (replace, not push) so
-  // the deep link stays truthful — clearing or switching in-page must not
-  // leave a stale ?category= that would re-assert itself on reload.
-  useEffect(() => {
-    // A param still waiting to be applied above (categories loading) must not
-    // be wiped by the initial null selection.
-    if (categoryParam && appliedCategoryParam.current !== categoryParam) return;
-    const params = new URLSearchParams(window.location.search);
-    const next = selectedCategory?.slug ?? null;
-    if ((params.get("category") ?? null) === next) return;
-    if (next) params.set("category", next);
-    else params.delete("category");
-    appliedCategoryParam.current = next;
-    const qs = params.toString();
-    window.history.replaceState(
-      window.history.state,
-      "",
-      `${window.location.pathname}${qs ? `?${qs}` : ""}`,
-    );
-  }, [selectedCategory, categoryParam]);
   const counties = useMemo(
     () => locationFacets?.counties ?? [],
     [locationFacets?.counties],
@@ -1186,6 +1167,80 @@ export function DiscoverPage({ lang }: { lang: string }) {
     [counties],
   );
 
+  useEffect(() => {
+    if (locationParamsApplied) return;
+
+    const { countyId, subCountyId, wardId } = initialLocationParams.current;
+    const county = countyId
+      ? counties.find((item) => item.id === countyId || item.slug === countyId)
+      : null;
+    const subCounty = subCountyId
+      ? subCounties.find(
+          (item) => item.id === subCountyId || item.slug === subCountyId,
+        )
+      : null;
+    const ward = wardId
+      ? wards.find((item) => item.id === wardId || item.slug === wardId)
+      : null;
+
+    if (countyId && !county) return;
+    if (subCountyId && !subCounty) return;
+    if (wardId && !ward) return;
+
+    if (county) setSelectedCounty(county);
+    if (subCounty) setSelectedSubCounty(subCounty);
+    if (ward) setSelectedWard(ward);
+    setLocationParamsApplied(true);
+  }, [counties, locationParamsApplied, subCounties, wards]);
+
+  // Keep share/reload-worthy filters in the URL and use Next navigation so
+  // other client components (notably the desktop sidebar) see changes.
+  useEffect(() => {
+    if (categoryParam && appliedCategoryParam.current !== categoryParam) return;
+    if (!locationParamsApplied) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const setOrDelete = (key: string, value: string | null) => {
+      if (value) params.set(key, value);
+      else params.delete(key);
+    };
+
+    setOrDelete("q", query || null);
+    setOrDelete("category", selectedCategory?.slug ?? null);
+    setOrDelete("subcategory", selectedSubcategory || null);
+    setOrDelete("sort", sort === "RELEVANCE" ? null : sort);
+    setOrDelete("countyId", selectedCounty?.id ?? null);
+    setOrDelete("subCountyId", selectedSubCounty?.id ?? null);
+    setOrDelete("wardId", selectedWard?.id ?? null);
+    setOrDelete("minPrice", minPrice.trim() || null);
+    setOrDelete("maxPrice", maxPrice.trim() || null);
+    setOrDelete("negotiable", negotiableOnly ? "1" : null);
+
+    appliedCategoryParam.current = selectedCategory?.slug ?? null;
+
+    const qs = params.toString();
+    const next = `${pathname}${qs ? `?${qs}` : ""}`;
+    const current = `${window.location.pathname}${window.location.search}`;
+    if (next !== current) {
+      router.replace(next, { scroll: false });
+    }
+  }, [
+    categoryParam,
+    locationParamsApplied,
+    maxPrice,
+    minPrice,
+    negotiableOnly,
+    pathname,
+    query,
+    router,
+    selectedCategory,
+    selectedCounty,
+    selectedSubcategory,
+    selectedSubCounty,
+    selectedWard,
+    sort,
+  ]);
+
   // When searching, results span every category, so the category bar would be
   // misleading (most categories hide / counts no longer reflect the row). Hide
   // it during an active search and show the full set again once search clears.
@@ -1193,49 +1248,66 @@ export function DiscoverPage({ lang }: { lang: string }) {
 
   return (
     <div className="min-h-svh bg-app pb-24 md:pb-8">
-      <div className="mx-auto w-full  lg:grid lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-6 lg:px-6 lg:pt-6">
-        <aside className="hidden lg:block">
-          <div className="sticky top-6 space-y-4 rounded-3xl border border-default bg-app p-4">
-            <div>
-              <p className="text-lg font-semibold text-default">Discover</p>
-              <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                Search by intent, then narrow by category and place.
-              </p>
-            </div>
+      <div className="mx-auto w-full lg:max-w-[1560px] lg:px-8 lg:pt-8">
+        <main className="min-w-0">
+          <div className="mb-6 hidden lg:block">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 min-w-0 flex-1 items-center gap-3 rounded-full border border-border bg-surface px-5">
+                <Search
+                  size={18}
+                  className="shrink-0 text-muted-foreground"
+                  aria-hidden
+                />
+                <input
+                  value={searchDraft}
+                  onChange={(event) => setSearchDraft(event.target.value)}
+                  placeholder="Search cars, dresses, fresh produce..."
+                  className="min-w-0 flex-1 bg-transparent text-sm text-default outline-none placeholder:text-muted-foreground"
+                />
+                {searchDraft ? (
+                  <button
+                    type="button"
+                    onClick={clearSearch}
+                    className="shrink-0 text-muted-foreground transition-colors hover:text-default"
+                    aria-label="Clear search"
+                  >
+                    <X size={16} />
+                  </button>
+                ) : null}
+              </div>
 
-            <div className="space-y-3">
               <button
                 type="button"
                 onClick={openCountySheet}
-                className="flex w-full items-center justify-between rounded-2xl border border-default px-4 py-3 text-left"
+                className={cn(
+                  "flex h-12 shrink-0 items-center gap-3 rounded-full border px-5 text-sm font-semibold transition-colors",
+                  hasLocation
+                    ? "border-primary/20 bg-primary/10 text-primary"
+                    : "border-border bg-surface text-main hover:bg-subtle",
+                )}
               >
-                <div>
-                  <p className="text-sm font-medium text-default">Location</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {locationLabel}
-                  </p>
-                </div>
-                <MapPin size={18} className="text-muted-foreground" />
+                <MapPin size={18} />
+                <span className="max-w-40 truncate">{locationLabel}</span>
               </button>
 
               <Popover open={sortPopoverOpen} onOpenChange={setSortPopoverOpen}>
                 <PopoverTrigger asChild>
                   <button
                     type="button"
-                    className="flex w-full items-center justify-between rounded-2xl border border-default px-4 py-3 text-left"
+                    className={cn(
+                      "flex h-12 shrink-0 items-center gap-3 rounded-full border px-5 text-sm font-semibold transition-colors",
+                      sort !== "RELEVANCE"
+                        ? "border-primary/20 bg-primary/10 text-primary"
+                        : "border-border bg-surface text-main hover:bg-subtle",
+                    )}
                   >
-                    <div>
-                      <p className="text-sm font-medium text-default">Sort</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {activeSort.label}
-                      </p>
-                    </div>
-                    <ArrowUpDown size={18} className="text-muted-foreground" />
+                    <ArrowUpDown size={18} />
+                    <span>{activeSort.label}</span>
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
-                  align="start"
-                  className="w-[--radix-popover-trigger-width] bg-white border border-gray-200 shadow-2xl space-y-2 p-2"
+                  align="end"
+                  className="w-72 space-y-2 border border-border bg-elevated p-2 shadow-2xl"
                 >
                   {SORT_OPTIONS.map((option) => (
                     <SortOption
@@ -1251,53 +1323,84 @@ export function DiscoverPage({ lang }: { lang: string }) {
                   ))}
                 </PopoverContent>
               </Popover>
+
+              <button
+                type="button"
+                onClick={openFilterSheet}
+                className={cn(
+                  "relative flex h-12 shrink-0 items-center gap-3 rounded-full border px-5 text-sm font-semibold transition-colors",
+                  activeFilterCount > 0
+                    ? "border-primary/20 bg-primary/10 text-primary"
+                    : "border-border bg-surface text-main hover:bg-subtle",
+                )}
+              >
+                <SlidersHorizontal size={18} />
+                Filters
+                {activeFilterCount > 0 ? (
+                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold leading-none text-white">
+                    {activeFilterCount}
+                  </span>
+                ) : null}
+              </button>
             </div>
 
-            {showCategories ? (
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <p className="text-sm font-semibold text-default">
-                    Categories
-                  </p>
-                  {selectedCategory ? (
-                    <button
-                      type="button"
-                      onClick={() => selectCategory(null)}
-                      className="text-xs text-primary"
-                    >
-                      Clear
-                    </button>
-                  ) : null}
-                </div>
-                <div className="flex flex-wrap gap-2">
+            {activeFilterCount > 0 ? (
+              <div
+                className="mt-3 flex flex-wrap items-center gap-2"
+                aria-label="Active filters"
+              >
+                {hasLocation ? (
                   <button
                     type="button"
-                    onClick={() => selectCategory(null)}
-                    className={pillButton(selectedCategory === null)}
+                    onClick={clearLocation}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-full bg-primary/10 px-3 text-xs font-semibold text-primary"
                   >
-                    All
+                    {locationLabel}
+                    <X size={14} aria-hidden />
                   </button>
-                  {categories.map((category) => (
-                    <button
-                      key={category.id}
-                      type="button"
-                      onClick={() => selectCategory(category)}
-                      className={pillButton(
-                        selectedCategory?.id === category.id,
-                      )}
-                    >
-                      <span>{category.icon ?? "#"}</span>
-                      <span>{category.name}</span>
-                    </button>
-                  ))}
-                </div>
+                ) : null}
+                {hasPriceFilter ? (
+                  <button
+                    type="button"
+                    onClick={clearPrice}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-full bg-primary/10 px-3 text-xs font-semibold text-primary"
+                  >
+                    {priceFilterLabel}
+                    <X size={14} aria-hidden />
+                  </button>
+                ) : null}
+                {negotiableOnly ? (
+                  <button
+                    type="button"
+                    onClick={() => setNegotiableOnly(false)}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-full bg-primary/10 px-3 text-xs font-semibold text-primary"
+                  >
+                    Negotiable
+                    <X size={14} aria-hidden />
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="h-8 rounded-full px-3 text-xs font-semibold text-muted transition-colors hover:bg-surface hover:text-main"
+                >
+                  Clear all
+                </button>
               </div>
             ) : null}
-          </div>
-        </aside>
 
-        <main className="min-w-0">
-          <div className="sticky top-0 z-30 border-b border-default bg-app/92 backdrop-blur-md lg:static lg:border-b-0 lg:bg-transparent lg:backdrop-blur-none">
+            {selectedCategory ? (
+              <button
+                type="button"
+                onClick={() => selectCategory(null)}
+                className="mt-3 rounded-full px-3 py-2 text-xs font-semibold text-primary transition-colors hover:bg-primary/10"
+              >
+                Clear category
+              </button>
+            ) : null}
+          </div>
+
+          <div className="sticky top-0 z-30 border-b border-default bg-app/92 backdrop-blur-md lg:hidden">
             <div className="flex items-center gap-2 px-4 pb-3 pt-3 lg:px-0 lg:pt-0">
               <div className="flex border border-gray-300 min-w-0 flex-1 items-center gap-2.5 rounded-full bg-surface px-4 py-2.5">
                 <Search
@@ -1487,7 +1590,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
       >
         <SheetContent
           side="right"
-          className="flex w-full max-w-none flex-col gap-0 bg-app p-0 sm:max-w-none"
+          className="flex w-full max-w-none flex-col gap-0 bg-app p-0 sm:max-w-none lg:max-w-md"
         >
           <SheetHeader className="flex-row items-center justify-between border-b border-default px-5 py-4 text-left">
             <div>

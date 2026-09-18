@@ -307,16 +307,8 @@ export function ProfileView({ lang }: Props) {
         lang={lang}
       />
 
-      <div
-        className="sticky top-0 z-20 border-b"
-        style={{
-          backgroundColor: "rgb(var(--color-bg) / 0.94)",
-          borderColor: "rgb(var(--color-border))",
-          backdropFilter: "blur(14px) saturate(150%)",
-          WebkitBackdropFilter: "blur(14px) saturate(150%)",
-        }}
-      >
-        <div className="mx-auto w-full  px-2 sm:px-6 ">
+      <div className="sticky top-0 z-20 border-b border-border bg-app/94 backdrop-blur-md md:top-(--desktop-top-nav-height,80px)">
+        <div className="w-full px-2 sm:px-6 lg:px-8">
           <div
             className="grid h-12 w-full grid-cols-5 md:hidden"
             role="tablist"
@@ -354,12 +346,8 @@ export function ProfileView({ lang }: Props) {
             })}
           </div>
 
-          <div
-            className="hidden py-3 md:flex"
-            role="tablist"
-            aria-label="Profile sections"
-          >
-            <div className="inline-flex w-fit items-center gap-1 rounded-2xl border border-default bg-[rgb(var(--color-bg-elevated))] p-1">
+          <div className="hidden py-2 md:flex" role="tablist" aria-label="Profile sections">
+            <div className="flex w-full items-center gap-6 overflow-x-auto">
               {tabConfig.map((item) => {
                 const active = tab === item.key;
                 const Icon = item.icon;
@@ -372,10 +360,10 @@ export function ProfileView({ lang }: Props) {
                     aria-selected={active}
                     onClick={() => selectTab(item.key)}
                     className={cn(
-                      "inline-flex h-11 min-w-34 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition-colors",
+                      "relative inline-flex h-10 shrink-0 items-center justify-center gap-2 text-sm font-bold transition-colors",
                       active
-                        ? "bg-primary/10 text-foreground"
-                        : "text-muted-foreground hover:bg-surface hover:text-foreground",
+                        ? "text-primary after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-full after:rounded-full after:bg-primary"
+                        : "text-muted hover:text-main",
                     )}
                   >
                     <Icon size={18} strokeWidth={2.15} />
