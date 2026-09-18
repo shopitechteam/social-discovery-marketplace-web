@@ -65,8 +65,6 @@ export function SideNav({ lang = "en" }: { lang: string }) {
       .toUpperCase() || "S";
   const homeActive =
     pathname === `/${lang}` || pathname.startsWith(`/${lang}/feed`);
-  const isFeedRoute =
-    pathname === `/${lang}` || pathname.startsWith(`/${lang}/feed`);
   const browseActive =
     pathname.startsWith(`/${lang}/explore`) ||
     pathname.startsWith(`/${lang}/search`);
@@ -87,30 +85,22 @@ export function SideNav({ lang = "en" }: { lang: string }) {
 
           <nav className="flex items-center gap-3 text-sm font-bold">
             <TopNavLink href={`/${lang}/feed`} active={homeActive}>
-              Home
+              For You
             </TopNavLink>
             <TopNavLink href={`/${lang}/explore`} active={browseActive}>
               Browse
             </TopNavLink>
           </nav>
 
+          {/* ml-auto: the search field used to be the row's only flex-1 child,
+              so it was what pushed everything from here rightward. With it gone
+              this button takes over that job. */}
           <Link
-            href={`/${lang}/search`}
-            scroll={false}
-            className="flex h-12 min-w-[260px] flex-1 items-center gap-3 rounded-full border border-border bg-surface px-5 text-sm font-medium text-muted shadow-inner shadow-black/[0.02] transition-colors hover:border-border-strong hover:text-default"
+            href={`/${lang}/upload`}
+            className="ml-auto inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-surface px-6 text-sm font-black text-main transition-colors hover:bg-subtle"
           >
-            <Search className="h-5 w-5 shrink-0" />
-            <span className="truncate">Search Shopi</span>
+            Sell item
           </Link>
-
-          {!isFeedRoute ? (
-            <Link
-              href={`/${lang}/upload`}
-              className="inline-flex h-11 items-center justify-center rounded-full bg-surface px-6 text-sm font-black text-main transition-colors hover:bg-subtle"
-            >
-              Sell item
-            </Link>
-          ) : null}
 
           <div className="flex items-center gap-1.5">
             <IconNavButton
