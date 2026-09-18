@@ -30,7 +30,7 @@ const tabs: Tab[] = [
   {
     key: "feed",
     path: "feed",
-    label: "Home",
+    label: "For You",
     icon: House,
   },
   {
