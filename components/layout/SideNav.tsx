@@ -1,18 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
-  Home,
-  MessageCircle,
+  Bell,
+  Heart,
   LogOut,
+  MessageCircle,
   Moon,
-  Plus,
   Search,
   Sun,
-  User,
-  type LucideIcon,
 } from "lucide-react";
 import { useQuery } from "@apollo/client/react";
 import { useInboxUnreadCount } from "@/features/messaging/hooks/useUnreadCount";
@@ -23,47 +21,28 @@ import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { useThemeStore } from "@/stores/theme";
 import { Logo } from "@/components/ui/Logo";
 import { Switch } from "@/components/ui/switch";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
-type Tab = {
-  key: string;
-  path: string;
-  label: string;
-  icon: LucideIcon;
-};
-
-const tabs: Tab[] = [
-  { key: "feed", path: "feed", label: "Feed", icon: Home },
-  { key: "explore", path: "explore", label: "Explore", icon: Search },
-  { key: "upload", path: "upload", label: "Upload & sell", icon: Plus },
-  // Same glyph as the mobile bar — this tab was a bell here and a tray there,
-  // for one destination that opens on Messages.
-  {
-    key: "notifications",
-    path: "notifications",
-    label: "Inbox",
-    icon: MessageCircle,
-  },
-  { key: "profile", path: "profile", label: "Profile", icon: User },
-];
-
-// Own-profile subroutes — anything else under /profile/* is someone else's
-// public profile ([username]) and shouldn't light up the sidenav tab.
-const OWN_PROFILE_SUBPATHS = ["edit", "followers", "visitors"];
-
-// Bullet colors cycled across the Browse categories, in this order.
-const browseDots = ["bg-primary", "bg-[#38A8FF]", "bg-secondary", "bg-success"];
-
-const MAX_BROWSE_CATEGORIES = 6;
+const FOOTER_LINKS = ["Blog", "Careers", "FAQ", "Contact"];
 
 export function SideNav({ lang = "en" }: { lang: string }) {
   const pathname = usePathname();
-  // The aside itself is server-rendered so the desktop frame is stable from the
-  // first paint. Data widgets (unread badge, categories) are gated on the
-  // desktop media query so a CSS-hidden sidenav on phones never fires queries.
+  const searchParams = useSearchParams();
   const isDesktop = useIsDesktop({ ssrDefault: false });
-  // Hydration-safe user — SSR and first client paint show the guest card, the
-  // real identity swaps in right after the auth store rehydrates.
   const { user } = useAuthSession();
+  const unreadCount = useInboxUnreadCount();
 
   if (
     pathname.includes("/upload/create") ||
@@ -75,8 +54,7 @@ export function SideNav({ lang = "en" }: { lang: string }) {
   const displayName =
     user?.profile?.firstName ||
     user?.email?.split("@")[0] ||
-    (user ? "Seller" : "Guest");
-  const handle = user?.email ?? "Sign in to sell";
+    (user ? "Seller" : "shopisho");
   const initials =
     displayName
       .split(/\s+/)
@@ -85,182 +63,374 @@ export function SideNav({ lang = "en" }: { lang: string }) {
       .map((part) => part[0])
       .join("")
       .toUpperCase() || "S";
+  const homeActive =
+    pathname === `/${lang}` || pathname.startsWith(`/${lang}/feed`);
+  const isFeedRoute =
+    pathname === `/${lang}` || pathname.startsWith(`/${lang}/feed`);
+  const browseActive =
+    pathname.startsWith(`/${lang}/explore`) ||
+    pathname.startsWith(`/${lang}/search`);
 
   return (
-    <aside
-      className="fixed left-0 top-0 z-40 hidden h-full w-(--side-nav-width,220px) flex-col border-r border-default bg-elevated md:flex"
-    >
-      <div className="flex shrink-0 items-center px-5 pb-4 pt-5">
-        <Link href={`/${lang}`} scroll={false}>
-          <Logo size={60} />
-        </Link>
-      </div>
+    <>
+      <header className="fixed left-0 right-0 top-0 z-50 hidden h-(--desktop-top-nav-height,80px) border-b border-border bg-elevated/95 backdrop-blur md:block">
+        <div className="flex h-full items-center gap-6 px-8">
+          <Link
+            href={`/${lang}`}
+            scroll={false}
+            className="flex min-w-[230px] items-center gap-2.5 text-3xl font-black tracking-normal text-main"
+            aria-label="Shopi home"
+          >
+            <Logo size={58} />
+            <span>shopi</span>
+          </Link>
 
-      <nav className="flex flex-col gap-1 px-3">
-        {tabs.map((tab) => {
-          const href = `/${lang}/${tab.path}`;
-          const isActive =
-            tab.key === "feed"
-              ? pathname === `/${lang}` || pathname.startsWith(`/${lang}/feed`)
-              : tab.key === "profile"
-                ? pathname === `/${lang}/profile` ||
-                  OWN_PROFILE_SUBPATHS.some((p) =>
-                    pathname.startsWith(`/${lang}/profile/${p}`),
-                  )
-                : tab.key === "explore"
-                  ? pathname.startsWith(`/${lang}/explore`) ||
-                    pathname.startsWith(`/${lang}/search`)
-                : pathname.startsWith(`/${lang}/${tab.path}`);
-          const Icon = tab.icon;
+          <nav className="flex items-center gap-3 text-sm font-bold">
+            <TopNavLink href={`/${lang}/feed`} active={homeActive}>
+              Home
+            </TopNavLink>
+            <TopNavLink href={`/${lang}/explore`} active={browseActive}>
+              Browse
+            </TopNavLink>
+          </nav>
 
-          return (
+          <Link
+            href={`/${lang}/search`}
+            scroll={false}
+            className="flex h-12 min-w-[260px] flex-1 items-center gap-3 rounded-full border border-border bg-surface px-5 text-sm font-medium text-muted shadow-inner shadow-black/[0.02] transition-colors hover:border-border-strong hover:text-default"
+          >
+            <Search className="h-5 w-5 shrink-0" />
+            <span className="truncate">Search Shopi</span>
+          </Link>
+
+          {!isFeedRoute ? (
             <Link
-              key={tab.key}
-              href={href}
-              scroll={false}
-              className={[
-                "group relative flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition-all",
-                isActive
-                  ? "bg-primary text-white shadow-[0_14px_34px_rgb(var(--brand-primary)/0.32)]"
-                  : "text-muted hover:bg-surface hover:text-default",
-              ].join(" ")}
-              aria-current={isActive ? "page" : undefined}
+              href={`/${lang}/upload`}
+              className="inline-flex h-11 items-center justify-center rounded-full bg-surface px-6 text-sm font-black text-main transition-colors hover:bg-subtle"
             >
-              <Icon className="h-5 w-5" strokeWidth={isActive ? 2.4 : 2} />
-              <span>{tab.label}</span>
-              {tab.key === "notifications" && isDesktop ? (
-                <InboxUnreadBadge isActive={isActive} />
-              ) : null}
+              Sell item
             </Link>
-          );
-        })}
-      </nav>
+          ) : null}
 
-      {/* Explore has its own full category UI, so Browse is redundant there. */}
-      {isDesktop &&
-      !pathname.startsWith(`/${lang}/explore`) &&
-      !pathname.startsWith(`/${lang}/search`) ? (
-        <BrowseCategories lang={lang} />
-      ) : null}
+          <div className="flex items-center gap-1.5">
+            <IconNavButton
+              href={`/${lang}/notifications?tab=messages`}
+              label="Messages"
+              active={
+                pathname.startsWith(`/${lang}/notifications`) &&
+                searchParams.get("tab") === "messages"
+              }
+            >
+              <MessageCircle className="h-5 w-5" />
+              {unreadCount > 0 ? <UnreadDot count={unreadCount} /> : null}
+            </IconNavButton>
+            <IconNavButton
+              href={`/${lang}/notifications`}
+              label="Inbox"
+              active={
+                pathname.startsWith(`/${lang}/notifications`) &&
+                searchParams.get("tab") !== "messages"
+              }
+            >
+              <Bell className="h-5 w-5" />
+            </IconNavButton>
+            <IconNavButton
+              href={`/${lang}/profile?tab=saved`}
+              label="Saved"
+              active={
+                pathname.startsWith(`/${lang}/profile`) &&
+                searchParams.get("tab") === "saved"
+              }
+            >
+              <Heart className="h-5 w-5" />
+            </IconNavButton>
+          </div>
 
-      <div className="mt-auto flex shrink-0 flex-col gap-3 p-3">
-        <div className="flex items-center gap-3 rounded-xl border border-default bg-surface px-3 py-2.5">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-elevated text-xs font-black text-default">
-            {initials}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-bold leading-tight text-default">
-              {displayName}
-            </p>
-            <p className="truncate text-xs leading-tight text-muted">{handle}</p>
-          </div>
-          {user ? <LogoutIconButton lang={lang} /> : null}
+          {user ? (
+            <AccountMenu
+              lang={lang}
+              displayName={displayName}
+              email={user.email}
+              initials={initials}
+            />
+          ) : (
+            <Link
+              href={`/${lang}/auth/login`}
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-primary/15 bg-primary-soft text-sm font-black text-primary-strong shadow-sm"
+              aria-label="Sign in"
+            >
+              {initials.slice(0, 1)}
+            </Link>
+          )}
         </div>
-        <ThemeToggle />
-      </div>
-    </aside>
+      </header>
+
+      <aside className="fixed bottom-0 left-0 top-(--desktop-top-nav-height,80px) z-40 hidden w-(--side-nav-width,280px) flex-col border-r border-border bg-elevated px-6 py-6 md:flex">
+        <div className="border-b border-border pb-4">
+          <h2 className="text-base font-black tracking-normal text-main">
+            Hi {displayName}!
+          </h2>
+        </div>
+
+        {isDesktop ? <BrowseCategories lang={lang} /> : null}
+
+        <div className="mt-auto space-y-6 text-xs font-medium text-muted">
+          <div className="flex flex-wrap gap-x-3 gap-y-2">
+            {FOOTER_LINKS.map((label) => (
+              <Link
+                key={label}
+                href={`/${lang}/${label.toLowerCase() === "faq" ? "faq" : label.toLowerCase()}`}
+                className="hover:text-default"
+              >
+                {label}
+              </Link>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-x-3 gap-y-2">
+            <Link href={`/${lang}/privacy`} className="hover:text-default">
+              Privacy
+            </Link>
+            <Link href={`/${lang}/terms`} className="hover:text-default">
+              Terms
+            </Link>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span>© 2026 Shopi Inc.</span>
+            <ThemeToggle />
+          </div>
+        </div>
+      </aside>
+    </>
   );
 }
 
-/** Mounted only on desktop so the unread-count query and socket listeners
- *  never run while the sidenav is CSS-hidden on phones. */
-function InboxUnreadBadge({ isActive }: { isActive: boolean }) {
-  const unreadCount = useInboxUnreadCount();
-  if (unreadCount <= 0) return null;
-
+function TopNavLink({
+  href,
+  active,
+  children,
+}: {
+  href: string;
+  active: boolean;
+  children: React.ReactNode;
+}) {
   return (
-    <span
+    <Link
+      href={href}
+      scroll={false}
       className={[
-        "ml-auto inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-bold",
-        isActive ? "bg-white text-primary" : "bg-primary text-white",
+        "inline-flex h-11 min-w-25 items-center justify-center rounded-full px-6 transition-colors",
+        active ? "bg-primary text-white" : "text-main hover:bg-surface",
       ].join(" ")}
+      aria-current={active ? "page" : undefined}
     >
-      {unreadCount > 99 ? "99+" : unreadCount}
+      {children}
+    </Link>
+  );
+}
+
+function IconNavButton({
+  href,
+  label,
+  active,
+  children,
+}: {
+  href: string;
+  label: string;
+  active?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      scroll={false}
+      aria-label={label}
+      title={label}
+      className={[
+        "relative flex h-11 w-11 items-center justify-center rounded-full transition-colors",
+        active
+          ? "bg-primary/10 text-primary"
+          : "text-main hover:bg-surface",
+      ].join(" ")}
+      aria-current={active ? "page" : undefined}
+    >
+      {children}
+    </Link>
+  );
+}
+
+function UnreadDot({ count }: { count: number }) {
+  return (
+    <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-black leading-none text-white">
+      {count > 99 ? "99+" : count}
     </span>
   );
 }
 
-/** Real explore categories (only those with items) — clicking one opens the
- *  explore page with that category preselected via ?category=<slug>. Shares
- *  the DISCOVERY_CATEGORIES cache entry with the explore page. */
 function BrowseCategories({ lang }: { lang: string }) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const activeCategory = searchParams.get("category");
   const { data } = useQuery(DISCOVERY_CATEGORIES, {
     fetchPolicy: "cache-first",
     nextFetchPolicy: "cache-first",
   });
 
-  const categories = (data?.discoveryFacets.categories ?? [])
+  const liveCategories = (data?.discoveryFacets.categories ?? [])
     .filter((category) => category.count > 0)
-    .slice(0, MAX_BROWSE_CATEGORIES);
-
-  if (categories.length === 0) return null;
+    .slice(0, 8)
+    .map((category) => ({ name: category.name, slug: category.slug }));
+  const categories = [{ name: "For You", slug: "for-you" }, ...liveCategories];
 
   return (
-    <div className="mt-5 px-5">
-      <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted">
-        Browse
-      </p>
-      <div className="mt-3 flex flex-col gap-3">
-        {categories.map((category, i) => (
+    <nav className="mt-4 flex flex-col gap-0.5" aria-label="Browse categories">
+      {categories.map((category, index) => {
+        const href =
+          index === 0
+            ? `/${lang}/feed`
+            : `/${lang}/explore?category=${encodeURIComponent(category.slug)}`;
+        const active =
+          index === 0
+            ? pathname === `/${lang}` || pathname.startsWith(`/${lang}/feed`)
+            : activeCategory === category.slug;
+
+        return (
           <Link
-            key={category.id}
-            href={`/${lang}/explore?category=${encodeURIComponent(category.slug)}`}
+            key={`${category.slug}-${index}`}
+            href={href}
             scroll={false}
-            className="flex items-center gap-2 text-xs font-medium text-muted transition-colors hover:text-default"
+            className={[
+              "block rounded-md py-2 text-sm font-semibold tracking-normal transition-colors",
+              active
+                ? "text-primary"
+                : "text-muted hover:text-main dark:hover:text-foreground",
+            ].join(" ")}
+            aria-current={active ? "page" : undefined}
           >
-            <span
-              className={`h-1.5 w-1.5 rounded-full ${browseDots[i % browseDots.length]}`}
-            />
-            <span className="truncate">{category.name}</span>
+            {category.name}
           </Link>
-        ))}
-      </div>
-    </div>
+        );
+      })}
+    </nav>
   );
 }
 
-function LogoutIconButton({ lang }: { lang: string }) {
+function AccountMenu({
+  lang,
+  displayName,
+  email,
+  initials,
+}: {
+  lang: string;
+  displayName: string;
+  email?: string | null;
+  initials: string;
+}) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const { logout, loading } = useLogout(lang);
 
   return (
-    <button
-      onClick={logout}
-      disabled={loading}
-      title="Sign out"
-      aria-label="Sign out"
-      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:bg-elevated hover:text-error disabled:opacity-50"
-    >
-      <LogOut className="h-4 w-4" />
-    </button>
+    <>
+      <Popover open={menuOpen} onOpenChange={setMenuOpen}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-primary/15 bg-primary-soft text-sm font-black text-primary-strong shadow-sm transition-colors hover:bg-primary/15"
+            aria-label="Open account menu"
+          >
+            {initials.slice(0, 1)}
+          </button>
+        </PopoverTrigger>
+        <PopoverContent
+          align="end"
+          sideOffset={10}
+          className="w-72 rounded-2xl border border-border bg-elevated p-2 shadow-xl"
+        >
+          <div className="px-3 py-3">
+            <p className="truncate text-sm font-black text-main">
+              {displayName}
+            </p>
+            {email ? (
+              <p className="mt-0.5 truncate text-xs text-muted">{email}</p>
+            ) : null}
+          </div>
+          <div className="border-t border-border py-1">
+            <Link
+              href={`/${lang}/profile`}
+              scroll={false}
+              onClick={() => setMenuOpen(false)}
+              className="block rounded-xl px-3 py-2.5 text-sm font-semibold text-main transition-colors hover:bg-surface"
+            >
+              View profile
+            </Link>
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                setConfirmOpen(true);
+              }}
+              className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-error transition-colors hover:bg-error/10"
+            >
+              <LogOut className="h-4 w-4" />
+              Sign out
+            </button>
+          </div>
+        </PopoverContent>
+      </Popover>
+
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="max-w-sm rounded-2xl border-border bg-elevated p-0 shadow-2xl">
+          <DialogHeader className="px-6 pb-2 pt-6 text-left">
+            <DialogTitle className="text-lg font-black text-main">
+              Sign out?
+            </DialogTitle>
+            <DialogDescription className="mt-2 text-sm leading-6 text-muted">
+              You&apos;ll need to sign in again to post items, message buyers,
+              or manage your profile.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 border-t border-border px-6 py-4 sm:space-x-0">
+            <button
+              type="button"
+              onClick={() => setConfirmOpen(false)}
+              className="h-10 rounded-full border border-border px-5 text-sm font-bold text-main transition-colors hover:bg-surface"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={logout}
+              disabled={loading}
+              className="h-10 rounded-full bg-primary px-5 text-sm font-bold text-white transition-opacity disabled:opacity-60"
+            >
+              {loading ? "Signing out..." : "Sign out"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
 function ThemeToggle() {
   const { resolvedTheme, setTheme } = useThemeStore();
-  // Render the switch only after mount — the persisted store value isn't
-  // available during SSR, so this avoids a hydration mismatch.
   const [mounted, setMounted] = useState(false);
+
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
 
-  if (!mounted) {
-    return <div aria-hidden className="h-9 w-full" />;
-  }
+  if (!mounted) return <span aria-hidden className="h-6 w-12" />;
 
   const isDark = resolvedTheme === "dark";
   const Icon = isDark ? Sun : Moon;
 
   return (
-    <div className="flex h-9 w-full items-center justify-between rounded-xl px-2 text-sm font-medium text-muted transition-colors hover:bg-surface hover:text-default">
-      <span className="flex items-center gap-2">
-        <Icon className="h-4 w-4" />
-        {isDark ? "Light mode" : "Dark mode"}
-      </span>
+    <label className="flex items-center gap-2" title="Toggle theme">
+      <Icon className="h-4 w-4" />
       <Switch
         checked={isDark}
-        onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
-        aria-label="Toggle dark mode"
+        onCheckedChange={(v) => setTheme(v ? "dark" : "light")}
       />
-    </div>
+    </label>
   );
 }

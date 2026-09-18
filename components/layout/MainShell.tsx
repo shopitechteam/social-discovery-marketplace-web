@@ -32,7 +32,7 @@ export function MainShell({
           "mx-auto",
           isImmersiveCreate
             ? "md:mx-0 md:ml-0 md:max-w-none"
-            : "md:mx-0 md:ml-(--side-nav-width,220px) md:max-w-none",
+            : "md:mx-0 md:ml-(--side-nav-width,280px) md:max-w-none md:pt-(--desktop-top-nav-height,80px)",
         ].join(" ")}
       >
         {/* The bottom padding clears the fixed BottomNav, which is md:hidden —
