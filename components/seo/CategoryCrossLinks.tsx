@@ -14,6 +14,11 @@ import {
  */
 export const categoryPages = [
   {
+    path: "/buy-and-sell-in-kenya",
+    title: "Buy and sell in Kenya",
+    body: "A free local marketplace for finding items nearby, posting your own listings, and chatting directly.",
+  },
+  {
     path: "/phones-electronics-kenya",
     title: "Phones and electronics",
     body: "Samsung, iPhone, used phones, smart TVs, laptops and speakers from sellers across Kenya.",

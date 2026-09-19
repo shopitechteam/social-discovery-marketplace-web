@@ -305,6 +305,7 @@ function createClient() {
               keyArgs: [
                 "query",
                 "categoryId",
+                "type",
                 // The subcategory facet query omits this arg while the location
                 // one sends it, so it must key — otherwise the two selections
                 // collide on one cache entry.
@@ -326,6 +327,7 @@ function createClient() {
               keyArgs: [
                 "query",
                 "categoryId",
+                "type",
                 "subcategory",
                 "countyId",
                 "subCountyId",
