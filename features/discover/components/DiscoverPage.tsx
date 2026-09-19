@@ -13,6 +13,7 @@ import { gql, NetworkStatus, type TypedDocumentNode } from "@apollo/client";
 import { useQuery } from "@apollo/client/react";
 import {
   ArrowUpDown,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Check,
@@ -34,18 +35,15 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FeedLoader } from "@/components/ui/feed-loader";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { useDiscoverFiltersStore } from "@/stores/discoverFilters";
+import { useSearchStore } from "@/stores/search";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
-import { DiscoverGridCard } from "./DiscoverGridCard";
+import { DISCOVER_GRID, DiscoverGridCard } from "./DiscoverGridCard";
 import { SubcategoryRow } from "./SubcategoryRow";
 import { FEED_PAGE_SIZE } from "@/features/feed/constants";
 import { useInfiniteScroll } from "@/features/feed/hooks/useInfiniteScroll";
@@ -460,10 +458,10 @@ function DiscoverFeedSkeleton() {
     <div className="px-4 pb-8 pt-3 lg:px-0">
       {/* 15 tiles so every column count (2 → 5) fills the viewport with full
           rows — fewer left the tail columns empty on wide screens. */}
-      <div className="grid grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-3 md:gap-x-4 md:gap-y-6 xl:grid-cols-4 min-[90rem]:grid-cols-5">
+      <div className={DISCOVER_GRID}>
         {Array.from({ length: 15 }).map((_, i) => (
           <div key={i}>
-            <Skeleton className="aspect-3/4 w-full rounded-xl md:aspect-4/5" />
+            <Skeleton className="aspect-3/4 w-full rounded-xl" />
             <div className="space-y-2 pt-2">
               <Skeleton className="h-3.5 w-1/2" />
               <Skeleton className="h-3 w-4/5" />
@@ -620,47 +618,73 @@ export function DiscoverPage({ lang }: { lang: string }) {
   // useState reads its argument only on the first render, so this is a plain
   // initial value — no effect, no cascading render — after which the input owns
   // the term and the mirror effect keeps the URL in sync.
-  const [searchDraft, setSearchDraft] = useState(
-    () => searchParams.get("q")?.trim() ?? "",
-  );
+  // The draft lives in a store rather than here because the desktop nav's
+  // search box writes to it too — see stores/search.ts. `query` stays local:
+  // it is the debounced value this page actually searches on, and nothing
+  // outside needs it.
+  const searchDraft = useSearchStore((s) => s.draft);
+  const setSearchDraft = useSearchStore((s) => s.setDraft);
   const [query, setQuery] = useState(
     () => searchParams.get("q")?.trim() ?? "",
   );
-  const [selectedCategory, setSelectedCategory] =
-    useState<CategoryFacet | null>(null);
-  // Level-2 label, e.g. "Cables & Adapters". Held as a plain string because the
-  // API has no subcategory rows to key against — the label IS the filter.
-  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(
-    () => searchParams.get("subcategory")?.trim() || null,
+
+  // Seed the shared draft from a ?q= deep link on mount. The store outlives
+  // this page (it is a module singleton), so without this a term typed on
+  // /explore would still be sitting in the nav box on the next visit, and a
+  // ?q= link would open with the box showing the previous search.
+  useEffect(() => {
+    setSearchDraft(searchParams.get("q")?.trim() ?? "");
+    // Mount only: after this the input owns the term. Re-running on
+    // searchParams would fight the debounce, because the mirror effect below
+    // writes ?q= back from `query` on every keystroke.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const selectedCategory = useDiscoverFiltersStore(
+    (s) => s.selectedCategory as CategoryFacet | null,
   );
-  const [selectedCounty, setSelectedCounty] = useState<LocationFacet | null>(
-    null,
+  const setSelectedCategory = useDiscoverFiltersStore(
+    (s) => s.setSelectedCategory,
   );
-  const [selectedSubCounty, setSelectedSubCounty] =
-    useState<LocationFacet | null>(null);
-  const [selectedWard, setSelectedWard] = useState<LocationFacet | null>(null);
-  const [sort, setSort] = useState<DiscoverySort>(() => {
-    const value = searchParams.get("sort");
-    return isDiscoverySort(value) ? value : "RELEVANCE";
-  });
-  // Keep raw strings for friendly number inputs; parsed values are sent to the
-  // feed, facets and result-count queries below.
-  const [minPrice, setMinPrice] = useState(
-    () => searchParams.get("minPrice") ?? "",
+  const selectedSubcategory = useDiscoverFiltersStore(
+    (s) => s.selectedSubcategory,
   );
-  const [maxPrice, setMaxPrice] = useState(
-    () => searchParams.get("maxPrice") ?? "",
+  const setSelectedSubcategory = useDiscoverFiltersStore(
+    (s) => s.setSelectedSubcategory,
   );
-  const [negotiableOnly, setNegotiableOnly] = useState(
-    () => searchParams.get("negotiable") === "1",
+  const selectedCounty = useDiscoverFiltersStore(
+    (s) => s.selectedCounty as LocationFacet | null,
+  );
+  const setSelectedCounty = useDiscoverFiltersStore((s) => s.setSelectedCounty);
+  const selectedSubCounty = useDiscoverFiltersStore(
+    (s) => s.selectedSubCounty as LocationFacet | null,
+  );
+  const setSelectedSubCounty = useDiscoverFiltersStore(
+    (s) => s.setSelectedSubCounty,
+  );
+  const selectedWard = useDiscoverFiltersStore(
+    (s) => s.selectedWard as LocationFacet | null,
+  );
+  const setSelectedWard = useDiscoverFiltersStore((s) => s.setSelectedWard);
+  const sort = useDiscoverFiltersStore((s) => s.sort as DiscoverySort);
+  const setSort = useDiscoverFiltersStore((s) => s.setSort);
+  const minPrice = useDiscoverFiltersStore((s) => s.minPrice);
+  const setMinPrice = useDiscoverFiltersStore((s) => s.setMinPrice);
+  const maxPrice = useDiscoverFiltersStore((s) => s.maxPrice);
+  const setMaxPrice = useDiscoverFiltersStore((s) => s.setMaxPrice);
+  const negotiableOnly = useDiscoverFiltersStore((s) => s.negotiableOnly);
+  const setNegotiableOnly = useDiscoverFiltersStore(
+    (s) => s.setNegotiableOnly,
+  );
+  const requestLocationPicker = useDiscoverFiltersStore(
+    (s) => s.requestLocationPicker,
+  );
+  const setStoreSubcategories = useDiscoverFiltersStore(
+    (s) => s.setSubcategories,
   );
   const [locationStep, setLocationStep] = useState<LocationSheetStep | null>(
     null,
   );
   const [sortOpen, setSortOpen] = useState(false);
-  // Desktop uses an anchored popover instead of the bottom drawer used on
-  // mobile, so it needs its own open state.
-  const [sortPopoverOpen, setSortPopoverOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [locationParamsApplied, setLocationParamsApplied] = useState(() => {
     return !(
@@ -677,6 +701,19 @@ export function DiscoverPage({ lang }: { lang: string }) {
 
   const parsedMinPrice = parsePriceFilter(minPrice);
   const parsedMaxPrice = parsePriceFilter(maxPrice);
+
+  useEffect(() => {
+    const initialSort = searchParams.get("sort");
+    setSort(isDiscoverySort(initialSort) ? initialSort : "RELEVANCE");
+    setSelectedSubcategory(searchParams.get("subcategory")?.trim() || null);
+    setMinPrice(searchParams.get("minPrice") ?? "");
+    setMaxPrice(searchParams.get("maxPrice") ?? "");
+    setNegotiableOnly(searchParams.get("negotiable") === "1");
+    // Mount only: query params seed the shared desktop sidebar filters once.
+    // After that, the shared filter store owns changes and the URL mirror below
+    // persists them without fighting user input.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const handle = window.setTimeout(() => {
@@ -733,6 +770,10 @@ export function DiscoverPage({ lang }: { lang: string }) {
     () => subcategoryFacetsData?.discoveryFacets.subcategories ?? [],
     [subcategoryFacetsData?.discoveryFacets.subcategories],
   );
+
+  useEffect(() => {
+    setStoreSubcategories(subcategories);
+  }, [setStoreSubcategories, subcategories]);
 
   /**
    * The subcategory actually applied to the queries.
@@ -888,8 +929,6 @@ export function DiscoverPage({ lang }: { lang: string }) {
     rootMargin: "1200px",
   });
 
-  const activeSort =
-    SORT_OPTIONS.find((option) => option.value === sort) ?? SORT_OPTIONS[0];
   const locationLabel =
     selectedWard?.name ??
     selectedSubCounty?.name ??
@@ -955,7 +994,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
   const clearSearch = useCallback(() => {
     setSearchDraft("");
     setQuery("");
-  }, []);
+  }, [setSearchDraft]);
 
   const closeTopOverlayState = useCallback(() => {
     if (locationStep === "ward") {
@@ -1051,6 +1090,13 @@ export function DiscoverPage({ lang }: { lang: string }) {
     setSortOpen(false);
     setLocationStep("county");
   }, []);
+
+  const handledLocationRequestRef = useRef(requestLocationPicker);
+  useEffect(() => {
+    if (requestLocationPicker === handledLocationRequestRef.current) return;
+    handledLocationRequestRef.current = requestLocationPicker;
+    openCountySheet();
+  }, [openCountySheet, requestLocationPicker]);
 
   const collapseLocationSheets = useCallback(() => {
     const depth = locationSheetDepth(locationStep);
@@ -1148,7 +1194,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
     // would hide the category bar and scope results, so clear it.
     setSearchDraft("");
     setQuery("");
-  }, [categoryParam, categories]);
+  }, [categoryParam, categories, setSearchDraft]);
 
   const counties = useMemo(
     () => locationFacets?.counties ?? [],
@@ -1250,156 +1296,6 @@ export function DiscoverPage({ lang }: { lang: string }) {
     <div className="min-h-svh bg-app pb-24 md:pb-8">
       <div className="mx-auto w-full lg:max-w-[1560px] lg:px-8 lg:pt-4">
         <main className="min-w-0">
-          <div className="mb-4 hidden lg:block">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 min-w-0 flex-1 items-center gap-3 rounded-full border border-border bg-surface px-5 shadow-inner shadow-black/[0.02]">
-                <Search
-                  size={17}
-                  className="shrink-0 text-muted-foreground"
-                  aria-hidden
-                />
-                <input
-                  value={searchDraft}
-                  onChange={(event) => setSearchDraft(event.target.value)}
-                  placeholder="Search cars, dresses, fresh produce..."
-                  className="min-w-0 flex-1 bg-transparent text-sm text-default outline-none placeholder:text-muted-foreground"
-                />
-                {searchDraft ? (
-                  <button
-                    type="button"
-                    onClick={clearSearch}
-                    className="shrink-0 text-muted-foreground transition-colors hover:text-default"
-                    aria-label="Clear search"
-                  >
-                    <X size={16} />
-                  </button>
-                ) : null}
-              </div>
-
-              <button
-                type="button"
-                onClick={openCountySheet}
-                className={cn(
-                  "flex h-10 shrink-0 items-center gap-2.5 rounded-full border px-4 text-sm font-semibold transition-colors",
-                  hasLocation
-                    ? "border-primary/20 bg-primary/10 text-primary"
-                    : "border-border bg-surface text-main hover:bg-subtle",
-                )}
-              >
-                <MapPin size={17} />
-                <span className="max-w-40 truncate">{locationLabel}</span>
-              </button>
-
-              <Popover open={sortPopoverOpen} onOpenChange={setSortPopoverOpen}>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    className={cn(
-                      "flex h-10 shrink-0 items-center gap-2.5 rounded-full border px-4 text-sm font-semibold transition-colors",
-                      sort !== "RELEVANCE"
-                        ? "border-primary/20 bg-primary/10 text-primary"
-                        : "border-border bg-surface text-main hover:bg-subtle",
-                    )}
-                  >
-                    <ArrowUpDown size={17} />
-                    <span>{activeSort.label}</span>
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent
-                  align="end"
-                  className="w-72 space-y-2 border border-border bg-elevated p-2 shadow-2xl"
-                >
-                  {SORT_OPTIONS.map((option) => (
-                    <SortOption
-                      key={option.value}
-                      label={option.label}
-                      hint={option.hint}
-                      active={sort === option.value}
-                      onClick={() => {
-                        setSort(option.value);
-                        setSortPopoverOpen(false);
-                      }}
-                    />
-                  ))}
-                </PopoverContent>
-              </Popover>
-
-              <button
-                type="button"
-                onClick={openFilterSheet}
-                className={cn(
-                  "relative flex h-10 shrink-0 items-center gap-2.5 rounded-full border px-4 text-sm font-semibold transition-colors",
-                  activeFilterCount > 0
-                    ? "border-primary/20 bg-primary/10 text-primary"
-                    : "border-border bg-surface text-main hover:bg-subtle",
-                )}
-              >
-                <SlidersHorizontal size={17} />
-                Filters
-                {activeFilterCount > 0 ? (
-                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold leading-none text-white">
-                    {activeFilterCount}
-                  </span>
-                ) : null}
-              </button>
-            </div>
-
-            {activeFilterCount > 0 ? (
-              <div
-                className="mt-3 flex flex-wrap items-center gap-2"
-                aria-label="Active filters"
-              >
-                {hasLocation ? (
-                  <button
-                    type="button"
-                    onClick={clearLocation}
-                    className="inline-flex h-8 items-center gap-1.5 rounded-full bg-primary/10 px-3 text-xs font-semibold text-primary"
-                  >
-                    {locationLabel}
-                    <X size={14} aria-hidden />
-                  </button>
-                ) : null}
-                {hasPriceFilter ? (
-                  <button
-                    type="button"
-                    onClick={clearPrice}
-                    className="inline-flex h-8 items-center gap-1.5 rounded-full bg-primary/10 px-3 text-xs font-semibold text-primary"
-                  >
-                    {priceFilterLabel}
-                    <X size={14} aria-hidden />
-                  </button>
-                ) : null}
-                {negotiableOnly ? (
-                  <button
-                    type="button"
-                    onClick={() => setNegotiableOnly(false)}
-                    className="inline-flex h-8 items-center gap-1.5 rounded-full bg-primary/10 px-3 text-xs font-semibold text-primary"
-                  >
-                    Negotiable
-                    <X size={14} aria-hidden />
-                  </button>
-                ) : null}
-                <button
-                  type="button"
-                  onClick={clearFilters}
-                  className="h-8 rounded-full px-3 text-xs font-semibold text-muted transition-colors hover:bg-surface hover:text-main"
-                >
-                  Clear all
-                </button>
-              </div>
-            ) : null}
-
-            {selectedCategory ? (
-              <button
-                type="button"
-                onClick={() => selectCategory(null)}
-                className="mt-3 rounded-full px-3 py-2 text-xs font-semibold text-primary transition-colors hover:bg-primary/10"
-              >
-                Clear category
-              </button>
-            ) : null}
-          </div>
-
           <div className="sticky top-0 z-30 border-b border-default bg-app/92 backdrop-blur-md lg:hidden">
             <div className="flex items-center gap-2 px-4 pb-3 pt-3 lg:px-0 lg:pt-0">
               <div className="flex border border-gray-300 min-w-0 flex-1 items-center gap-2.5 rounded-full bg-surface px-4 py-2.5">
@@ -1483,6 +1379,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
             ) : null}
           </div>
 
+          <div className="min-w-0">
           {/* Subcategory tiles — the second level of the taxonomy, and the only
               way to narrow inside a category. Renders itself away when the
               category has too few subcategories to be worth a row.
@@ -1491,11 +1388,13 @@ export function DiscoverPage({ lang }: { lang: string }) {
               chosen category, and offering them across the whole catalogue
               mixes unrelated levels of the taxonomy into one row. */}
           {selectedCategory && (
-            <SubcategoryRow
-              subcategories={subcategories}
-              selected={subcategory}
-              onSelect={setSelectedSubcategory}
-            />
+            <div className="lg:hidden">
+              <SubcategoryRow
+                subcategories={subcategories}
+                selected={subcategory}
+                onSelect={setSelectedSubcategory}
+              />
+            </div>
           )}
 
           {error && items.length === 0 ? (
@@ -1550,7 +1449,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
                 <div className="mb-4 border-t border-border/60" />
               )}
 
-              <div className="grid grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-3 md:gap-x-4 md:gap-y-6 xl:grid-cols-4 min-[90rem]:grid-cols-5">
+              <div className={DISCOVER_GRID}>
                 {items.map((post, index) => (
                   <DiscoverGridCard
                     key={post.id}
@@ -1572,6 +1471,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
               ) : null}
             </div>
           ) : null}
+          </div>
         </main>
       </div>
 

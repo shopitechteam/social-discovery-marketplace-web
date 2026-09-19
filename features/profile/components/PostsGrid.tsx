@@ -3,7 +3,10 @@
 import { useEffect, useRef } from "react";
 import { Bookmark } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DiscoverGridCard } from "@/features/discover/components/DiscoverGridCard";
+import {
+  DISCOVER_GRID,
+  DiscoverGridCard,
+} from "@/features/discover/components/DiscoverGridCard";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 
 /**
@@ -30,10 +33,6 @@ interface Props {
   loading: boolean;
   lang: string;
 }
-
-/** Same columns and gaps as the Discover grid, so the two read as one system. */
-const GRID =
-  "grid grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-3 md:gap-x-4 md:gap-y-6 xl:grid-cols-4 min-[90rem]:grid-cols-5";
 
 export function PostsGrid({
   posts,
@@ -71,10 +70,10 @@ export function PostsGrid({
   if (posts.length === 0 && loading) {
     return (
       <section className="px-4 py-5 sm:px-6 lg:px-8">
-        <div className={GRID}>
+        <div className={DISCOVER_GRID}>
           {Array.from({ length: 10 }).map((_, i) => (
             <div key={i}>
-              <Skeleton className="aspect-3/4 w-full rounded-xl md:aspect-4/5" />
+              <Skeleton className="aspect-3/4 w-full rounded-xl" />
               <div className="space-y-2 pt-2">
                 <Skeleton className="h-3.5 w-1/2" />
                 <Skeleton className="h-3 w-4/5" />
@@ -145,7 +144,7 @@ export function PostsGrid({
         </p>
       </div>
 
-      <div className={GRID}>
+      <div className={DISCOVER_GRID}>
         {posts.map((post, index) => (
           <DiscoverGridCard
             key={post.id}

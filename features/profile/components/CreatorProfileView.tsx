@@ -3,7 +3,10 @@
 import { useEffect, useRef } from "react";
 import Image from "next/image";
 import { useAppBack } from "@/lib/useAppBack";
-import { DiscoverGridCard } from "@/features/discover/components/DiscoverGridCard";
+import {
+  DISCOVER_GRID,
+  DiscoverGridCard,
+} from "@/features/discover/components/DiscoverGridCard";
 import {
   ArrowLeft,
   ExternalLink,
@@ -464,13 +467,17 @@ export function CreatorProfileView({
           <>
             {/* The same tile as /explore and the Saved tab, so a listing looks
                 identical wherever it is browsed. */}
-            <div className="grid grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-3 md:gap-x-4 md:gap-y-6 xl:grid-cols-4 min-[90rem]:grid-cols-5">
+            <div className={DISCOVER_GRID}>
               {posts.map((post, index) => (
                 <DiscoverGridCard
                   key={post.id}
                   post={post}
                   lang={lang}
                   priority={index < 4}
+                  // Every tile on this page belongs to the seller whose profile
+                  // it is, so the seller row would repeat the same name down
+                  // the whole grid.
+                  showSeller={false}
                 />
               ))}
             </div>
@@ -482,9 +489,9 @@ export function CreatorProfileView({
             {/* Only for a real next-page fetch — not while the client's first
                 query refreshes the server-rendered page. */}
             {postsLoading && Boolean(data) && posts.length > 0 && (
-              <div className="mt-5 grid grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-3 md:gap-x-4 md:gap-y-6 xl:grid-cols-4 min-[90rem]:grid-cols-5">
+              <div className={`mt-5 ${DISCOVER_GRID}`}>
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <Skeleton key={i} className="aspect-3/4 w-full rounded-xl md:aspect-4/5" />
+                  <Skeleton key={i} className="aspect-3/4 w-full rounded-xl" />
                 ))}
               </div>
             )}

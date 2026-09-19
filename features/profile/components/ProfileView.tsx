@@ -307,7 +307,7 @@ export function ProfileView({ lang }: Props) {
         lang={lang}
       />
 
-      <div className="sticky top-0 z-20 border-b border-border bg-app/94 backdrop-blur-md md:top-(--desktop-top-nav-height,80px)">
+      <div className="sticky top-0 z-20 border-b border-border bg-app/94 backdrop-blur-md md:top-(--desktop-top-nav-height,68px)">
         <div className="w-full px-2 sm:px-6 lg:px-8">
           <div
             className="grid h-12 w-full grid-cols-5 md:hidden"

@@ -329,7 +329,6 @@ function Avatar({
   lastName,
   isVerified,
 }: AvatarProps) {
-  const color = avatarGradient(creatorId);
   const label = firstName
     ? `${firstName[0]}${lastName?.[0] ?? ""}`.toUpperCase()
     : initials(creatorId);
@@ -354,10 +353,8 @@ function Avatar({
   }
 
   return (
-    <div
-      className={`w-10 h-10 rounded-full relative bg-linear-to-br ${color} flex items-center justify-center flex-shrink-0`}
-    >
-      <span className="text-white text-xs font-bold">{label}</span>
+    <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border border-border bg-main">
+      <span className="text-xs font-black text-elevated">{label}</span>
       {isVerified ? <VerifiedBadge /> : null}
     </div>
   );
@@ -1532,7 +1529,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
 
       {/* ── Text content ───────────────────────────────────────────────── */}
       <div className="px-4 pb-2.5">
-        <p className="font-semibold text-default text-[15px] leading-snug mb-1">
+        <p className="mb-1 text-[15px] font-extrabold leading-snug text-main md:text-[18px]">
           {post.title}
         </p>
 
@@ -1562,7 +1559,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
           )}
         </div>
         {caption && (
-          <div className="text-sm leading-5 text-default">
+          <div className="text-sm font-semibold leading-5 text-main md:text-[16px] md:leading-6">
             <p ref={captionRef} className={cn(!expanded && "line-clamp-2")}>
               {caption}
             </p>

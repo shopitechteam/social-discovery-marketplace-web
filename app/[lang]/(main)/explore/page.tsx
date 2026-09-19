@@ -95,7 +95,7 @@ function ExploreSkeleton() {
             <div className="grid grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-3 md:gap-x-4 md:gap-y-6 xl:grid-cols-4 min-[90rem]:grid-cols-5">
               {Array.from({ length: 10 }).map((_, index) => (
                 <div key={index}>
-                  <Skeleton className="aspect-3/4 w-full rounded-xl md:aspect-4/5" />
+                  <Skeleton className="aspect-3/4 w-full rounded-xl" />
                   <div className="mt-2 space-y-1.5">
                     <Skeleton className="h-3.5 w-1/2" />
                     <Skeleton className="h-3 w-4/5" />
