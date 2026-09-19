@@ -15,6 +15,32 @@ import { trackAuthSuccess, trackSignup } from "@/lib/analytics";
 import { attributionInput } from "@/lib/attribution";
 import { navigateAfterAuth } from "@/features/auth/lib/postAuthNavigate";
 
+// Auth pages render the Google button once for their mobile layout and once
+// for their desktop layout — both always mounted, only CSS-toggled by
+// breakpoint — so two identical hook instances each call
+// `google.accounts.id.initialize()` on the same page. That's a page-global
+// singleton in GIS: it logs "only the last initialized instance will be
+// used," and worse, only that last instance's credential callback ever runs.
+// If GIS happened to wire itself to the CSS-hidden copy, the visible
+// button's loading/error state never updates on click — indistinguishable
+// from nothing happening.
+//
+// Fix: whichever instance's initialize() call GIS ends up using, broadcast
+// its loading/error outcome to every currently-mounted button on the page
+// (registered/unregistered per mount below), not just the one that owns it.
+const googleUiSubscribers = new Set<{
+  setLoading: (value: boolean) => void;
+  onError: (message: string) => void;
+}>();
+
+function broadcastGoogleLoading(value: boolean) {
+  googleUiSubscribers.forEach((sub) => sub.setLoading(value));
+}
+
+function broadcastGoogleError(message: string) {
+  googleUiSubscribers.forEach((sub) => sub.onError(message));
+}
+
 export function useOAuthMutation(
   lang: string,
   from?: string,
@@ -146,11 +172,15 @@ export function useOAuthMutation(
     async (
       container: HTMLElement,
       onError: (message: string) => void,
-    ): Promise<void> => {
+    ): Promise<() => void> => {
+      const subscriber = { setLoading, onError };
+      googleUiSubscribers.add(subscriber);
+      const unsubscribe = () => googleUiSubscribers.delete(subscriber);
+
       const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
       if (!googleClientId) {
         onError("Google client ID not configured.");
-        return;
+        return unsubscribe;
       }
 
       type GIS = {
@@ -228,13 +258,13 @@ export function useOAuthMutation(
           client_id: googleClientId,
           callback: async (response: { credential?: string; error?: string }) => {
             if (!response.credential) {
-              onError(response.error ?? "Google sign-in cancelled.");
+              broadcastGoogleError(response.error ?? "Google sign-in cancelled.");
               return;
             }
-            setLoading(true);
+            broadcastGoogleLoading(true);
             const error = await loginWithGoogle(response.credential);
-            setLoading(false);
-            if (error) onError(error);
+            broadcastGoogleLoading(false);
+            if (error) broadcastGoogleError(error);
           },
           ux_mode: "popup",
           cancel_on_tap_outside: true,
@@ -254,6 +284,7 @@ export function useOAuthMutation(
       } catch (error) {
         onError(error instanceof Error ? error.message : "Google sign-in failed to load.");
       }
+      return unsubscribe;
     },
     // loginWithGoogle closes over the current locale/destination.
     // eslint-disable-next-line react-hooks/exhaustive-deps

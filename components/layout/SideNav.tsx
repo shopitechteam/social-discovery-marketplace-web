@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Bell,
   Check,
@@ -27,6 +27,8 @@ import { useSearchStore } from "@/stores/search";
 import { useThemeStore } from "@/stores/theme";
 import { Logo } from "@/components/ui/Logo";
 import { Switch } from "@/components/ui/switch";
+import { Skeleton } from "@/components/ui/skeleton";
+import { NavSearchDropdown } from "@/components/layout/NavSearchDropdown";
 import {
   Dialog,
   DialogContent,
@@ -58,7 +60,7 @@ export function SideNav({ lang = "en" }: { lang: string }) {
   const displayName =
     user?.profile?.firstName ||
     user?.email?.split("@")[0] ||
-    (user ? "Seller" : "shopisho");
+    (user ? "Seller" : "Guest");
   const initials =
     displayName
       .split(/\s+/)
@@ -135,37 +137,46 @@ export function SideNav({ lang = "en" }: { lang: string }) {
             ) : null}
 
             <div className="flex items-center gap-0.5">
-              <IconNavButton
-                href={`/${lang}/notifications?tab=messages`}
-                label="Messages"
-                active={
-                  pathname.startsWith(`/${lang}/notifications`) &&
-                  searchParams.get("tab") === "messages"
-                }
-              >
-                <MessageCircle className="h-4.5 w-4.5" />
-                {unreadCount > 0 ? <UnreadDot count={unreadCount} /> : null}
-              </IconNavButton>
-              <IconNavButton
-                href={`/${lang}/notifications`}
-                label="Inbox"
-                active={
-                  pathname.startsWith(`/${lang}/notifications`) &&
-                  searchParams.get("tab") !== "messages"
-                }
-              >
-                <Bell className="h-4.5 w-4.5" />
-              </IconNavButton>
-              <IconNavButton
-                href={`/${lang}/profile?tab=saved`}
-                label="Saved"
-                active={
-                  pathname.startsWith(`/${lang}/profile`) &&
-                  searchParams.get("tab") === "saved"
-                }
-              >
-                <Heart className="h-4.5 w-4.5" />
-              </IconNavButton>
+              {/* Messages/Inbox/Saved all need an account behind them — for a
+                  signed-out visitor they're dead ends that just bounce to
+                  login, so skip straight to the one control that applies:
+                  the log in button below. */}
+              {user ? (
+                <>
+                  <IconNavButton
+                    href={`/${lang}/notifications?tab=messages`}
+                    label="Messages"
+                    active={
+                      pathname.startsWith(`/${lang}/notifications`) &&
+                      searchParams.get("tab") === "messages"
+                    }
+                  >
+                    <MessageCircle className="h-4.5 w-4.5" />
+                    {unreadCount > 0 ? <UnreadDot count={unreadCount} /> : null}
+                  </IconNavButton>
+                  <IconNavButton
+                    href={`/${lang}/notifications`}
+                    label="Inbox"
+                    active={
+                      pathname.startsWith(`/${lang}/notifications`) &&
+                      searchParams.get("tab") !== "messages"
+                    }
+                  >
+                    <Bell className="h-4.5 w-4.5" />
+                  </IconNavButton>
+                  <IconNavButton
+                    href={`/${lang}/profile?tab=saved`}
+                    label="Saved"
+                    active={
+                      pathname.startsWith(`/${lang}/profile`) &&
+                      searchParams.get("tab") === "saved"
+                    }
+                  >
+                    <Heart className="h-4.5 w-4.5" />
+                  </IconNavButton>
+                </>
+              ) : null}
+              <ThemeIconButton />
             </div>
 
             {user ? (
@@ -178,10 +189,9 @@ export function SideNav({ lang = "en" }: { lang: string }) {
             ) : (
               <Link
                 href={`/${lang}/auth/login`}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-primary/15 bg-primary-soft text-[13px] font-black text-primary-strong shadow-sm"
-                aria-label="Sign in"
+                className="inline-flex h-9 shrink-0 items-center justify-center rounded-full bg-primary px-4 text-[13px] font-bold text-white transition-colors hover:opacity-90"
               >
-                {initials.slice(0, 1)}
+                Log in
               </Link>
             )}
           </div>
@@ -197,9 +207,8 @@ export function SideNav({ lang = "en" }: { lang: string }) {
 
         {isDesktop ? <BrowseCategories lang={lang} /> : null}
 
-        <div className="mt-auto flex items-center justify-between gap-3 text-xs font-medium text-muted">
+        <div className="mt-auto text-xs font-medium text-muted">
           <span>© 2026 Shopi Inc.</span>
-          <ThemeToggle />
         </div>
       </aside>
     </>
@@ -220,6 +229,8 @@ function NavSearch({ lang, className }: { lang: string; className?: string }) {
   const pathname = usePathname();
   const draft = useSearchStore((s) => s.draft);
   const setDraft = useSearchStore((s) => s.setDraft);
+  const formRef = useRef<HTMLFormElement>(null);
+  const [focused, setFocused] = useState(false);
 
   const isDiscoverRoute =
     pathname.startsWith(`/${lang}/explore`) ||
@@ -232,24 +243,41 @@ function NavSearch({ lang, className }: { lang: string; className?: string }) {
     if (!isDiscoverRoute) setDraft("");
   }, [isDiscoverRoute, setDraft]);
 
+  // A click anywhere outside the search box dismisses the results preview.
+  // `mousedown` (not `click`) so it fires before a result's own click handler
+  // would otherwise be raced by React re-rendering the input away.
+  useEffect(() => {
+    if (!focused) return;
+    function onPointerDown(event: MouseEvent) {
+      if (!formRef.current?.contains(event.target as Node)) setFocused(false);
+    }
+    document.addEventListener("mousedown", onPointerDown);
+    return () => document.removeEventListener("mousedown", onPointerDown);
+  }, [focused]);
+
   function submit(event: React.FormEvent) {
     event.preventDefault();
     const term = draft.trim();
     // On a discover route the store already filtered as they typed, so there is
     // nothing left to do and navigating would only throw away scroll position.
     if (isDiscoverRoute) return;
+    // /explore, not /search — same DiscoverPage UI either way, but landing on
+    // Browse (with its category rail and filters) reads as one continuous
+    // place to search from, rather than bouncing to a separate results route.
     router.push(
       term
-        ? `/${lang}/search?q=${encodeURIComponent(term)}`
-        : `/${lang}/search`,
+        ? `/${lang}/explore?q=${encodeURIComponent(term)}`
+        : `/${lang}/explore`,
     );
   }
 
   return (
     <form
+      ref={formRef}
       role="search"
       onSubmit={submit}
       className={[
+        "relative",
         // Hairline border over the nav's own surface rather than a grey fill,
         // so it reads as an outline rather than a well. No inset shadow, for
         // the same reason. Height is a touch over the reference's ~34px.
@@ -262,6 +290,7 @@ function NavSearch({ lang, className }: { lang: string; className?: string }) {
         type="search"
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
+        onFocus={() => setFocused(true)}
         placeholder="Search anything on Shopi"
         aria-label="Search Shopi"
         // Safari paints its own clear affordance on type=search, which would
@@ -277,6 +306,18 @@ function NavSearch({ lang, className }: { lang: string; className?: string }) {
         >
           <X className="h-4 w-4" />
         </button>
+      ) : null}
+
+      {/* Live results preview — everywhere except the discover pages, which
+          already filter their own grid inline as you type. Lets a search
+          started from, say, /notifications land straight on a listing's PDP
+          instead of forcing a detour through /explore first. */}
+      {!isDiscoverRoute && focused && draft.trim() ? (
+        <NavSearchDropdown
+          lang={lang}
+          term={draft}
+          onNavigate={() => setFocused(false)}
+        />
       ) : null}
     </form>
   );
@@ -349,10 +390,14 @@ function BrowseCategories({ lang }: { lang: string }) {
     pathname.startsWith(`/${lang}/explore`) ||
     pathname.startsWith(`/${lang}/search`);
   const activeCategory = searchParams.get("category");
-  const { data } = useQuery(DISCOVERY_CATEGORIES, {
+  const { data, loading } = useQuery(DISCOVERY_CATEGORIES, {
     fetchPolicy: "cache-first",
     nextFetchPolicy: "cache-first",
   });
+  // Only the very first load is empty-handed — cache-first means a revisit
+  // already has `data` and just revalidates in the background, so this never
+  // re-flashes skeletons over a populated list.
+  const categoriesLoading = loading && !data;
 
   const liveCategories = (data?.discoveryFacets.categories ?? [])
     .filter((category) => category.count > 0)
@@ -394,6 +439,21 @@ function BrowseCategories({ lang }: { lang: string }) {
             </Link>
           );
         })}
+
+        {/* "For You" above is static and always real; only the categories
+            fetched from discoveryFacets need a loading stand-in — without
+            one, the list just looked permanently empty until the query
+            resolved. */}
+        {categoriesLoading
+          ? Array.from({ length: 6 }).map((_, index) => (
+              <div key={index} className="py-2">
+                <Skeleton
+                  className="h-4"
+                  style={{ width: `${64 - index * 4}%` }}
+                />
+              </div>
+            ))
+          : null}
       </nav>
 
       {isDiscoverRoute ? <DiscoverSidebarFilters /> : null}
@@ -712,25 +772,29 @@ function AccountMenu({
   );
 }
 
-function ThemeToggle() {
+function ThemeIconButton() {
   const { resolvedTheme, setTheme } = useThemeStore();
   const [mounted, setMounted] = useState(false);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
 
-  if (!mounted) return <span aria-hidden className="h-6 w-12" />;
+  // Matches IconNavButton's footprint so it sits flush in the same row before
+  // the theme is known, rather than the row reflowing once it mounts.
+  if (!mounted) return <span aria-hidden className="h-9 w-9 shrink-0" />;
 
   const isDark = resolvedTheme === "dark";
   const Icon = isDark ? Sun : Moon;
 
   return (
-    <label className="flex items-center gap-2" title="Toggle theme">
-      <Icon className="h-4 w-4" />
-      <Switch
-        checked={isDark}
-        onCheckedChange={(v) => setTheme(v ? "dark" : "light")}
-      />
-    </label>
+    <button
+      type="button"
+      onClick={() => setTheme(isDark ? "light" : "dark")}
+      aria-label="Toggle theme"
+      title="Toggle theme"
+      className="flex h-9 w-9 items-center justify-center rounded-full text-main transition-colors hover:bg-surface"
+    >
+      <Icon className="h-4.5 w-4.5" />
+    </button>
   );
 }

@@ -265,7 +265,12 @@ export default function DesktopFeed({
 
   return (
     <div className="min-h-svh bg-app">
-      <div className="grid w-full grid-cols-1 gap-7 px-4 py-0 lg:px-0 xl:grid-cols-[minmax(720px,1fr)_380px] 2xl:grid-cols-[minmax(840px,1fr)_400px] xl:items-start">
+      {/* Capped and centered like the Discover/Explore shell (same
+          `lg:max-w-[1560px]` and `lg:px-8`) — without a cap, the fixed
+          380/400px right rail just slides further from the feed column as
+          the viewport widens past a laptop screen, and the feed itself
+          pressed flush against the sidebar with zero gutter. */}
+      <div className="mx-auto grid w-full grid-cols-1 gap-7 px-4 py-0 lg:max-w-[1560px] lg:px-8 xl:grid-cols-[minmax(720px,1fr)_380px] 2xl:grid-cols-[minmax(840px,1fr)_400px] xl:items-start">
         <section className="min-w-0">
           <div className="sticky top-(--desktop-top-nav-height,68px) z-20 -mx-2 mb-4 bg-app/92 px-2 py-3 backdrop-blur">
             {/* Equal-width subtabs across the whole column, not a pill group.

@@ -29,9 +29,19 @@ export function SocialButtons({
     if (!container) return;
     setError(null);
     setGoogleReady(false);
-    void renderGoogleButton(container, setError).then(() => {
-      setGoogleReady(container.childNodes.length > 0);
+    let cancelled = false;
+    let unsubscribe: (() => void) | undefined;
+    void renderGoogleButton(container, setError).then((unsub) => {
+      unsubscribe = unsub;
+      if (!cancelled) setGoogleReady(container.childNodes.length > 0);
     });
+    // Auth pages mount this component twice at once (a mobile copy and a
+    // desktop copy, CSS-toggled) — unsubscribing on unmount keeps this
+    // instance's loading/error state from being written to after it's gone.
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
   }, [renderGoogleButton]);
 
   return (
@@ -43,10 +53,17 @@ export function SocialButtons({
       )}
 
       {/* The real GIS button remains the click target; the visible layer gives
-          Shopi a clean, consistent button without breaking popup trust. */}
+          Shopi a clean, consistent button without breaking popup trust.
+          Until Google's script has actually rendered its button into
+          googleButtonRef, that overlay div is empty — but it still sits on
+          top (z-20) and was still catching clicks, which silently swallowed
+          the tap with no popup and no feedback. Disable pointer events on
+          the whole control for that window, same as the post-click `loading`
+          state, so an early click does nothing visible rather than nothing
+          at all. */}
       <div
-        aria-busy={loading}
-        className={`relative flex h-12 w-full items-center justify-center overflow-hidden rounded-xl border border-border bg-app shadow-sm transition-colors duration-200 ${loading ? "pointer-events-none opacity-60" : "hover:border-primary/35 hover:bg-surface"}`}
+        aria-busy={loading || !googleReady}
+        className={`relative flex h-12 w-full items-center justify-center overflow-hidden rounded-xl border border-border bg-app shadow-sm transition-colors duration-200 ${loading || !googleReady ? "pointer-events-none opacity-60" : "hover:border-primary/35 hover:bg-surface"}`}
       >
         {!googleReady ? (
           <div className="absolute inset-0 animate-pulse bg-[rgb(var(--color-bg-subtle)/0.5)]" />

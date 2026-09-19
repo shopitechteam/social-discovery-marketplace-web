@@ -9,8 +9,8 @@ import {
 } from "@/features/discover/components/DiscoverGridCard";
 import {
   ArrowLeft,
+  CheckCircle2,
   ExternalLink,
-  Play,
   Video,
 } from "lucide-react";
 import { useQuery, useMutation } from "@apollo/client/react";
@@ -40,26 +40,11 @@ function formatCompact(value: number | null | undefined) {
  * "Nairobi, Westlands". Falls back gracefully and de-dupes when the area and
  * county are the same (so we never show "Nairobi, Nairobi").
  */
-// ── Stat pill ─────────────────────────────────────────────────────────────────
-
-function StatCard({ label, value }: { label: string; value: string }) {
+function ProfileStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-[rgb(229_231_235)] bg-[rgb(var(--color-bg-elevated)/0.82)] px-4 py-4 text-center shadow-sm sm:px-5">
-      <span
-        className="font-bold leading-tight"
-        style={{ fontSize: "var(--text-lg)", color: "rgb(var(--color-text))" }}
-      >
-        {value}
-      </span>
-      <span
-        className="mt-1 block"
-        style={{
-          fontSize: "var(--text-xs)",
-          color: "rgb(var(--color-text-muted))",
-        }}
-      >
-        {label}
-      </span>
+    <div className="min-w-0">
+      <p className="text-sm font-black text-main md:text-base">{value}</p>
+      <p className="mt-0.5 text-xs font-medium text-muted">{label}</p>
     </div>
   );
 }
@@ -188,279 +173,156 @@ export function CreatorProfileView({
 
 
   return (
-    <div
-      className="min-h-screen"
-      style={{ backgroundColor: "rgb(var(--color-bg))" }}
-    >
-      {/* ── Hero header — subtle brand wash (Tailwind gradient; inline-style
-          gradients don't render in this build) ── */}
-      <div className="border-b border-[rgb(229_231_235)] bg-linear-160 from-primary/10 from-0% to-background to-60%">
-        <div className="w-full px-4 pb-6 pt-4 sm:px-6 lg:px-8 lg:pb-8 xl:px-10">
-          {/* Back button */}
-          <div>
-            <button
-              onClick={goBack}
-              className="mb-4 inline-flex items-center gap-1.5 font-semibold transition-opacity active:opacity-60 lg:mb-6"
-              style={{
-                fontSize: "var(--text-sm)",
-                color: "rgb(var(--color-text))",
-              }}
-              aria-label="Go back"
-            >
-              <ArrowLeft size={18} strokeWidth={2.2} />
-              Back
-            </button>
-          </div>
+    <div className="min-h-screen bg-app">
+      <div className="border-b border-border">
+        <div className="w-full px-4 py-5 sm:px-6 lg:px-8 xl:px-10">
+          <button
+            onClick={goBack}
+            className="mb-5 inline-flex items-center gap-1.5 text-sm font-bold text-main transition-opacity active:opacity-60"
+            aria-label="Go back"
+          >
+            <ArrowLeft size={17} strokeWidth={2.2} />
+            Back
+          </button>
 
-          <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(280px,320px)_minmax(0,1fr)] lg:gap-6">
-            <div className="flex items-start gap-4 lg:flex-col lg:items-center lg:rounded-[28px] lg:border lg:border-[rgb(229_231_235)] lg:bg-[rgb(var(--color-bg-elevated)/0.78)] lg:p-6 lg:text-center lg:shadow-sm">
-              <div
-                className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-full border-2 border-elevated sm:h-24 sm:w-24 lg:h-32 lg:w-32 ${
-                  avatar
-                    ? "bg-surface"
-                    : "bg-linear-135 from-primary via-secondary via-60% to-accent"
-                }`}
-                style={{
-                  boxShadow: "0 12px 32px rgb(var(--brand-primary) / 0.18)",
-                }}
-              >
+          <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+            <div className="flex min-w-0 items-start gap-4">
+              <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full border border-border bg-main sm:h-24 sm:w-24">
                 {avatar ? (
                   <Image
                     src={avatar}
                     alt={displayName}
                     fill
-                    sizes="(max-width: 1023px) 96px, 128px"
+                    sizes="96px"
                     className="object-cover"
                     placeholder="blur"
                     blurDataURL={SHIMMER_AVATAR}
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center">
-                    <span
-                      className="select-none font-bold text-white"
-                      style={{ fontSize: "var(--text-xl)" }}
-                    >
+                    <span className="select-none text-xl font-black text-elevated">
                       {initials}
                     </span>
                   </div>
                 )}
               </div>
 
-              <div className="min-w-0 flex-1 pt-1 lg:flex lg:w-full lg:flex-col lg:items-center lg:pt-0">
-                <div className="flex flex-wrap items-center gap-2 lg:justify-center">
-                  <h1
-                    className="truncate font-bold"
-                    style={{
-                      fontSize: "var(--text-xl)",
-                      color: "rgb(var(--color-text))",
-                    }}
-                  >
+              <div className="min-w-0 flex-1 pt-0.5">
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                  <h1 className="truncate text-xl font-black leading-tight text-main md:text-2xl">
                     {displayName}
                   </h1>
-                  {user.isVerified && (
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 20 20"
-                      fill="none"
-                      className="shrink-0"
+                  {user.isVerified ? (
+                    <CheckCircle2
+                      className="h-5 w-5 shrink-0 text-primary"
                       aria-label="Verified"
-                    >
-                      <circle cx="10" cy="10" r="10" fill="#1D9BF0" />
-                      <path
-                        d="M6 10.5l2.5 2.5 5.5-5.5"
-                        stroke="white"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  )}
+                    />
+                  ) : null}
                 </div>
-                {user.username && (
-                  <p
-                    className="mt-0.5"
-                    style={{
-                      fontSize: "var(--text-sm)",
-                      color: "rgb(var(--color-text-muted))",
-                    }}
-                  >
+                {user.username ? (
+                  <p className="mt-1 text-sm font-medium text-muted">
                     @{user.username}
                   </p>
-                )}
+                ) : null}
 
-                <div className="mt-3 flex flex-wrap items-center gap-2 lg:justify-center">
-                  {!isOwnProfile && (
-                    <button
-                      onClick={toggleFollow}
-                      disabled={followLoading}
-                      className={[
-                        "flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-semibold transition-all active:scale-95 disabled:opacity-60",
-                        following
-                          ? "bg-surface text-muted-foreground"
-                          : "bg-primary/10 text-primary hover:bg-primary/20",
-                      ].join(" ")}
-                    >
-                      {following ? (
-                        "Following"
-                      ) : (
-                        <>
-                          <svg
-                            className="h-3.5 w-3.5"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                          >
-                            <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" />
-                          </svg>
-                          Follow
-                        </>
-                      )}
-                    </button>
-                  )}
+                {user.profile?.bio ? (
+                  <p className="mt-3 max-w-2xl text-sm leading-6 text-main">
+                    {user.profile.bio}
+                  </p>
+                ) : null}
 
-                  {hasTikTok && (
-                    <a
-                      href={`https://www.tiktok.com/@${user.username ?? ""}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[rgb(229_231_235)] bg-[rgb(var(--color-bg-elevated))] px-3 font-semibold transition-opacity active:opacity-75"
-                      style={{
-                        fontSize: "var(--text-sm)",
-                        color: "rgb(var(--color-text))",
-                      }}
-                    >
-                      <Video size={14} strokeWidth={2.2} />
-                      TikTok
-                      <ExternalLink
-                        size={12}
-                        strokeWidth={2}
-                        style={{ color: "rgb(var(--color-text-muted))" }}
-                      />
-                    </a>
-                  )}
+                <div className="mt-4 flex items-center gap-6">
+                  <ProfileStat
+                    label="Followers"
+                    value={formatCompact(followerCount)}
+                  />
+                  <ProfileStat
+                    label="Listings"
+                    value={formatCompact(user.postCount)}
+                  />
                 </div>
+
+                {user.profile?.website ? (
+                  <a
+                    href={
+                      user.profile.website.startsWith("http")
+                        ? user.profile.website
+                        : `https://${user.profile.website}`
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-4 inline-flex max-w-full items-center gap-1.5 text-sm font-bold text-primary"
+                  >
+                    <ExternalLink size={14} strokeWidth={2.2} />
+                    <span className="truncate">
+                      {user.profile.website.replace(/^https?:\/\//, "")}
+                    </span>
+                  </a>
+                ) : null}
               </div>
             </div>
 
-            <div className="lg:rounded-[28px] lg:border lg:border-[rgb(229_231_235)] lg:bg-[rgb(var(--color-bg-elevated)/0.72)] lg:p-6 lg:shadow-sm">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                  Seller profile
-                </span>
-                {user.isVerified && (
-                  <span
-                    className="inline-flex items-center rounded-full border border-[rgb(229_231_235)] px-3 py-1 text-xs font-semibold"
-                    style={{ color: "rgb(var(--color-text-muted))" }}
-                  >
-                    Verified account
-                  </span>
-                )}
-              </div>
-
-              {user.profile?.bio && (
-                <p
-                  className="mt-4 leading-snug"
-                  style={{
-                    fontSize: "var(--text-sm)",
-                    color: "rgb(var(--color-text))",
-                    maxWidth: "42rem",
-                  }}
+            <div className="flex shrink-0 flex-wrap items-center gap-2 md:justify-end">
+              {!isOwnProfile ? (
+                <button
+                  onClick={toggleFollow}
+                  disabled={followLoading}
+                  className={[
+                    "inline-flex h-9 items-center justify-center rounded-full px-4 text-sm font-bold transition-all active:scale-95 disabled:opacity-60",
+                    following
+                      ? "border border-border text-main hover:bg-surface"
+                      : "bg-primary text-white",
+                  ].join(" ")}
                 >
-                  {user.profile.bio}
-                </p>
-              )}
-              {user.profile?.website && (
+                  {following ? "Following" : "Follow"}
+                </button>
+              ) : null}
+
+              {hasTikTok ? (
                 <a
-                  href={
-                    user.profile.website.startsWith("http")
-                      ? user.profile.website
-                      : `https://${user.profile.website}`
-                  }
+                  href={`https://www.tiktok.com/@${user.username ?? ""}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-2 inline-flex items-center gap-1.5 font-semibold"
-                  style={{
-                    fontSize: "var(--text-sm)",
-                    color: "rgb(var(--brand-accent))",
-                  }}
+                  className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border px-4 text-sm font-bold text-main transition-colors hover:bg-surface"
                 >
-                  <ExternalLink size={13} strokeWidth={2.2} />
-                  {user.profile.website.replace(/^https?:\/\//, "")}
+                  <Video size={15} strokeWidth={2.2} />
+                  TikTok
                 </a>
-              )}
-
-              {/* Followers and listings only. Total views is deliberately not
-                  shown to shoppers: on a young marketplace a new seller's real
-                  figure reads as "nobody comes here", which undercuts the
-                  seller we are trying to send buyers to. The seller still sees
-                  it on their own profile and in analytics — `user.totalViews`
-                  is still fetched, just not surfaced here. */}
-              <div className="mt-5 grid grid-cols-2 gap-2 sm:gap-3 lg:mt-6 lg:max-w-2xl">
-                <StatCard
-                  label="Followers"
-                  value={formatCompact(followerCount)}
-                />
-                <StatCard
-                  label="Listings"
-                  value={formatCompact(user.postCount)}
-                />
-              </div>
+              ) : null}
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Content grid ── */}
-      <div className="w-full px-4 pb-12 sm:px-6 lg:px-8 xl:px-10">
+      <div className="w-full px-4 pb-12 pt-5 sm:px-6 lg:px-8 xl:px-10">
         <div className="mb-4 flex items-center justify-between">
-          <h2
-            className="font-bold"
-            style={{
-              fontSize: "var(--text-base)",
-              color: "rgb(var(--color-text))",
-            }}
-          >
+          <h2 className="text-base font-black text-main">
             Storefront
           </h2>
-          <span
-            style={{
-              fontSize: "var(--text-sm)",
-              color: "rgb(var(--color-text-muted))",
-            }}
-          >
+          <span className="text-sm font-medium text-muted">
             {posts.length} shown
           </span>
         </div>
 
         {postsLoading && posts.length === 0 ? (
-          <div className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:gap-3 xl:grid-cols-5 min-[90rem]:grid-cols-6">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="aspect-9/10 rounded-xl" />
+          <div className={DISCOVER_GRID}>
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div key={i}>
+                <Skeleton className="aspect-3/4 w-full rounded-xl" />
+                <div className="space-y-2 pt-2">
+                  <Skeleton className="h-3.5 w-1/2" />
+                  <Skeleton className="h-3 w-4/5" />
+                </div>
+              </div>
             ))}
           </div>
         ) : posts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div
-              className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl border"
-              style={{
-                backgroundColor: "rgb(var(--color-bg-elevated))",
-                borderColor: "rgb(229 231 235)",
-              }}
-            >
-              <Play
-                size={22}
-                strokeWidth={1.8}
-                style={{ color: "rgb(var(--brand-primary))" }}
-              />
-            </div>
-            <p
-              className="font-semibold"
-              style={{
-                fontSize: "var(--text-base)",
-                color: "rgb(var(--color-text))",
-              }}
-            >
+          <div className="flex min-h-72 flex-col items-center justify-center py-12 text-center">
+            <p className="text-base font-black text-main">
               No listings yet
+            </p>
+            <p className="mt-1 max-w-sm text-sm leading-6 text-muted">
+              This storefront will show items once they are published.
             </p>
           </div>
         ) : (

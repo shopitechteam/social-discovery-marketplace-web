@@ -296,6 +296,17 @@ function DiscoverGridCardImpl({
             </button>
           )}
 
+          {/* Was inline text next to the price ("KES 14,500,000 Negotiable"),
+              which had nowhere to go on a 2-up mobile grid and ran into the
+              next tile. A small badge in the empty top-left corner instead —
+              same quiet black/40 chip as Save and the photo/video count, not
+              a shouty colored "Negotiable!" tag. */}
+          {post.price?.negotiable && hasPrice ? (
+            <span className="pointer-events-none absolute left-2 top-2 rounded-full bg-black/40 px-2 py-1 text-[10px] font-semibold leading-none text-white backdrop-blur-[2px]">
+              Negotiable
+            </span>
+          ) : null}
+
           {/* What kind of media this is — the one thing still over the photo,
               because it changes what tapping it does. */}
           {isVideo || photoCount > 1 ? (
@@ -323,7 +334,10 @@ function DiscoverGridCardImpl({
         {/* ---- 3. The decision ---------------------------------------- */}
         <div className="pt-3">
           {post.title && (
-            <p className="line-clamp-2 text-[15px] font-black uppercase leading-5 tracking-normal text-main">
+            // Smaller on mobile: at 15px/leading-5 this ran two bold uppercase
+            // lines that dwarfed the price/location beneath it — heavy for a
+            // 2-up grid, where 96% of traffic actually sees this tile.
+            <p className="line-clamp-2 text-[13px] font-black uppercase leading-4 tracking-normal text-main md:text-[15px] md:leading-5">
               {post.title}
             </p>
           )}
@@ -332,9 +346,6 @@ function DiscoverGridCardImpl({
             <span className="shrink-0 font-bold text-main">
               {hasPrice ? priceText : "Ask"}
             </span>
-            {post.price?.negotiable && hasPrice ? (
-              <span className="shrink-0 text-muted">Negotiable</span>
-            ) : null}
             {place ? (
               <>
                 <span className="shrink-0 text-muted">•</span>

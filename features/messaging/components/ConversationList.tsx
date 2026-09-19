@@ -8,7 +8,6 @@ import { cn } from "@/lib/utils";
 import { TeamThreadRow } from "@/features/team-messages/components/TeamThreadRow";
 import type { Conversation } from "../types";
 import {
-  avatarGradient,
   conversationThumb,
   initialsForUser,
   participantName,
@@ -73,23 +72,14 @@ export function ConversationList({
   };
 
   return (
-    <section
-      className="flex flex-col"
-      style={{ borderColor: "rgb(var(--color-border))" }}
-    >
-      <div
-        className="border-b px-4 py-4 md:px-6 md:py-5"
-        style={{ borderColor: "rgb(var(--color-border))" }}
-      >
-        <div className="flex sticky top-0 left-0 right-0 items-center justify-between">
+    <section className="flex flex-col">
+      <div className="border-b border-border px-4 py-4 md:px-6 md:py-5">
+        <div className="sticky left-0 right-0 top-0 flex items-center justify-between">
           <div>
-            <h1
-              className="font-semibold"
-              style={{ fontSize: "var(--text-xl)" }}
-            >
+            <h1 className="text-base font-black text-main md:text-lg">
               Inbox
             </h1>
-            <p className="text-muted" style={{ fontSize: "var(--text-sm)" }}>
+            <p className="mt-0.5 text-sm text-muted">
               {unreadThreads > 0
                 ? `${unreadThreads} unread thread${unreadThreads === 1 ? "" : "s"}`
                 : "Your conversations"}
@@ -100,8 +90,7 @@ export function ConversationList({
               <button
                 type="button"
                 onClick={onTogglePush}
-                className="flex h-9 w-9 items-center justify-center rounded-full border"
-                style={{ borderColor: "rgb(var(--color-border))" }}
+                className="flex h-9 w-9 items-center justify-center rounded-full text-main transition-colors hover:bg-surface"
                 aria-label={
                   pushEnabled
                     ? "Disable message alerts"
@@ -149,17 +138,14 @@ export function ConversationList({
           </div>
         ) : conversations.length === 0 ? (
           <div className="flex h-full mt-12 flex-col items-center justify-center gap-3 px-6 text-center md:min-h-[36svh] md:px-10">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-              <MessageCircle size={24} />
+            <div className="flex h-12 w-12 items-center justify-center rounded-full border border-border text-muted">
+              <MessageCircle size={22} />
             </div>
             <div className="space-y-1">
-              <h2
-                className="font-semibold"
-                style={{ fontSize: "var(--text-lg)" }}
-              >
+              <h2 className="text-base font-black text-main">
                 No chats yet
               </h2>
-              <p className="text-muted" style={{ fontSize: "var(--text-sm)" }}>
+              <p className="text-sm leading-6 text-muted">
                 Tap Message on any post and the thread will appear here
                 instantly.
               </p>
@@ -198,9 +184,9 @@ export function ConversationList({
                 onPointerUp={clearLongPress}
                 onPointerLeave={clearLongPress}
                 className={cn(
-                  "flex w-full lg:cursor-pointer select-none items-start gap-3 border-b border-[rgb(var(--color-border)/0.6)] px-4 py-3 text-left transition-colors md:px-6 md:py-4",
+                  "flex w-full select-none items-start gap-3 border-b border-border/70 px-4 py-3 text-left transition-colors hover:bg-surface/60 md:px-6 md:py-4 lg:cursor-pointer",
                   selected &&
-                    "bg-primary/10 shadow-[inset_3px_0_0_0_rgb(var(--brand-primary)/0.8),inset_0_0_0_1px_rgb(var(--brand-primary)/0.14)]",
+                    "shadow-[inset_3px_0_0_0_rgb(var(--brand-primary)/0.85)]",
                 )}
               >
                 <div className="relative h-12 w-12 shrink-0">
@@ -238,9 +224,7 @@ export function ConversationList({
                     </div>
                   ) : (
                     <div
-                      className={`absolute -bottom-2 -right-1 flex h-6 w-6 items-center justify-center rounded-full border-2 bg-gradient-to-br ${avatarGradient(
-                        conversation.otherParticipant?.id ?? "0",
-                      )} text-white`}
+                      className="absolute -bottom-2 -right-1 flex h-6 w-6 items-center justify-center rounded-full border-2 bg-main text-elevated"
                       style={{
                         borderColor: "rgb(var(--color-bg))",
                         fontSize: "9px",

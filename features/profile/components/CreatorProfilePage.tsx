@@ -41,68 +41,85 @@ export function CreatorProfilePage({
   // supplied profile the first paint is the real page.
   if (loading && !profile) {
     return (
-      <div
-        className="min-h-screen"
-        style={{ backgroundColor: "rgb(var(--color-bg))" }}
-      >
-        <div className="w-full px-4 pb-6 pt-10 sm:px-6 lg:px-8 xl:px-10">
-          <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(280px,320px)_minmax(0,1fr)] lg:gap-6">
-            <div className="flex items-start gap-4 lg:rounded-[28px] lg:border lg:border-[rgb(229_231_235)] lg:bg-[rgb(var(--color-bg-elevated)/0.78)] lg:p-6">
-              <div
-                className="h-20 w-20 shrink-0 animate-pulse rounded-full sm:h-24 sm:w-24 lg:h-32 lg:w-32"
-                style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
-              />
-              <div className="flex-1 space-y-2 pt-2 lg:pt-3">
+      <div className="min-h-screen bg-app">
+        <div className="border-b border-border">
+          <div className="w-full px-4 py-5 sm:px-6 lg:px-8 xl:px-10">
+            <div
+              className="mb-5 h-5 w-16 animate-pulse rounded"
+              style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
+            />
+            <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+              <div className="flex min-w-0 items-start gap-4">
                 <div
-                  className="h-5 w-36 animate-pulse rounded-lg"
+                  className="h-20 w-20 shrink-0 animate-pulse rounded-full sm:h-24 sm:w-24"
                   style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
                 />
-                <div
-                  className="h-4 w-24 animate-pulse rounded-lg"
-                  style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
-                />
-                <div
-                  className="mt-3 h-9 w-28 animate-pulse rounded-xl"
-                  style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
-                />
-              </div>
-            </div>
-            <div className="rounded-[28px] lg:border lg:border-[rgb(229_231_235)] lg:bg-[rgb(var(--color-bg-elevated)/0.72)] lg:p-6">
-              <div
-                className="h-5 w-28 animate-pulse rounded-lg"
-                style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
-              />
-              <div
-                className="mt-4 h-4 w-full max-w-2xl animate-pulse rounded-lg"
-                style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
-              />
-              <div
-                className="mt-2 h-4 w-56 animate-pulse rounded-lg"
-                style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
-              />
-              <div className="mt-5 grid grid-cols-3 gap-2 sm:gap-3 lg:mt-6 lg:max-w-3xl">
-                {Array.from({ length: 3 }).map((_, i) => (
+                <div className="min-w-0 flex-1 space-y-2 pt-1">
                   <div
-                    key={i}
-                    className="h-20 animate-pulse rounded-2xl border border-[rgb(229_231_235)]"
+                    className="h-6 w-40 animate-pulse rounded"
                     style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
                   />
-                ))}
+                  <div
+                    className="h-4 w-24 animate-pulse rounded"
+                    style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
+                  />
+                  <div
+                    className="mt-3 h-4 w-full max-w-lg animate-pulse rounded"
+                    style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
+                  />
+                  <div
+                    className="h-4 w-2/3 max-w-sm animate-pulse rounded"
+                    style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
+                  />
+                  <div className="mt-4 flex gap-6">
+                    <div
+                      className="h-9 w-20 animate-pulse rounded"
+                      style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
+                    />
+                    <div
+                      className="h-9 w-20 animate-pulse rounded"
+                      style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
+                    />
+                  </div>
+                </div>
               </div>
+              <div
+                className="h-9 w-24 animate-pulse rounded-full"
+                style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
+              />
             </div>
           </div>
         </div>
-        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-10">
-          <div className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:gap-3 xl:grid-cols-4">
-            {Array.from({ length: 9 }).map((_, i) => (
-              <div
-                key={i}
-                className="animate-pulse rounded-xl"
-                style={{
-                  aspectRatio: "9/16",
-                  backgroundColor: "rgb(var(--color-bg-subtle))",
-                }}
-              />
+
+        <div className="w-full px-4 pb-12 pt-5 sm:px-6 lg:px-8 xl:px-10">
+          <div className="mb-4 flex items-center justify-between">
+            <div
+              className="h-5 w-24 animate-pulse rounded"
+              style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
+            />
+            <div
+              className="h-4 w-16 animate-pulse rounded"
+              style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-3 md:gap-x-4 md:gap-y-6 xl:grid-cols-4 min-[90rem]:grid-cols-5">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div key={i}>
+                <div
+                  className="aspect-3/4 w-full animate-pulse rounded-xl"
+                  style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
+                />
+                <div className="space-y-2 pt-2">
+                  <div
+                    className="h-3.5 w-1/2 animate-pulse rounded"
+                    style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
+                  />
+                  <div
+                    className="h-3 w-4/5 animate-pulse rounded"
+                    style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
+                  />
+                </div>
+              </div>
             ))}
           </div>
         </div>

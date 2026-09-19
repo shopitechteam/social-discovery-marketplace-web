@@ -82,19 +82,18 @@ export function NotificationsScreen({ lang }: Props) {
   return (
     <div className="min-h-svh bg-app md:px-6">
       <div className="mx-auto flex min-h-svh w-full max-w-400 flex-col">
-        {/* ── Sticky subtab header ──────────────────────────────────────── */}
-        <header className="sticky top-0 z-30 bg-app/80 backdrop-blur-md border-b border-default">
-          <div className="flex gap-0 px-4  md:px-6 md:py-4">
-            <div className="flex w-full gap-0 md:w-fit md:inline-flex md:rounded-2xl md:border md:border-default md:bg-elevated md:p-1">
+        <header className="sticky top-0 z-30 border-b border-border bg-app/90 backdrop-blur-md">
+          <div className="px-4 md:px-0 md:py-4">
+            <div className="grid w-full grid-cols-2 md:inline-grid md:w-auto md:min-w-80">
               {subtabs.map((sub) => (
                 <button
                   key={sub.id}
                   type="button"
                   onClick={() => handleTabChange(sub.id)}
-                  className={`relative flex-1 border-b-2 px-4 py-3 text-[14.5px] font-semibold transition-colors md:flex-none md:min-w-42 md:rounded-xl md:border-b-0 md:px-4 md:py-2.5 ${
+                  className={`relative border-b-2 px-4 py-3 text-sm font-bold transition-colors md:px-5 md:py-2.5 ${
                     tab === sub.id
-                      ? "border-primary text-primary md:bg-primary/10"
-                      : "border-transparent text-muted-foreground hover:text-foreground md:hover:bg-surface"
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted hover:text-main"
                   }`}
                 >
                   <span className="inline-flex items-center justify-center gap-1.5 md:gap-2">
@@ -111,7 +110,6 @@ export function NotificationsScreen({ lang }: Props) {
           </div>
         </header>
 
-        {/* ── Tab panels ────────────────────────────────────────────────── */}
         <div className="flex-1">
           {tab === "messages" ? (
             <MessagingShell lang={lang} />
