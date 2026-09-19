@@ -266,17 +266,27 @@ export default function DesktopFeed({
       <div className="grid w-full grid-cols-1 gap-7 px-4 py-5 lg:px-8 xl:grid-cols-[minmax(760px,1fr)_420px] 2xl:grid-cols-[minmax(860px,1fr)_460px] xl:items-start">
         <section className="min-w-0">
           <div className="sticky top-(--desktop-top-nav-height,80px) z-20 -mx-2 mb-4 bg-app/92 px-2 py-3 backdrop-blur">
-            <div className="inline-flex items-center gap-1 rounded-full border border-border bg-elevated p-1 shadow-sm shadow-black/[0.03]">
+            {/* Equal-width subtabs across the whole column, not a pill group.
+                The track count follows TABS so the row still divides evenly
+                when Ask Shopi is off (3 instead of 4); both class names are
+                spelled out literally because Tailwind only generates the
+                classes it can read in the source. */}
+            <div
+              className={[
+                "grid w-full border-b border-border",
+                TABS.length === 4 ? "grid-cols-4" : "grid-cols-3",
+              ].join(" ")}
+            >
               {TABS.map((t) => (
                 <button
                   key={t.id}
                   onClick={() => selectTab(t.id)}
                   aria-current={tab === t.id ? "true" : undefined}
                   className={[
-                    "h-8 rounded-full px-3.5 text-xs font-bold tracking-normal transition-colors",
+                    "-mb-px border-b-2 pb-2.5 pt-1 text-sm font-bold tracking-normal transition-colors",
                     tab === t.id
-                      ? "bg-primary text-white shadow-sm"
-                      : "text-muted hover:bg-surface hover:text-main",
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted hover:text-main",
                   ].join(" ")}
                 >
                   {t.label}

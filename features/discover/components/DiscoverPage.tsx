@@ -1248,13 +1248,13 @@ export function DiscoverPage({ lang }: { lang: string }) {
 
   return (
     <div className="min-h-svh bg-app pb-24 md:pb-8">
-      <div className="mx-auto w-full lg:max-w-[1560px] lg:px-8 lg:pt-8">
+      <div className="mx-auto w-full lg:max-w-[1560px] lg:px-8 lg:pt-4">
         <main className="min-w-0">
-          <div className="mb-6 hidden lg:block">
+          <div className="mb-4 hidden lg:block">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 min-w-0 flex-1 items-center gap-3 rounded-full border border-border bg-surface px-5">
+              <div className="flex h-10 min-w-0 flex-1 items-center gap-3 rounded-full border border-border bg-surface px-5 shadow-inner shadow-black/[0.02]">
                 <Search
-                  size={18}
+                  size={17}
                   className="shrink-0 text-muted-foreground"
                   aria-hidden
                 />
@@ -1280,13 +1280,13 @@ export function DiscoverPage({ lang }: { lang: string }) {
                 type="button"
                 onClick={openCountySheet}
                 className={cn(
-                  "flex h-12 shrink-0 items-center gap-3 rounded-full border px-5 text-sm font-semibold transition-colors",
+                  "flex h-10 shrink-0 items-center gap-2.5 rounded-full border px-4 text-sm font-semibold transition-colors",
                   hasLocation
                     ? "border-primary/20 bg-primary/10 text-primary"
                     : "border-border bg-surface text-main hover:bg-subtle",
                 )}
               >
-                <MapPin size={18} />
+                <MapPin size={17} />
                 <span className="max-w-40 truncate">{locationLabel}</span>
               </button>
 
@@ -1295,13 +1295,13 @@ export function DiscoverPage({ lang }: { lang: string }) {
                   <button
                     type="button"
                     className={cn(
-                      "flex h-12 shrink-0 items-center gap-3 rounded-full border px-5 text-sm font-semibold transition-colors",
+                      "flex h-10 shrink-0 items-center gap-2.5 rounded-full border px-4 text-sm font-semibold transition-colors",
                       sort !== "RELEVANCE"
                         ? "border-primary/20 bg-primary/10 text-primary"
                         : "border-border bg-surface text-main hover:bg-subtle",
                     )}
                   >
-                    <ArrowUpDown size={18} />
+                    <ArrowUpDown size={17} />
                     <span>{activeSort.label}</span>
                   </button>
                 </PopoverTrigger>
@@ -1328,13 +1328,13 @@ export function DiscoverPage({ lang }: { lang: string }) {
                 type="button"
                 onClick={openFilterSheet}
                 className={cn(
-                  "relative flex h-12 shrink-0 items-center gap-3 rounded-full border px-5 text-sm font-semibold transition-colors",
+                  "relative flex h-10 shrink-0 items-center gap-2.5 rounded-full border px-4 text-sm font-semibold transition-colors",
                   activeFilterCount > 0
                     ? "border-primary/20 bg-primary/10 text-primary"
                     : "border-border bg-surface text-main hover:bg-subtle",
                 )}
               >
-                <SlidersHorizontal size={18} />
+                <SlidersHorizontal size={17} />
                 Filters
                 {activeFilterCount > 0 ? (
                   <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold leading-none text-white">

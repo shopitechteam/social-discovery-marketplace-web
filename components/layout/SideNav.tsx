@@ -65,6 +65,8 @@ export function SideNav({ lang = "en" }: { lang: string }) {
       .toUpperCase() || "S";
   const homeActive =
     pathname === `/${lang}` || pathname.startsWith(`/${lang}/feed`);
+  const isFeedRoute =
+    pathname === `/${lang}` || pathname.startsWith(`/${lang}/feed`);
   const browseActive =
     pathname.startsWith(`/${lang}/explore`) ||
     pathname.startsWith(`/${lang}/search`);
@@ -83,7 +85,7 @@ export function SideNav({ lang = "en" }: { lang: string }) {
             <span>shopi</span>
           </Link>
 
-          <nav className="flex items-center gap-3 text-sm font-bold">
+          <nav className="flex items-center gap-2 text-sm font-bold">
             <TopNavLink href={`/${lang}/feed`} active={homeActive}>
               For You
             </TopNavLink>
@@ -92,15 +94,23 @@ export function SideNav({ lang = "en" }: { lang: string }) {
             </TopNavLink>
           </nav>
 
-          {/* ml-auto: the search field used to be the row's only flex-1 child,
-              so it was what pushed everything from here rightward. With it gone
-              this button takes over that job. */}
           <Link
-            href={`/${lang}/upload`}
-            className="ml-auto inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-surface px-6 text-sm font-black text-main transition-colors hover:bg-subtle"
+            href={`/${lang}/search`}
+            scroll={false}
+            className="flex h-10 min-w-[280px] flex-1 items-center gap-3 rounded-full border border-border bg-surface px-5 text-sm font-medium text-muted shadow-inner shadow-black/[0.02] transition-colors hover:border-border-strong hover:text-default"
           >
-            Sell item
+            <Search className="h-5 w-5 shrink-0" />
+            <span className="truncate">Search Shopi</span>
           </Link>
+
+          {!isFeedRoute ? (
+            <Link
+              href={`/${lang}/upload`}
+              className="inline-flex h-10 shrink-0 items-center justify-center rounded-full bg-surface px-5 text-sm font-black text-main transition-colors hover:bg-subtle"
+            >
+              Sell item
+            </Link>
+          ) : null}
 
           <div className="flex items-center gap-1.5">
             <IconNavButton
@@ -208,7 +218,7 @@ function TopNavLink({
       href={href}
       scroll={false}
       className={[
-        "inline-flex h-11 min-w-25 items-center justify-center rounded-full px-6 transition-colors",
+        "inline-flex h-10 min-w-22 items-center justify-center rounded-full px-5 text-sm transition-colors",
         active ? "bg-primary text-white" : "text-main hover:bg-surface",
       ].join(" ")}
       aria-current={active ? "page" : undefined}
