@@ -50,6 +50,14 @@
   --radius-md: 12px;
   --radius-lg: 20px;
   --radius-full: 9999px;
+
+  /* Layout — the desktop top nav's height. Six places hang off this (the nav
+     itself, the side rail's top, MainShell's padding, and the sticky headers
+     in the feed and profile), and until now every one of them just repeated
+     `80px` as a var fallback with nothing ever defining the var. Defining it
+     here makes those fallbacks inert and gives the height one home. */
+  --desktop-top-nav-height: 68px;
+  --side-nav-width: 304px;
 }
 
 /* ─── Dark mode — toggled by .dark on <html> ───────────────────── */

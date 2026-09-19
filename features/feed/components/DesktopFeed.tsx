@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -8,10 +14,7 @@ import { ShoppingBag } from "lucide-react";
 import { useForYouFeed, useFollowingFeed } from "../hooks/useFeed";
 import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
 import { useAuthStore } from "@/stores/auth";
-import {
-  FeedPaginationSkeleton,
-  PostCardSkeleton,
-} from "./FeedSkeleton";
+import { FeedPaginationSkeleton, PostCardSkeleton } from "./FeedSkeleton";
 import { LocationPermissionBanner } from "./LocationPermissionBanner";
 import { PostCard } from "./PostCard";
 import { DesktopTrendingRail } from "./DesktopTrendingRail";
@@ -24,9 +27,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "for-you", label: "For You" },
   { id: "following", label: "Following" },
   { id: "nearby", label: "Nearby" },
-  ...(SHOW_ASK_SHOPI
-    ? [{ id: "ask-shopi" as const, label: "Ask Shopi" }]
-    : []),
+  ...(SHOW_ASK_SHOPI ? [{ id: "ask-shopi" as const, label: "Ask Shopi" }] : []),
 ];
 
 const DesktopNearbyColumn = dynamic(() =>
@@ -228,7 +229,8 @@ export default function DesktopFeed({
 
   useLayoutEffect(() => {
     if (prevTab.current !== tab) {
-      if (isDesktopViewport()) window.scrollTo(0, scrollByTab.current[tab] ?? 0);
+      if (isDesktopViewport())
+        window.scrollTo(0, scrollByTab.current[tab] ?? 0);
       prevTab.current = tab;
     }
   }, [tab]);
@@ -263,20 +265,30 @@ export default function DesktopFeed({
 
   return (
     <div className="min-h-svh bg-app">
-      <div className="grid w-full grid-cols-1 gap-7 px-4 py-5 lg:px-8 xl:grid-cols-[minmax(760px,1fr)_420px] 2xl:grid-cols-[minmax(860px,1fr)_460px] xl:items-start">
+      <div className="grid w-full grid-cols-1 gap-7 px-4 py-0 lg:px-0 xl:grid-cols-[minmax(720px,1fr)_380px] 2xl:grid-cols-[minmax(840px,1fr)_400px] xl:items-start">
         <section className="min-w-0">
-          <div className="sticky top-(--desktop-top-nav-height,80px) z-20 -mx-2 mb-4 bg-app/92 px-2 py-3 backdrop-blur">
-            <div className="inline-flex items-center gap-1 rounded-full border border-border bg-elevated p-1 shadow-sm shadow-black/[0.03]">
+          <div className="sticky top-(--desktop-top-nav-height,68px) z-20 -mx-2 mb-4 bg-app/92 px-2 py-3 backdrop-blur">
+            {/* Equal-width subtabs across the whole column, not a pill group.
+                The track count follows TABS so the row still divides evenly
+                when Ask Shopi is off (3 instead of 4); both class names are
+                spelled out literally because Tailwind only generates the
+                classes it can read in the source. */}
+            <div
+              className={[
+                "grid w-full border-b border-border",
+                TABS.length === 4 ? "grid-cols-4" : "grid-cols-3",
+              ].join(" ")}
+            >
               {TABS.map((t) => (
                 <button
                   key={t.id}
                   onClick={() => selectTab(t.id)}
                   aria-current={tab === t.id ? "true" : undefined}
                   className={[
-                    "h-8 rounded-full px-3.5 text-xs font-bold tracking-normal transition-colors",
+                    "-mb-px border-b-2 pb-2.5 pt-1 text-sm font-bold tracking-normal transition-colors",
                     tab === t.id
-                      ? "bg-primary text-white shadow-sm"
-                      : "text-muted hover:bg-surface hover:text-main",
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted hover:text-main",
                   ].join(" ")}
                 >
                   {t.label}
@@ -308,7 +320,7 @@ export default function DesktopFeed({
           ) : null}
         </section>
 
-        <aside className="sticky top-[calc(var(--desktop-top-nav-height,80px)+1.25rem)] hidden max-h-[calc(100svh-var(--desktop-top-nav-height,80px)-2.5rem)] overflow-y-auto xl:block">
+        <aside className="sticky top-[calc(var(--desktop-top-nav-height,68px)+1.25rem)] hidden max-h-[calc(100svh-var(--desktop-top-nav-height,68px)-2.5rem)] overflow-y-auto xl:block">
           <DesktopTrendingRail lang={lang} />
         </aside>
       </div>
