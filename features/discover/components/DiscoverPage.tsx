@@ -545,18 +545,25 @@ function LocationOption({
           disabled={disabled}
           aria-label={`View places inside ${item.name}`}
           className={cn(
-            "flex shrink-0 items-center border-l px-3 transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:hover:bg-transparent",
+            "relative flex shrink-0 items-center border-l px-3 transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:hover:bg-transparent",
             active
               ? "border-primary/20 bg-primary/10"
               : "border-default text-muted-foreground",
           )}
         >
           {/* Once a row is the active choice, drilling further in is the one
-              obvious next move — pulse the chevron so it reads as "tap me",
-              not just as a static "this has children" affordance. */}
+              obvious next move — a ping ring behind the chevron reads as
+              "tap me", not just as a static "this has children" affordance.
+              (animate-pulse on the icon itself was too subtle to notice.) */}
+          {active ? (
+            <span
+              className="absolute inset-1.5 animate-ping rounded-full bg-primary/40"
+              aria-hidden
+            />
+          ) : null}
           <ChevronRight
             size={18}
-            className={active ? "animate-pulse text-primary" : undefined}
+            className={cn("relative", active && "text-primary")}
           />
         </button>
       </div>
