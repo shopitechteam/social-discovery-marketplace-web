@@ -264,7 +264,7 @@ export function DesktopTrendingRail({
 
         {showSkeleton ? (
           <div className="flex flex-col gap-2">
-            {[...Array(6)].map((_, i) => (
+            {[...Array(12)].map((_, i) => (
               <div
                 key={i}
                 className="flex animate-pulse items-center gap-3 p-2"
@@ -287,7 +287,7 @@ export function DesktopTrendingRail({
           </p>
         ) : (
           <div className="flex flex-col gap-0.5">
-            {items.slice(0, 6).map((post, i) => (
+            {items.slice(0, 12).map((post, i) => (
               <TrendingRow
                 key={post.id}
                 post={post}

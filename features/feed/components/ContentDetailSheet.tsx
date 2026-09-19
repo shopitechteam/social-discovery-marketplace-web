@@ -1,9 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { X } from "lucide-react";
-import { goBackOr } from "@/lib/useAppBack";
 
 import {
   Sheet,
@@ -22,6 +21,7 @@ export function ContentDetailSheet({
   lang: string;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   // `null` until measured so we never flash the wrong layout (sheet vs. full
   // page) during hydration.
   const isDesktop = useIsDesktop();
@@ -37,9 +37,30 @@ export function ContentDetailSheet({
     return () => window.cancelAnimationFrame(frame);
   }, [isDesktop]);
 
+  // The browser/gesture back button changes the URL immediately via
+  // popstate, before Next necessarily gets a chance to swap the @modal slot
+  // back to its default (null) — that swap doesn't reliably happen for a
+  // plain back navigation on an intercepted route, which is what left this
+  // sheet's tree mounted and visible on top of whatever `back` actually
+  // landed on (e.g. still seeing the PDP after "returning" to /feed).
+  // Tying visibility to the pathname directly, instead of trusting the slot
+  // to unmount us, means a stale mount can never stay on screen: the moment
+  // the URL stops pointing at this exact piece of content, this renders
+  // nothing — on both the desktop sheet and the mobile full-page branch.
+  const isActiveRoute = pathname === `/${lang}/content/${id}`;
+
   // Drive the close from a single place: animate out, then pop the route.
   // Radix keeps the content mounted during the exit animation, so the
   // ContentDetail stays visible while it slides away.
+  //
+  // Always router.back() here, never a fallback path (compare
+  // ContentDetail's own `useAppBack`, which does need one): this component
+  // only ever renders via the intercepted @modal route, which by
+  // construction can only be reached by a same-tab client navigation from
+  // some prior page (e.g. /explore?category=...). That prior entry always
+  // exists, so back() always lands there — a hardcoded fallback would only
+  // ever paper over a bug, and previously did: it sent every close to
+  // /feed regardless of where the user actually came from.
   const handleOpenChange = useCallback(
     (next: boolean) => {
       if (next) {
@@ -48,21 +69,30 @@ export function ContentDetailSheet({
       }
       setOpen(false);
       setChatOpen(false);
-      // Delayed so the sheet finishes sliding out first. goBackOr keeps a
-      // directly-opened listing from dismissing into nothing.
-      window.setTimeout(() => goBackOr(router, `/${lang}/feed`), 300);
+      // Delayed so the sheet finishes sliding out first.
+      window.setTimeout(() => router.back(), 300);
     },
-    [router, lang]
+    [router]
   );
 
   const close = useCallback(() => handleOpenChange(false), [handleOpenChange]);
 
   if (isDesktop === null) return null;
+  if (!isActiveRoute) return null;
 
   // Mobile: the interception still happens, but we render the detail full-page
   // (no overlay). The standalone /content/[id] route is the real destination.
+  //
+  // onRequestClose is passed here for the same reason as the desktop sheet:
+  // without it, ContentDetail's own back button falls through to its
+  // useAppBack('/feed') default — meant for a listing opened with no app
+  // history behind it (a shared link) — which is never true for this,
+  // the intercepted-modal render path, and was sending every mobile "back"
+  // tap to /feed instead of back to wherever the user actually came from.
   if (!isDesktop) {
-    return <ContentDetail id={id} lang={lang} />;
+    return (
+      <ContentDetail id={id} lang={lang} onRequestClose={() => router.back()} />
+    );
   }
 
   return (

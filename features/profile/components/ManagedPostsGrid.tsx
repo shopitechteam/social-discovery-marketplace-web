@@ -64,6 +64,9 @@ interface Props {
   onRefresh: () => Promise<unknown> | void;
 }
 
+const MANAGED_POSTS_GRID =
+  "grid grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-3 md:gap-x-4 md:gap-y-6 xl:grid-cols-4 min-[90rem]:grid-cols-5";
+
 function formatCompact(value: number) {
   if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
   if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
@@ -672,21 +675,14 @@ export function ManagedPostsGrid({
         title="Manage posts"
         subtitle="Loading your seller inventory"
       >
-        <div className="grid grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-3 md:gap-x-4 md:gap-y-6 xl:grid-cols-4 min-[90rem]:grid-cols-5">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="overflow-hidden rounded-[22px] border"
-              style={{
-                borderColor: "rgb(var(--color-border))",
-                backgroundColor: "rgb(var(--color-bg-elevated))",
-              }}
-            >
-              <Skeleton className="aspect-[0.94] w-full rounded-none" />
-              <div className="space-y-2 p-3">
-                <Skeleton className="h-4 w-3/4 rounded" />
-                <Skeleton className="h-3 w-full rounded" />
-                <Skeleton className="h-3 w-2/3 rounded" />
+        <div className={MANAGED_POSTS_GRID}>
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div key={i} className="flex flex-col">
+              <Skeleton className="aspect-3/4 w-full rounded-xl md:aspect-4/5" />
+              <div className="space-y-1.5 px-0.5 pt-2">
+                <Skeleton className="h-3.5 w-2/3 rounded" />
+                <Skeleton className="h-3 w-4/5 rounded" />
+                <Skeleton className="h-3 w-3/5 rounded" />
               </div>
             </div>
           ))}
@@ -701,38 +697,20 @@ export function ManagedPostsGrid({
         title="Manage posts"
         subtitle="Edit pricing, manage visibility, and keep track of performance in one place."
       >
-        <div className="flex min-h-80 flex-col items-center justify-center rounded-[24px] border px-6 py-12 text-center">
-          <div
-            className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl"
-            style={{
-              backgroundColor: "rgb(var(--brand-primary) / 0.1)",
-              color: "rgb(var(--brand-primary))",
-            }}
-          >
-            <Plus size={28} />
+        <div className="flex min-h-72 flex-col items-center justify-center px-6 py-12 text-center">
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-border text-muted">
+            <Plus size={22} />
           </div>
-          <h3
-            className="font-bold"
-            style={{
-              fontSize: "var(--text-lg)",
-              color: "rgb(var(--color-text))",
-            }}
-          >
+          <h3 className="text-base font-black text-main">
             No inventory yet
           </h3>
-          <p
-            className="mt-2 max-w-sm leading-relaxed"
-            style={{
-              fontSize: "var(--text-sm)",
-              color: "rgb(var(--color-text-muted))",
-            }}
-          >
-            Post your first item and you will be able to edit the price,
-            description, title, negotiable setting, and category from here.
+          <p className="mt-2 max-w-sm text-sm leading-6 text-muted">
+            Create your first listing to manage price, visibility, and
+            performance from here.
           </p>
           <Link
             href={`/${lang}/upload`}
-            className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-primary px-5 font-semibold text-white transition-transform active:scale-[0.98]"
+            className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-bold text-white transition-transform active:scale-[0.98]"
           >
             <Plus size={16} />
             Create post
@@ -785,7 +763,7 @@ export function ManagedPostsGrid({
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-3 md:gap-x-4 md:gap-y-6 xl:grid-cols-4 min-[90rem]:grid-cols-5">
+          <div className={MANAGED_POSTS_GRID}>
             {visiblePosts.map((post, index) => (
               <InventoryCard
                 key={post.id}

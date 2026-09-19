@@ -48,24 +48,25 @@ import { cn } from "@/lib/utils";
 type RowTone = "neutral" | "brand" | "danger";
 
 const TONE_CLASSES: Record<RowTone, string> = {
-  // Slate, matching the muted icon tiles the rest of the app uses for
-  // secondary actions.
-  neutral: "bg-slate-400/20 text-slate-600 dark:text-slate-300",
-  brand: "bg-primary/12 text-primary",
-  danger: "bg-rose-500/12 text-rose-600 dark:text-rose-400",
+  neutral: "text-muted",
+  brand: "text-primary",
+  danger: "text-rose-600 dark:text-rose-400",
 };
 
-function SettingsGroup({ children }: { children: React.ReactNode }) {
+function SettingsGroup({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div
-      className="overflow-hidden rounded-2xl border"
-      style={{
-        backgroundColor: "rgb(var(--color-bg-elevated))",
-        borderColor: "rgb(var(--color-border))",
-      }}
-    >
-      {children}
-    </div>
+    <section>
+      <h3 className="mb-2 text-xs font-black uppercase tracking-wide text-muted">
+        {title}
+      </h3>
+      <div className="overflow-hidden border-y border-border">{children}</div>
+    </section>
   );
 }
 
@@ -95,14 +96,14 @@ function SettingsRow({
     <>
       <span
         className={cn(
-          "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+          "flex h-9 w-9 shrink-0 items-center justify-center",
           TONE_CLASSES[tone],
         )}
       >
-        <Icon className="h-5 w-5" />
+        <Icon className="h-4.5 w-4.5" />
       </span>
       <span
-        className="min-w-0 flex-1 truncate text-left font-medium"
+        className="min-w-0 flex-1 truncate text-left font-semibold"
         style={{
           fontSize: "var(--text-sm)",
           color: "rgb(var(--color-text))",
@@ -123,7 +124,7 @@ function SettingsRow({
   // The row is 64px tall so the whole thing is a comfortable target, not just
   // the label.
   const rowClass =
-    "flex w-full items-center gap-3.5 px-4 py-3.5 transition-colors not-last:border-b";
+    "flex w-full items-center gap-3 px-0 py-3.5 transition-colors not-last:border-b";
   const rowStyle = { borderColor: "rgb(var(--color-border))" };
 
   if (control) {
@@ -168,8 +169,19 @@ export function SettingsList({ lang }: { lang: string }) {
 
   return (
     <section className="w-full px-4 py-5 sm:px-6 lg:px-8">
-      <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
-        <SettingsGroup>
+      <div className="mx-auto w-full max-w-5xl">
+        <div className="mb-6">
+          <h2 className="text-base font-black text-main md:text-lg">
+            Settings
+          </h2>
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-muted">
+            Manage your account, appearance, notifications, and safety options.
+          </p>
+        </div>
+
+        <div className="grid gap-8 lg:grid-cols-2 lg:gap-x-14">
+          <div className="space-y-8">
+        <SettingsGroup title="Account">
           <SettingsRow
             icon={UserRound}
             label="Edit profile"
@@ -203,7 +215,7 @@ export function SettingsList({ lang }: { lang: string }) {
           )}
         </SettingsGroup>
 
-        <SettingsGroup>
+        <SettingsGroup title="Support">
           <SettingsRow
             icon={ShieldCheck}
             label="Safety centre"
@@ -215,8 +227,10 @@ export function SettingsList({ lang }: { lang: string }) {
             href={settingsSubPageHref(lang, "/profile/rate")}
           />
         </SettingsGroup>
+          </div>
 
-        <SettingsGroup>
+          <div className="space-y-8">
+        <SettingsGroup title="Security">
           {/* Only for accounts with a password to change. Someone who signed
               up through Google or Apple has none, and the server rejects the
               mutation for them — so offering the row would just be a dead end
@@ -228,6 +242,14 @@ export function SettingsList({ lang }: { lang: string }) {
               href={settingsSubPageHref(lang, "/profile/change-password")}
             />
           )}
+          {!hasPassword && (
+            <div className="py-3.5 text-sm leading-6 text-muted">
+              Password settings are managed by your sign-in provider.
+            </div>
+          )}
+        </SettingsGroup>
+
+        <SettingsGroup title="Session and account">
           <SettingsRow
             icon={Trash2}
             label="Delete my account permanently"
@@ -242,6 +264,8 @@ export function SettingsList({ lang }: { lang: string }) {
             disabled={loggingOut}
           />
         </SettingsGroup>
+          </div>
+        </div>
       </div>
 
       {/* Signing out drops the session and the feed position with it, and the
