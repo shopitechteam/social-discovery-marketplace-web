@@ -4,7 +4,7 @@ import { memo, useCallback, useState } from "react";
 import type { MouseEvent } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Bookmark, ImageIcon, Images, MapPin, Play } from "lucide-react";
+import { Bookmark, ImageIcon, Images, Play } from "lucide-react";
 import { SHIMMER_PORTRAIT } from "@/lib/shimmer";
 import { contentPath } from "@/lib/content-url";
 import { profileHref } from "@/lib/profile-url";
@@ -329,22 +329,19 @@ function DiscoverGridCardImpl({
           )}
 
           <p className="mt-1 flex min-w-0 items-center gap-1.5 text-[13px] font-medium leading-[18.5px] text-muted">
-            <span className="shrink-0 font-bold text-blue-600">
-              {post.hashtags?.[0]?.replace(/^#/, "") || "Shopi"}
+            <span className="shrink-0 font-bold text-main">
+              {hasPrice ? priceText : "Ask"}
             </span>
-            <span className="shrink-0 text-muted">•</span>
-            <span className="truncate">
-              {hasPrice ? priceText : place || priceText}
-              {post.price?.negotiable && hasPrice ? ", Negotiable" : ""}
-            </span>
+            {post.price?.negotiable && hasPrice ? (
+              <span className="shrink-0 text-muted">Negotiable</span>
+            ) : null}
+            {place ? (
+              <>
+                <span className="shrink-0 text-muted">•</span>
+                <span className="truncate">{place}</span>
+              </>
+            ) : null}
           </p>
-
-          {place && hasPrice ? (
-            <p className="mt-1 flex min-w-0 items-center gap-1 text-[12px] leading-4 text-muted">
-              <MapPin size={12} strokeWidth={2} className="shrink-0" aria-hidden />
-              <span className="truncate">{place}</span>
-            </p>
-          ) : null}
         </div>
       </Link>
     </div>

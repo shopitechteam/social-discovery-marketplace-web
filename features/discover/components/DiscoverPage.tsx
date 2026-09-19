@@ -35,17 +35,18 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FeedLoader } from "@/components/ui/feed-loader";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { useDiscoverFiltersStore } from "@/stores/discoverFilters";
 import { useSearchStore } from "@/stores/search";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { DISCOVER_GRID, DiscoverGridCard } from "./DiscoverGridCard";
 import { SubcategoryRow } from "./SubcategoryRow";
-import { FEED_PAGE_SIZE } from "@/features/feed/constants";
 import { useInfiniteScroll } from "@/features/feed/hooks/useInfiniteScroll";
 import { usePaginationGuard } from "@/features/feed/hooks/useFeed";
 import {
@@ -111,7 +112,10 @@ type DiscoveryResultCountData = {
   discoveryResultCount: number;
 };
 
-const PAGE_SIZE = FEED_PAGE_SIZE;
+// The grid tops out at 5 columns (min-[90rem] in DISCOVER_GRID), so pages are
+// a multiple of 5 — a page always fills whole rows instead of leaving a
+// ragged last row while the next page loads.
+const PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 280;
 
 const DISCOVERY_FEED: TypedDocumentNode<DiscoveryFeedData, DiscoveryFeedVars> =
@@ -494,38 +498,174 @@ function EmptyState({ title, body }: { title: string; body: string }) {
 function LocationOption({
   item,
   active,
-  onClick,
+  onSelect,
+  onDrillIn,
   indicator = "check",
 }: {
   item: LocationFacet;
   active: boolean;
-  onClick: () => void;
+  /** Tapping the row's name/body — marks this item the active choice for the
+   * current step. It doesn't navigate or close; the step's sticky footer picks
+   * up whatever is active and is the one control that applies + closes. */
+  onSelect: () => void;
+  /**
+   * The chevron control — marks the item active *and* advances into its
+   * children. Only meaningful on a chevron row; omit it for a leaf level
+   * (wards) that has nothing left to drill into.
+   */
+  onDrillIn?: () => void;
   indicator?: "check" | "chevron";
 }) {
+  const disabled = item.count === 0;
+  const countLabel = `${item.count} ${item.count === 1 ? "item" : "items"}`;
+
+  if (indicator === "chevron" && onDrillIn) {
+    return (
+      <div
+        className={cn(
+          "flex w-full items-stretch overflow-hidden rounded-2xl border transition-colors",
+          active ? "border-primary bg-primary/5" : "border-default bg-app",
+          disabled && "opacity-50",
+        )}
+      >
+        <button
+          type="button"
+          onClick={onSelect}
+          disabled={disabled}
+          className="min-w-0 flex-1 px-4 py-3 text-left disabled:cursor-not-allowed"
+        >
+          <p className="truncate text-sm font-medium text-default">
+            {item.name}
+          </p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{countLabel}</p>
+        </button>
+        <button
+          type="button"
+          onClick={onDrillIn}
+          disabled={disabled}
+          aria-label={`View places inside ${item.name}`}
+          className={cn(
+            "flex shrink-0 items-center border-l px-3 transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:hover:bg-transparent",
+            active
+              ? "border-primary/20 bg-primary/10"
+              : "border-default text-muted-foreground",
+          )}
+        >
+          {/* Once a row is the active choice, drilling further in is the one
+              obvious next move — pulse the chevron so it reads as "tap me",
+              not just as a static "this has children" affordance. */}
+          <ChevronRight
+            size={18}
+            className={active ? "animate-pulse text-primary" : undefined}
+          />
+        </button>
+      </div>
+    );
+  }
+
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={onSelect}
+      disabled={disabled}
       className={cn(
-        "flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-colors",
+        "flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50",
         active ? "border-primary bg-primary/5" : "border-default bg-app",
       )}
     >
       <div className="min-w-0">
         <p className="truncate text-sm font-medium text-default">{item.name}</p>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          {item.count} {item.count === 1 ? "item" : "items"}
-        </p>
+        <p className="mt-0.5 text-xs text-muted-foreground">{countLabel}</p>
       </div>
-      {indicator === "chevron" ? (
-        <ChevronRight
-          size={18}
-          className={active ? "text-primary" : "text-muted-foreground"}
-        />
-      ) : active ? (
-        <Check size={18} className="text-primary" />
-      ) : null}
+      {active ? <Check size={18} className="text-primary" /> : null}
     </button>
+  );
+}
+
+/** Client-side filter box shared by all three location steps — the facet
+ * lists are already fully loaded, so this never hits the network. */
+function LocationSearchInput({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+}) {
+  return (
+    <div className="mb-3 flex items-center gap-2 rounded-full border border-default bg-surface px-3.5 py-2">
+      <Search size={15} className="shrink-0 text-muted-foreground" aria-hidden />
+      <input
+        type="text"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className="h-5 min-w-0 flex-1 bg-transparent text-sm text-default outline-none placeholder:text-muted-foreground"
+      />
+      {value ? (
+        <button
+          type="button"
+          onClick={() => onChange("")}
+          className="shrink-0 text-muted-foreground"
+          aria-label="Clear search"
+        >
+          <X size={15} />
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Sticky action at the bottom of every location step. It always reflects
+ * whatever is currently the active choice for that step (nationwide, or a
+ * facet) — tapping a row above updates it live, and this is the one control
+ * that actually applies the selection and closes the picker.
+ */
+function LocationStepFooter({
+  count,
+  label,
+  onConfirm,
+}: {
+  count: number;
+  label: string;
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="shrink-0 border-t border-default px-4 py-3">
+      <button
+        type="button"
+        onClick={onConfirm}
+        disabled={count === 0}
+        className="flex h-11 w-full items-center justify-center rounded-full bg-primary text-sm font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        Show {count} {count === 1 ? "item" : "items"} {label}
+      </button>
+    </div>
+  );
+}
+
+/**
+ * Stand-in for a list of LocationOptions while the facet query is still in
+ * flight. Without this, a county with a slow-to-arrive (but non-empty)
+ * subcounty list flashes the "nothing here" copy before the real rows land.
+ */
+function LocationOptionSkeletonList() {
+  return (
+    <div className="space-y-2" aria-hidden>
+      {Array.from({ length: 4 }).map((_, index) => (
+        <div
+          key={index}
+          className="flex w-full items-center justify-between rounded-2xl border border-default px-4 py-3"
+        >
+          <div className="min-w-0 flex-1 space-y-2">
+            <Skeleton className="h-3.5 w-2/5" />
+            <Skeleton className="h-3 w-1/4" />
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -684,6 +824,15 @@ export function DiscoverPage({ lang }: { lang: string }) {
   const [locationStep, setLocationStep] = useState<LocationSheetStep | null>(
     null,
   );
+  // The location picker is a right-side sheet on mobile (matches Filters/Sort)
+  // but a centered dialog on desktop, where a slide-in panel reads as a leftover
+  // mobile pattern rather than a deliberate desktop control.
+  const isDesktop = useIsDesktop({ ssrDefault: false });
+  // One search box shared by all three location steps — only one step is ever
+  // visible at a time, so a single term is enough. It's client-side (the
+  // facet lists are already fully loaded); every step transition below clears
+  // it so leftover text from "county" doesn't linger into "ward".
+  const [locationSearch, setLocationSearch] = useState("");
   const [sortOpen, setSortOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [locationParamsApplied, setLocationParamsApplied] = useState(() => {
@@ -871,11 +1020,12 @@ export function DiscoverPage({ lang }: { lang: string }) {
 
   // Location facets follow the active filters (their post counts depend on the
   // current query/category). Kept separate so they don't disturb categories.
-  const { data: locationFacetsData } = useQuery(DISCOVERY_LOCATION_FACETS, {
-    variables: facetVariables,
-    fetchPolicy: "cache-and-network",
-    nextFetchPolicy: "cache-first",
-  });
+  const { data: locationFacetsData, loading: locationFacetsLoading } =
+    useQuery(DISCOVERY_LOCATION_FACETS, {
+      variables: facetVariables,
+      fetchPolicy: "cache-and-network",
+      nextFetchPolicy: "cache-first",
+    });
 
   /** Picking a category drops the subcategory — it only means something inside its parent. */
   const selectCategory = useCallback((next: CategoryFacet | null) => {
@@ -1089,6 +1239,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
   const openCountySheet = useCallback(() => {
     setSortOpen(false);
     setLocationStep("county");
+    setLocationSearch("");
   }, []);
 
   const handledLocationRequestRef = useRef(requestLocationPicker);
@@ -1105,44 +1256,47 @@ export function DiscoverPage({ lang }: { lang: string }) {
     requestHistoryClose(depth);
   }, [locationStep, requestHistoryClose]);
 
-  const applyNationwideLocation = useCallback(() => {
+  // Tapping a row's name/body only marks it the active choice for the step
+  // it's on — it doesn't navigate or close. The sticky footer at the bottom of
+  // each step reads whichever selection is currently active and is the one
+  // thing that actually applies it and closes the picker. The chevron on a
+  // county/subcounty row is the only thing that drills in one level.
+  const selectNationwide = useCallback(() => {
     clearLocation();
-    collapseLocationSheets();
-  }, [clearLocation, collapseLocationSheets]);
-
-  const applyCountyOnly = useCallback(() => {
-    setSelectedSubCounty(null);
-    setSelectedWard(null);
-    collapseLocationSheets();
-  }, [collapseLocationSheets]);
-
-  const applySubCountyOnly = useCallback(() => {
-    setSelectedWard(null);
-    collapseLocationSheets();
-  }, [collapseLocationSheets]);
+  }, [clearLocation]);
 
   const handleCountySelection = useCallback((item: LocationFacet) => {
     setSelectedCounty(item);
     setSelectedSubCounty(null);
     setSelectedWard(null);
+  }, []);
+
+  const drillIntoSubcounties = useCallback((item: LocationFacet) => {
+    setSelectedCounty(item);
+    setSelectedSubCounty(null);
+    setSelectedWard(null);
     setLocationStep("subcounty");
+    setLocationSearch("");
   }, []);
 
   const handleSubCountySelection = useCallback((item: LocationFacet) => {
     setSelectedSubCounty(item);
     setSelectedWard(null);
-    setLocationStep("ward");
   }, []);
 
-  const handleWardSelection = useCallback(
-    (item: LocationFacet) => {
-      setSelectedWard(item);
-      collapseLocationSheets();
-    },
-    [collapseLocationSheets],
-  );
+  const drillIntoWards = useCallback((item: LocationFacet) => {
+    setSelectedSubCounty(item);
+    setSelectedWard(null);
+    setLocationStep("ward");
+    setLocationSearch("");
+  }, []);
+
+  const handleWardSelection = useCallback((item: LocationFacet) => {
+    setSelectedWard(item);
+  }, []);
 
   const stepBackLocationSheet = useCallback(() => {
+    setLocationSearch("");
     if (locationStep === "ward") {
       setLocationStep("subcounty");
       requestHistoryClose();
@@ -1211,6 +1365,37 @@ export function DiscoverPage({ lang }: { lang: string }) {
   const nationwideCount = useMemo(
     () => counties.reduce((sum, item) => sum + item.count, 0),
     [counties],
+  );
+
+  // Client-side filter for whichever list the location picker is currently
+  // showing — the facets are already fully loaded, so there's no round trip.
+  const locationSearchTerm = locationSearch.trim().toLowerCase();
+  const filteredCounties = useMemo(
+    () =>
+      locationSearchTerm
+        ? counties.filter((item) =>
+            item.name.toLowerCase().includes(locationSearchTerm),
+          )
+        : counties,
+    [counties, locationSearchTerm],
+  );
+  const filteredSubCounties = useMemo(
+    () =>
+      locationSearchTerm
+        ? subCounties.filter((item) =>
+            item.name.toLowerCase().includes(locationSearchTerm),
+          )
+        : subCounties,
+    [subCounties, locationSearchTerm],
+  );
+  const filteredWards = useMemo(
+    () =>
+      locationSearchTerm
+        ? wards.filter((item) =>
+            item.name.toLowerCase().includes(locationSearchTerm),
+          )
+        : wards,
+    [wards, locationSearchTerm],
   );
 
   useEffect(() => {
@@ -1670,214 +1855,326 @@ export function DiscoverPage({ lang }: { lang: string }) {
         </SheetContent>
       </Sheet>
 
-      <Sheet
-        open={locationDepth >= 1}
-        onOpenChange={(open) => {
-          if (!open && locationStep === "county") stepBackLocationSheet();
-        }}
-      >
-        <SheetContent
-          side="right"
-          // The location sheets stack (county → subcounty → ward), and each
-          // Radix Sheet paints its own 80% overlay — stacked, they compound
-          // into an ever-darker backdrop. Keep a single backdrop: only paint
-          // one here when this is the base layer (no filter sheet underneath).
-          overlayClassName={filterOpen ? "!bg-transparent" : undefined}
-          className="flex w-full max-w-none flex-col gap-0 bg-app p-0 sm:max-w-sm [&>button:last-of-type]:hidden"
-        >
-          <LocationSheetHeader
-            title="Choose county"
-            subtitle="Start broad, then drill into the exact place."
-            onBack={stepBackLocationSheet}
-            action={
-              hasLocation ? (
+      {(() => {
+        // The footer always mirrors the deepest currently-active choice for
+        // this step, whether that came from tapping a row on this screen or
+        // from the parent step that got you here.
+        const countyFooterFacet = selectedCounty;
+        const subcountyFooterFacet = selectedSubCounty ?? selectedCounty;
+        const wardFooterFacet = selectedWard ?? selectedSubCounty;
+
+        const countySearchEmpty =
+          locationSearchTerm.length > 0 && filteredCounties.length === 0;
+        const countyBody = (
+          <>
+            <div className="flex-1 overflow-y-auto px-4 py-4">
+              <LocationSearchInput
+                value={locationSearch}
+                onChange={setLocationSearch}
+                placeholder="Search counties"
+              />
+
+              {!locationSearchTerm ? (
                 <button
                   type="button"
-                  onClick={clearLocation}
-                  className="h-9 shrink-0 rounded-full px-3 text-xs font-semibold text-primary"
+                  onClick={selectNationwide}
+                  disabled={nationwideCount === 0}
+                  className={cn(
+                    "mb-2 flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+                    !hasLocation
+                      ? "border-primary bg-primary/5"
+                      : "border-default bg-app",
+                  )}
                 >
-                  Clear
+                  <div>
+                    <p className="text-sm font-medium text-default">
+                      All Kenya
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {nationwideCount}{" "}
+                      {nationwideCount === 1 ? "item" : "items"} available
+                      nationwide
+                    </p>
+                  </div>
+                  {!hasLocation ? (
+                    <Check size={18} className="text-primary" />
+                  ) : null}
                 </button>
-              ) : undefined
-            }
-          />
-
-          <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
-            <button
-              type="button"
-              onClick={applyNationwideLocation}
-              className={cn(
-                "flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-colors",
-                !hasLocation
-                  ? "border-primary bg-primary/5"
-                  : "border-default bg-app",
-              )}
-            >
-              <div>
-                <p className="text-sm font-medium text-default">All Kenya</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  {nationwideCount} {nationwideCount === 1 ? "item" : "items"}{" "}
-                  available nationwide
-                </p>
-              </div>
-              {!hasLocation ? (
-                <Check size={18} className="text-primary" />
               ) : null}
-            </button>
 
-            <div className="space-y-2">
-              {counties.map((item) => (
-                <LocationOption
-                  key={item.id}
-                  item={item}
-                  active={selectedCounty?.id === item.id}
-                  indicator="chevron"
-                  onClick={() => handleCountySelection(item)}
+              <div className="space-y-2">
+                {countySearchEmpty ? (
+                  <p className="rounded-2xl border border-dashed border-default px-4 py-3 text-sm leading-6 text-muted-foreground">
+                    {`No counties match "${locationSearch.trim()}".`}
+                  </p>
+                ) : (
+                  filteredCounties.map((item) => (
+                    <LocationOption
+                      key={item.id}
+                      item={item}
+                      active={selectedCounty?.id === item.id}
+                      indicator="chevron"
+                      onSelect={() => handleCountySelection(item)}
+                      onDrillIn={() => drillIntoSubcounties(item)}
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+            <LocationStepFooter
+              count={countyFooterFacet ? countyFooterFacet.count : nationwideCount}
+              label={
+                countyFooterFacet ? `in ${countyFooterFacet.name}` : "nationwide"
+              }
+              onConfirm={collapseLocationSheets}
+            />
+          </>
+        );
+
+        // Loading is only trusted as "still fetching" when there's nothing to
+        // show yet — a background refetch of an already-populated list (e.g.
+        // switching sort) shouldn't flash a skeleton over rows already on screen.
+        const subCountiesLoading =
+          subCounties.length === 0 && locationFacetsLoading;
+        const subcountySearchEmpty =
+          !subCountiesLoading &&
+          subCounties.length > 0 &&
+          locationSearchTerm.length > 0 &&
+          filteredSubCounties.length === 0;
+        const subcountyBody = (
+          <>
+            <div className="flex-1 overflow-y-auto px-4 py-4">
+              {subCounties.length > 0 || subCountiesLoading ? (
+                <LocationSearchInput
+                  value={locationSearch}
+                  onChange={setLocationSearch}
+                  placeholder="Search subcounties"
                 />
-              ))}
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
+              ) : null}
 
-      <Sheet
-        open={locationDepth >= 2}
-        onOpenChange={(open) => {
-          if (!open && locationStep === "subcounty") stepBackLocationSheet();
-        }}
-      >
-        <SheetContent
-          side="right"
-          // Deeper location layer — the county sheet under it already paints
-          // the backdrop, so a transparent overlay here avoids compounding it.
-          overlayClassName="!bg-transparent"
-          className="flex w-full max-w-none flex-col gap-0 bg-app p-0 sm:max-w-sm [&>button:last-of-type]:hidden"
-        >
-          <LocationSheetHeader
-            title={subCountySheetTitle}
-            subtitle="Pick a subcounty, or keep the whole county selected."
-            onBack={stepBackLocationSheet}
-          />
-
-          <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
-            {selectedCounty ? (
-              <button
-                type="button"
-                onClick={applyCountyOnly}
-                className={cn(
-                  "flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-colors",
-                  selectedCounty !== null &&
-                    selectedSubCounty === null &&
-                    selectedWard === null
-                    ? "border-primary bg-primary/5"
-                    : "border-default bg-app",
+              <div className="space-y-2">
+                {subCountiesLoading ? (
+                  <LocationOptionSkeletonList />
+                ) : subCounties.length === 0 ? (
+                  <p className="rounded-2xl border border-dashed border-default px-4 py-3 text-sm leading-6 text-muted-foreground">
+                    No subcounty clusters yet for this county. You can keep
+                    the county selection and continue browsing.
+                  </p>
+                ) : subcountySearchEmpty ? (
+                  <p className="rounded-2xl border border-dashed border-default px-4 py-3 text-sm leading-6 text-muted-foreground">
+                    {`No subcounties match "${locationSearch.trim()}".`}
+                  </p>
+                ) : (
+                  filteredSubCounties.map((item) => (
+                    <LocationOption
+                      key={item.id}
+                      item={item}
+                      active={selectedSubCounty?.id === item.id}
+                      indicator="chevron"
+                      onSelect={() => handleSubCountySelection(item)}
+                      onDrillIn={() => drillIntoWards(item)}
+                    />
+                  ))
                 )}
-              >
-                <div>
-                  <p className="text-sm font-medium text-default">
-                    Use {selectedCounty.name}
-                  </p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {selectedCounty.count}{" "}
-                    {selectedCounty.count === 1 ? "item" : "items"} in this
-                    county
-                  </p>
-                </div>
-                {selectedSubCounty === null && selectedWard === null ? (
-                  <Check size={18} className="text-primary" />
-                ) : null}
-              </button>
-            ) : null}
-
-            <div className="space-y-2">
-              {subCounties.length === 0 ? (
-                <p className="rounded-2xl border border-dashed border-default px-4 py-3 text-sm leading-6 text-muted-foreground">
-                  No subcounty clusters yet for this county. You can keep the
-                  county selection and continue browsing.
-                </p>
-              ) : (
-                subCounties.map((item) => (
-                  <LocationOption
-                    key={item.id}
-                    item={item}
-                    active={selectedSubCounty?.id === item.id}
-                    indicator="chevron"
-                    onClick={() => handleSubCountySelection(item)}
-                  />
-                ))
-              )}
+              </div>
             </div>
-          </div>
-        </SheetContent>
-      </Sheet>
+            {subcountyFooterFacet ? (
+              <LocationStepFooter
+                count={subcountyFooterFacet.count}
+                label={`in ${subcountyFooterFacet.name}`}
+                onConfirm={collapseLocationSheets}
+              />
+            ) : null}
+          </>
+        );
 
-      <Sheet
-        open={locationDepth >= 3}
-        onOpenChange={(open) => {
-          if (!open && locationStep === "ward") stepBackLocationSheet();
-        }}
-      >
-        <SheetContent
-          side="right"
-          // Deepest location layer — same reasoning as the subcounty sheet:
-          // keep this overlay transparent so backdrops don't compound.
-          overlayClassName="!bg-transparent"
-          className="flex w-full max-w-none flex-col gap-0 bg-app p-0 sm:max-w-sm [&>button:last-of-type]:hidden"
-        >
-          <LocationSheetHeader
-            title={wardSheetTitle}
-            subtitle={wardSheetSubtitle}
-            onBack={stepBackLocationSheet}
-          />
+        const wardsLoading = wards.length === 0 && locationFacetsLoading;
+        const wardSearchEmpty =
+          !wardsLoading &&
+          wards.length > 0 &&
+          locationSearchTerm.length > 0 &&
+          filteredWards.length === 0;
+        const wardBody = (
+          <>
+            <div className="flex-1 overflow-y-auto px-4 py-4">
+              {wards.length > 0 || wardsLoading ? (
+                <LocationSearchInput
+                  value={locationSearch}
+                  onChange={setLocationSearch}
+                  placeholder="Search wards"
+                />
+              ) : null}
 
-          <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
-            {selectedSubCounty ? (
-              <button
-                type="button"
-                onClick={applySubCountyOnly}
-                className={cn(
-                  "flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-colors",
-                  selectedSubCounty !== null && selectedWard === null
-                    ? "border-primary bg-primary/5"
-                    : "border-default bg-app",
+              <div className="space-y-2">
+                {wardsLoading ? (
+                  <LocationOptionSkeletonList />
+                ) : wards.length === 0 ? (
+                  <p className="rounded-2xl border border-dashed border-default px-4 py-3 text-sm leading-6 text-muted-foreground">
+                    Ward-level options will show up here whenever listings
+                    are tagged that precisely.
+                  </p>
+                ) : wardSearchEmpty ? (
+                  <p className="rounded-2xl border border-dashed border-default px-4 py-3 text-sm leading-6 text-muted-foreground">
+                    {`No wards match "${locationSearch.trim()}".`}
+                  </p>
+                ) : (
+                  filteredWards.map((item) => (
+                    <LocationOption
+                      key={item.id}
+                      item={item}
+                      active={selectedWard?.id === item.id}
+                      onSelect={() => handleWardSelection(item)}
+                    />
+                  ))
                 )}
-              >
-                <div>
-                  <p className="text-sm font-medium text-default">
-                    Use {selectedSubCounty.name}
-                  </p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {selectedSubCounty.count}{" "}
-                    {selectedSubCounty.count === 1 ? "item" : "items"} in this
-                    subcounty
-                  </p>
-                </div>
-                {selectedWard === null ? (
-                  <Check size={18} className="text-primary" />
-                ) : null}
-              </button>
-            ) : null}
-
-            <div className="space-y-2">
-              {wards.length === 0 ? (
-                <p className="rounded-2xl border border-dashed border-default px-4 py-3 text-sm leading-6 text-muted-foreground">
-                  Ward-level options will show up here whenever listings are
-                  tagged that precisely.
-                </p>
-              ) : (
-                wards.map((item) => (
-                  <LocationOption
-                    key={item.id}
-                    item={item}
-                    active={selectedWard?.id === item.id}
-                    onClick={() => handleWardSelection(item)}
-                  />
-                ))
-              )}
+              </div>
             </div>
-          </div>
-        </SheetContent>
-      </Sheet>
+            {wardFooterFacet ? (
+              <LocationStepFooter
+                count={wardFooterFacet.count}
+                label={`in ${wardFooterFacet.name}`}
+                onConfirm={collapseLocationSheets}
+              />
+            ) : null}
+          </>
+        );
+
+        const countyClearAction = hasLocation ? (
+          <button
+            type="button"
+            onClick={clearLocation}
+            className="h-9 shrink-0 rounded-full px-3 text-xs font-semibold text-primary"
+          >
+            Clear
+          </button>
+        ) : undefined;
+
+        // Desktop: one centered dialog whose content swaps per step — a
+        // slide-in side sheet reads as a mobile pattern left in place rather
+        // than a considered desktop control. Escape/backdrop click closes the
+        // whole picker regardless of step; the header's back chevron still
+        // steps back one level at a time.
+        if (isDesktop) {
+          return (
+            <Dialog
+              open={locationDepth >= 1}
+              onOpenChange={(open) => {
+                if (!open) collapseLocationSheets();
+              }}
+            >
+              <DialogContent className="flex h-[min(80svh,640px)] w-[min(92vw,480px)] max-w-none flex-col gap-0 overflow-hidden rounded-3xl bg-app p-0 [&>button:last-of-type]:hidden">
+                {locationStep === "subcounty" ? (
+                  <>
+                    <LocationSheetHeader
+                      title={subCountySheetTitle}
+                      subtitle="Pick a subcounty, or keep the whole county selected."
+                      onBack={stepBackLocationSheet}
+                    />
+                    {subcountyBody}
+                  </>
+                ) : locationStep === "ward" ? (
+                  <>
+                    <LocationSheetHeader
+                      title={wardSheetTitle}
+                      subtitle={wardSheetSubtitle}
+                      onBack={stepBackLocationSheet}
+                    />
+                    {wardBody}
+                  </>
+                ) : (
+                  <>
+                    <LocationSheetHeader
+                      title="Choose county"
+                      subtitle="Start broad, then drill into the exact place."
+                      onBack={stepBackLocationSheet}
+                      action={countyClearAction}
+                    />
+                    {countyBody}
+                  </>
+                )}
+              </DialogContent>
+            </Dialog>
+          );
+        }
+
+        return (
+          <>
+            <Sheet
+              open={locationDepth >= 1}
+              onOpenChange={(open) => {
+                if (!open && locationStep === "county")
+                  stepBackLocationSheet();
+              }}
+            >
+              <SheetContent
+                side="right"
+                // The location sheets stack (county → subcounty → ward), and
+                // each Radix Sheet paints its own 80% overlay — stacked, they
+                // compound into an ever-darker backdrop. Keep a single
+                // backdrop: only paint one here when this is the base layer
+                // (no filter sheet underneath).
+                overlayClassName={filterOpen ? "!bg-transparent" : undefined}
+                className="flex w-full max-w-none flex-col gap-0 bg-app p-0 sm:max-w-sm [&>button:last-of-type]:hidden"
+              >
+                <LocationSheetHeader
+                  title="Choose county"
+                  subtitle="Start broad, then drill into the exact place."
+                  onBack={stepBackLocationSheet}
+                  action={countyClearAction}
+                />
+                {countyBody}
+              </SheetContent>
+            </Sheet>
+
+            <Sheet
+              open={locationDepth >= 2}
+              onOpenChange={(open) => {
+                if (!open && locationStep === "subcounty")
+                  stepBackLocationSheet();
+              }}
+            >
+              <SheetContent
+                side="right"
+                // Deeper location layer — the county sheet under it already
+                // paints the backdrop, so a transparent overlay here avoids
+                // compounding it.
+                overlayClassName="!bg-transparent"
+                className="flex w-full max-w-none flex-col gap-0 bg-app p-0 sm:max-w-sm [&>button:last-of-type]:hidden"
+              >
+                <LocationSheetHeader
+                  title={subCountySheetTitle}
+                  subtitle="Pick a subcounty, or keep the whole county selected."
+                  onBack={stepBackLocationSheet}
+                />
+                {subcountyBody}
+              </SheetContent>
+            </Sheet>
+
+            <Sheet
+              open={locationDepth >= 3}
+              onOpenChange={(open) => {
+                if (!open && locationStep === "ward") stepBackLocationSheet();
+              }}
+            >
+              <SheetContent
+                side="right"
+                // Deepest location layer — same reasoning as the subcounty
+                // sheet: keep this overlay transparent so backdrops don't
+                // compound.
+                overlayClassName="!bg-transparent"
+                className="flex w-full max-w-none flex-col gap-0 bg-app p-0 sm:max-w-sm [&>button:last-of-type]:hidden"
+              >
+                <LocationSheetHeader
+                  title={wardSheetTitle}
+                  subtitle={wardSheetSubtitle}
+                  onBack={stepBackLocationSheet}
+                />
+                {wardBody}
+              </SheetContent>
+            </Sheet>
+          </>
+        );
+      })()}
 
       <Drawer
         open={sortOpen}

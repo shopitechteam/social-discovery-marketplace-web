@@ -41,8 +41,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-const FOOTER_LINKS = ["Blog", "Careers", "FAQ", "Contact"];
-
 export function SideNav({ lang = "en" }: { lang: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -199,30 +197,9 @@ export function SideNav({ lang = "en" }: { lang: string }) {
 
         {isDesktop ? <BrowseCategories lang={lang} /> : null}
 
-        <div className="mt-auto space-y-6 text-xs font-medium text-muted">
-          <div className="flex flex-wrap gap-x-3 gap-y-2">
-            {FOOTER_LINKS.map((label) => (
-              <Link
-                key={label}
-                href={`/${lang}/${label.toLowerCase() === "faq" ? "faq" : label.toLowerCase()}`}
-                className="hover:text-default"
-              >
-                {label}
-              </Link>
-            ))}
-          </div>
-          <div className="flex flex-wrap gap-x-3 gap-y-2">
-            <Link href={`/${lang}/privacy`} className="hover:text-default">
-              Privacy
-            </Link>
-            <Link href={`/${lang}/terms`} className="hover:text-default">
-              Terms
-            </Link>
-          </div>
-          <div className="flex items-center justify-between gap-3">
-            <span>© 2026 Shopi Inc.</span>
-            <ThemeToggle />
-          </div>
+        <div className="mt-auto flex items-center justify-between gap-3 text-xs font-medium text-muted">
+          <span>© 2026 Shopi Inc.</span>
+          <ThemeToggle />
         </div>
       </aside>
     </>
