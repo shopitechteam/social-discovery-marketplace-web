@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useAppBack } from "@/lib/useAppBack";
 import {
@@ -45,6 +45,42 @@ function ProfileStat({ label, value }: { label: string; value: string }) {
     <div className="min-w-0">
       <p className="text-sm font-black text-main md:text-base">{value}</p>
       <p className="mt-0.5 text-xs font-medium text-muted">{label}</p>
+    </div>
+  );
+}
+
+/** Bio text, clamped to 3 lines with a "more"/"less" toggle. The toggle only
+ * renders when the text actually overflows 3 lines — measured against the
+ * DOM rather than guessed from character count, since a bio can wrap short
+ * on a narrow phone and long on desktop at the same length. */
+function ExpandableBio({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const [truncated, setTruncated] = useState(false);
+  const ref = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    setTruncated(el.scrollHeight > el.clientHeight + 1);
+  }, [text]);
+
+  return (
+    <div>
+      <p
+        ref={ref}
+        className={`text-sm leading-6 text-main ${expanded ? "" : "line-clamp-3"}`}
+      >
+        {text}
+      </p>
+      {truncated ? (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-0.5 text-sm font-bold text-primary"
+        >
+          {expanded ? "less" : "more"}
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -225,12 +261,6 @@ export function CreatorProfileView({
                   </p>
                 ) : null}
 
-                {user.profile?.bio ? (
-                  <p className="mt-3 max-w-2xl text-sm leading-6 text-main">
-                    {user.profile.bio}
-                  </p>
-                ) : null}
-
                 <div className="mt-4 flex items-center gap-6">
                   <ProfileStat
                     label="Followers"
@@ -241,24 +271,6 @@ export function CreatorProfileView({
                     value={formatCompact(user.postCount)}
                   />
                 </div>
-
-                {user.profile?.website ? (
-                  <a
-                    href={
-                      user.profile.website.startsWith("http")
-                        ? user.profile.website
-                        : `https://${user.profile.website}`
-                    }
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-4 inline-flex max-w-full items-center gap-1.5 text-sm font-bold text-primary"
-                  >
-                    <ExternalLink size={14} strokeWidth={2.2} />
-                    <span className="truncate">
-                      {user.profile.website.replace(/^https?:\/\//, "")}
-                    </span>
-                  </a>
-                ) : null}
               </div>
             </div>
 
@@ -291,6 +303,34 @@ export function CreatorProfileView({
               ) : null}
             </div>
           </div>
+
+          {/* Its own full-width block below the avatar row, not squeezed
+              into the narrow column beside the avatar — on a phone that
+              column wrapped a multi-line bio into a thin ribbon next to
+              empty space under the avatar. */}
+          {(user.profile?.bio || user.profile?.website) && (
+            <div className="mt-4 flex max-w-2xl flex-col gap-2">
+              {user.profile?.bio ? <ExpandableBio text={user.profile.bio} /> : null}
+
+              {user.profile?.website ? (
+                <a
+                  href={
+                    user.profile.website.startsWith("http")
+                      ? user.profile.website
+                      : `https://${user.profile.website}`
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex w-fit max-w-full items-center gap-1.5 text-sm font-bold text-primary"
+                >
+                  <ExternalLink size={14} strokeWidth={2.2} />
+                  <span className="truncate">
+                    {user.profile.website.replace(/^https?:\/\//, "")}
+                  </span>
+                </a>
+              ) : null}
+            </div>
+          )}
         </div>
       </div>
 
