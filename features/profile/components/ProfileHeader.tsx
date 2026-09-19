@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ExternalLink, PenLine } from "lucide-react";
@@ -44,6 +45,42 @@ function VerifiedBadge() {
         strokeLinejoin="round"
       />
     </svg>
+  );
+}
+
+/** Bio text, clamped to 3 lines with a "more"/"less" toggle. The toggle only
+ * renders when the text actually overflows 3 lines — measured against the
+ * DOM rather than guessed from character count, since a bio can wrap short
+ * on a narrow phone and long on desktop at the same length. */
+function ExpandableBio({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const [truncated, setTruncated] = useState(false);
+  const ref = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    setTruncated(el.scrollHeight > el.clientHeight + 1);
+  }, [text]);
+
+  return (
+    <div>
+      <p
+        ref={ref}
+        className={`text-sm leading-6 text-main ${expanded ? "" : "line-clamp-3"}`}
+      >
+        {text}
+      </p>
+      {truncated ? (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-0.5 text-sm font-bold text-primary"
+        >
+          {expanded ? "less" : "more"}
+        </button>
+      ) : null}
+    </div>
   );
 }
 
@@ -150,35 +187,36 @@ export function ProfileHeader({ user, editHref, lang }: Props) {
                 value={formatCompact(user.followerCount)}
                 href={`/${lang}/profile/followers`}
               />
-              <Stat label="views" value={formatCompact(user.totalViews)} />
               <Stat label="following" value={formatCompact(user.followingCount)} />
             </div>
 
             <div className="mt-3">
               <ProfileViewsCluster lang={lang} />
             </div>
-
-            {(user.profile?.bio || user.profile?.website) && (
-              <div className="mt-4 flex max-w-3xl flex-col gap-2">
-                {user.profile?.bio ? (
-                  <p className="text-sm leading-6 text-main">{user.profile.bio}</p>
-                ) : null}
-
-                {user.profile?.website ? (
-                  <a
-                    href={getWebsiteHref(user.profile.website)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex w-fit items-center gap-1.5 text-sm font-semibold text-main underline-offset-4 hover:underline"
-                  >
-                    <ExternalLink size={14} strokeWidth={2.2} />
-                    {user.profile.website.replace(/^https?:\/\//, "")}
-                  </a>
-                ) : null}
-              </div>
-            )}
           </div>
         </div>
+
+        {/* Its own full-width block below the avatar row, not squeezed into
+            the column beside it — on a phone that column is only ~200px
+            wide, which wrapped a multi-line bio into a narrow ribbon next to
+            empty space under the avatar. */}
+        {(user.profile?.bio || user.profile?.website) && (
+          <div className="mt-4 flex max-w-3xl flex-col gap-2">
+            {user.profile?.bio ? <ExpandableBio text={user.profile.bio} /> : null}
+
+            {user.profile?.website ? (
+              <a
+                href={getWebsiteHref(user.profile.website)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex w-fit items-center gap-1.5 text-sm font-semibold text-main underline-offset-4 hover:underline"
+              >
+                <ExternalLink size={14} strokeWidth={2.2} />
+                {user.profile.website.replace(/^https?:\/\//, "")}
+              </a>
+            ) : null}
+          </div>
+        )}
       </div>
     </section>
   );
