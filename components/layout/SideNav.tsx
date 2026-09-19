@@ -206,10 +206,6 @@ export function SideNav({ lang = "en" }: { lang: string }) {
         </div>
 
         {isDesktop ? <BrowseCategories lang={lang} /> : null}
-
-        <div className="mt-auto text-xs font-medium text-muted">
-          <span>© 2026 Shopi Inc.</span>
-        </div>
       </aside>
     </>
   );
@@ -410,7 +406,7 @@ function BrowseCategories({ lang }: { lang: string }) {
   const categories = [{ name: "For You", slug: "for-you" }, ...liveCategories];
 
   return (
-    <div className="mt-4 min-h-0 overflow-y-auto pr-1">
+    <div className="mt-4 min-h-0 overflow-y-auto pb-10 pr-1">
       <nav className="flex flex-col gap-0.5" aria-label="Browse categories">
         {categories.map((category, index) => {
           const href =
@@ -468,11 +464,18 @@ const SORT_OPTIONS = [
   { value: "PRICE_HIGH_TO_LOW", label: "Price: high to low" },
 ] as const;
 
+const CONTENT_TYPE_OPTIONS = [
+  { value: null, label: "All types" },
+  { value: "IMAGE", label: "Photos" },
+  { value: "VIDEO", label: "Videos" },
+] as const;
+
 function DiscoverSidebarFilters() {
   const selectedCategory = useDiscoverFiltersStore((s) => s.selectedCategory);
   const selectedSubcategory = useDiscoverFiltersStore(
     (s) => s.selectedSubcategory,
   );
+  const selectedType = useDiscoverFiltersStore((s) => s.selectedType);
   const selectedCounty = useDiscoverFiltersStore((s) => s.selectedCounty);
   const selectedSubCounty = useDiscoverFiltersStore((s) => s.selectedSubCounty);
   const selectedWard = useDiscoverFiltersStore((s) => s.selectedWard);
@@ -484,6 +487,7 @@ function DiscoverSidebarFilters() {
   const setSelectedSubcategory = useDiscoverFiltersStore(
     (s) => s.setSelectedSubcategory,
   );
+  const setSelectedType = useDiscoverFiltersStore((s) => s.setSelectedType);
   const setSort = useDiscoverFiltersStore((s) => s.setSort);
   const setMinPrice = useDiscoverFiltersStore((s) => s.setMinPrice);
   const setMaxPrice = useDiscoverFiltersStore((s) => s.setMaxPrice);
@@ -504,6 +508,7 @@ function DiscoverSidebarFilters() {
   const hasActiveFilters = Boolean(
     selectedCategory ||
       selectedSubcategory ||
+      selectedType ||
       selectedCounty ||
       selectedSubCounty ||
       selectedWard ||
@@ -531,6 +536,33 @@ function DiscoverSidebarFilters() {
       </div>
 
       <div className="divide-y divide-border">
+        <details open className="group py-3">
+          <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-black text-main">
+            Type
+            <ChevronDown className="h-4 w-4 text-muted transition-transform group-open:rotate-180" />
+          </summary>
+          <div className="mt-2 space-y-1">
+            {CONTENT_TYPE_OPTIONS.map((option) => (
+              <button
+                key={option.value ?? "all"}
+                type="button"
+                onClick={() => setSelectedType(option.value)}
+                className={[
+                  "flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-xs transition-colors",
+                  selectedType === option.value
+                    ? "bg-primary/10 font-black text-primary"
+                    : "font-semibold text-muted hover:bg-surface hover:text-main",
+                ].join(" ")}
+              >
+                {option.label}
+                {selectedType === option.value ? (
+                  <Check className="h-3.5 w-3.5" />
+                ) : null}
+              </button>
+            ))}
+          </div>
+        </details>
+
         <details open className="group py-3">
           <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-black text-main">
             Location

@@ -282,6 +282,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/feed", changeFrequency: "always", priority: 0.9 },
     { path: "/explore", changeFrequency: "hourly", priority: 0.8 },
     { path: "/search", changeFrequency: "hourly", priority: 0.8 },
+    { path: "/buy-and-sell-in-kenya", changeFrequency: "weekly", priority: 0.92 },
     { path: "/sell-in-kenya", changeFrequency: "weekly", priority: 0.9 },
     { path: "/sell-car-kenya", changeFrequency: "weekly", priority: 0.9 },
     {

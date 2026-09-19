@@ -6,6 +6,8 @@ export type DiscoverSort =
   | "PRICE_LOW_TO_HIGH"
   | "PRICE_HIGH_TO_LOW";
 
+export type DiscoverContentType = "IMAGE" | "VIDEO";
+
 export type DiscoverCategory = {
   id: string;
   name: string;
@@ -29,6 +31,7 @@ type DiscoverFilterState = {
   selectedCounty: DiscoverLocation | null;
   selectedSubCounty: DiscoverLocation | null;
   selectedWard: DiscoverLocation | null;
+  selectedType: DiscoverContentType | null;
   sort: DiscoverSort;
   minPrice: string;
   maxPrice: string;
@@ -40,6 +43,7 @@ type DiscoverFilterState = {
   setSelectedCounty: (county: DiscoverLocation | null) => void;
   setSelectedSubCounty: (subCounty: DiscoverLocation | null) => void;
   setSelectedWard: (ward: DiscoverLocation | null) => void;
+  setSelectedType: (type: DiscoverContentType | null) => void;
   setSort: (sort: DiscoverSort) => void;
   setMinPrice: (value: string) => void;
   setMaxPrice: (value: string) => void;
@@ -57,6 +61,7 @@ const initial = {
   selectedCounty: null,
   selectedSubCounty: null,
   selectedWard: null,
+  selectedType: null,
   sort: "RELEVANCE" as DiscoverSort,
   minPrice: "",
   maxPrice: "",
@@ -76,6 +81,7 @@ export const useDiscoverFiltersStore = create<DiscoverFilterState>((set) => ({
   setSelectedSubCounty: (selectedSubCounty) =>
     set({ selectedSubCounty, selectedWard: null }),
   setSelectedWard: (selectedWard) => set({ selectedWard }),
+  setSelectedType: (selectedType) => set({ selectedType }),
   setSort: (sort) => set({ sort }),
   setMinPrice: (minPrice) => set({ minPrice }),
   setMaxPrice: (maxPrice) => set({ maxPrice }),
@@ -87,6 +93,7 @@ export const useDiscoverFiltersStore = create<DiscoverFilterState>((set) => ({
     set({ selectedCounty: null, selectedSubCounty: null, selectedWard: null }),
   clearFilters: () =>
     set({
+      selectedType: null,
       selectedCounty: null,
       selectedSubCounty: null,
       selectedWard: null,

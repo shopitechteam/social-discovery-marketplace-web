@@ -42,9 +42,15 @@ import { FeedLoader } from "@/components/ui/feed-loader";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
-import { useDiscoverFiltersStore } from "@/stores/discoverFilters";
+import {
+  useDiscoverFiltersStore,
+  type DiscoverContentType,
+} from "@/stores/discoverFilters";
 import { useSearchStore } from "@/stores/search";
-import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
+import type {
+  ContentCardFieldsFragment,
+  ContentType,
+} from "@/types/__generated__/graphql";
 import { DISCOVER_GRID, DiscoverGridCard } from "./DiscoverGridCard";
 import { SubcategoryRow } from "./SubcategoryRow";
 import { useInfiniteScroll } from "@/features/feed/hooks/useInfiniteScroll";
@@ -84,6 +90,7 @@ type DiscoveryFeedData = {
 type DiscoveryFeedVars = {
   query?: string;
   categoryId?: string;
+  type?: ContentType;
   countyId?: string;
   subCountyId?: string;
   wardId?: string;
@@ -99,6 +106,7 @@ type DiscoveryFeedVars = {
 type DiscoveryFacetsVars = {
   query?: string;
   categoryId?: string;
+  type?: ContentType;
   subcategory?: string;
   countyId?: string;
   subCountyId?: string;
@@ -123,6 +131,7 @@ const DISCOVERY_FEED: TypedDocumentNode<DiscoveryFeedData, DiscoveryFeedVars> =
     query DiscoveryFeed(
       $query: String
       $categoryId: String
+      $type: ContentType
       $subcategory: String
       $countyId: String
       $subCountyId: String
@@ -137,6 +146,7 @@ const DISCOVERY_FEED: TypedDocumentNode<DiscoveryFeedData, DiscoveryFeedVars> =
       discoveryFeed(
         query: $query
         categoryId: $categoryId
+        type: $type
         subcategory: $subcategory
         countyId: $countyId
         subCountyId: $subCountyId
@@ -241,6 +251,7 @@ const DISCOVERY_LOCATION_FACETS: TypedDocumentNode<
   query DiscoveryLocationFacets(
     $query: String
     $categoryId: String
+    $type: ContentType
     $subcategory: String
     $countyId: String
     $subCountyId: String
@@ -252,6 +263,7 @@ const DISCOVERY_LOCATION_FACETS: TypedDocumentNode<
     discoveryFacets(
       query: $query
       categoryId: $categoryId
+      type: $type
       subcategory: $subcategory
       countyId: $countyId
       subCountyId: $subCountyId
@@ -309,6 +321,7 @@ const DISCOVERY_SUBCATEGORY_FACETS: TypedDocumentNode<
   query DiscoverySubcategoryFacets(
     $query: String
     $categoryId: String
+    $type: ContentType
     $countyId: String
     $subCountyId: String
     $wardId: String
@@ -319,6 +332,7 @@ const DISCOVERY_SUBCATEGORY_FACETS: TypedDocumentNode<
     discoveryFacets(
       query: $query
       categoryId: $categoryId
+      type: $type
       countyId: $countyId
       subCountyId: $subCountyId
       wardId: $wardId
@@ -342,6 +356,7 @@ const DISCOVERY_RESULT_COUNT: TypedDocumentNode<
   query DiscoveryResultCount(
     $query: String
     $categoryId: String
+    $type: ContentType
     $subcategory: String
     $countyId: String
     $subCountyId: String
@@ -353,6 +368,7 @@ const DISCOVERY_RESULT_COUNT: TypedDocumentNode<
     discoveryResultCount(
       query: $query
       categoryId: $categoryId
+      type: $type
       subcategory: $subcategory
       countyId: $countyId
       subCountyId: $subCountyId
@@ -398,6 +414,12 @@ const SORT_OPTIONS: Array<{
 
 function isDiscoverySort(value: string | null): value is DiscoverySort {
   return SORT_OPTIONS.some((option) => option.value === value);
+}
+
+function isDiscoverContentType(
+  value: string | null,
+): value is DiscoverContentType {
+  return value === "IMAGE" || value === "VIDEO";
 }
 
 /**
@@ -812,6 +834,10 @@ export function DiscoverPage({ lang }: { lang: string }) {
     (s) => s.selectedWard as LocationFacet | null,
   );
   const setSelectedWard = useDiscoverFiltersStore((s) => s.setSelectedWard);
+  const selectedType = useDiscoverFiltersStore(
+    (s) => s.selectedType as ContentType | null,
+  );
+  const setSelectedType = useDiscoverFiltersStore((s) => s.setSelectedType);
   const sort = useDiscoverFiltersStore((s) => s.sort as DiscoverySort);
   const setSort = useDiscoverFiltersStore((s) => s.setSort);
   const minPrice = useDiscoverFiltersStore((s) => s.minPrice);
@@ -861,6 +887,8 @@ export function DiscoverPage({ lang }: { lang: string }) {
   useEffect(() => {
     const initialSort = searchParams.get("sort");
     setSort(isDiscoverySort(initialSort) ? initialSort : "RELEVANCE");
+    const initialType = searchParams.get("type");
+    setSelectedType(isDiscoverContentType(initialType) ? initialType : null);
     setSelectedSubcategory(searchParams.get("subcategory")?.trim() || null);
     setMinPrice(searchParams.get("minPrice") ?? "");
     setMaxPrice(searchParams.get("maxPrice") ?? "");
@@ -894,6 +922,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
     () => ({
       query: query || undefined,
       categoryId: selectedCategory?.id,
+      type: selectedType ?? undefined,
       countyId: selectedCounty?.id,
       subCountyId: selectedSubCounty?.id,
       wardId: selectedWard?.id,
@@ -904,6 +933,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
     [
       query,
       selectedCategory?.id,
+      selectedType,
       selectedCounty?.id,
       selectedSubCounty?.id,
       selectedWard?.id,
@@ -952,6 +982,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
     () => ({
       query: query || undefined,
       categoryId: selectedCategory?.id,
+      type: selectedType ?? undefined,
       subcategory: subcategory || undefined,
       countyId: selectedCounty?.id,
       subCountyId: selectedSubCounty?.id,
@@ -965,6 +996,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
     [
       query,
       selectedCategory?.id,
+      selectedType,
       subcategory,
       selectedCounty?.id,
       selectedSubCounty?.id,
@@ -980,6 +1012,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
     () => ({
       query: query || undefined,
       categoryId: selectedCategory?.id,
+      type: selectedType ?? undefined,
       subcategory: subcategory || undefined,
       countyId: selectedCounty?.id,
       subCountyId: selectedSubCounty?.id,
@@ -991,6 +1024,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
     [
       query,
       selectedCategory?.id,
+      selectedType,
       subcategory,
       selectedCounty?.id,
       selectedSubCounty?.id,
@@ -1100,6 +1134,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
     selectedCounty || selectedSubCounty || selectedWard,
   );
   const activeFilterCount =
+    (selectedType ? 1 : 0) +
     (hasLocation ? 1 : 0) +
     (minPrice.trim() || maxPrice.trim() ? 1 : 0) +
     (negotiableOnly ? 1 : 0);
@@ -1137,11 +1172,12 @@ export function DiscoverPage({ lang }: { lang: string }) {
   }, []);
 
   const clearFilters = useCallback(() => {
+    setSelectedType(null);
     clearLocation();
     setMinPrice("");
     setMaxPrice("");
     setNegotiableOnly(false);
-  }, [clearLocation]);
+  }, [clearLocation, setSelectedType]);
 
   const clearPrice = useCallback(() => {
     setMinPrice("");
@@ -1445,6 +1481,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
 
     setOrDelete("q", query || null);
     setOrDelete("category", selectedCategory?.slug ?? null);
+    setOrDelete("type", selectedType ?? null);
     setOrDelete("subcategory", selectedSubcategory || null);
     setOrDelete("sort", sort === "RELEVANCE" ? null : sort);
     setOrDelete("countyId", selectedCounty?.id ?? null);
@@ -1475,6 +1512,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
     selectedCounty,
     selectedSubcategory,
     selectedSubCounty,
+    selectedType,
     selectedWard,
     sort,
   ]);
