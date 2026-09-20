@@ -118,7 +118,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       path: PATH,
       title: TITLE,
       description: DESCRIPTION,
+      // The card in ./opengraph-image.tsx says what this page does; the
+      // site-wide one sells buying and selling.
+      ownImage: true,
     }),
+    // The root layout files every page under "marketplace", which is wrong for
+    // a video tool.
+    category: "multimedia",
     keywords: [
       "TikTok downloader",
       "TikTok video downloader",

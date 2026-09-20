@@ -30,12 +30,21 @@ export function privatePageMetadata(title: string): Metadata {
   return { title, robots: { index: false, follow: true } };
 }
 
-/** Consistent metadata for public, locale-prefixed informational pages. */
+/**
+ * Consistent metadata for public, locale-prefixed informational pages.
+ *
+ * Every page shares the site-wide OG card by default. A page with its own
+ * `opengraph-image` file passes `ownImage: true` so that file supplies the
+ * og:image / twitter:image tags — listing an `images` array here as well would
+ * override it, and a hand-built URL can miss the fingerprint Next adds to
+ * image routes.
+ */
 export function publicPageMetadata(input: {
   lang: string;
   path: `/${string}`;
   title: string;
   description: string;
+  ownImage?: boolean;
 }): Metadata {
   const lang = isValidLocale(input.lang) ? input.lang : "en";
   const canonical = `${siteConfig.url}/${lang}${input.path}`;
@@ -52,21 +61,25 @@ export function publicPageMetadata(input: {
       locale: lang === "sw" ? "sw_KE" : "en_KE",
       title: shareTitle,
       description: input.description,
-      images: [
-        {
-          url: siteConfig.ogImage,
-          width: 1200,
-          height: 630,
-          alt: input.title,
-        },
-      ],
+      ...(input.ownImage
+        ? {}
+        : {
+            images: [
+              {
+                url: siteConfig.ogImage,
+                width: 1200,
+                height: 630,
+                alt: input.title,
+              },
+            ],
+          }),
     },
     twitter: {
       card: "summary_large_image",
       site: siteConfig.twitterHandle,
       title: shareTitle,
       description: input.description,
-      images: [siteConfig.ogImage],
+      ...(input.ownImage ? {} : { images: [siteConfig.ogImage] }),
     },
   };
 }

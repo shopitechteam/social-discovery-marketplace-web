@@ -36,7 +36,8 @@ export function TikTokPicker({
   async function handleSelect(file: File) {
     try {
       const { data, error } = await createDraft({
-        variables: { input: { type: "VIDEO" } },
+        // The type stays VIDEO; the flag records that it came from TikTok.
+        variables: { input: { type: "VIDEO", isTiktokImport: true } },
       });
       if (error || !data?.createDraft) {
         throw new Error(error?.message ?? "Could not start your draft");
