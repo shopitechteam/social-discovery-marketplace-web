@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import {
@@ -55,10 +56,7 @@ import { DISCOVER_GRID, DiscoverGridCard } from "./DiscoverGridCard";
 import { SubcategoryRow } from "./SubcategoryRow";
 import { useInfiniteScroll } from "@/features/feed/hooks/useInfiniteScroll";
 import { usePaginationGuard } from "@/features/feed/hooks/useFeed";
-import {
-  DISCOVERY_CATEGORIES,
-  type CategoryFacet,
-} from "../categories";
+import { DISCOVERY_CATEGORIES, type CategoryFacet } from "../categories";
 
 type DiscoverySort =
   | "RELEVANCE"
@@ -624,7 +622,11 @@ function LocationSearchInput({
 }) {
   return (
     <div className="mb-3 flex items-center gap-2 rounded-full border border-default bg-surface px-3.5 py-2">
-      <Search size={15} className="shrink-0 text-muted-foreground" aria-hidden />
+      <Search
+        size={15}
+        className="shrink-0 text-muted-foreground"
+        aria-hidden
+      />
       <input
         type="text"
         value={value}
@@ -793,9 +795,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
   // outside needs it.
   const searchDraft = useSearchStore((s) => s.draft);
   const setSearchDraft = useSearchStore((s) => s.setDraft);
-  const [query, setQuery] = useState(
-    () => searchParams.get("q")?.trim() ?? "",
-  );
+  const [query, setQuery] = useState(() => searchParams.get("q")?.trim() ?? "");
 
   // Seed the shared draft from a ?q= deep link on mount. The store outlives
   // this page (it is a module singleton), so without this a term typed on
@@ -845,9 +845,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
   const maxPrice = useDiscoverFiltersStore((s) => s.maxPrice);
   const setMaxPrice = useDiscoverFiltersStore((s) => s.setMaxPrice);
   const negotiableOnly = useDiscoverFiltersStore((s) => s.negotiableOnly);
-  const setNegotiableOnly = useDiscoverFiltersStore(
-    (s) => s.setNegotiableOnly,
-  );
+  const setNegotiableOnly = useDiscoverFiltersStore((s) => s.setNegotiableOnly);
   const requestLocationPicker = useDiscoverFiltersStore(
     (s) => s.requestLocationPicker,
   );
@@ -1061,12 +1059,14 @@ export function DiscoverPage({ lang }: { lang: string }) {
 
   // Location facets follow the active filters (their post counts depend on the
   // current query/category). Kept separate so they don't disturb categories.
-  const { data: locationFacetsData, loading: locationFacetsLoading } =
-    useQuery(DISCOVERY_LOCATION_FACETS, {
+  const { data: locationFacetsData, loading: locationFacetsLoading } = useQuery(
+    DISCOVERY_LOCATION_FACETS,
+    {
       variables: facetVariables,
       fetchPolicy: "cache-and-network",
       nextFetchPolicy: "cache-first",
-    });
+    },
+  );
 
   /** Picking a category drops the subcategory — it only means something inside its parent. */
   const selectCategory = useCallback((next: CategoryFacet | null) => {
@@ -1391,7 +1391,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
     // would hide the category bar and scope results, so clear it.
     setSearchDraft("");
     setQuery("");
-  }, [categoryParam, categories, setSearchDraft]);
+  }, [categoryParam, categories, setSearchDraft, setSelectedCategory]);
 
   const counties = useMemo(
     () => locationFacets?.counties ?? [],
@@ -1524,7 +1524,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
 
   return (
     <div className="min-h-svh bg-app pb-24 md:pb-8">
-      <div className="mx-auto w-full lg:max-w-[1560px] lg:px-8 lg:pt-4">
+      <div className="mx-auto w-full lg:max-w-390 lg:px-8 lg:pt-4">
         <main className="min-w-0">
           <div className="sticky top-0 z-30 border-b border-default bg-app/92 backdrop-blur-md lg:hidden">
             <div className="flex items-center gap-2 px-4 pb-3 pt-3 lg:px-0 lg:pt-0">
@@ -1538,7 +1538,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
                   value={searchDraft}
                   onChange={(event) => setSearchDraft(event.target.value)}
                   placeholder="Search cars, dresses, fresh produce..."
-                  className="h-5 min-w-0 flex-1 bg-transparent text-sm text-default outline-none placeholder:text-muted-foreground"
+                  className="h-5 min-w-0 flex-1 bg-transparent text-sm text-default outline-none  placeholder:text-muted-foreground"
                 />
                 {searchDraft ? (
                   <button
@@ -1610,97 +1610,97 @@ export function DiscoverPage({ lang }: { lang: string }) {
           </div>
 
           <div className="min-w-0">
-          {/* Subcategory tiles — the second level of the taxonomy, and the only
+            {/* Subcategory tiles — the second level of the taxonomy, and the only
               way to narrow inside a category. Renders itself away when the
               category has too few subcategories to be worth a row.
 
               Hidden entirely on "All": types only mean something underneath a
               chosen category, and offering them across the whole catalogue
               mixes unrelated levels of the taxonomy into one row. */}
-          {selectedCategory && (
-            <div className="lg:hidden">
-              <SubcategoryRow
-                subcategories={subcategories}
-                selected={subcategory}
-                onSelect={setSelectedSubcategory}
-              />
-            </div>
-          )}
-
-          {error && items.length === 0 ? (
-            <div className="px-4 py-12 lg:px-0">
-              <div className="rounded-[22px] border border-default bg-app p-6 text-center">
-                <p className="text-base font-semibold text-default">
-                  Couldn&apos;t load Discover
-                </p>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Check the connection to the API, then try again.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => void refetch()}
-                  className="mt-4 inline-flex h-10 items-center rounded-full bg-primary px-5 text-sm font-medium text-white"
-                >
-                  Try again
-                </button>
+            {selectedCategory && (
+              <div className="lg:hidden">
+                <SubcategoryRow
+                  subcategories={subcategories}
+                  selected={subcategory}
+                  onSelect={setSelectedSubcategory}
+                />
               </div>
-            </div>
-          ) : null}
+            )}
 
-          {/* A full reload (filter/search/sort change) — NOT pagination — is in
+            {error && items.length === 0 ? (
+              <div className="px-4 py-12 lg:px-0">
+                <div className="rounded-[22px] border border-default bg-app p-6 text-center">
+                  <p className="text-base font-semibold text-default">
+                    Couldn&apos;t load Discover
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                    Check the connection to the API, then try again.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void refetch()}
+                    className="mt-4 inline-flex h-10 items-center rounded-full bg-primary px-5 text-sm font-medium text-white"
+                  >
+                    Try again
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
+            {/* A full reload (filter/search/sort change) — NOT pagination — is in
               flight. Show only the skeleton; the stale results grid below is
               hidden so we never stack old items under a loader. */}
-          {isReloading && <DiscoverFeedSkeleton />}
+            {isReloading && <DiscoverFeedSkeleton />}
 
-          {!loading && items.length === 0 && !error ? (
-            <EmptyState
-              title="No posts match this search"
-              body="Try a broader keyword, another category, or a wider location around you."
-            />
-          ) : null}
+            {!loading && items.length === 0 && !error ? (
+              <EmptyState
+                title="No posts match this search"
+                body="Try a broader keyword, another category, or a wider location around you."
+              />
+            ) : null}
 
-          {!isReloading && items.length > 0 ? (
-            <div className="px-4 pb-6 pt-3 lg:px-0">
-              {/* Only a search gets a heading now. The old one labelled the
+            {!isReloading && items.length > 0 ? (
+              <div className="px-4 pb-6 pt-3 lg:px-0">
+                {/* Only a search gets a heading now. The old one labelled the
                   default state "Listings picked for discovery" over "Across
                   Kenya", which restated what the page already is and what the
                   location control already shows — two lines of chrome above
                   every visit. A hairline does the separating instead. */}
-              {query ? (
-                <p className="mb-3 text-sm font-semibold text-default">
-                  Results for “{query}”
-                </p>
-              ) : (
-                // `border-border`, not `border-default`: the latter is a
-                // hand-written class in globals.css rather than a theme token,
-                // so Tailwind cannot apply an opacity modifier to it — the
-                // `/60` was dropped and the border fell back to currentColor,
-                // which painted a near-black line instead of a hairline.
-                <div className="mb-4 border-t border-border/60" />
-              )}
+                {query ? (
+                  <p className="mb-3 text-sm font-semibold text-default">
+                    Results for “{query}”
+                  </p>
+                ) : (
+                  // `border-border`, not `border-default`: the latter is a
+                  // hand-written class in globals.css rather than a theme token,
+                  // so Tailwind cannot apply an opacity modifier to it — the
+                  // `/60` was dropped and the border fell back to currentColor,
+                  // which painted a near-black line instead of a hairline.
+                  <div className="mb-4 border-t border-border/60" />
+                )}
 
-              <div className={DISCOVER_GRID}>
-                {items.map((post, index) => (
-                  <DiscoverGridCard
-                    key={post.id}
-                    post={post}
-                    lang={lang}
-                    priority={index < 4}
-                  />
-                ))}
+                <div className={DISCOVER_GRID}>
+                  {items.map((post, index) => (
+                    <DiscoverGridCard
+                      key={post.id}
+                      post={post}
+                      lang={lang}
+                      priority={index < 4}
+                    />
+                  ))}
+                </div>
+
+                <div ref={sentinelRef} className="h-2" />
+
+                {isFetchingMore ? <FeedLoader /> : null}
+
+                {!pageInfo?.hasNextPage ? (
+                  <p className="py-6 text-center text-xs text-muted-foreground">
+                    You&apos;ve seen the latest matches.
+                  </p>
+                ) : null}
               </div>
-
-              <div ref={sentinelRef} className="h-2" />
-
-              {isFetchingMore ? <FeedLoader /> : null}
-
-              {!pageInfo?.hasNextPage ? (
-                <p className="py-6 text-center text-xs text-muted-foreground">
-                  You&apos;ve seen the latest matches.
-                </p>
-              ) : null}
-            </div>
-          ) : null}
+            ) : null}
           </div>
         </main>
       </div>
@@ -1967,9 +1967,13 @@ export function DiscoverPage({ lang }: { lang: string }) {
               </div>
             </div>
             <LocationStepFooter
-              count={countyFooterFacet ? countyFooterFacet.count : nationwideCount}
+              count={
+                countyFooterFacet ? countyFooterFacet.count : nationwideCount
+              }
               label={
-                countyFooterFacet ? `in ${countyFooterFacet.name}` : "nationwide"
+                countyFooterFacet
+                  ? `in ${countyFooterFacet.name}`
+                  : "nationwide"
               }
               onConfirm={collapseLocationSheets}
             />
@@ -2002,8 +2006,8 @@ export function DiscoverPage({ lang }: { lang: string }) {
                   <LocationOptionSkeletonList />
                 ) : subCounties.length === 0 ? (
                   <p className="rounded-2xl border border-dashed border-default px-4 py-3 text-sm leading-6 text-muted-foreground">
-                    No subcounty clusters yet for this county. You can keep
-                    the county selection and continue browsing.
+                    No subcounty clusters yet for this county. You can keep the
+                    county selection and continue browsing.
                   </p>
                 ) : subcountySearchEmpty ? (
                   <p className="rounded-2xl border border-dashed border-default px-4 py-3 text-sm leading-6 text-muted-foreground">
@@ -2055,8 +2059,8 @@ export function DiscoverPage({ lang }: { lang: string }) {
                   <LocationOptionSkeletonList />
                 ) : wards.length === 0 ? (
                   <p className="rounded-2xl border border-dashed border-default px-4 py-3 text-sm leading-6 text-muted-foreground">
-                    Ward-level options will show up here whenever listings
-                    are tagged that precisely.
+                    Ward-level options will show up here whenever listings are
+                    tagged that precisely.
                   </p>
                 ) : wardSearchEmpty ? (
                   <p className="rounded-2xl border border-dashed border-default px-4 py-3 text-sm leading-6 text-muted-foreground">
@@ -2147,8 +2151,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
             <Sheet
               open={locationDepth >= 1}
               onOpenChange={(open) => {
-                if (!open && locationStep === "county")
-                  stepBackLocationSheet();
+                if (!open && locationStep === "county") stepBackLocationSheet();
               }}
             >
               <SheetContent

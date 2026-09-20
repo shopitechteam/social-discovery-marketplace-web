@@ -1,12 +1,13 @@
 "use client";
 
 /**
- * TikTokImportPage — the standalone /upload/tiktok route.
+ * TikTokImportPage - the standalone /upload/tiktok route.
  *
  * The create flow no longer navigates here (the TikTok picker renders inline
- * in the desktop create dialog and in the mobile picker page — see
- * TikTokPicker). This route stays for deep links, old bookmarks and the OAuth
- * returnUrl, hosting the same shared picker in its own shell.
+ * in the desktop create dialog and in the mobile picker page; see TikTokPicker).
+ * This route stays for deep links and older entry points, hosting the same
+ * shared picker (paste a link, or reuse an already-imported video) in its own
+ * shell.
  */
 
 import { useState } from "react";
@@ -33,8 +34,8 @@ export function TikTokImportPage({ lang }: Props) {
   // dialog, same as the other create-flow entry points.
   const [createError, setCreateError] = useState<string | null>(null);
 
-  // After "Use This Video" the store is already on the edit step. Desktop
-  // resumes inside the /upload dialog; mobile continues on the full-page flow.
+  // After the draft is created from the imported video, desktop resumes inside the /upload
+  // dialog; mobile continues on the full-page flow.
   function handleUsed() {
     if (isDesktop) {
       router.push(`/${lang}/upload`);
@@ -132,7 +133,8 @@ function PageShell({
           <DialogHeader className="sr-only">
             <DialogTitle>Add from TikTok</DialogTitle>
             <DialogDescription>
-              Pick one of your TikTok videos to create a Shopi post.
+              Paste a TikTok link or reuse a saved video, then continue
+              creating a Shopi post.
             </DialogDescription>
           </DialogHeader>
           {shellBody}

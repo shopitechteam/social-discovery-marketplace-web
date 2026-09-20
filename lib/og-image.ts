@@ -67,6 +67,30 @@ const FETCH_TIMEOUT_MS = 4000;
 /** Source images above this are not worth the decode for a 1200×630 card. */
 const MAX_SOURCE_BYTES = 12 * 1024 * 1024;
 
+/** Fetch an image's bytes, or null when it is missing, slow or too large. */
+async function fetchImageBytes(url: string): Promise<Buffer | null> {
+  try {
+    const response = await fetch(url, {
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      // The card is regenerated on its own revalidate cadence, so there is
+      // nothing to gain from Next caching the upstream bytes as well.
+      cache: "no-store",
+    });
+    if (!response.ok) return null;
+
+    const declaredLength = Number(response.headers.get("content-length") ?? 0);
+    if (declaredLength > MAX_SOURCE_BYTES) return null;
+
+    const source = Buffer.from(await response.arrayBuffer());
+    if (source.byteLength === 0 || source.byteLength > MAX_SOURCE_BYTES) {
+      return null;
+    }
+    return source;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Fetch an image and return a data URI satori can draw, converting when needed.
  *
@@ -85,21 +109,8 @@ export async function ogImageDataUri(
   if (!url) return null;
 
   try {
-    const response = await fetch(url, {
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      // The card is regenerated on its own revalidate cadence, so there is
-      // nothing to gain from Next caching the upstream bytes as well.
-      cache: "no-store",
-    });
-    if (!response.ok) return null;
-
-    const declaredLength = Number(response.headers.get("content-length") ?? 0);
-    if (declaredLength > MAX_SOURCE_BYTES) return null;
-
-    const source = Buffer.from(await response.arrayBuffer());
-    if (source.byteLength === 0 || source.byteLength > MAX_SOURCE_BYTES) {
-      return null;
-    }
+    const source = await fetchImageBytes(url);
+    if (!source) return null;
 
     // sharp ships with Next for image optimisation, but it is a native module
     // and this route must not fall over if it is ever absent. Imported here
@@ -118,3 +129,113 @@ export async function ogImageDataUri(
     return null;
   }
 }
+
+/** The standard large link-preview frame (Facebook, WhatsApp, X, LinkedIn). */
+export const OG_PHOTO_SIZE = { width: 1200, height: 630 };
+
+/**
+ * A photo at least this much wider than tall (about 4:3 and wider) fills the
+ * frame - cropping it to 1.91:1 costs a quarter of the image or less. Anything
+ * taller is shown whole instead, because the sides of a portrait phone photo
+ * are exactly where a product sits.
+ */
+const COVER_MIN_ASPECT = 1.4;
+/** WhatsApp is unreliable about fetching link images much past this. */
+const MAX_PHOTO_BYTES = 230 * 1024;
+const PHOTO_QUALITIES = [84, 76, 68, 58];
+/** Candidates to try before giving up, so one dead URL doesn't sink the card. */
+const MAX_PHOTO_ATTEMPTS = 3;
+
+/**
+ * The real photo, prepared as a link preview - what a marketplace puts in
+ * `og:image`, rather than a designed card.
+ *
+ * The image host serves only .webp, which WhatsApp and some other scrapers
+ * render unreliably (or not at all), so the photo is re-encoded as a JPEG kept
+ * under MAX_PHOTO_BYTES and framed at 1200x630 so every platform shows the same
+ * large card. Wide photos fill the frame; portrait and square ones are shown
+ * whole over a blurred, darkened copy of themselves.
+ *
+ * Tries each candidate in order and returns null when none yields a usable
+ * image, so callers keep a fallback.
+ */
+export async function ogPhotoJpeg(
+  candidates: (string | null | undefined)[],
+  box: { width: number; height: number } = OG_PHOTO_SIZE,
+): Promise<Buffer | null> {
+  const urls = [
+    ...new Set(
+      candidates.map((c) => c?.trim()).filter((c): c is string => Boolean(c)),
+    ),
+  ].slice(0, MAX_PHOTO_ATTEMPTS);
+
+  for (const url of urls) {
+    const source = await fetchImageBytes(url);
+    if (!source) continue;
+    try {
+      return await frameAsPhotoCard(source, box);
+    } catch {
+      // Undecodable or sharp unavailable - try the next candidate.
+    }
+  }
+  return null;
+}
+
+async function frameAsPhotoCard(
+  source: Buffer,
+  { width, height }: { width: number; height: number },
+): Promise<Buffer> {
+  const sharp = (await import("sharp")).default;
+  const open = () => sharp(source, { failOn: "none" }).rotate();
+
+  const meta = await sharp(source, { failOn: "none" }).metadata();
+  // EXIF orientations 5-8 swap the axes; `rotate()` applies them on output.
+  const turned = (meta.orientation ?? 1) >= 5;
+  const w = (turned ? meta.height : meta.width) ?? 0;
+  const h = (turned ? meta.width : meta.height) ?? 0;
+  if (!w || !h) throw new Error("Unreadable image dimensions");
+
+  let flat: Buffer;
+  if (w / h >= COVER_MIN_ASPECT) {
+    flat = await open()
+      .resize(width, height, { fit: "cover", position: "centre" })
+      .removeAlpha()
+      .raw()
+      .toBuffer();
+  } else {
+    // Blur a small copy and scale it back up: same look as blurring the full
+    // frame, at a fraction of the cost.
+    const backdrop = await open()
+      .resize(Math.round(width / 6), Math.round(height / 6), { fit: "cover" })
+      .blur(6)
+      .modulate({ brightness: 0.7 })
+      .resize(width, height)
+      .toBuffer();
+    const foreground = await open()
+      .resize(width, height, { fit: "inside" })
+      .png()
+      .toBuffer();
+    flat = await sharp(backdrop)
+      .composite([{ input: foreground, gravity: "centre" }])
+      .removeAlpha()
+      .raw()
+      .toBuffer();
+  }
+
+  const raw = { width, height, channels: 3 as const };
+  let jpeg: Buffer = Buffer.alloc(0);
+  for (const quality of PHOTO_QUALITIES) {
+    jpeg = await sharp(flat, { raw })
+      .jpeg({ quality, mozjpeg: true })
+      .toBuffer();
+    if (jpeg.byteLength <= MAX_PHOTO_BYTES) break;
+  }
+  return jpeg;
+}
+
+/** Response headers for a share image; matches the routes' own revalidate. */
+export const OG_PHOTO_HEADERS = {
+  "Content-Type": "image/jpeg",
+  "Cache-Control":
+    "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400",
+};
