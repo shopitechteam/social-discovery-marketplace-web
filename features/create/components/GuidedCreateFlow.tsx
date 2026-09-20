@@ -440,10 +440,13 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
   /** TikTok import hands over the downloaded (or saved) video as a plain File. */
   function handleTiktokSelect(file: File) {
     setTiktokOpen(false);
-    return startWithFiles([file]);
+    return startWithFiles([file], { isTiktokImport: true });
   }
 
-  async function startWithFiles(picked: File[]) {
+  async function startWithFiles(
+    picked: File[],
+    { isTiktokImport = false }: { isTiktokImport?: boolean } = {},
+  ) {
     if (picked.length === 0) return;
 
     const kind = picked[0].type.startsWith("video/") ? "video" : "image";
@@ -512,7 +515,14 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
       }
 
       const { data, error } = await createDraft({
-        variables: { input: { type: kind === "video" ? "VIDEO" : "IMAGE" } },
+        variables: {
+          input: {
+            type: kind === "video" ? "VIDEO" : "IMAGE",
+            // Only sent for the TikTok route: the type stays VIDEO, and the
+            // admin uses the flag to see which create route the post took.
+            ...(isTiktokImport ? { isTiktokImport: true } : {}),
+          },
+        },
       });
       if (error || !data?.createDraft) {
         throw new Error(error?.message ?? "Could not start your draft");
