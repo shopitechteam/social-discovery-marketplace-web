@@ -102,10 +102,10 @@ export function MediaTypeDrawer({ open, onOpenChange, onPickVideo, onPickImage, 
     options.push({
       key: "tiktok",
       label: "Import from TikTok",
-      description: "Paste a TikTok link to re-post",
-      onClick: () => {},
-      disabled: true,
-      badge: "Soon",
+      description: "Paste a link or reuse a saved video",
+      onClick: () => router.push(`/${lang}/upload/tiktok`),
+      disabled: false,
+      badge: null,
       icon: (
         <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
           style={{ background: "rgb(var(--color-bg-subtle))", border: "1px solid rgb(var(--color-border))" }}>

@@ -8,7 +8,10 @@ export const runtime = "nodejs";
  * GET ?url=<tiktok link>              → JSON metadata (title, author, cover…)
  * GET ?url=<tiktok link>&download=1   → streams the clean (no-watermark) MP4
  *                                       with a Content-Disposition: attachment
- *                                       header so the browser saves it.
+ *                                       header so the browser saves it. The same
+ *                                       metadata as above rides along in the
+ *                                       X-Tiktok-Meta header (URI-encoded JSON)
+ *                                       so callers need only one tikwm lookup.
  *
  * Uses the same tikwm technique as the main import pipeline
  * (api repo: queues/workers/tiktok-download.worker.ts) but skips auth and Mux
@@ -80,15 +83,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "fetch_failed" }, { status: 502 });
   }
 
+  const meta = {
+    id: data.id != null ? String(data.id) : null,
+    title: data.title ?? null,
+    author: data.author?.nickname ?? data.author?.unique_id ?? null,
+    authorUsername: data.author?.unique_id ?? null,
+    cover: data.origin_cover || data.cover || null,
+    duration: data.duration ?? null,
+  };
+
   if (!wantsFile) {
-    return NextResponse.json({
-      id: data.id != null ? String(data.id) : null,
-      title: data.title ?? null,
-      author: data.author?.nickname ?? data.author?.unique_id ?? null,
-      authorUsername: data.author?.unique_id ?? null,
-      cover: data.origin_cover || data.cover || null,
-      duration: data.duration ?? null,
-    });
+    return NextResponse.json(meta);
   }
 
   // ── Stream the clean file through us so the download attribute works ──
@@ -112,6 +117,10 @@ export async function GET(request: NextRequest) {
     "Content-Type": "video/mp4",
     "Content-Disposition": `attachment; filename="${filename}"`,
     "Cache-Control": "no-store",
+    // Titles can be long; keep the header well inside proxy limits.
+    "X-Tiktok-Meta": encodeURIComponent(
+      JSON.stringify({ ...meta, title: meta.title?.slice(0, 200) ?? null }),
+    ),
   });
   const length = upstream.headers.get("content-length");
   if (length) headers.set("Content-Length", length);

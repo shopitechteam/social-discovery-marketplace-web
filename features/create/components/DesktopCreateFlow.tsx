@@ -302,8 +302,8 @@ export function DesktopCreateFlow({ lang }: { lang: string }) {
                         color: "rgb(var(--color-text-muted))",
                       }}
                     >
-                      Pick one of your TikTok videos — it streams from TikTok
-                      and links back to your profile.
+                      Paste a TikTok link, or reuse a video you&apos;ve
+                      already saved.
                     </p>
                   </div>
                   <TikTokPicker
@@ -419,41 +419,20 @@ export function DesktopCreateFlow({ lang }: { lang: string }) {
 }
 
 /**
- * Decorative banner behind the create dialog. Visible around the dialog edges
- * (through the dimmed overlay) and for the moment before the dialog paints —
- * gives /upload a branded feel instead of a blank page. Shared with the
- * create-mode chooser so its desktop dialog sits on the same backdrop.
+ * Quiet backdrop behind the create dialog. Shared with the create-mode chooser
+ * so both desktop entry surfaces feel like the same flow.
  */
 export function CreateBanner() {
   return (
     <div
-      className="relative hidden min-h-svh overflow-hidden md:block"
+      className="relative hidden min-h-svh overflow-hidden bg-app md:block"
       aria-hidden
-      style={{
-        background:
-          "linear-gradient(160deg, rgb(var(--brand-primary) / 0.10) 0%, rgb(var(--color-bg)) 42%, rgb(var(--brand-primary) / 0.14) 100%)",
-      }}
     >
-      {/* Glow blobs */}
-      <div
-        className="absolute -left-32 -top-32 h-105 w-105 rounded-full blur-3xl"
-        style={{ backgroundColor: "rgb(var(--brand-primary) / 0.22)" }}
-      />
-      <div
-        className="absolute -bottom-40 -right-24 h-120 w-120 rounded-full blur-3xl"
-        style={{ backgroundColor: "rgb(var(--brand-primary) / 0.18)" }}
-      />
-      <div
-        className="absolute right-[18%] top-[12%] h-40 w-40 rounded-full blur-2xl"
-        style={{ backgroundColor: "rgb(56 168 255 / 0.18)" }}
-      />
-
-      {/* Headline strip (peeks above the dialog) */}
-      <div className="absolute inset-x-0 top-6 flex flex-col items-center gap-1 text-center">
+      <div className="absolute inset-x-0 top-8 flex flex-col items-center gap-1 text-center">
         <p
-          className="font-black tracking-tight"
+          className="font-semibold"
           style={{
-            fontSize: "var(--text-xl)",
+            fontSize: "var(--text-lg)",
             color: "rgb(var(--color-text))",
           }}
         >
@@ -465,12 +444,11 @@ export function CreateBanner() {
             color: "rgb(var(--color-text-muted))",
           }}
         >
-          Snap it · Describe it · Post it — buyers nearby are watching
+          Snap it, describe it, post it.
         </p>
       </div>
 
-      {/* Bottom tip strip (peeks below the dialog) */}
-      <div className="absolute inset-x-0 bottom-5 flex items-center justify-center gap-6">
+      <div className="absolute inset-x-0 bottom-6 flex items-center justify-center gap-3">
         {[
           "AI writes your listing",
           "Reach nearby buyers",
@@ -481,7 +459,7 @@ export function CreateBanner() {
             className="rounded-full px-3 py-1 font-medium"
             style={{
               fontSize: "var(--text-xs)",
-              backgroundColor: "rgb(var(--color-bg-elevated) / 0.7)",
+              backgroundColor: "rgb(var(--color-bg-subtle))",
               border: "1px solid rgb(var(--color-border))",
               color: "rgb(var(--color-text-muted))",
             }}

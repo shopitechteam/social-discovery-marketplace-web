@@ -16,6 +16,7 @@ import {
   Camera,
   Check,
   ChevronLeft,
+  ChevronRight,
   Globe,
   Images,
   LoaderCircle,
@@ -80,6 +81,9 @@ import {
   CreateSuccessPrimaryAction,
   CreateSuccessScreen,
 } from "./CreateSuccessScreen";
+import { TikTokIcon } from "@/components/ui/TikTokIcon";
+import { OrDivider } from "./OrDivider";
+import { TikTokImportDrawer } from "./TikTokImportDrawer";
 
 const MAX_IMAGES = 10;
 const ATTACH_TIMEOUT_MS = 30_000;
@@ -241,6 +245,7 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [savingDraft, setSavingDraft] = useState(false);
+  const [tiktokOpen, setTiktokOpen] = useState(false);
   const [publishedContentId, setPublishedContentId] = useState<string | null>(
     null,
   );
@@ -426,9 +431,19 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
     return captured.filter((frame): frame is Blob => !!frame);
   }
 
-  async function handleMediaChange(event: ChangeEvent<HTMLInputElement>) {
+  function handleMediaChange(event: ChangeEvent<HTMLInputElement>) {
     const picked = Array.from(event.target.files ?? []);
     event.target.value = "";
+    void startWithFiles(picked);
+  }
+
+  /** TikTok import hands over the downloaded (or saved) video as a plain File. */
+  function handleTiktokSelect(file: File) {
+    setTiktokOpen(false);
+    return startWithFiles([file]);
+  }
+
+  async function startWithFiles(picked: File[]) {
     if (picked.length === 0) return;
 
     const kind = picked[0].type.startsWith("video/") ? "video" : "image";
@@ -1363,9 +1378,10 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
 
           {stageReached(guidedStage, "media") ? (
             <AgentBubble>
-              <p>Nice — pop in a few clear photos or a quick video of it.</p>
+              <p>Nice — add a few clear photos or a short video of it.</p>
               <p className="mt-1 text-sm text-muted">
-                I’ll take a look and get the details ready for you.
+                Already posted it on TikTok? You can import that video instead.
+                I’ll look it over and get the details ready for you.
               </p>
             </AgentBubble>
           ) : null}
@@ -1593,6 +1609,27 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
                     <Camera size={17} />
                     Take photo
                   </button>
+
+                  <OrDivider className="my-4" />
+
+                  <button
+                    type="button"
+                    onClick={() => setTiktokOpen(true)}
+                    className="flex min-h-16 w-full items-center gap-3 rounded-2xl border border-border bg-elevated px-4 py-3 text-left transition-colors hover:bg-surface active:scale-[0.99]"
+                  >
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#010101] text-white">
+                      <TikTokIcon size={20} />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold text-foreground">
+                        Import from TikTok
+                      </span>
+                      <span className="mt-0.5 block text-xs text-muted">
+                        Paste a link or reuse a saved video
+                      </span>
+                    </span>
+                    <ChevronRight size={18} className="shrink-0 text-muted" />
+                  </button>
                 </>
               ) : (
                 <div className="rounded-2xl border border-border bg-elevated p-4">
@@ -1657,6 +1694,12 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
           <div ref={bottomRef} className="h-2" />
         </div>
       </main>
+
+      <TikTokImportDrawer
+        open={tiktokOpen}
+        onOpenChange={setTiktokOpen}
+        onSelect={handleTiktokSelect}
+      />
 
       {guidedStage === "intro" ? (
         <div className="shrink-0 border-t border-border bg-elevated px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 sm:px-5 md:px-6">
