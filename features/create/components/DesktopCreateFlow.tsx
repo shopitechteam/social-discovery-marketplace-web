@@ -97,7 +97,7 @@ export function DesktopCreateFlow({ lang }: { lang: string }) {
     // Keep the draft — it's autosaved and session-persisted, so coming back to
     // /upload resumes exactly where the user left off.
     if (step === "pick") setCreationMode(null);
-    router.push(`/${lang}/feed`);
+    router.push(`/${lang}/for-you`);
   }
 
   function closeDialog() {
@@ -106,7 +106,7 @@ export function DesktopCreateFlow({ lang }: { lang: string }) {
       router.back();
       return;
     }
-    router.push(`/${lang}/feed`);
+    router.push(`/${lang}/for-you`);
   }
 
   function handleBack() {

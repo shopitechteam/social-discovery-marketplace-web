@@ -279,7 +279,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/jiji-alternative-kenya", changeFrequency: "monthly", priority: 0.85 },
     { path: "/pigiame-alternative-kenya", changeFrequency: "monthly", priority: 0.85 },
     { path: "/about", changeFrequency: "monthly", priority: 0.7 },
-    { path: "/feed", changeFrequency: "always", priority: 0.9 },
+    { path: "/for-you", changeFrequency: "always", priority: 0.9 },
     { path: "/explore", changeFrequency: "hourly", priority: 0.8 },
     { path: "/search", changeFrequency: "hourly", priority: 0.8 },
     { path: "/buy-and-sell-in-kenya", changeFrequency: "weekly", priority: 0.92 },

@@ -342,7 +342,7 @@ function DeleteAccountDialog({
       // Straight out, not through the logout mutation — the account is gone and
       // a full reload is the only way to be sure nothing cached survives.
       useAuthStore.getState().clearAuth();
-      window.location.href = `/${lang}/feed`;
+      window.location.href = `/${lang}/for-you`;
     } catch (caught) {
       setError(
         caught instanceof Error

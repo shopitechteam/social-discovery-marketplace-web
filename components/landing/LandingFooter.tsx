@@ -67,7 +67,7 @@ export function LandingFooter({
             {
               heading: "Marketplace",
               links: [
-                { label: "Open the feed", href: `/${lang}/feed` },
+                { label: "Open For You", href: `/${lang}/for-you` },
                 { label: "Explore listings", href: `/${lang}/explore` },
                 { label: "Search", href: `/${lang}/search` },
                 { label: "Sell in Kenya", href: `/${lang}/sell-in-kenya` },

@@ -156,10 +156,10 @@ export default async function SellInKenyaPage({ params }: Props) {
                 Start selling free
               </Link>
               <Link
-                href={`/${safeLang}/feed`}
+                href={`/${safeLang}/for-you`}
                 className="rounded-full border border-border px-6 py-3 text-sm font-bold text-foreground no-underline"
               >
-                See the feed
+                Open For You
               </Link>
             </div>
           </div>

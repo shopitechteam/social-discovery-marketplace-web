@@ -53,7 +53,7 @@ export function LandingNav({
   // robots-disallowed, and the Sign in link and "Start selling" CTA to its
   // right already cover it.
   const NAV_LINKS: NavLink[] = [
-    { label: "Feed", href: `${homeBase}/feed`, kind: "route" },
+    { label: "For You", href: `${homeBase}/for-you`, kind: "route" },
     { label: "Shopi Agent", href: `${homeBase}/shopi-agent`, kind: "route" },
     { label: "Sell in Kenya", href: `${homeBase}/sell-in-kenya`, kind: "route" },
     {
@@ -223,13 +223,13 @@ export function LandingNav({
                 one of the two that requires an account, so it gets the filled
                 button on every screen. */}
             <Link
-              href={`${homeBase}/feed`}
+              href={`${homeBase}/for-you`}
               className="hidden items-center rounded-full border border-border bg-elevated px-[1.1rem] py-2 text-sm font-semibold whitespace-nowrap text-foreground no-underline md:inline-flex"
             >
               {isAuthenticated
                 ? (dict?.landing.hero.ctaFeedLoggedIn ??
-                  "Continue to your feed")
-                : (dict?.common.openFeed ?? "Browse the feed")}
+                  "Go to For You")
+                : (dict?.common.openFeed ?? "Open For You")}
             </Link>
             <Link
               href={`${homeBase}/upload`}
@@ -311,14 +311,14 @@ export function LandingNav({
               <span aria-hidden>→</span>
             </Link>
             <Link
-              href={`${homeBase}/feed`}
+              href={`${homeBase}/for-you`}
               onClick={() => setMenuOpen(false)}
               className="flex items-center justify-center gap-2 rounded-full border border-border bg-elevated px-5 py-[0.85rem] text-[0.9rem] font-bold text-foreground no-underline"
             >
               {isAuthenticated
                 ? (dict?.landing.hero.ctaFeedLoggedIn ??
-                  "Continue to your feed")
-                : (dict?.common.openFeed ?? "Browse the feed")}
+                  "Go to For You")
+                : (dict?.common.openFeed ?? "Open For You")}
             </Link>
             {!isAuthenticated && (
               <p className="text-center text-[0.78rem] text-muted">

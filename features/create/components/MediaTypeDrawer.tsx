@@ -35,7 +35,7 @@ export function MediaTypeDrawer({ open, onOpenChange, onPickVideo, onPickImage, 
   function handleClose() {
     onOpenChange(false);
     if (window.history.length > 1) router.back();
-    else router.push(`/${lang}/feed`);
+    else router.push(`/${lang}/for-you`);
   }
 
   const options: MediaTypeOption[] = [

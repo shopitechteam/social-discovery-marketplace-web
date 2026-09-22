@@ -153,13 +153,13 @@ export const siteConfig = {
   ],
 
   routes: {
-    // feed/explore/search are indexed (see app/sitemap.ts), so their titles
+    // for-you/explore/search are indexed (see app/sitemap.ts), so their titles
     // carry the query people type rather than the in-app tab name.
     feed: {
-      path: "/feed",
-      title: "Products for Sale Near You in Kenya — Live Feed",
+      path: "/for-you",
+      title: "For You — Products for Sale Near You in Kenya",
       description:
-        "Scroll a live feed of products for sale near you in Kenya — phones, cars, fashion, furniture and more — and message local sellers directly. Free to use.",
+        "Shopi For You is a personalized marketplace feed of products for sale near you in Kenya — phones, cars, fashion, furniture and more. Message local sellers directly.",
     },
 
     explore: {

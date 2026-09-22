@@ -78,7 +78,7 @@ function EmptyState({
       </div>
       <div>
         <h3 className="text-lg font-black text-main">{title}</h3>
-        <p className="mx-auto mt-1 max-w-sm text-sm leading-relaxed text-muted">
+        <p className="app-subcopy mx-auto mt-1 max-w-sm">
           {body}
         </p>
       </div>
@@ -154,7 +154,7 @@ function FollowingColumn({ lang }: { lang: string }) {
   });
 
   if (!isAuthenticated) {
-    const returnTo = encodeURIComponent(`/${lang}/feed?tab=following`);
+    const returnTo = encodeURIComponent(`/${lang}/for-you?tab=following`);
     return (
       <EmptyState
         title="Sign in to see your feed"

@@ -107,7 +107,7 @@ export function CreatorProfileView({
 }: Props) {
   // A profile link opened from outside has no app history to return to, so
   // back would be a dead button. Send those to the feed.
-  const goBack = useAppBack(`/${lang}/feed`);
+  const goBack = useAppBack(`/${lang}/for-you`);
 
   const firstName = user.profile?.firstName ?? "";
   const lastName = user.profile?.lastName ?? "";

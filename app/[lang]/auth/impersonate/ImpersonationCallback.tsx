@@ -82,7 +82,7 @@ export function ImpersonationCallback({
       .then((payload) => {
         if (cancelled) return;
         setAuth(payload);
-        router.replace(`/${lang}/feed`);
+        router.replace(`/${lang}/for-you`);
       })
       .catch((err: unknown) => {
         if (cancelled) return;

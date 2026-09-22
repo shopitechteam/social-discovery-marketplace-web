@@ -103,7 +103,7 @@ export function CompetitorAlternativePage({
               Post your first item — free
             </Link>
             <Link
-              href={`/${lang}/feed`}
+              href={`/${lang}/for-you`}
               className="rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-foreground no-underline"
             >
               See what&apos;s selling near you

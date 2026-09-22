@@ -29,7 +29,7 @@ export function HowItWorksSection({ dict }: { dict: Dictionary }) {
           <h2 className="font-display text-[clamp(1.65rem,2.7vw,2.45rem)] font-bold leading-tight tracking-normal text-foreground">
             {dict.howItWorks.headline}
           </h2>
-          <p className="mt-4 max-w-2xl text-base leading-normal text-muted">
+          <p className="landing-subcopy mt-4 max-w-2xl">
             {dict.howItWorks.intro}
           </p>
         </div>
@@ -48,7 +48,7 @@ export function HowItWorksSection({ dict }: { dict: Dictionary }) {
               <h3 className="mb-2.5 font-display text-(length:--text-lg) font-semibold text-foreground">
                 {title}
               </h3>
-              <p className="text-(length:--text-base) text-muted leading-normal">
+              <p className="text-sm leading-normal text-muted">
                 {body}
               </p>
             </div>

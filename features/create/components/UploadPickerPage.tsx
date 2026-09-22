@@ -149,7 +149,7 @@ export function UploadPickerPage({ lang }: { lang: string }) {
       router.back();
       return;
     }
-    router.push(`/${lang}/feed`);
+    router.push(`/${lang}/for-you`);
   }
 
   const options = [
@@ -328,7 +328,7 @@ function CreationModeChooser({
   }, [setBottomNavHidden]);
 
   function close() {
-    router.replace(`/${lang}/feed`);
+    router.replace(`/${lang}/for-you`);
   }
 
   function handleContinue() {
@@ -381,7 +381,7 @@ function CreationModeChooser({
               <span className="mt-1 block text-xs font-medium text-muted">
                 {mode.label}
               </span>
-              <span className="mt-2 block text-sm leading-6 text-muted">
+              <span className="app-subcopy mt-2 block">
                 {mode.description}
               </span>
             </span>
@@ -427,7 +427,7 @@ function CreationModeChooser({
                 <h1 className="mt-2 text-lg font-semibold text-foreground">
                   Create a listing
                 </h1>
-                <p className="mt-1 text-sm leading-6 text-muted">
+                <p className="app-subcopy mt-1">
                   Choose the path that fits how much help you want.
                 </p>
               </div>
@@ -474,7 +474,7 @@ function CreationModeChooser({
           <p className="text-sm font-semibold text-foreground">
             Start faster with Shopi Agent.
           </p>
-          <p className="mt-1 text-xs leading-5 text-muted">
+          <p className="app-microcopy mt-1">
             Manual is still here when you want direct control.
           </p>
         </div>

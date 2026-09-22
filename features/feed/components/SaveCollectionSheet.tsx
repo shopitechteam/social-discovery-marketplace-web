@@ -225,7 +225,7 @@ export function SaveCollectionSheet({
                 <button
                   onClick={() =>
                     toggleMode && isIn && lang
-                      ? (onClose(), router.push(`/${lang}/collections/${col.id}?from=/${lang}/feed`))
+                      ? (onClose(), router.push(`/${lang}/collections/${col.id}?from=/${lang}/for-you`))
                       : handleToggleCollection(col)
                   }
                   disabled={isLoading || isDisabled}

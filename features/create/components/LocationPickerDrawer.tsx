@@ -18,7 +18,15 @@ import {
   DrawerTitle,
   DrawerClose,
 } from "@/components/ui/drawer";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useIsDesktop } from "@/hooks/useIsDesktop";
 import type { DraftLocation } from "@/stores/create";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -181,7 +189,28 @@ function firstText(...values: Array<string | null | undefined>): string | undefi
 }
 
 function gpsFallbackLabel(lat: number, lng: number): string {
-  return `Current location (${lat.toFixed(5)}, ${lng.toFixed(5)})`;
+  void lat;
+  void lng;
+  return "Nearby location";
+}
+
+function isGenericCurrentLocationName(value?: string | null): boolean {
+  const text = value?.trim();
+  if (!text) return true;
+  return /^current location\b/i.test(text) ||
+    /^nearby location\b/i.test(text) ||
+    /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?/.test(text);
+}
+
+function stripCoordinateLabel(value?: string | null): string | undefined {
+  const text = value
+    ?.trim()
+    .replace(/^current location\b\s*,?\s*/i, "")
+    .replace(/^nearby location\b\s*,?\s*/i, "")
+    .replace(/^current location\s*\([^)]*\)\s*,?\s*/i, "")
+    .replace(/^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?\s*,?\s*/, "")
+    .trim();
+  return text || undefined;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -228,6 +257,7 @@ function LoadMoreRow({ label }: { label: string }) {
 }
 
 export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
+  const isDesktop = useIsDesktop({ ssrDefault: false });
   const [tab, setTab] = useState<Tab>("nearby");
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -510,6 +540,41 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
     onOpenChange(false);
   }
 
+  function confirmGpsFallback(gps: { lat: number; lng: number }) {
+    const fallbackLabel = gpsFallbackLabel(gps.lat, gps.lng);
+    confirmLocation({
+      placeName: fallbackLabel,
+      formattedAddress: fallbackLabel,
+      placeId: `current:${gps.lat.toFixed(5)},${gps.lng.toFixed(5)}`,
+      latitude: gps.lat,
+      longitude: gps.lng,
+      county: undefined,
+      subregion: undefined,
+    });
+  }
+
+  async function nearestNamedPlace(gps: { lat: number; lng: number }) {
+    try {
+      const { data } = await fetchNearbyPage({
+        variables: { lat: gps.lat, lng: gps.lng, radiusIndex: 0 },
+      });
+      const places = data?.nearbyPage?.places ?? [];
+      return places
+        .filter((place) => place.name?.trim())
+        .sort((a, b) => {
+          const da = a.lat != null && a.lng != null
+            ? haversine(gps.lat, gps.lng, a.lat, a.lng)
+            : Infinity;
+          const db = b.lat != null && b.lng != null
+            ? haversine(gps.lat, gps.lng, b.lat, b.lng)
+            : Infinity;
+          return da - db;
+        })[0];
+    } catch {
+      return undefined;
+    }
+  }
+
   function handleUseCurrentLocation() {
     if (typeof window !== "undefined" && !window.isSecureContext) {
       setCurrentLocationStatus("unavailable");
@@ -534,26 +599,31 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
           .filter(Boolean)
           .join(", ");
         const hasResolvedLocation = Boolean(firstText(
-          loc?.placeName,
+          isGenericCurrentLocationName(loc?.placeName) ? undefined : loc?.placeName,
           loc?.wardName,
           loc?.subCountyName,
           loc?.countyName,
-          loc?.formattedAddress,
+          stripCoordinateLabel(loc?.formattedAddress),
         ));
         if (!loc || !hasResolvedLocation) {
-          setCurrentLocationStatus("lookupError");
+          confirmGpsFallback(gps);
           return;
         }
 
-        const placeName = firstText(
-          loc?.placeName,
+        const reversePlaceName = firstText(
+          isGenericCurrentLocationName(loc?.placeName) ? undefined : loc?.placeName,
           loc?.wardName,
           loc?.subCountyName,
           loc?.countyName,
-          loc?.formattedAddress,
+          stripCoordinateLabel(loc?.formattedAddress),
         ) ?? fallbackLabel;
+        const nearbyPlace = isGenericCurrentLocationName(loc?.placeName)
+          ? await nearestNamedPlace(gps)
+          : undefined;
+        const placeName = nearbyPlace?.name ?? reversePlaceName;
         const formattedAddress = firstText(
-          loc?.formattedAddress,
+          nearbyPlace?.address,
+          stripCoordinateLabel(loc?.formattedAddress),
           regionAddress,
           placeName,
         ) ?? fallbackLabel;
@@ -568,7 +638,7 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
           subregion: loc?.subCountyName ?? undefined,
         });
       } catch {
-        setCurrentLocationStatus("lookupError");
+        confirmGpsFallback(gps);
       }
     });
   }
@@ -652,11 +722,19 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
 
   // ── JSX ──────────────────────────────────────────────────────────────────
 
-  return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="h-[75dvh] flex flex-col p-0 gap-0 outline-none">
-
-        {/* Header */}
+  const pickerContent = (
+    <>
+      {/* Header */}
+      {isDesktop ? (
+        <DialogHeader className="border-b border-border px-5 py-4 text-left">
+          <DialogTitle className="text-base text-foreground">
+            Locations
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            Select a location for this post.
+          </DialogDescription>
+        </DialogHeader>
+      ) : (
         <DrawerHeader className="px-4 pt-5 pb-0 flex items-center justify-between flex-shrink-0">
           <DrawerTitle className="text-base text-foreground">
             Locations
@@ -673,6 +751,7 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
             </button>
           </DrawerClose>
         </DrawerHeader>
+      )}
 
         {/* Tabs */}
         <div className="mt-3 flex flex-shrink-0 border-b border-border px-4">
@@ -920,6 +999,23 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
             )}
           </div>
         )}
+    </>
+  );
+
+  if (isDesktop) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="flex h-[min(78svh,720px)] w-[min(92vw,620px)] max-w-none flex-col gap-0 overflow-hidden rounded-2xl border border-default bg-app p-0">
+          {pickerContent}
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  return (
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent className="h-[75dvh] flex flex-col p-0 gap-0 outline-none">
+        {pickerContent}
       </DrawerContent>
     </Drawer>
   );

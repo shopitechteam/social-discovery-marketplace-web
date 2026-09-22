@@ -4,8 +4,8 @@
     "tagline": "Post it free. Sell it near you.",
     "loading": "Loading…",
     "error": "Something went wrong",
-    "continueWeb": "Browse the feed →",
-    "openFeed": "Browse the feed",
+    "continueWeb": "Open For You →",
+    "openFeed": "Open For You",
     "startFree": "Post an item"
   },
   "nav": {
@@ -22,7 +22,7 @@
     "headline": "Kenya’s social local marketplace—tuned to what you like, and where you are.",
     "subheadline": "Scroll real things being sold around you: cars in Rongai, phones in town, furniture down the road, fresh produce from a farmer nearby. Shopi also learns what you keep opening and saves your taste, so the feed stays local and relevant. When something feels right, message the seller and agree directly. Shopi does not take payments or commission.",
     "reassurance": "Free to browse · Free to post · Buyer and seller agree directly",
-    "ctaExplore": "Open the feed",
+    "ctaExplore": "Open For You",
     "ctaHowItWorks": "See how it works"
   },
   "features": {
@@ -59,7 +59,7 @@
     "sectionLabel": "How it works",
     "eyebrow": "From photo to published",
     "headline": "Four steps, and your item is in front of nearby buyers.",
-    "intro": "There is no long form to fight with and nothing to pay. Create a free account, add your photos, let Shopi Agent draft the words, then publish. Your listing enters the local feed straight away.",
+    "intro": "Create a free account, add your photos, let Shopi Agent draft the words, then publish. Your listing enters the local feed straight away.",
     "steps": {
       "1": {
         "title": "Create your free account",
@@ -86,7 +86,7 @@
       "tag": "For buyers",
       "title": "Find useful things before you think to search.",
       "body": "Maybe you came for a phone and ended up spotting a sofa, a good mitumba bale, a used car, or fresh produce nearby. Shopi keeps discovery open, uses your interests to tune the feed, then lets you message the seller when something makes sense.",
-      "cta": "Open the feed"
+      "cta": "Open For You"
     },
     "sellers": {
       "tag": "For sellers",
@@ -102,7 +102,7 @@
   "socialProof": {
     "eyebrow": "Selling on Shopi right now",
     "headline": "Don't take our word for it. Here's what's live today.",
-    "intro": "Real sellers with real stock. Every item below is a live listing on Shopi, with a price, a location and a seller you can message.",
+    "intro": "Real sellers, real stock, live listings. Every item has a price, a location and a seller you can message.",
     "featured": "Featured seller",
     "verified": "Verified seller",
     "listings": "live listings",
@@ -119,9 +119,9 @@
   "download": {
     "sectionLabel": "Start selling",
     "headline": "Post it today. Let nearby buyers come to you.",
-    "body": "That thing you've been meaning to sell could be live in the feed today. Take a photo, let Shopi Agent write it up, and publish. It's free, there's no commission, and every shilling the buyer pays is yours.",
+    "body": "Take a photo, let Shopi Agent write the listing, and publish. It's free, there's no commission, and the buyer pays you directly.",
     "webCta": "Post your first item — free",
-    "secondaryCta": "Browse the feed first",
+    "secondaryCta": "Open For You first",
     "reassurance": "Free to post · 0% commission · No business registration needed"
   },
   "footer": {
@@ -174,7 +174,7 @@
     }
   },
   "routes": {
-    "feed": "Home",
+    "feed": "For You",
     "explore": "Explore",
     "notifications": "Inbox",
     "profile": "My Profile",
@@ -184,12 +184,12 @@
     "hero": {
       "eyebrow": "Kenya's free social marketplace",
       "headline": "Sell it with one photo. Keep every shilling.",
-      "subheadline": "Got a phone you've upgraded from, a sofa you've replaced, or stock you sell from home? Take one photo and Shopi Agent writes the listing for you. Buyers near you find it in the feed and message you directly — no listing fees, no commission, nobody in the middle.",
+      "subheadline": "Take one photo and Shopi Agent writes the listing. Nearby buyers find it in the feed and message you directly — no listing fees, no commission.",
       "ctaPost": "Post your first item — free",
       "ctaPostShort": "Post an item",
       "ctaFeed": "Browse what's near you",
-      "ctaFeedShort": "Browse the feed",
-      "ctaFeedLoggedIn": "Continue to your feed",
+      "ctaFeedShort": "Open For You",
+      "ctaFeedLoggedIn": "Go to For You",
       "reassurance": "Free to post · 0% commission · No business registration needed",
       "figures": {
         "commission": "commission on your sale",
@@ -200,7 +200,7 @@
     "pillars": {
       "eyebrow": "Why sell here",
       "headline": "Your item gets found without paying to be seen.",
-      "intro": "Most marketplaces wait for a buyer to type the exact words. On Shopi, people scroll a feed the way they scroll social apps, and listings near them come first — so your post reaches buyers who weren't even searching for it yet. Posting is free, there's no commission, and every message comes straight to you.",
+      "intro": "On Shopi, people scroll a local feed like a social app. Your post reaches nearby buyers even before they search, and every message comes straight to you.",
       "feed": {
         "title": "Get found by people who weren't searching",
         "tagline": "Buyers come across your item while they scroll, not only when they type the exact words."
@@ -217,7 +217,7 @@
     "stats": {
       "eyebrow": "What it costs you",
       "headline": "The price you agree is the price you keep.",
-      "intro": "Shopi doesn't process payments, hold your money or arrange delivery, so there's nothing for us to take a cut of. The buyer pays you directly, and all of it stays with you.",
+      "intro": "Shopi does not process payments, hold money or arrange delivery. The buyer pays you directly, and all of it stays with you.",
       "zero": {
         "figure": "KES 0",
         "label": "Commission and listing fees",
@@ -238,7 +238,7 @@
       "feed": {
         "eyebrow": "For buyers",
         "title": "Find what you didn't know you were looking for.",
-        "body": "Scroll for a minute and you'll spot the sofa, phone or car you'd never have thought to search for. The feed learns what you open, save and message about, and shows listings near you first.",
+        "body": "Scroll and spot the sofa, phone or car you might never search for. The feed learns what you open and shows nearby listings first.",
         "bullets": [
           "Nearby listings appear first, from your neighbourhood outward",
           "Real photos, videos, prices and locations from local sellers",
@@ -250,7 +250,7 @@
       "chat": {
         "eyebrow": "Direct chat",
         "title": "Deal with the person, not a checkout.",
-        "body": "When you find the right item, message the seller inside Shopi. Price, payment and pickup are agreed between the two of you. Shopi never holds the money, so there is nothing to deduct and nobody to wait on.",
+        "body": "Message the seller inside Shopi. Price, payment and pickup stay between the two of you, so there is nothing to deduct and nobody to wait on.",
         "bullets": [
           "One tap from the listing to a real conversation",
           "Ask for more photos, negotiate, and choose where to meet",
@@ -262,7 +262,7 @@
       "sell": {
         "eyebrow": "Shopi Agent",
         "title": "One photo. A finished listing.",
-        "body": "The reason most people never post is the writing. Upload a photo and Shopi Agent drafts the title, description, category and specifications for you. Nothing publishes until you have read it and made it yours.",
+        "body": "Upload a photo and Shopi Agent drafts the title, description, category and specifications. Nothing publishes until you review it.",
         "bullets": [
           "Photo in, complete draft listing out",
           "Edit any word before it goes live — nothing is posted automatically",
@@ -275,7 +275,7 @@
     "welcomeBack": {
       "message": "Welcome back, {name}!",
       "messageNoName": "Welcome back!",
-      "cta": "Jump back to your feed",
+      "cta": "Go to For You",
       "dismiss": "Dismiss"
     }
   },

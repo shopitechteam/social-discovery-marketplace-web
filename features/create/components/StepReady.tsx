@@ -195,7 +195,7 @@ export function StepReady({ lang }: StepReadyProps) {
 
         setTimeout(() => {
           reset();
-          router.push(`/${lang}/feed`);
+          router.push(`/${lang}/for-you`);
         }, 1800);
       }
     } catch (err) {
@@ -210,7 +210,7 @@ export function StepReady({ lang }: StepReadyProps) {
   async function handleSaveDraft() {
     if (saving) return;
     reset();
-    router.push(`/${lang}/feed`);
+    router.push(`/${lang}/for-you`);
   }
 
   // ── Published success ─────────────────────────────────────────────────────

@@ -13,7 +13,10 @@ import { useCallback, useState } from "react";
 import { getSuspendedAccountMessage } from "@/lib/apollo/suspended-account";
 import { trackAuthSuccess, trackSignup } from "@/lib/analytics";
 import { attributionInput } from "@/lib/attribution";
-import { navigateAfterAuth } from "@/features/auth/lib/postAuthNavigate";
+import {
+  authDestination,
+  navigateAfterAuth,
+} from "@/features/auth/lib/postAuthNavigate";
 
 // Auth pages render the Google button once for their mobile layout and once
 // for their desktop layout — both always mounted, only CSS-toggled by
@@ -71,7 +74,7 @@ export function useOAuthMutation(
   const mutationLoading = googleLoading || appleLoading || facebookLoading;
 
   function getDestination() {
-    return from && from.startsWith("/") ? from : `/${lang}/feed`;
+    return authDestination(from, lang);
   }
 
   /**

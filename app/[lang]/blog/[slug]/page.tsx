@@ -358,14 +358,14 @@ export default async function BlogPostPage({ params }: Props) {
                 Ready to buy and sell locally?
               </h3>
               <p className="mb-5 text-[0.875rem] text-muted">
-                Open the feed, discover what is selling near you, and message
+                Open For You, discover what is selling near you, and message
                 the seller directly. Free to use.
               </p>
               <Link
-                href={`/${lang}/feed`}
+                href={`/${lang}/for-you`}
                 className="inline-flex items-center gap-2 rounded-full bg-primary px-7 py-3 text-[0.9rem] font-bold text-white no-underline"
               >
-                Open the feed →
+                Open For You →
               </Link>
             </div>
           </article>

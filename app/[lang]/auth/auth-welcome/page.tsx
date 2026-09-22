@@ -183,7 +183,7 @@ export default async function WelcomePage({
           <h1 className="text-2xl font-bold text-default font-display text-center leading-[1.2] tracking-tight text-balance">
             {copy.mobileHeadline}
           </h1>
-          <p className="mt-2 text-sm text-muted text-center leading-relaxed">
+          <p className="app-subcopy mt-2 text-center">
             {copy.mobileBody}
           </p>
         </div>
@@ -198,7 +198,7 @@ export default async function WelcomePage({
           <h1 className="text-[28px] text-center font-bold text-default font-display leading-tight tracking-tight">
             {copy.desktopHeadline}
           </h1>
-          <p className="mt-2 text-base text-center text-muted leading-relaxed">
+          <p className="app-subcopy mt-2 text-center">
             {copy.desktopBody}
           </p>
         </div>

@@ -294,7 +294,7 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
       }
 
       // No auto-redirect — the success screen stays up until the user taps
-      // "Go to feed". The post is already submitted and will appear once it
+      // "Go to For You". The post is already submitted and will appear once it
       // clears automated review in the background.
     } catch (err) {
       setError(String(err));
@@ -325,7 +325,7 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
         }).catch(() => undefined);
       }
       reset();
-      router.push(`/${lang}/feed`);
+      router.push(`/${lang}/for-you`);
     } finally {
       setAdvancing(false);
     }
@@ -342,10 +342,10 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
           <CreateSuccessPrimaryAction
             onClick={() => {
               reset();
-              router.push(`/${lang}/feed`);
+              router.push(`/${lang}/for-you`);
             }}
           >
-            Go to feed
+            Go to For You
           </CreateSuccessPrimaryAction>
         )}
 
@@ -384,11 +384,11 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
             <button
               onClick={() => {
                 reset();
-                router.push(`/${lang}/feed`);
+                router.push(`/${lang}/for-you`);
               }}
               className="mx-auto mt-2 block text-xs font-medium text-muted"
             >
-              Go to feed
+              Go to For You
             </button>
           </div>
         )}

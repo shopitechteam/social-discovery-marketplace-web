@@ -10,8 +10,31 @@ interface Props {
   onClear: () => void;
 }
 
+function stripCoordinateLabel(value?: string | null): string | undefined {
+  const text = value
+    ?.trim()
+    .replace(/^current location\b\s*,?\s*/i, "")
+    .replace(/^nearby location\b\s*,?\s*/i, "")
+    .replace(/^current location\s*\([^)]*\)\s*,?\s*/i, "")
+    .replace(/^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?\s*,?\s*/, "")
+    .trim();
+  return text || undefined;
+}
+
 export function LocationPicker({ value, onSelect, onClear }: Props) {
   const [open, setOpen] = useState(false);
+  const displayName = value
+    ? (stripCoordinateLabel(value.placeName) ??
+      value.subregion ??
+      value.county ??
+      stripCoordinateLabel(value.formattedAddress) ??
+      "Nearby location")
+    : "";
+  const displayRegion = value
+    ? [value.subregion, value.county]
+        .filter((part): part is string => Boolean(part && part !== displayName))
+        .join(", ")
+    : "";
 
   return (
     <>
@@ -44,14 +67,14 @@ export function LocationPicker({ value, onSelect, onClear }: Props) {
               className="font-semibold truncate"
               style={{ fontSize: "var(--text-sm)", color: "rgb(var(--color-text))" }}
             >
-              {value.placeName}
+              {displayName}
             </p>
-            {value.county && (
+            {displayRegion && (
               <p
                 className="truncate"
                 style={{ fontSize: "var(--text-xs)", color: "rgb(var(--color-text-muted))" }}
               >
-                {[value.subregion, value.county].filter(Boolean).join(", ")}
+                {displayRegion}
               </p>
             )}
           </div>

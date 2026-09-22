@@ -235,7 +235,7 @@ export function ImmersiveVideoViewer({ seed: seedProp, lang }: Props) {
   // A shared video link is the common way into this screen, and that arrival
   // has no app history behind it — a plain back() would do nothing at all and
   // trap the viewer open. Fall through to the feed instead.
-  const closeViewer = useAppBack(`/${lang}/feed`);
+  const closeViewer = useAppBack(`/${lang}/for-you`);
   // Closing is a deliberate exit, so the remembered slide goes with it —
   // reopening this video later should start at the top, not mid-list.
   const close = useCallback(() => {

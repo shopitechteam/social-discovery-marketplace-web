@@ -236,10 +236,10 @@ export default async function AlternativesPage({ params }: Props) {
 
           <div className="flex flex-wrap gap-3">
             <Link
-              href={`/${lang}/feed`}
+              href={`/${lang}/for-you`}
               className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white"
             >
-              Try the feed
+              Try For You
             </Link>
             <Link
               href={`/${lang}/sell-in-kenya`}

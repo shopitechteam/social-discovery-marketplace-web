@@ -168,7 +168,7 @@ export function ListingSeoSummary({
           a dead end for a non-JS crawler. */}
       <nav className="flex flex-wrap gap-3 text-sm text-primary">
         <Link href={`/${lang}/explore`}>Explore listings</Link>
-        <Link href={`/${lang}/feed`}>Browse the feed</Link>
+        <Link href={`/${lang}/for-you`}>Open For You</Link>
         <Link href={`/${lang}/search`}>Search Shopi</Link>
       </nav>
     </article>
