@@ -13,7 +13,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/stores/auth";
 import {
+  FOLLOWED_STORE_IDS_QUERY,
   STORES_QUERY,
   type StoreCard,
   type StoreDirectoryPage,
@@ -201,6 +203,25 @@ export function StoresPage({
     }
   }, [fetchMore, page.hasMore, page.nextOffset, variables.input]);
 
+  // Follow state is per-viewer, so it can't ride along in the directory's
+  // shared cached payload — it comes back on its own, for exactly the sellers
+  // currently on screen, and is merged in below.
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated());
+  const visibleIds = useMemo(
+    () => page.stores.map((store) => store.id),
+    [page.stores],
+  );
+  const { data: followData } = useQuery(FOLLOWED_STORE_IDS_QUERY, {
+    variables: { userIds: visibleIds },
+    skip: !isAuthenticated || visibleIds.length === 0,
+    fetchPolicy: "cache-and-network",
+  });
+  const followedIds = useMemo(() => {
+    const ids = (followData as { followedUserIds?: string[] } | undefined)
+      ?.followedUserIds;
+    return new Set(ids ?? []);
+  }, [followData]);
+
   const clearAll = useCallback(() => {
     setSearchInput("");
     setSearch("");
@@ -215,7 +236,15 @@ export function StoresPage({
   return (
     <div className="min-h-svh bg-app pb-24 md:pb-12">
       <header className="mx-auto w-full max-w-360 px-4 pt-6 pb-5 xl:px-8">
-        <h1 className="text-2xl font-bold text-main xl:text-3xl">Stores</h1>
+        <h1 className="flex items-baseline gap-2 text-2xl font-bold text-main xl:text-3xl">
+          Stores
+          {/* The live total sits with the title rather than on its own line
+              above the grid — the active-filter chips already say what is
+              narrowing it, so the number only needed saying once. */}
+          <span className="text-lg font-semibold text-muted xl:text-xl" aria-live="polite">
+            · {page.total.toLocaleString("en-KE")}
+          </span>
+        </h1>
         <p className="mt-1.5 max-w-2xl text-sm text-muted">
           Browse sellers across Kenya. Stock, reach and activity on every card
           are counted live from public listings.
@@ -378,18 +407,14 @@ export function StoresPage({
           </div>
         ) : (
           <>
-            <p className="mb-4 text-[13px] text-muted" aria-live="polite">
-              <span className="font-semibold text-main">
-                {page.total.toLocaleString("en-KE")}
-              </span>{" "}
-              {page.total === 1 ? "store" : "stores"}
-              {county ? ` in ${county}` : ""}
-              {verifiedOnly ? " · verified only" : ""}
-            </p>
-
             <div className={STORE_GRID_CLASS}>
               {page.stores.map((store) => (
-                <StoreTile key={store.id} lang={lang} store={store} />
+                <StoreTile
+                  key={store.id}
+                  lang={lang}
+                  store={store}
+                  isFollowed={followedIds.has(store.id)}
+                />
               ))}
             </div>
 

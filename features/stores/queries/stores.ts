@@ -44,6 +44,20 @@ export const STORE_COUNTIES_QUERY = gql`
   }
 `;
 
+/**
+ * Which of the sellers on screen the viewer already follows.
+ *
+ * Deliberately a second round-trip rather than a field on StoreCard: the
+ * directory response is cached in Redis for two minutes under a key with no
+ * viewer in it, so anything per-viewer inside that payload would be served to
+ * whoever asked next. This query is per-viewer and uncached.
+ */
+export const FOLLOWED_STORE_IDS_QUERY = gql`
+  query FollowedUserIds($userIds: [String!]!) {
+    followedUserIds(userIds: $userIds)
+  }
+`;
+
 export type StoreSort = "LISTINGS" | "RECENT" | "POPULAR";
 
 export type StoreCard = {
