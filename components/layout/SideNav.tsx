@@ -70,9 +70,9 @@ export function SideNav({ lang = "en" }: { lang: string }) {
       .join("")
       .toUpperCase() || "S";
   const homeActive =
-    pathname === `/${lang}` || pathname.startsWith(`/${lang}/feed`);
+    pathname === `/${lang}` || pathname.startsWith(`/${lang}/for-you`);
   const isFeedRoute =
-    pathname === `/${lang}` || pathname.startsWith(`/${lang}/feed`);
+    pathname === `/${lang}` || pathname.startsWith(`/${lang}/for-you`);
   const browseActive =
     pathname.startsWith(`/${lang}/explore`) ||
     pathname.startsWith(`/${lang}/search`);
@@ -109,7 +109,7 @@ export function SideNav({ lang = "en" }: { lang: string }) {
               this group and it starts flush on the 280px column edge. */}
           <div className="flex h-full min-w-0 flex-1 items-center gap-5 pr-6">
             <nav className="flex shrink-0 items-center gap-1 text-[13px] font-bold">
-              <TopNavLink href={`/${lang}/feed`} active={homeActive}>
+              <TopNavLink href={`/${lang}/for-you`} active={homeActive}>
                 For You
               </TopNavLink>
               <TopNavLink href={`/${lang}/explore`} active={browseActive}>
@@ -411,11 +411,11 @@ function BrowseCategories({ lang }: { lang: string }) {
         {categories.map((category, index) => {
           const href =
             index === 0
-              ? `/${lang}/feed`
+              ? `/${lang}/for-you`
               : `/${lang}/explore?category=${encodeURIComponent(category.slug)}`;
           const active =
             index === 0
-              ? pathname === `/${lang}` || pathname.startsWith(`/${lang}/feed`)
+              ? pathname === `/${lang}` || pathname.startsWith(`/${lang}/for-you`)
               : activeCategory === category.slug;
 
           return (

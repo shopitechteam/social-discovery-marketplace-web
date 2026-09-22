@@ -29,7 +29,7 @@ type Tab = {
 const tabs: Tab[] = [
   {
     key: "feed",
-    path: "feed",
+    path: "for-you",
     label: "For You",
     icon: House,
   },
@@ -119,7 +119,7 @@ export function BottomNav({ lang = "en" }: { lang: string }) {
           const isActive =
             tab.key === "feed"
               ? pathname === `/${lang}` ||
-                pathname.startsWith(`/${lang}/feed`) ||
+                pathname.startsWith(`/${lang}/for-you`) ||
                 pathname.startsWith(`/${lang}/collections/`)
               : tab.key === "explore"
                 ? pathname.startsWith(`/${lang}/explore`) ||

@@ -63,7 +63,7 @@ export function WelcomeBackBanner({
         {message}
       </p>
       <Link
-        href={`/${lang}/feed`}
+        href={`/${lang}/for-you`}
         className="shrink-0 rounded-full bg-primary px-4 py-2 text-sm font-semibold whitespace-nowrap text-white no-underline"
       >
         {t.cta}

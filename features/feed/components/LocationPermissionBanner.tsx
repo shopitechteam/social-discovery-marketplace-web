@@ -50,7 +50,7 @@ export function LocationPermissionBanner() {
         <p className="text-sm font-semibold text-default">
           See what’s actually near you
         </p>
-        <p className="text-xs text-muted-foreground">
+        <p className="app-microcopy">
           Enable location for a feed tailored to where you are right now.
         </p>
       </div>

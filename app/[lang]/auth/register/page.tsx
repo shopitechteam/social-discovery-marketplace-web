@@ -79,7 +79,7 @@ export default async function RegisterPage({
           <h1 className="font-display text-3xl font-bold leading-tight tracking-tight text-default">
             Create your account
           </h1>
-          <p className="mt-2 text-sm leading-6 text-muted">
+          <p className="app-subcopy mt-2">
             Takes less than a minute.
           </p>
         </div>
@@ -96,7 +96,7 @@ export default async function RegisterPage({
           <h1 className="text-2xl font-bold text-default font-display tracking-tight">
             Create your Shopi account
           </h1>
-          <p className="mt-1.5 text-base text-muted leading-relaxed">
+          <p className="app-subcopy mt-1.5">
             Takes less than a minute.
           </p>
         </div>

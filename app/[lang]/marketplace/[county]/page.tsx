@@ -131,7 +131,7 @@ export default async function CountyPage({ params }: Props) {
 
           <div className="mb-12 flex flex-wrap gap-3">
             <Link
-              href={`/${lang}/feed`}
+              href={`/${lang}/for-you`}
               className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white"
             >
               Browse listings

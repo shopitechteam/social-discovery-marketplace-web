@@ -1286,7 +1286,7 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
         hdEnabled,
       });
       reset();
-      router.replace(`/${lang}/feed`);
+      router.replace(`/${lang}/for-you`);
     } catch (error) {
       setFormError(error instanceof Error ? error.message : String(error));
     } finally {
@@ -1319,9 +1319,9 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
     return (
       <CreateSuccessScreen>
         <CreateSuccessPrimaryAction
-          onClick={() => router.replace(`/${lang}/feed`)}
+          onClick={() => router.replace(`/${lang}/for-you`)}
         >
-          Go to feed
+          Go to For You
         </CreateSuccessPrimaryAction>
       </CreateSuccessScreen>
     );

@@ -21,7 +21,7 @@ export function DownloadSection({
           <h2 className="mx-auto mb-4 max-w-160 font-display text-[clamp(1.9rem,4.5vw,3.25rem)] font-bold tracking-normal leading-[1.12] text-foreground">
             {dict.download.headline}
           </h2>
-          <p className="mx-auto mb-9 max-w-130 text-[clamp(1rem,1.6vw,1.15rem)] leading-[1.6] text-muted">
+          <p className="landing-subcopy mx-auto mb-9 max-w-130">
             {dict.download.body}
           </p>
 
@@ -38,7 +38,7 @@ export function DownloadSection({
               <span aria-hidden> →</span>
             </Link>
             <Link
-              href={`/${lang}/feed`}
+              href={`/${lang}/for-you`}
               className="inline-flex items-center rounded-full border border-border bg-elevated px-7 py-4 text-md font-semibold text-foreground no-underline hover:bg-subtle"
             >
               {dict.download.secondaryCta}

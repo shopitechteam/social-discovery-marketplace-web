@@ -49,7 +49,7 @@ export function CreateDrawer({ lang }: { lang: string }) {
     if (draftId && step !== "pick") {
       router.push(`/${lang}/upload/create`);
     } else {
-      window.location.href = `/${lang}/feed`;
+      window.location.href = `/${lang}/for-you`;
     }
   }
 

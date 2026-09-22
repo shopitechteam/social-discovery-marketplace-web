@@ -123,7 +123,7 @@ function LiveFeedCards({ lang, active }: { lang: string; active: boolean }) {
         <h3 className="font-bold text-default text-base mb-2">
           Your feed is empty
         </h3>
-        <p className="text-muted-foreground text-sm leading-relaxed">
+        <p className="app-subcopy">
           Follow sellers or explore categories to see content here.
         </p>
       </div>

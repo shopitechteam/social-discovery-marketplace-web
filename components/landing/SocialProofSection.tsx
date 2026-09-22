@@ -132,7 +132,7 @@ export async function SocialProofSection({
           >
             {t.headline}
           </h2>
-          <p className="mt-4 max-w-2xl text-base leading-normal text-muted">
+          <p className="landing-subcopy mt-4 max-w-2xl">
             {t.intro}
           </p>
         </div>

@@ -184,7 +184,7 @@ interface Props {
 export function ProfileFollowersView({ lang }: Props) {
   // Owner-only, but still a linkable URL — an arrival with no app history
   // behind it would otherwise get a back button that does nothing.
-  const goBack = useAppBack(`/${lang}/feed`);
+  const goBack = useAppBack(`/${lang}/for-you`);
   const { data, loading, networkStatus, fetchMore } = useQuery(
     MyFollowersDocument,
     {

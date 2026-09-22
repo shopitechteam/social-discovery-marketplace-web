@@ -79,7 +79,7 @@ export function ResetPasswordForm({ token, lang }: ResetPasswordFormProps) {
 
       // Password reset succeeded — the API signs us in and revokes other sessions.
       setAuth(payload);
-      navigateAfterAuth(router, `/${lang}/feed`);
+      navigateAfterAuth(router, `/${lang}/for-you`);
     } catch (err: unknown) {
       setServerError(
         err instanceof Error ? err.message : "Something went wrong.",

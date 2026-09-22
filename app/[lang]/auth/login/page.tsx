@@ -63,7 +63,7 @@ export default async function LoginPage({
           <h1 className="font-display text-3xl font-bold leading-tight tracking-tight text-default">
             Welcome back
           </h1>
-          <p className="mt-2 text-sm leading-6 text-muted">
+          <p className="app-subcopy mt-2">
             Sign in to keep your feed personalized.
           </p>
         </div>
@@ -81,7 +81,7 @@ export default async function LoginPage({
           <h1 className="text-2xl font-bold text-default font-display tracking-tight">
             Welcome back
           </h1>
-          <p className="mt-1.5 text-base text-muted leading-relaxed">
+          <p className="app-subcopy mt-1.5">
             Sign in to keep your feed personalized.
           </p>
         </div>

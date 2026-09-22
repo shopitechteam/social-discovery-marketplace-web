@@ -510,7 +510,7 @@ function EmptyState({ title, body }: { title: string; body: string }) {
         <Search size={22} />
       </div>
       <h2 className="mt-4 text-base font-semibold text-default">{title}</h2>
-      <p className="mt-2 text-sm leading-6 text-muted-foreground">{body}</p>
+      <p className="app-subcopy mx-auto mt-2 max-w-sm">{body}</p>
     </div>
   );
 }
@@ -1633,7 +1633,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
                   <p className="text-base font-semibold text-default">
                     Couldn&apos;t load Discover
                   </p>
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  <p className="app-subcopy mt-2">
                     Check the connection to the API, then try again.
                   </p>
                   <button
@@ -1725,7 +1725,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
           <SheetHeader className="flex-row items-center justify-between border-b border-default px-5 py-4 text-left">
             <div>
               <SheetTitle className="text-base">Filters</SheetTitle>
-              <p className="mt-0.5 text-xs text-muted-foreground">
+              <p className="app-microcopy mt-0.5">
                 {activeFilterCount > 0
                   ? `${activeFilterCount} active ${activeFilterCount === 1 ? "filter" : "filters"}`
                   : "Narrow down what you want"}
@@ -1798,7 +1798,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
                   <p className="truncate text-sm font-medium text-default">
                     {locationLabel}
                   </p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
+                  <p className="app-microcopy mt-0.5">
                     Drill down from county to ward
                   </p>
                 </div>
@@ -1865,7 +1865,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
                   <p className="text-sm font-medium text-default">
                     Negotiable only
                   </p>
-                  <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
+                  <p className="app-microcopy mt-0.5">
                     Show listings where the seller is open to discussing the
                     price.
                   </p>

@@ -56,7 +56,7 @@ export function MarketplaceCategoriesSection({ lang }: { lang: string }) {
           <h2 className="font-display text-[clamp(1.65rem,2.8vw,2.5rem)] font-bold leading-tight tracking-normal text-foreground">
             Whatever you have, someone nearby is looking for it.
           </h2>
-          <p className="mt-4 max-w-2xl text-base leading-normal text-muted">
+          <p className="landing-subcopy mt-4 max-w-2xl">
             The phone you upgraded from. The plot you inherited. The car you
             are done with. The skincare you sell from home. Post it manually or
             let Shopi Agent turn a photo into a complete listing, then deal with

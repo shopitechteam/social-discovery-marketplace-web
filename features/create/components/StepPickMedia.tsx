@@ -24,7 +24,7 @@ export function StepPickMedia() {
       router.back();
     } else {
       const lang = window.location.pathname.split("/")[1] || "en";
-      router.push(`/${lang}/feed`);
+      router.push(`/${lang}/for-you`);
     }
   }
 

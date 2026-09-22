@@ -2,11 +2,30 @@
 
 import type { useRouter } from "next/navigation";
 import { markScrollRestore } from "@/components/layout/RouteScrollRestoration";
+import { locales } from "@/i18n/config";
 
 type Router = ReturnType<typeof useRouter>;
 
 /** The cookie the proxy reads to decide whether a session exists. */
 const AUTH_HINT = "shopi-auth-hint=1";
+
+function isLandingPath(path: string, lang: string): boolean {
+  const localizedRoots = new Set(["/", `/${lang}`, ...locales.map((l) => `/${l}`)]);
+  return localizedRoots.has(path);
+}
+
+function canonicalAppPath(path: string): string {
+  for (const locale of locales) {
+    if (path === `/${locale}/feed`) return `/${locale}/for-you`;
+    if (path.startsWith(`/${locale}/feed?`)) {
+      return path.replace(`/${locale}/feed`, `/${locale}/for-you`);
+    }
+    if (path.startsWith(`/${locale}/feed/`)) {
+      return path.replace(`/${locale}/feed`, `/${locale}/for-you`);
+    }
+  }
+  return path;
+}
 
 /**
  * Where to land after signing in.
@@ -20,9 +39,13 @@ const AUTH_HINT = "shopi-auth-hint=1";
  * following it blindly is an open redirect.
  */
 export function authDestination(from: string | undefined, lang: string): string {
-  return from && from.startsWith("/") && !from.startsWith("//")
-    ? from
-    : `/${lang}/feed`;
+  if (from && from.startsWith("/") && !from.startsWith("//")) {
+    return isLandingPath(from, lang)
+      ? `/${lang}/for-you`
+      : canonicalAppPath(from);
+  }
+
+  return `/${lang}/for-you`;
 }
 
 /**

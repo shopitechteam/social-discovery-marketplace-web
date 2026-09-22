@@ -98,7 +98,7 @@ export function DesktopNearbyColumn({
     return (
       <Panel>
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-        <p className="text-sm text-muted-foreground">Checking location…</p>
+        <p className="app-subcopy">Checking location…</p>
       </Panel>
     );
   }
@@ -113,7 +113,7 @@ export function DesktopNearbyColumn({
           <h3 className="mb-1 text-lg font-bold text-default">
             Discover sellers near you
           </h3>
-          <p className="mx-auto max-w-sm text-sm leading-relaxed text-muted-foreground">
+          <p className="app-subcopy mx-auto max-w-sm">
             See listings from sellers in your area. We only use your location to
             find nearby content.
           </p>
@@ -133,7 +133,7 @@ export function DesktopNearbyColumn({
     return (
       <Panel>
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-        <p className="text-sm text-muted-foreground">Finding your location…</p>
+        <p className="app-subcopy">Finding your location…</p>
       </Panel>
     );
   }
@@ -145,7 +145,7 @@ export function DesktopNearbyColumn({
         <h3 className="text-lg font-bold text-default">
           Location access denied
         </h3>
-        <p className="mx-auto max-w-sm text-sm leading-relaxed text-muted-foreground">
+        <p className="app-subcopy mx-auto max-w-sm">
           To see nearby listings, enable location access in your browser settings
           and reload.
         </p>
@@ -157,7 +157,7 @@ export function DesktopNearbyColumn({
     return (
       <Panel>
         <div className="text-4xl">📍</div>
-        <p className="text-sm text-muted-foreground">
+        <p className="app-subcopy">
           Location is not supported on this device.
         </p>
       </Panel>
@@ -183,7 +183,7 @@ export function DesktopNearbyColumn({
     return (
       <Panel>
         <div className="text-4xl">⚠️</div>
-        <p className="text-sm text-muted-foreground">{geoError}</p>
+        <p className="app-subcopy">{geoError}</p>
         <button
           onClick={() => requestLocation()}
           className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white"
@@ -202,7 +202,7 @@ export function DesktopNearbyColumn({
         <h3 className="text-lg font-bold text-default">
           No listings nearby yet
         </h3>
-        <p className="mx-auto max-w-sm text-sm leading-relaxed text-muted-foreground">
+        <p className="app-subcopy mx-auto max-w-sm">
           No sellers found within <strong>{nearbyRadiusKm} km</strong> of your
           current location yet. Try expanding the radius.
         </p>

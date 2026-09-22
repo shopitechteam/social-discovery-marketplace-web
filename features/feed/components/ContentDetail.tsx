@@ -486,7 +486,7 @@ export function ContentDetail({
   const router = useRouter();
   // A listing link shared into WhatsApp opens with no app history behind it,
   // so a plain back() leaves the user stuck on the page. Land on the feed.
-  const backOrFeed = useAppBack(`/${lang}/feed`);
+  const backOrFeed = useAppBack(`/${lang}/for-you`);
   const goBack = onRequestClose ?? backOrFeed;
   const { requireAuth } = useAuthGuard(lang);
   const isSheet = desktopMode === "sheet";

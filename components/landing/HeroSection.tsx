@@ -25,7 +25,7 @@ export function HeroSection({
           <h1 className="max-w-4xl text-balance font-display text-[clamp(2.45rem,5.2vw,4.85rem)] font-semibold leading-[1.02] tracking-normal text-default">
             {t.headline}
           </h1>
-          <p className="mt-6 max-w-2xl text-base leading-normal text-muted md:text-md">
+          <p className="landing-subcopy mt-6 max-w-2xl">
             {t.subheadline}
           </p>
           <HeroCtas

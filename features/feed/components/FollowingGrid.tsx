@@ -14,7 +14,7 @@ interface Props {
 
 function LoginWall({ lang }: { lang: string }) {
   // Encode the return destination so after login we come back to the following tab
-  const returnTo = encodeURIComponent(`/${lang}/feed?tab=following`);
+  const returnTo = encodeURIComponent(`/${lang}/for-you?tab=following`);
 
   return (
     <div className="flex min-h-[93svh] fixed top-0 left-0 w-full right-0 bottom-0 no-bar flex-col items-center justify-center px-6 text-center gap-5">
@@ -44,10 +44,7 @@ function LoginWall({ lang }: { lang: string }) {
         >
           Sign in to see your feed
         </h3>
-        <p
-          className="text-sm leading-relaxed max-w-xs"
-          style={{ color: "rgb(var(--color-text-muted))" }}
-        >
+        <p className="app-subcopy max-w-xs">
           Follow sellers and creators to see their latest posts here.
         </p>
       </div>
@@ -99,10 +96,7 @@ export function FollowingGrid({ lang, active = true }: Props) {
         >
           Follow sellers you love
         </h3>
-        <p
-          className="text-sm leading-relaxed"
-          style={{ color: "rgb(var(--color-text-muted))" }}
-        >
+        <p className="app-subcopy max-w-xs">
           Their latest listings will appear here once you follow someone.
         </p>
       </div>
