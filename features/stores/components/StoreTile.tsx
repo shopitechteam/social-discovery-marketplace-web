@@ -1,16 +1,26 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { toast } from "sonner";
 import {
   BadgeCheck,
   Clock3,
   Eye,
+  Link2,
   MapPin,
+  MoreHorizontal,
   Package2,
   Store as StoreIcon,
 } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { useFollow } from "@/features/feed/hooks/useFollow";
+import { useAuthStore } from "@/stores/auth";
 import { SHIMMER, SHIMMER_AVATAR } from "@/lib/shimmer";
 import { profileHref } from "@/lib/profile-url";
 import { avatarGradient, idInitials } from "@/lib/avatar";
@@ -151,8 +161,25 @@ function Metric({
   );
 }
 
-function StoreTileComponent({ lang, store }: { lang: string; store: StoreCard }) {
+function StoreTileComponent({
+  lang,
+  store,
+  isFollowed = false,
+}: {
+  lang: string;
+  store: StoreCard;
+  /** Whether the viewer already follows this seller (see StoresPage). */
+  isFollowed?: boolean;
+}) {
   const href = profileHref(lang, { username: store.username, id: store.id });
+  const [menuOpen, setMenuOpen] = useState(false);
+  const viewerId = useAuthStore((s) => s.user?.id);
+
+  const { following, toggle, loading } = useFollow({
+    userId: store.id,
+    initialFollowing: isFollowed,
+    lang,
+  });
 
   // Neighbourhood first, county second: "The Bazaar, Nairobi County" is how
   // someone here would actually say where a shop is.
@@ -160,13 +187,47 @@ function StoreTileComponent({ lang, store }: { lang: string; store: StoreCard })
   const listedAgo = timeAgo(store.lastListedAt);
   const active = isRecentlyActive(store.lastListedAt);
   const joinedYear = new Date(store.memberSince).getFullYear();
+  const isOwnStore = viewerId === store.id;
+
+  async function handleCopyLink() {
+    if (typeof window === "undefined") return;
+    const url = `${window.location.origin}${href}`;
+    try {
+      await navigator.clipboard?.writeText(url);
+    } catch {
+      // Safari denies the clipboard API outside a trusted gesture chain and
+      // every browser denies it over plain http — same fallback PostCard uses.
+      const textarea = document.createElement("textarea");
+      textarea.value = url;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      textarea.remove();
+    }
+    setMenuOpen(false);
+    toast.success("Link copied");
+  }
 
   return (
-    <Link
-      href={href}
-      scroll={false}
-      className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-elevated transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-    >
+    /**
+     * The card is a div with a stretched link over it rather than one big
+     * <a>: Follow and the ⋯ menu are real buttons, and a button inside an
+     * anchor is invalid HTML that navigates on click. The overlay keeps the
+     * whole card a single tap target; the controls sit above it on z-20.
+     */
+    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-elevated transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-primary">
+      <Link
+        href={href}
+        scroll={false}
+        aria-label={`${store.displayName}, @${store.username} — ${store.listingCount} ${
+          store.listingCount === 1 ? "listing" : "listings"
+        }`}
+        className="absolute inset-0 z-10 focus:outline-none"
+      />
+
       <StoreCollage images={store.previewImages} name={store.displayName} />
 
       <div className="flex flex-1 flex-col gap-2 p-3.5">
@@ -229,6 +290,60 @@ function StoreTileComponent({ lang, store }: { lang: string; store: StoreCard })
             <span className="truncate">{place}</span>
           </p>
         ) : null}
+
+        {/* Both actions sit together on their own row rather than up beside the
+            name: a control in the identity block steals the width the shop's
+            name and handle need, and those were truncating because of it. */}
+        <div className="mt-1 flex items-center justify-end gap-2">
+          {/* Your own storefront gets no Follow button — the API rejects
+              following yourself, so offering it would only ever error. */}
+          {isOwnStore ? null : (
+            <button
+              type="button"
+              onClick={() => void toggle()}
+              disabled={loading}
+              aria-pressed={following}
+              className={cn(
+                "relative z-20 inline-flex h-8 flex-1 items-center justify-center rounded-full text-[13px] font-bold transition-colors disabled:opacity-60 lg:cursor-pointer",
+                following
+                  ? "border border-border bg-surface text-main hover:bg-subtle"
+                  : "bg-primary text-white hover:opacity-90",
+              )}
+            >
+              {following ? "Following" : "Follow"}
+            </button>
+          )}
+
+          <Popover open={menuOpen} onOpenChange={setMenuOpen}>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                aria-label={`More options for ${store.displayName}`}
+                className="relative z-20 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border text-muted transition-colors hover:bg-surface hover:text-main focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary lg:cursor-pointer"
+              >
+                <MoreHorizontal className="h-4 w-4" strokeWidth={2.4} />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              align="end"
+              sideOffset={6}
+              className="z-30 w-48 rounded-2xl border border-border bg-elevated p-1.5 shadow-lg"
+            >
+              <button
+                type="button"
+                onClick={() => void handleCopyLink()}
+                className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-main transition-colors hover:bg-surface lg:cursor-pointer"
+              >
+                <Link2
+                  className="h-4 w-4 shrink-0 text-muted"
+                  strokeWidth={2.2}
+                  aria-hidden
+                />
+                Copy link
+              </button>
+            </PopoverContent>
+          </Popover>
+        </div>
       </div>
 
       <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border px-3.5 py-2.5 text-[12px] text-muted">
@@ -264,7 +379,7 @@ function StoreTileComponent({ lang, store }: { lang: string; store: StoreCard })
           </span>
         ) : null}
       </div>
-    </Link>
+    </div>
   );
 }
 
