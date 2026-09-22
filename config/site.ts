@@ -176,6 +176,15 @@ export const siteConfig = {
         "Search cars, phones, fashion, furniture, farm produce and thousands of local listings across Kenya.",
     },
 
+    // The directory of sellers. Indexed: every card is an internal link to a
+    // storefront, which is how those profiles earn their own indexing.
+    stores: {
+      path: "/stores",
+      title: "Online Stores and Sellers in Kenya",
+      description:
+        "Browse verified sellers and online stores across Kenya on Shopi — phones, fashion, furniture, cars and more. See live stock counts and message sellers directly.",
+    },
+
     notifications: {
       path: "/notifications",
       title: "Inbox",

@@ -282,6 +282,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/for-you", changeFrequency: "always", priority: 0.9 },
     { path: "/explore", changeFrequency: "hourly", priority: 0.8 },
     { path: "/search", changeFrequency: "hourly", priority: 0.8 },
+    // The seller directory. Worth crawling for its own sake and as the hub
+    // that links every storefront, which is how those profiles get found.
+    { path: "/stores", changeFrequency: "daily", priority: 0.85 },
     { path: "/buy-and-sell-in-kenya", changeFrequency: "weekly", priority: 0.92 },
     { path: "/sell-in-kenya", changeFrequency: "weekly", priority: 0.9 },
     { path: "/sell-car-kenya", changeFrequency: "weekly", priority: 0.9 },

@@ -76,6 +76,7 @@ export function SideNav({ lang = "en" }: { lang: string }) {
   const browseActive =
     pathname.startsWith(`/${lang}/explore`) ||
     pathname.startsWith(`/${lang}/search`);
+  const storesActive = pathname.startsWith(`/${lang}/stores`);
 
   return (
     <>
@@ -114,6 +115,15 @@ export function SideNav({ lang = "en" }: { lang: string }) {
               </TopNavLink>
               <TopNavLink href={`/${lang}/explore`} active={browseActive}>
                 Browse
+              </TopNavLink>
+              {/* Desktop only, deliberately. This whole header is `hidden
+                  md:block`, and Stores is not added to BottomNav: the phone bar
+                  is five tabs of things you do (feed, search, post, inbox,
+                  profile), and browsing shops is a lean-back desktop intent that
+                  would push that bar to six. Sellers are still reachable on a
+                  phone from any listing's seller row. */}
+              <TopNavLink href={`/${lang}/stores`} active={storesActive}>
+                Stores
               </TopNavLink>
             </nav>
 
