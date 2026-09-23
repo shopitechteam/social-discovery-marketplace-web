@@ -221,7 +221,10 @@ function InventoryCard({
       : null;
 
   return (
-    <article className="group relative flex flex-col">
+    <article
+      data-scroll-anchor={post.id}
+      className="group relative flex flex-col"
+    >
       {/* Same shape as the Discover and Saved tiles: the photo IS the tile, no
           panel or border behind it, and the text sits underneath. A bordered
           card around forty small thumbnails reads as a spreadsheet. Only the

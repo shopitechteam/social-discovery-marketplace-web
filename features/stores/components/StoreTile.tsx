@@ -261,7 +261,10 @@ function MobileStoreCard({
   onShare: () => void;
 }) {
   return (
-    <div className="relative rounded-2xl border border-border bg-elevated p-3 transition-colors active:bg-surface md:hidden">
+    <div
+      data-scroll-anchor={store.id}
+      className="relative rounded-2xl border border-border bg-elevated p-3 transition-colors active:bg-surface md:hidden"
+    >
       <Link
         href={href}
         scroll={false}
@@ -449,7 +452,10 @@ function StoreTileComponent({
        * anchor is invalid HTML that navigates on click. The overlay keeps the
        * whole card a single tap target; the controls sit above it on z-20.
        */}
-      <div className="group relative hidden flex-col overflow-hidden rounded-2xl border border-border bg-elevated transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-primary md:flex">
+      <div
+        data-scroll-anchor={store.id}
+        className="group relative hidden flex-col overflow-hidden rounded-2xl border border-border bg-elevated transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-primary md:flex"
+      >
         <Link
           href={href}
           scroll={false}

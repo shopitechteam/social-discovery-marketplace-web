@@ -26,6 +26,7 @@ import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { useDiscoverFiltersStore } from "@/stores/discoverFilters";
 import { useSearchStore } from "@/stores/search";
 import { useThemeStore } from "@/stores/theme";
+import { useNavTabHref } from "@/lib/navTabMemory";
 import { Logo } from "@/components/ui/Logo";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -55,6 +56,11 @@ export function SideNav({ lang = "en" }: { lang: string }) {
   // button doesn't open.
   const unreadMessages = useUnreadMessageCount();
   const unreadNotifications = useUnreadNotificationCount();
+  // The tabs return to the screen they were left on (sub-tab, search,
+  // filters); RouteScrollRestoration restores the scroll to match.
+  const feedHref = useNavTabHref("feed", `/${lang}/for-you`);
+  const browseHref = useNavTabHref("explore", `/${lang}/explore`);
+  const storesHref = useNavTabHref("stores", `/${lang}/stores`);
 
   if (
     pathname.includes("/upload/create") ||
@@ -114,10 +120,14 @@ export function SideNav({ lang = "en" }: { lang: string }) {
               this group and it starts flush on the 280px column edge. */}
           <div className="flex h-full min-w-0 flex-1 items-center gap-5 pr-6">
             <nav className="flex shrink-0 items-center gap-1 text-[13px] font-bold">
-              <TopNavLink href={`/${lang}/for-you`} active={homeActive}>
+              <TopNavLink href={feedHref} navTab="feed" active={homeActive}>
                 For You
               </TopNavLink>
-              <TopNavLink href={`/${lang}/explore`} active={browseActive}>
+              <TopNavLink
+                href={browseHref}
+                navTab="explore"
+                active={browseActive}
+              >
                 Browse
               </TopNavLink>
               {/* Desktop only, deliberately. This whole header is `hidden
@@ -126,7 +136,11 @@ export function SideNav({ lang = "en" }: { lang: string }) {
                   profile), and browsing shops is a lean-back desktop intent that
                   would push that bar to six. Sellers are still reachable on a
                   phone from any listing's seller row. */}
-              <TopNavLink href={`/${lang}/stores`} active={storesActive}>
+              <TopNavLink
+                href={storesHref}
+                navTab="stores"
+                active={storesActive}
+              >
                 Stores
               </TopNavLink>
             </nav>
@@ -347,10 +361,13 @@ function NavSearch({ lang, className }: { lang: string; className?: string }) {
 
 function TopNavLink({
   href,
+  navTab,
   active,
   children,
 }: {
   href: string;
+  /** Which tab this is — see `data-nav-tab` in lib/scrollRestoration.ts. */
+  navTab: string;
   active: boolean;
   children: React.ReactNode;
 }) {
@@ -358,6 +375,7 @@ function TopNavLink({
     <Link
       href={href}
       scroll={false}
+      data-nav-tab={navTab}
       className={[
         "inline-flex h-8 min-w-20 items-center justify-center rounded-full px-4 transition-colors",
         active ? "bg-primary text-white" : "text-main hover:bg-surface",
@@ -384,6 +402,10 @@ function IconNavButton({
     <Link
       href={href}
       scroll={false}
+      // Shortcuts to one exact screen (a specific inbox tab, Saved): arriving
+      // returns to where that screen was left. Not a tab, so no re-tap to top
+      // — Messages and Notifications share a path and differ only by ?tab=.
+      data-scroll-restore=""
       aria-label={label}
       title={label}
       className={[
@@ -412,6 +434,7 @@ function BrowseCategories({ lang }: { lang: string }) {
     pathname.startsWith(`/${lang}/explore`) ||
     pathname.startsWith(`/${lang}/search`);
   const activeCategory = searchParams.get("category");
+  const feedHref = useNavTabHref("feed", `/${lang}/for-you`);
   const { data, loading } = useQuery(DISCOVERY_CATEGORIES, {
     fetchPolicy: "cache-first",
     nextFetchPolicy: "cache-first",
@@ -437,7 +460,7 @@ function BrowseCategories({ lang }: { lang: string }) {
         {categories.map((category, index) => {
           const href =
             index === 0
-              ? `/${lang}/for-you`
+              ? feedHref
               : `/${lang}/explore?category=${encodeURIComponent(category.slug)}`;
           const active =
             index === 0
@@ -449,6 +472,9 @@ function BrowseCategories({ lang }: { lang: string }) {
               key={`${category.slug}-${index}`}
               href={href}
               scroll={false}
+              // "For You" is the feed tab; a category is a fresh listing that
+              // starts at the top.
+              data-nav-tab={index === 0 ? "feed" : undefined}
               className={[
                 "block rounded-md py-2 text-sm font-semibold tracking-normal transition-colors",
                 active
@@ -776,6 +802,7 @@ function AccountMenu({
             <Link
               href={`/${lang}/profile`}
               scroll={false}
+              data-nav-tab="profile"
               onClick={() => setMenuOpen(false)}
               className="block rounded-xl px-3 py-2.5 text-sm font-semibold text-main transition-colors hover:bg-surface"
             >

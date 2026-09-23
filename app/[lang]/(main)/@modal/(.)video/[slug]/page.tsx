@@ -11,5 +11,12 @@ type Props = { params: Promise<{ lang: string; slug: string }> };
 export default async function VideoModalPage({ params }: Props) {
   const { lang, slug } = await params;
 
-  return <ImmersiveVideoViewer seed={slug} lang={lang} />;
+  return (
+    <>
+      {/* The feed behind the viewer must not move — see the same marker in
+          (.)content/[id]/page.tsx. */}
+      <span data-route-overlay="" hidden />
+      <ImmersiveVideoViewer seed={slug} lang={lang} />
+    </>
+  );
 }

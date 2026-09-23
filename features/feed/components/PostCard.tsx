@@ -1369,7 +1369,13 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
   }
 
   return (
-    <article ref={cardRef} className="bg-elevated overflow-hidden">
+    // data-scroll-anchor: a return to the feed puts this card back exactly
+    // where it was on screen (lib/scrollRestoration.ts).
+    <article
+      ref={cardRef}
+      data-scroll-anchor={post.id}
+      className="bg-elevated overflow-hidden"
+    >
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 px-4 pt-3.5 pb-2.5 max-[360px]:gap-2 max-[360px]:px-3">
         <button

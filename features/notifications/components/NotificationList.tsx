@@ -146,6 +146,7 @@ export function NotificationList({
               return (
                 <button
                   key={notification.id}
+                  data-scroll-anchor={notification.id}
                   type="button"
                   onClick={() => onSelect(notification)}
                   className={`flex w-full items-start gap-3 border-b border-border/70 px-4 py-3.5 text-left transition-colors md:px-0 md:py-4 ${
