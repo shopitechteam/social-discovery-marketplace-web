@@ -17,7 +17,8 @@ import {
   X,
 } from "lucide-react";
 import { useQuery } from "@apollo/client/react";
-import { useInboxUnreadCount } from "@/features/messaging/hooks/useUnreadCount";
+import { useUnreadMessageCount } from "@/features/messaging/hooks/useUnreadCount";
+import { useUnreadNotificationCount } from "@/features/notifications/hooks/useUnreadNotificationCount";
 import { useLogout } from "@/features/auth/hooks/useLogout";
 import { DISCOVERY_CATEGORIES } from "@/features/discover/categories";
 import { useAuthSession } from "@/hooks/useAuthSession";
@@ -48,7 +49,12 @@ export function SideNav({ lang = "en" }: { lang: string }) {
   const searchParams = useSearchParams();
   const isDesktop = useIsDesktop({ ssrDefault: false });
   const { user } = useAuthSession();
-  const unreadCount = useInboxUnreadCount();
+  // Two icons, two counts. The combined total that BottomNav uses is right for
+  // the phone, where Messages and Notifications share one Inbox tab — here they
+  // are separate buttons, so a combined badge on one of them counts things that
+  // button doesn't open.
+  const unreadMessages = useUnreadMessageCount();
+  const unreadNotifications = useUnreadNotificationCount();
 
   if (
     pathname.includes("/upload/create") ||
@@ -152,26 +158,37 @@ export function SideNav({ lang = "en" }: { lang: string }) {
                   the log in button below. */}
               {user ? (
                 <>
+                  {/* Both buttons land on the same screen, so "which tab is
+                      open" has to be read the way that screen reads it: it
+                      defaults to Messages and only shows Notifications on an
+                      explicit ?tab=notifications. Testing for `!== "messages"`
+                      lit the bell on a bare /notifications, which is the
+                      Messages tab. */}
                   <IconNavButton
                     href={`/${lang}/notifications?tab=messages`}
                     label="Messages"
                     active={
                       pathname.startsWith(`/${lang}/notifications`) &&
-                      searchParams.get("tab") === "messages"
+                      searchParams.get("tab") !== "notifications"
                     }
                   >
                     <MessageCircle className="h-4.5 w-4.5" />
-                    {unreadCount > 0 ? <UnreadDot count={unreadCount} /> : null}
+                    {unreadMessages > 0 ? (
+                      <UnreadDot count={unreadMessages} />
+                    ) : null}
                   </IconNavButton>
                   <IconNavButton
-                    href={`/${lang}/notifications`}
-                    label="Inbox"
+                    href={`/${lang}/notifications?tab=notifications`}
+                    label="Notifications"
                     active={
                       pathname.startsWith(`/${lang}/notifications`) &&
-                      searchParams.get("tab") !== "messages"
+                      searchParams.get("tab") === "notifications"
                     }
                   >
                     <Bell className="h-4.5 w-4.5" />
+                    {unreadNotifications > 0 ? (
+                      <UnreadDot count={unreadNotifications} />
+                    ) : null}
                   </IconNavButton>
                   <IconNavButton
                     href={`/${lang}/profile?tab=saved`}

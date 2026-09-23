@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { MessagingShell } from "@/features/messaging/components/MessagingShell";
-import { useUnreadConversationCount } from "@/features/messaging/hooks/useUnreadCount";
+import { useUnreadMessageCount } from "@/features/messaging/hooks/useUnreadCount";
 import { useNotifications } from "../hooks/useNotifications";
 import type { NotificationItem } from "../types";
 import { NotificationList } from "./NotificationList";
@@ -28,7 +28,10 @@ export function NotificationsScreen({ lang }: Props) {
   const initialTab: SubTab =
     searchParams.get("tab") === "notifications" ? "notifications" : "messages";
   const [tab, setTab] = useState<SubTab>(initialTab);
-  const unreadThreads = useUnreadConversationCount();
+  // Messages, not threads — the Notifications badge beside it counts individual
+  // notifications, so counting threads here made the two tabs measure
+  // different things.
+  const unreadMessages = useUnreadMessageCount();
   const notifications = useNotifications();
 
   // Always land at the top on mount. Returning from a chat detail otherwise
@@ -71,7 +74,7 @@ export function NotificationsScreen({ lang }: Props) {
   }
 
   const subtabs: { id: SubTab; label: string; badge?: number }[] = [
-    { id: "messages", label: "Messages", badge: unreadThreads },
+    { id: "messages", label: "Messages", badge: unreadMessages },
     {
       id: "notifications",
       label: "Notifications",

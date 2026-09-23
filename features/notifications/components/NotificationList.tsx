@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import {
   AlertCircle,
@@ -14,6 +15,14 @@ import {
   UserPlus,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { listTimestamp } from "@/features/messaging/lib/helpers";
 import { useInfiniteScroll } from "@/features/feed/hooks/useInfiniteScroll";
 import { TeamAvatar } from "@/features/team-messages/components/TeamAvatar";
@@ -58,6 +67,18 @@ export function NotificationList({
     onLoadMore,
   });
 
+  // Marking everything read clears the unread state on updates you may not have
+  // opened yet, and there is no undo — so it asks first.
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  function confirmMarkAllRead() {
+    // Close on confirm rather than holding the dialog open for the mutation:
+    // the header button already shows its own spinner while it runs, so
+    // keeping the dialog up would be a second, redundant progress indicator.
+    setConfirmOpen(false);
+    onMarkAllRead();
+  }
+
   return (
     <section className="flex min-h-[calc(100svh-48px)] flex-col md:mx-auto md:h-full md:w-full md:max-w-[1600px] md:bg-app">
       <div className="flex items-center justify-between border-b border-border px-4 py-4 md:px-0 md:py-5">
@@ -75,7 +96,7 @@ export function NotificationList({
         {unreadCount > 0 ? (
           <button
             type="button"
-            onClick={onMarkAllRead}
+            onClick={() => setConfirmOpen(true)}
             disabled={markingAllRead}
             className="inline-flex h-9 items-center gap-2 rounded-full px-3 text-xs font-bold text-primary transition-colors hover:bg-primary/10 disabled:opacity-60"
             aria-label="Mark all notifications as read"
@@ -205,6 +226,48 @@ export function NotificationList({
           </>
         )}
       </div>
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="max-w-sm rounded-2xl border-border bg-elevated p-0 shadow-2xl">
+          <DialogHeader className="px-6 pb-2 pt-6 text-left">
+            <span
+              className="mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-primary-soft text-primary"
+              aria-hidden
+            >
+              <CheckCheck size={20} />
+            </span>
+            <DialogTitle className="text-lg font-black text-main">
+              Mark all as read?
+            </DialogTitle>
+            <DialogDescription className="mt-2 text-sm leading-6 text-muted">
+              {/* Says what actually happens: people expect "mark all read" to
+                  delete the list, and the real worry is losing an update they
+                  hadn't opened. Naming the count makes the scale concrete. */}
+              {unreadCount === 1
+                ? "Your 1 unread update will be marked as read."
+                : `All ${unreadCount} unread updates will be marked as read.`}{" "}
+              They stay in your list — only the unread badge clears. This
+              can&apos;t be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 border-t border-border px-6 py-4 sm:space-x-0">
+            <button
+              type="button"
+              onClick={() => setConfirmOpen(false)}
+              className="h-10 rounded-full border border-border px-5 text-sm font-bold text-main transition-colors hover:bg-surface"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={confirmMarkAllRead}
+              disabled={markingAllRead}
+              className="h-10 rounded-full bg-primary px-5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+            >
+              Mark all read
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
