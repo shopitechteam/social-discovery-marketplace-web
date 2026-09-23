@@ -2,23 +2,8 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useState } from "react";
-import {
-  Bookmark,
-  ChartColumn,
-  FileEdit,
-  LayoutGrid,
-  Plus,
-  Settings,
-  UserRound,
-} from "lucide-react";
-
-// Icon may be a lucide icon or a custom SVG component (both take size/className)
-type TabIcon = React.ComponentType<{
-  size?: number;
-  className?: string;
-  strokeWidth?: number;
-}>;
+import { useCallback, useRef, useState } from "react";
+import { ChartColumn, ChevronLeft, Plus, UserRound } from "lucide-react";
 import {
   useMyProfile,
   useMySavedContent,
@@ -33,10 +18,17 @@ import { DraftsGrid } from "./DraftsGrid";
 import { AnalyticsPanel } from "./AnalyticsPanel";
 import { TiktokImportPanel } from "./TiktokImportPanel";
 import { cn } from "@/lib/utils";
-import { SettingsList } from "./SettingsList";
+import { useIsDesktop } from "@/hooks/useIsDesktop";
+import {
+  PROFILE_SECTION_LABELS,
+  ProfileMenu,
+  type ProfileSection,
+} from "./ProfileMenu";
 import { appendUnique } from "../lib/appendUnique";
 
-type Tab = "posts" | "drafts" | "saved" | "analytics" | "tiktok" | "settings";
+// "tiktok" is not in the menu, so it is hidden from the UI, but
+// TiktokImportPanel and its render branch below are kept intact.
+type Tab = ProfileSection | "tiktok";
 
 interface Props {
   lang: string;
@@ -90,8 +82,28 @@ function ProfileSkeleton() {
           </div>
         </div>
       </div>
-      <div className="mx-auto max-w-6xl px-4 py-5 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3 xl:grid-cols-4 xl:gap-4">
+      {/* The menu's shape: a titled group of rows, beside the posts grid on
+          desktop. */}
+      <div className="flex gap-8 px-4 py-5 sm:px-6 lg:px-8">
+        <div className="w-full md:w-72 md:shrink-0 lg:w-80">
+          <div
+            className="mb-2 h-4 w-24 rounded-md"
+            style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
+          />
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="flex h-12 items-center gap-3.5 md:h-13 md:gap-4">
+              <div
+                className="h-5 w-5 rounded-full"
+                style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
+              />
+              <div
+                className="h-4 w-40 rounded-md"
+                style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
+              />
+            </div>
+          ))}
+        </div>
+        <div className="hidden min-w-0 flex-1 grid-cols-3 gap-3 md:grid xl:grid-cols-4 xl:gap-4">
           {Array.from({ length: 6 }).map((_, index) => (
             <div
               key={index}
@@ -170,55 +182,70 @@ function ProfileUnavailable({
   );
 }
 
-// NOTE: the "tiktok" tab is intentionally omitted here so it's hidden from the
-// UI, but the TiktokImportPanel component and its render branch below are kept
-// intact (the functionality is preserved, just not surfaced as a subtab).
-const tabConfig: { key: Tab; label: string; icon: TabIcon }[] = [
-  { key: "posts", label: "Posts", icon: LayoutGrid },
-  { key: "drafts", label: "Drafts", icon: FileEdit },
-  { key: "saved", label: "Saved", icon: Bookmark },
-  { key: "analytics", label: "Analytics", icon: ChartColumn },
-
-  { key: "settings", label: "Settings", icon: Settings },
-];
-
 function isTab(value: string | null): value is Tab {
-  return !!value && tabConfig.some((item) => item.key === value);
+  return (
+    value === "tiktok" ||
+    (!!value && Object.hasOwn(PROFILE_SECTION_LABELS, value))
+  );
 }
 
 export function ProfileView({ lang }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const isDesktop = useIsDesktop();
 
-  // The active sub-tab lives in the URL so leaving and coming back returns to
-  // it. Settings is the tab this matters most for: every row in it navigates
-  // away (Edit profile, Followers, and so on), and landing back on Posts each
-  // time meant re-finding the tab after every single one.
+  // The open section lives in `?tab=`, read live so the browser's back button
+  // moves between the menu and a section. No tab means the menu on a phone and
+  // Posts on desktop, where the menu is always there as a sidebar.
   //
-  // Read once, as the initial value. Coming back is a fresh mount, so the
-  // param is picked up then; making it a live subscription instead would fight
-  // the replace() below on every tab press.
-  const [tab, setTab] = useState<Tab>(() => {
-    const requested = searchParams.get("tab");
-    return isTab(requested) ? requested : "posts";
-  });
+  // `?tab=settings` is what the old Settings tab and its sub-pages' back links
+  // still produce. Its rows are in the menu now, so it resolves to no tab.
+  const requested = searchParams.get("tab");
+  const tab: Tab | null = isTab(requested) ? requested : null;
+  const shownTab: Tab = tab ?? "posts";
 
-  // replace, not push: a tab is a view of this page, not a place in history.
-  // Pushing would mean back stepped through every tab the user had tried
-  // before it left the profile at all.
-  const selectTab = useCallback(
-    (next: Tab) => {
-      setTab(next);
+  // Whether back from a section can pop history to the menu, or whether the
+  // section was opened straight from a link and history leads elsewhere.
+  const openedFromMenu = useRef(false);
+
+  const tabHref = useCallback(
+    (next: Tab | null) => {
       const params = new URLSearchParams(searchParams.toString());
-      if (next === "posts") params.delete("tab");
-      else params.set("tab", next);
+      if (next) params.set("tab", next);
+      else params.delete("tab");
       const query = params.toString();
-      router.replace(`/${lang}/profile${query ? `?${query}` : ""}`, {
-        scroll: false,
-      });
+      return `/${lang}/profile${query ? `?${query}` : ""}`;
     },
-    [router, lang, searchParams],
+    [lang, searchParams],
   );
+
+  // On a phone, opening a section is a step deeper, so it is pushed and the
+  // back gesture returns to the menu. On desktop it swaps the pane beside the
+  // sidebar, a view of the same page, so it replaces — otherwise back would
+  // step through every section tried before leaving the profile at all.
+  const selectTab = useCallback(
+    (next: ProfileSection) => {
+      if (isDesktop) {
+        router.replace(tabHref(next === "posts" ? null : next), {
+          scroll: false,
+        });
+        return;
+      }
+      openedFromMenu.current = true;
+      router.push(tabHref(next));
+    },
+    [isDesktop, router, tabHref],
+  );
+
+  const backToMenu = useCallback(() => {
+    if (openedFromMenu.current) {
+      openedFromMenu.current = false;
+      router.back();
+    } else {
+      router.replace(tabHref(null));
+    }
+  }, [router, tabHref]);
+
   const [postsLimit] = useState(18);
 
   const {
@@ -237,9 +264,9 @@ export function ProfileView({ lang }: Props) {
     data: savedData,
     loading: savedLoading,
     fetchMore: fetchMoreSaved,
-  } = useMySavedContent(postsLimit, tab === "saved");
+  } = useMySavedContent(postsLimit, shownTab === "saved");
   const { data: analyticsData, loading: analyticsLoading } = useMyAnalytics(
-    tab === "analytics",
+    shownTab === "analytics",
   );
 
   if (profileLoading && !profileData) return <ProfileSkeleton />;
@@ -296,195 +323,170 @@ export function ProfileView({ lang }: Props) {
     });
   }
 
+  const sectionTitle =
+    tab && tab !== "tiktok" ? PROFILE_SECTION_LABELS[tab] : "TikTok import";
+
   return (
     <div
       className="min-h-screen pb-8"
       style={{ backgroundColor: "rgb(var(--color-bg))" }}
     >
-      <ProfileHeader
-        user={user}
-        editHref={`/${lang}/profile/edit`}
-        lang={lang}
-      />
-
-      <div className="sticky top-0 z-20 border-b border-border bg-app/94 backdrop-blur-md md:top-(--desktop-top-nav-height,68px)">
-        <div className="w-full px-2 sm:px-6 lg:px-8">
-          <div
-            className="grid h-12 w-full grid-cols-5 md:hidden"
-            role="tablist"
-            aria-label="Profile sections"
-          >
-            {tabConfig.map((item) => {
-              const active = tab === item.key;
-              const Icon = item.icon;
-
-              return (
-                <button
-                  key={item.key}
-                  type="button"
-                  role="tab"
-                  aria-selected={active}
-                  aria-label={item.label}
-                  title={item.label}
-                  onClick={() => selectTab(item.key)}
-                  className="relative flex h-12 min-w-0 items-center justify-center transition-opacity active:opacity-60"
-                  style={{
-                    color: active
-                      ? "rgb(var(--color-text))"
-                      : "rgb(var(--color-text-muted))",
-                  }}
-                >
-                  <Icon size={24} strokeWidth={2.2} />
-                  {active && (
-                    <span
-                      className="absolute bottom-0 h-0.5 w-8 rounded-full"
-                      style={{ backgroundColor: "rgb(var(--color-text))" }}
-                    />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="hidden py-2 md:flex" role="tablist" aria-label="Profile sections">
-            <div className="flex w-full items-center gap-6 overflow-x-auto">
-              {tabConfig.map((item) => {
-                const active = tab === item.key;
-                const Icon = item.icon;
-
-                return (
-                  <button
-                    key={item.key}
-                    type="button"
-                    role="tab"
-                    aria-selected={active}
-                    onClick={() => selectTab(item.key)}
-                    className={cn(
-                      "relative inline-flex h-10 shrink-0 items-center justify-center gap-2 text-sm font-bold transition-colors",
-                      active
-                        ? "text-primary after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-full after:rounded-full after:bg-primary"
-                        : "text-muted hover:text-main",
-                    )}
-                  >
-                    <Icon size={18} strokeWidth={2.15} />
-                    <span>{item.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+      {/* On a phone an open section takes the whole screen under its own back
+          bar; the header and menu are one tap back. */}
+      <div className={cn(tab && "hidden md:block")}>
+        <ProfileHeader
+          user={user}
+          editHref={`/${lang}/profile/edit`}
+          lang={lang}
+        />
       </div>
 
-      {tab === "posts" && (
-        <ManagedPostsGrid
-          posts={managedPosts}
-          hasMore={managedHasMore}
-          onLoadMore={handleLoadMore}
-          loading={managedPostsLoading}
-          lang={lang}
-          onRefresh={() => refetchManagedPosts({ limit: postsLimit })}
-        />
+      {tab && (
+        <div className="sticky top-0 z-20 grid h-12 grid-cols-[48px_1fr_48px] items-center border-b border-border bg-app/94 px-1 backdrop-blur-md md:hidden">
+          <button
+            type="button"
+            onClick={backToMenu}
+            aria-label="Back to profile"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-main active:bg-surface"
+          >
+            <ChevronLeft size={24} strokeWidth={2.2} />
+          </button>
+          <h2 className="truncate text-center text-[15px] font-semibold text-main">
+            {sectionTitle}
+          </h2>
+        </div>
       )}
 
-      {tab === "saved" && (
-        <PostsGrid
-          posts={savedPosts}
-          hasMore={savedHasMore}
-          onLoadMore={handleLoadMoreSaved}
-          loading={savedLoading}
-          lang={lang}
-        />
-      )}
-
-      {tab === "drafts" && <DraftsGrid lang={lang} />}
-
-      {tab === "analytics" && (
-        <>
-          {analyticsLoading && !analyticsData ? (
-            <section className="px-4 py-5 sm:px-6 lg:px-8">
-              <div className="mx-auto w-full max-w-6xl flex flex-col gap-4">
-                {/* header row */}
-                <div className="flex items-end justify-between">
-                  <div className="flex flex-col gap-2">
-                    <Skeleton className="h-5 w-24 rounded-md" />
-                    <Skeleton className="h-3.5 w-16 rounded-md" />
-                  </div>
-                  <Skeleton className="h-9 w-40 rounded-lg" />
-                </div>
-                {/* metric cards */}
-                <div className="grid grid-cols-2 gap-2 lg:grid-cols-4 lg:gap-3">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <Skeleton key={i} className="h-28 rounded-lg" />
-                  ))}
-                </div>
-                {/* chart + sidebar */}
-                <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-                  <Skeleton className="h-64 rounded-lg" />
-                  <div className="flex flex-col gap-4">
-                    <Skeleton className="h-48 rounded-lg" />
-                    <Skeleton className="h-32 rounded-lg" />
-                  </div>
-                </div>
-              </div>
-            </section>
-          ) : analyticsData?.myAnalytics ? (
-            <AnalyticsPanel data={analyticsData.myAnalytics} lang={lang} />
-          ) : (
-            <section className="px-4 py-12 sm:px-6 lg:px-8">
-              <div className="mx-auto flex min-h-80 max-w-xl flex-col items-center justify-center text-center">
-                <div
-                  className="mb-4 flex h-16 w-16 items-center justify-center rounded-lg border"
-                  style={{
-                    backgroundColor: "rgb(var(--color-bg-elevated))",
-                    borderColor: "rgb(var(--color-border))",
-                    color: "rgb(var(--brand-primary))",
-                    boxShadow: "var(--shadow-sm)",
-                  }}
-                >
-                  <ChartColumn size={26} strokeWidth={2} />
-                </div>
-                <h2
-                  className="font-bold"
-                  style={{
-                    fontSize: "var(--text-lg)",
-                    color: "rgb(var(--color-text))",
-                  }}
-                >
-                  No analytics yet
-                </h2>
-                <p
-                  className="mt-2 max-w-sm leading-snug"
-                  style={{
-                    fontSize: "var(--text-base)",
-                    color: "rgb(var(--color-text-muted))",
-                  }}
-                >
-                  Post your first video and analytics will appear here once it
-                  gets views.
-                </p>
-                <Link
-                  href={`/${lang}/upload`}
-                  className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-lg px-4 font-semibold text-white active:opacity-80"
-                  style={{
-                    fontSize: "var(--text-sm)",
-                    background:
-                      "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)))",
-                    boxShadow: "0 10px 24px rgb(var(--brand-primary) / 0.24)",
-                  }}
-                >
-                  <Plus size={16} strokeWidth={2.4} />
-                  New post
-                </Link>
-              </div>
-            </section>
+      <div className="md:flex md:items-start md:gap-6 md:px-6 lg:gap-8 lg:px-8">
+        <aside
+          className={cn(
+            "px-4 py-5 md:sticky md:top-(--desktop-top-nav-height,68px) md:max-h-[calc(100dvh-var(--desktop-top-nav-height,68px))] md:w-72 md:shrink-0 md:overflow-y-auto md:px-0 md:py-6 lg:w-80",
+            tab && "hidden md:block",
           )}
-        </>
-      )}
+        >
+          <ProfileMenu
+            lang={lang}
+            user={user}
+            active={shownTab === "tiktok" ? null : shownTab}
+            onSelect={selectTab}
+          />
+        </aside>
 
-      {tab === "tiktok" && <TiktokImportPanel lang={lang} />}
+        <main
+          className={cn(
+            "min-w-0 md:flex-1 md:border-l md:border-border",
+            !tab && "hidden md:block",
+          )}
+        >
+          {shownTab === "posts" && (
+            <ManagedPostsGrid
+              posts={managedPosts}
+              hasMore={managedHasMore}
+              onLoadMore={handleLoadMore}
+              loading={managedPostsLoading}
+              lang={lang}
+              onRefresh={() => refetchManagedPosts({ limit: postsLimit })}
+            />
+          )}
 
-      {tab === "settings" && <SettingsList lang={lang} />}
+          {shownTab === "saved" && (
+            <PostsGrid
+              posts={savedPosts}
+              hasMore={savedHasMore}
+              onLoadMore={handleLoadMoreSaved}
+              loading={savedLoading}
+              lang={lang}
+            />
+          )}
+
+          {shownTab === "drafts" && <DraftsGrid lang={lang} />}
+
+          {shownTab === "analytics" && (
+            <>
+              {analyticsLoading && !analyticsData ? (
+                <section className="px-4 py-5 sm:px-6 lg:px-8">
+                  <div className="mx-auto w-full max-w-6xl flex flex-col gap-4">
+                    {/* header row */}
+                    <div className="flex items-end justify-between">
+                      <div className="flex flex-col gap-2">
+                        <Skeleton className="h-5 w-24 rounded-md" />
+                        <Skeleton className="h-3.5 w-16 rounded-md" />
+                      </div>
+                      <Skeleton className="h-9 w-40 rounded-lg" />
+                    </div>
+                    {/* metric cards */}
+                    <div className="grid grid-cols-2 gap-2 lg:grid-cols-4 lg:gap-3">
+                      {Array.from({ length: 4 }).map((_, i) => (
+                        <Skeleton key={i} className="h-28 rounded-lg" />
+                      ))}
+                    </div>
+                    {/* chart + sidebar */}
+                    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+                      <Skeleton className="h-64 rounded-lg" />
+                      <div className="flex flex-col gap-4">
+                        <Skeleton className="h-48 rounded-lg" />
+                        <Skeleton className="h-32 rounded-lg" />
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              ) : analyticsData?.myAnalytics ? (
+                <AnalyticsPanel data={analyticsData.myAnalytics} lang={lang} />
+              ) : (
+                <section className="px-4 py-12 sm:px-6 lg:px-8">
+                  <div className="mx-auto flex min-h-80 max-w-xl flex-col items-center justify-center text-center">
+                    <div
+                      className="mb-4 flex h-16 w-16 items-center justify-center rounded-lg border"
+                      style={{
+                        backgroundColor: "rgb(var(--color-bg-elevated))",
+                        borderColor: "rgb(var(--color-border))",
+                        color: "rgb(var(--brand-primary))",
+                        boxShadow: "var(--shadow-sm)",
+                      }}
+                    >
+                      <ChartColumn size={26} strokeWidth={2} />
+                    </div>
+                    <h2
+                      className="font-bold"
+                      style={{
+                        fontSize: "var(--text-lg)",
+                        color: "rgb(var(--color-text))",
+                      }}
+                    >
+                      No analytics yet
+                    </h2>
+                    <p
+                      className="mt-2 max-w-sm leading-snug"
+                      style={{
+                        fontSize: "var(--text-base)",
+                        color: "rgb(var(--color-text-muted))",
+                      }}
+                    >
+                      Post your first video and analytics will appear here once it
+                      gets views.
+                    </p>
+                    <Link
+                      href={`/${lang}/upload`}
+                      className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-lg px-4 font-semibold text-white active:opacity-80"
+                      style={{
+                        fontSize: "var(--text-sm)",
+                        background:
+                          "linear-gradient(135deg, rgb(var(--brand-primary)), rgb(var(--brand-secondary)))",
+                        boxShadow: "0 10px 24px rgb(var(--brand-primary) / 0.24)",
+                      }}
+                    >
+                      <Plus size={16} strokeWidth={2.4} />
+                      New post
+                    </Link>
+                  </div>
+                </section>
+              )}
+            </>
+          )}
+
+          {shownTab === "tiktok" && <TiktokImportPanel lang={lang} />}
+        </main>
+      </div>
     </div>
   );
 }
