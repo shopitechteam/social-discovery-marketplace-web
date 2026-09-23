@@ -3,7 +3,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@apollo/client/react";
-import { BadgeCheck, Search, Store as StoreIcon, X } from "lucide-react";
+import {
+  BadgeCheck,
+  Check,
+  ChevronDown,
+  MapPin,
+  Search,
+  Store as StoreIcon,
+  X,
+} from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -12,6 +20,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth";
 import {
@@ -84,9 +98,182 @@ function FilterChip({ label, onClear }: { label: string; onClear: () => void }) 
   );
 }
 
+/**
+ * One pill in the phone's filter row. Sort, Verified and County all share it,
+ * so the row reads as one set of choices rather than three kinds of control.
+ */
+function MobileChip({
+  active,
+  onClick,
+  children,
+  ...rest
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+} & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "onClick">) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 text-[13px] font-semibold transition-colors active:opacity-70",
+        active
+          ? "border-primary bg-primary text-white"
+          : "border-border bg-app text-main",
+      )}
+      {...rest}
+    >
+      {children}
+    </button>
+  );
+}
+
+/**
+ * The county picker on a phone. A Select's floating list of 47 names is a
+ * small target to scroll with a thumb; a bottom sheet with its own search
+ * gets there in a couple of letters.
+ */
+function CountySheet({
+  open,
+  onOpenChange,
+  counties,
+  value,
+  onChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  counties: string[];
+  value: string;
+  onChange: (county: string) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const needle = query.trim().toLowerCase();
+  const matches = needle
+    ? counties.filter((name) => name.toLowerCase().includes(needle))
+    : counties;
+
+  function choose(county: string) {
+    onChange(county);
+    onOpenChange(false);
+  }
+
+  return (
+    <Drawer
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) setQuery("");
+        onOpenChange(next);
+      }}
+    >
+      <DrawerContent className="flex max-h-[85dvh] flex-col">
+        <DrawerHeader className="shrink-0 px-4 pb-2 pt-2 text-left">
+          <DrawerTitle className="text-base font-bold text-main">
+            Choose a county
+          </DrawerTitle>
+        </DrawerHeader>
+
+        <div className="shrink-0 px-4 pb-2">
+          <div className="relative">
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
+              aria-hidden
+            />
+            {/* 16px text: anything smaller and iOS zooms the page on focus. */}
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search counties"
+              aria-label="Search counties"
+              className="h-10 w-full rounded-full border border-border bg-surface pl-9 pr-3 text-base text-main outline-none placeholder:text-muted focus:border-primary"
+            />
+          </div>
+        </div>
+
+        <div
+          role="listbox"
+          aria-label="Counties"
+          className="min-h-0 flex-1 overflow-y-auto px-4 pb-[max(1rem,env(safe-area-inset-bottom))]"
+        >
+          {needle ? null : (
+            <CountyOption
+              label="All counties"
+              selected={!value}
+              onSelect={() => choose("")}
+            />
+          )}
+          {matches.map((name) => (
+            <CountyOption
+              key={name}
+              label={name}
+              selected={value === name}
+              onSelect={() => choose(name)}
+            />
+          ))}
+          {matches.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted">
+              No county matches “{query.trim()}”
+            </p>
+          ) : null}
+        </div>
+      </DrawerContent>
+    </Drawer>
+  );
+}
+
+function CountyOption({
+  label,
+  selected,
+  onSelect,
+}: {
+  label: string;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="option"
+      aria-selected={selected}
+      onClick={onSelect}
+      className={cn(
+        "flex h-12 w-full items-center justify-between text-left text-[15px] active:opacity-60",
+        selected ? "font-semibold text-primary" : "text-main",
+      )}
+    >
+      {label}
+      {selected ? <Check className="h-4.5 w-4.5 shrink-0" aria-hidden /> : null}
+    </button>
+  );
+}
+
 function StoreTileSkeleton() {
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-elevated">
+    <>
+      <div className="rounded-2xl border border-border bg-elevated p-3 md:hidden">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-11 w-11 shrink-0 rounded-full" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-3.5 w-2/3" />
+            <Skeleton className="h-3 w-1/3" />
+          </div>
+          <Skeleton className="h-8 w-20 rounded-full" />
+        </div>
+        <div className="mt-3 grid grid-cols-4 gap-1.5">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <Skeleton key={index} className="aspect-square rounded-lg" />
+          ))}
+        </div>
+        <Skeleton className="mt-3 h-3 w-3/5" />
+      </div>
+      <StoreTileSkeletonDesktop />
+    </>
+  );
+}
+
+function StoreTileSkeletonDesktop() {
+  return (
+    <div className="hidden overflow-hidden rounded-2xl border border-border bg-elevated md:block">
       <Skeleton className="aspect-3/2 w-full rounded-none" />
       <div className="flex gap-2.5 p-3.5">
         <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
@@ -247,21 +434,25 @@ export function StoresPage({
   }, []);
 
   const hasFilters = Boolean(search || county || verifiedOnly);
+  const [countySheetOpen, setCountySheetOpen] = useState(false);
   const showSkeletons = loading && page.stores.length === 0;
 
   return (
     <div className="min-h-svh bg-app pb-24 md:pb-12">
-      <header className="mx-auto w-full max-w-360 px-4 pt-6 pb-5 xl:px-8">
-        <h1 className="flex items-baseline gap-2 text-2xl font-bold text-main xl:text-3xl">
+      <header className="mx-auto w-full max-w-360 px-4 pt-4 pb-3 md:pt-6 md:pb-5 xl:px-8">
+        <h1 className="flex items-baseline gap-2 text-xl font-bold text-main md:text-2xl xl:text-3xl">
           Stores
           {/* The live total sits with the title rather than on its own line
               above the grid — the active-filter chips already say what is
               narrowing it, so the number only needed saying once. */}
-          <span className="text-lg font-semibold text-muted xl:text-xl" aria-live="polite">
+          <span className="text-base font-semibold text-muted md:text-lg xl:text-xl" aria-live="polite">
             · {page.total.toLocaleString("en-KE")}
           </span>
         </h1>
-        <p className="mt-1.5 max-w-2xl text-sm text-muted">
+        <p className="mt-0.5 text-[13px] text-muted md:hidden">
+          Browse sellers across Kenya
+        </p>
+        <p className="mt-1.5 hidden max-w-2xl text-sm text-muted md:block">
           Browse sellers across Kenya. Stock, reach and activity on every card
           are counted live from public listings.
         </p>
@@ -270,7 +461,92 @@ export function StoresPage({
       {/* Sticky below the desktop top nav, at the viewport edge on mobile —
           the same offset the feed and profile headers use. */}
       <div className="sticky top-0 z-20 border-y border-border bg-app/94 backdrop-blur-md md:top-(--desktop-top-nav-height,68px)">
-        <div className="mx-auto flex w-full max-w-360 flex-col gap-2.5 px-4 py-3 lg:flex-row lg:items-center xl:px-8">
+        {/* Phone: search on top, every other filter one swipeable row of chips
+            under it. Two short rows instead of three tall ones, so the sticky
+            bar leaves the screen to the stores. */}
+        <div className="flex flex-col gap-2.5 py-2.5 md:hidden">
+          <div className="relative px-4">
+            <Search
+              className="pointer-events-none absolute left-7 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
+              aria-hidden
+            />
+            {/* 16px text: anything smaller and iOS zooms the page on focus. */}
+            <input
+              type="search"
+              enterKeyHint="search"
+              value={searchInput}
+              onChange={(event) => setSearchInput(event.target.value)}
+              placeholder="Search stores or @handle"
+              aria-label="Search stores"
+              className="h-10 w-full rounded-full border border-border bg-surface pl-9 pr-10 text-base text-main outline-none placeholder:text-muted focus:border-primary [&::-webkit-search-cancel-button]:hidden"
+            />
+            {searchInput ? (
+              <button
+                type="button"
+                onClick={() => setSearchInput("")}
+                aria-label="Clear search"
+                className="absolute right-5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-muted active:bg-subtle"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            ) : null}
+          </div>
+
+          <div
+            role="group"
+            aria-label="Sort and filter stores"
+            className="no-scroll-indicator flex items-center gap-2 overflow-x-auto px-4"
+          >
+            {/* Filters lead so an active one is always on screen; the sort,
+                which always has a value, can sit past the fold. */}
+            {hasFilters ? (
+              <button
+                type="button"
+                onClick={clearAll}
+                aria-label="Clear all filters"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-app text-main active:opacity-60"
+              >
+                <X className="h-4 w-4" aria-hidden />
+              </button>
+            ) : null}
+
+            <MobileChip
+              active={verifiedOnly}
+              aria-pressed={verifiedOnly}
+              onClick={() => setVerifiedOnly((on) => !on)}
+            >
+              <BadgeCheck className="h-4 w-4 shrink-0" aria-hidden />
+              Verified
+            </MobileChip>
+
+            {counties.length > 0 ? (
+              <MobileChip
+                active={Boolean(county)}
+                aria-haspopup="dialog"
+                onClick={() => setCountySheetOpen(true)}
+              >
+                <MapPin className="h-4 w-4 shrink-0" aria-hidden />
+                {county || "County"}
+                <ChevronDown className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              </MobileChip>
+            ) : null}
+
+            <span className="h-5 w-px shrink-0 bg-border" aria-hidden />
+
+            {SORTS.map((option) => (
+              <MobileChip
+                key={option.value}
+                active={sort === option.value}
+                aria-pressed={sort === option.value}
+                onClick={() => setSort(option.value)}
+              >
+                {option.label}
+              </MobileChip>
+            ))}
+          </div>
+        </div>
+
+        <div className="mx-auto hidden w-full max-w-360 flex-col gap-2.5 px-4 py-3 md:flex lg:flex-row lg:items-center xl:px-8">
           <div className="relative min-w-0 flex-1 lg:max-w-88">
             <Search
               className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
@@ -363,9 +639,11 @@ export function StoresPage({
         </div>
       </div>
 
-      <div className="mx-auto w-full max-w-360 px-4 pt-5 xl:px-8">
+      <div className="mx-auto w-full max-w-360 px-4 pt-3 md:pt-5 xl:px-8">
+        {/* On a phone the chip row above already shows every active filter
+            and carries its own Clear, so this summary is desktop's alone. */}
         {hasFilters ? (
-          <div className="mb-4 flex flex-wrap items-center gap-2">
+          <div className="mb-4 hidden flex-wrap items-center gap-2 md:flex">
             {search ? (
               <FilterChip
                 label={`“${search}”`}
@@ -401,7 +679,7 @@ export function StoresPage({
             ))}
           </div>
         ) : page.stores.length === 0 ? (
-          <div className="flex flex-col items-center py-20 text-center">
+          <div className="flex flex-col items-center py-14 text-center md:py-20">
             <span className="flex h-12 w-12 items-center justify-center rounded-full bg-surface">
               <StoreIcon className="h-5 w-5 text-muted" aria-hidden />
             </span>
@@ -445,6 +723,14 @@ export function StoresPage({
           </>
         )}
       </div>
+
+      <CountySheet
+        open={countySheetOpen}
+        onOpenChange={setCountySheetOpen}
+        counties={counties}
+        value={county}
+        onChange={setCounty}
+      />
     </div>
   );
 }
