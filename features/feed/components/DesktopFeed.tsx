@@ -36,11 +36,16 @@ const TABS: { id: Tab; label: string }[] = [
   ...(SHOW_ASK_SHOPI ? [{ id: "ask-shopi" as const, label: "Ask Shopi" }] : []),
 ];
 
-const DesktopNearbyColumn = dynamic(() =>
-  import("./DesktopNearbyColumn").then((mod) => mod.DesktopNearbyColumn),
+// `loading` gives each its own Suspense boundary (see FeedPage): without it the
+// first open suspended to the route boundary and replaced the whole feed with
+// its skeleton, snapping the window scroll.
+const DesktopNearbyColumn = dynamic(
+  () => import("./DesktopNearbyColumn").then((mod) => mod.DesktopNearbyColumn),
+  { loading: () => <ColumnSkeleton /> },
 );
-const AskShopiGrid = dynamic(() =>
-  import("./AskShopiGrid").then((mod) => mod.AskShopiGrid),
+const AskShopiGrid = dynamic(
+  () => import("./AskShopiGrid").then((mod) => mod.AskShopiGrid),
+  { loading: () => <ColumnSkeleton /> },
 );
 
 const isTab = (v: string | null): v is Tab =>

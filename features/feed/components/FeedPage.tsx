@@ -11,7 +11,7 @@ import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { FeedHeader } from "./FeedHeader";
 import FeedGrid from "./FeedGrid";
-import { FeedSkeleton } from "./FeedSkeleton";
+import { FeedCardsSkeleton, FeedSkeleton } from "./FeedSkeleton";
 import { useUiStore } from "@/stores/ui";
 import { SHOW_ASK_SHOPI } from "@/features/feed/utils/askShopiAvailability";
 import {
@@ -22,14 +22,22 @@ import {
 import { rememberNavTabUrl } from "@/lib/navTabMemory";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 
-const FollowingGrid = dynamic(() =>
-  import("./FollowingGrid").then((mod) => mod.FollowingGrid),
+// Each sub-tab grid needs its own `loading`: that is what makes next/dynamic
+// wrap it in a Suspense boundary. Without one, the first open of a sub-tab
+// suspended up to the route's boundary and swapped the WHOLE feed for its
+// skeleton while the chunk downloaded — the header vanished and the window
+// scroll clamped to the skeleton's height.
+const FollowingGrid = dynamic(
+  () => import("./FollowingGrid").then((mod) => mod.FollowingGrid),
+  { loading: () => <FeedCardsSkeleton /> },
 );
-const NearbyGrid = dynamic(() =>
-  import("./NearbyGrid").then((mod) => mod.NearbyGrid),
+const NearbyGrid = dynamic(
+  () => import("./NearbyGrid").then((mod) => mod.NearbyGrid),
+  { loading: () => <FeedCardsSkeleton /> },
 );
-const AskShopiGrid = dynamic(() =>
-  import("./AskShopiGrid").then((mod) => mod.AskShopiGrid),
+const AskShopiGrid = dynamic(
+  () => import("./AskShopiGrid").then((mod) => mod.AskShopiGrid),
+  { loading: () => <FeedCardsSkeleton /> },
 );
 const DesktopFeed = dynamic(() => import("./DesktopFeed"), {
   // Show the desktop-shaped skeleton while the chunk downloads, so the
