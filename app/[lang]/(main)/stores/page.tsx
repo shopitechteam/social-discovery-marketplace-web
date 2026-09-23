@@ -73,7 +73,6 @@ export default async function StoresRoute({ params, searchParams }: Props) {
       sort: safeSort,
       verifiedOnly: verifiedOnly || undefined,
       limit: PAGE_SIZE,
-      offset: 0,
     }),
     fetchStoreCounties(),
   ]);

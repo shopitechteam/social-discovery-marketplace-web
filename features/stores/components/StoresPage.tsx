@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@apollo/client/react";
 import { BadgeCheck, Search, Store as StoreIcon, X } from "lucide-react";
@@ -25,6 +25,8 @@ import {
   StoreTile,
   STORE_GRID_CLASS,
 } from "@/features/stores/components/StoreTile";
+import { useInfiniteScroll } from "@/features/feed/hooks/useInfiniteScroll";
+import { usePaginationGuard } from "@/features/feed/hooks/useFeed";
 
 /**
  * The Stores directory.
@@ -143,7 +145,6 @@ export function StoresPage({
         sort,
         verifiedOnly: verifiedOnly || undefined,
         limit: PAGE_SIZE,
-        offset: 0,
       },
     }),
     [search, county, sort, verifiedOnly],
@@ -169,17 +170,20 @@ export function StoresPage({
     fetched ??
     (isInitialFilters ? initialPage : { stores: [], total: 0, hasMore: false });
 
-  const loadingMoreRef = useRef(false);
+  const itemCount = page.stores.length;
+  const guard = usePaginationGuard(itemCount);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  const loadMore = useCallback(async () => {
-    if (loadingMoreRef.current || !page.hasMore || page.nextOffset == null) return;
-    loadingMoreRef.current = true;
-    try {
-      await fetchMore({
-        variables: { input: { ...variables.input, offset: page.nextOffset } },
-        // Append rather than replace. Offset pagination can hand back a seller
-        // twice if someone publishes while you're reading, so ids already on
-        // screen are dropped instead of rendering a duplicate card.
+  const loadMore = useCallback(() => {
+    if (loadingMore || !page.hasMore || !page.nextCursor) return;
+    const cursor = page.nextCursor;
+    guard(cursor, itemCount, () => {
+      setLoadingMore(true);
+      return fetchMore({
+        variables: { input: { ...variables.input, after: cursor } },
+        // Append rather than replace. Cursor windows can still overlap if the
+        // directory is reordered while you're reading, so ids already on screen
+        // are dropped instead of rendering a duplicate card.
         updateQuery: (previous, { fetchMoreResult }) => {
           const prev = (previous as { stores?: StoreDirectoryPage }).stores;
           const next = (fetchMoreResult as { stores?: StoreDirectoryPage }).stores;
@@ -197,11 +201,24 @@ export function StoresPage({
             },
           };
         },
-      });
-    } finally {
-      loadingMoreRef.current = false;
-    }
-  }, [fetchMore, page.hasMore, page.nextOffset, variables.input]);
+      }).finally(() => setLoadingMore(false));
+    });
+  }, [
+    fetchMore,
+    guard,
+    itemCount,
+    loadingMore,
+    page.hasMore,
+    page.nextCursor,
+    variables.input,
+  ]);
+
+  const { sentinelRef } = useInfiniteScroll({
+    hasMore: page.hasMore,
+    loading: loadingMore,
+    onLoadMore: loadMore,
+    rootMargin: "1200px",
+  });
 
   // Follow state is per-viewer, so it can't ride along in the directory's
   // shared cached payload — it comes back on its own, for exactly the sellers
@@ -231,7 +248,6 @@ export function StoresPage({
 
   const hasFilters = Boolean(search || county || verifiedOnly);
   const showSkeletons = loading && page.stores.length === 0;
-  const remaining = Math.max(page.total - page.stores.length, 0);
 
   return (
     <div className="min-h-svh bg-app pb-24 md:pb-12">
@@ -418,18 +434,12 @@ export function StoresPage({
               ))}
             </div>
 
-            {page.hasMore ? (
-              <div className="mt-10 flex justify-center">
-                <button
-                  type="button"
-                  onClick={loadMore}
-                  disabled={loading}
-                  className="inline-flex h-10 items-center justify-center rounded-full border border-border bg-elevated px-6 text-[13px] font-bold text-main transition-colors hover:bg-surface disabled:opacity-60"
-                >
-                  {loading
-                    ? "Loading…"
-                    : `Show ${Math.min(remaining, PAGE_SIZE)} more`}
-                </button>
+            <div ref={sentinelRef} className="h-1" aria-hidden />
+            {loadingMore ? (
+              <div className="mt-6 flex justify-center">
+                <div className="inline-flex h-10 items-center justify-center rounded-full border border-border bg-elevated px-6 text-[13px] font-bold text-muted">
+                  Loading...
+                </div>
               </div>
             ) : null}
           </>

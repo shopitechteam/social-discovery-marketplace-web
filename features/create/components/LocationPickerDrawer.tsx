@@ -78,16 +78,6 @@ interface LocationResult {
   coordinates?: { lat: number; lng: number } | null;
 }
 
-interface ReverseGeocodeResult {
-  googlePlaceId?: string | null;
-  placeName?: string | null;
-  formattedAddress?: string | null;
-  countyName?: string | null;
-  subCountyName?: string | null;
-  wardName?: string | null;
-  coordinates?: { lat: number; lng: number } | null;
-}
-
 // ─── GQL ─────────────────────────────────────────────────────────────────────
 
 const NEARBY_PAGE: TypedDocumentNode<
@@ -142,26 +132,6 @@ const RESOLVE_PLACE: TypedDocumentNode<
   }
 `;
 
-const REVERSE_GEOCODE: TypedDocumentNode<
-  { reverseGeocode: { matched: boolean; location: ReverseGeocodeResult } },
-  { lat: number; lng: number }
-> = gql`
-  query CreateLocationReverseGeocode($lat: Float!, $lng: Float!) {
-    reverseGeocode(lat: $lat, lng: $lng) {
-      matched
-      location {
-        googlePlaceId
-        placeName
-        formattedAddress
-        countyName
-        subCountyName
-        wardName
-        coordinates { lat lng }
-      }
-    }
-  }
-`;
-
 // ─── Haversine distance (metres) ─────────────────────────────────────────────
 
 function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -182,35 +152,6 @@ function formatDist(m: number): string {
 
 function radiusLabel(r: number): string {
   return r >= 1000 ? `${r / 1000} km` : `${r} m`;
-}
-
-function firstText(...values: Array<string | null | undefined>): string | undefined {
-  return values.find((value) => value?.trim())?.trim();
-}
-
-function gpsFallbackLabel(lat: number, lng: number): string {
-  void lat;
-  void lng;
-  return "Nearby location";
-}
-
-function isGenericCurrentLocationName(value?: string | null): boolean {
-  const text = value?.trim();
-  if (!text) return true;
-  return /^current location\b/i.test(text) ||
-    /^nearby location\b/i.test(text) ||
-    /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?/.test(text);
-}
-
-function stripCoordinateLabel(value?: string | null): string | undefined {
-  const text = value
-    ?.trim()
-    .replace(/^current location\b\s*,?\s*/i, "")
-    .replace(/^nearby location\b\s*,?\s*/i, "")
-    .replace(/^current location\s*\([^)]*\)\s*,?\s*/i, "")
-    .replace(/^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?\s*,?\s*/, "")
-    .trim();
-  return text || undefined;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -262,9 +203,6 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [resolving, setResolving] = useState(false);
-  type CurrentLocationStatus = "idle" | "loading" | "denied" | "unavailable" | "lookupError" | "error";
-  const [currentLocationStatus, setCurrentLocationStatus] =
-    useState<CurrentLocationStatus>("idle");
 
   // Nearby
   type NearbyStatus = "idle" | "loading" | "loadingMore" | "done" | "denied" | "error";
@@ -296,11 +234,9 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
   const [fetchWardsPaged] = useLazyQuery(WARDS_PAGED, { fetchPolicy: "network-only" });
   const [fetchWardSearch] = useLazyQuery(WARD_SEARCH, { fetchPolicy: "network-only" });
   const [fetchResolve] = useLazyQuery(RESOLVE_PLACE, { fetchPolicy: "cache-first" });
-  const [fetchReverseGeocode] = useLazyQuery(REVERSE_GEOCODE, { fetchPolicy: "network-only" });
 
   function resetAll() {
     setQuery(""); setSelectedId(null); setTab("nearby");
-    setCurrentLocationStatus("idle");
     setNearbyItems([]); setNearbyStatus("idle"); setNearbyRadiusMeters(2000); setNearbyHasMore(true);
     setWards([]); setWardCursor(null); setWardHasMore(true); setWardStatus("idle");
     gpsRef.current = null; nearbyItemsRef.current = [];
@@ -540,109 +476,6 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
     onOpenChange(false);
   }
 
-  function confirmGpsFallback(gps: { lat: number; lng: number }) {
-    const fallbackLabel = gpsFallbackLabel(gps.lat, gps.lng);
-    confirmLocation({
-      placeName: fallbackLabel,
-      formattedAddress: fallbackLabel,
-      placeId: `current:${gps.lat.toFixed(5)},${gps.lng.toFixed(5)}`,
-      latitude: gps.lat,
-      longitude: gps.lng,
-      county: undefined,
-      subregion: undefined,
-    });
-  }
-
-  async function nearestNamedPlace(gps: { lat: number; lng: number }) {
-    try {
-      const { data } = await fetchNearbyPage({
-        variables: { lat: gps.lat, lng: gps.lng, radiusIndex: 0 },
-      });
-      const places = data?.nearbyPage?.places ?? [];
-      return places
-        .filter((place) => place.name?.trim())
-        .sort((a, b) => {
-          const da = a.lat != null && a.lng != null
-            ? haversine(gps.lat, gps.lng, a.lat, a.lng)
-            : Infinity;
-          const db = b.lat != null && b.lng != null
-            ? haversine(gps.lat, gps.lng, b.lat, b.lng)
-            : Infinity;
-          return da - db;
-        })[0];
-    } catch {
-      return undefined;
-    }
-  }
-
-  function handleUseCurrentLocation() {
-    if (typeof window !== "undefined" && !window.isSecureContext) {
-      setCurrentLocationStatus("unavailable");
-      return;
-    }
-
-    setCurrentLocationStatus("loading");
-    requestGps(async (granted, code) => {
-      if (!granted || !gpsRef.current) {
-        setCurrentLocationStatus(code === 1 ? "denied" : "error");
-        return;
-      }
-
-      const gps = gpsRef.current;
-      try {
-        const { data } = await fetchReverseGeocode({
-          variables: { lat: gps.lat, lng: gps.lng },
-        });
-        const loc = data?.reverseGeocode?.location;
-        const fallbackLabel = gpsFallbackLabel(gps.lat, gps.lng);
-        const regionAddress = [loc?.wardName, loc?.subCountyName, loc?.countyName]
-          .filter(Boolean)
-          .join(", ");
-        const hasResolvedLocation = Boolean(firstText(
-          isGenericCurrentLocationName(loc?.placeName) ? undefined : loc?.placeName,
-          loc?.wardName,
-          loc?.subCountyName,
-          loc?.countyName,
-          stripCoordinateLabel(loc?.formattedAddress),
-        ));
-        if (!loc || !hasResolvedLocation) {
-          confirmGpsFallback(gps);
-          return;
-        }
-
-        const reversePlaceName = firstText(
-          isGenericCurrentLocationName(loc?.placeName) ? undefined : loc?.placeName,
-          loc?.wardName,
-          loc?.subCountyName,
-          loc?.countyName,
-          stripCoordinateLabel(loc?.formattedAddress),
-        ) ?? fallbackLabel;
-        const nearbyPlace = isGenericCurrentLocationName(loc?.placeName)
-          ? await nearestNamedPlace(gps)
-          : undefined;
-        const placeName = nearbyPlace?.name ?? reversePlaceName;
-        const formattedAddress = firstText(
-          nearbyPlace?.address,
-          stripCoordinateLabel(loc?.formattedAddress),
-          regionAddress,
-          placeName,
-        ) ?? fallbackLabel;
-
-        confirmLocation({
-          placeName,
-          formattedAddress,
-          placeId: loc?.googlePlaceId ?? `current:${gps.lat.toFixed(5)},${gps.lng.toFixed(5)}`,
-          latitude: loc?.coordinates?.lat ?? gps.lat,
-          longitude: loc?.coordinates?.lng ?? gps.lng,
-          county: loc?.countyName ?? undefined,
-          subregion: loc?.subCountyName ?? undefined,
-        });
-      } catch {
-        confirmGpsFallback(gps);
-      }
-    });
-  }
-
   // ── Scroll handlers ──────────────────────────────────────────────────────
 
   function handleNearbyScroll(e: React.UIEvent<HTMLDivElement>) {
@@ -770,48 +603,6 @@ export function LocationPickerDrawer({ open, onOpenChange, onSelect }: Props) {
               )}
             </button>
           ))}
-        </div>
-
-        <div className="px-4 pt-3 flex-shrink-0">
-          <button
-            type="button"
-            onClick={handleUseCurrentLocation}
-            disabled={currentLocationStatus === "loading" || resolving}
-            className="flex w-full items-center gap-3 rounded-xl border border-[rgb(var(--brand-primary)/0.18)] bg-[rgb(var(--brand-primary)/0.08)] px-3 py-3 text-left text-foreground active:opacity-70 disabled:opacity-70"
-          >
-            <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary">
-              {currentLocationStatus === "loading" ? (
-                <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
-                  <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-                </svg>
-              ) : (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="3" />
-                  <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
-                  <path d="m4.93 4.93 2.12 2.12M16.95 16.95l2.12 2.12M19.07 4.93l-2.12 2.12M7.05 16.95l-2.12 2.12" />
-                </svg>
-              )}
-            </span>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold">
-                {currentLocationStatus === "loading"
-                  ? "Finding your location..."
-                  : "Use my current location"}
-              </p>
-              <p className="mt-0.5 text-xs text-muted">
-                {currentLocationStatus === "denied"
-                  ? "Location permission is blocked. You can still search below."
-                  : currentLocationStatus === "unavailable"
-                    ? "Location needs HTTPS or localhost. You can still search below."
-                  : currentLocationStatus === "lookupError"
-                    ? "Could not name this location. Search below instead."
-                  : currentLocationStatus === "error"
-                    ? "Could not get GPS. Try again or search below."
-                    : "Share your GPS location for this post"}
-              </p>
-            </div>
-          </button>
         </div>
 
         {/* Search — All tab */}

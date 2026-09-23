@@ -18,7 +18,7 @@ export const STORES_QUERY = gql`
     stores(input: $input) {
       total
       hasMore
-      nextOffset
+      nextCursor
       stores {
         id
         username
@@ -81,7 +81,7 @@ export type StoreDirectoryPage = {
   stores: StoreCard[];
   total: number;
   hasMore: boolean;
-  nextOffset?: number | null;
+  nextCursor?: string | null;
 };
 
 export type StoreFilters = {
@@ -90,12 +90,12 @@ export type StoreFilters = {
   sort?: StoreSort;
   verifiedOnly?: boolean;
   limit?: number;
-  offset?: number;
+  after?: string;
 };
 
 export const EMPTY_STORE_PAGE: StoreDirectoryPage = {
   stores: [],
   total: 0,
   hasMore: false,
-  nextOffset: null,
+  nextCursor: null,
 };
