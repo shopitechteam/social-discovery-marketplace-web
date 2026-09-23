@@ -19,7 +19,6 @@ import {
   Flag,
   Share2,
   MoreVertical,
-  Maximize2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -31,7 +30,7 @@ import Shimmer, {
   SHIMMER_AVATAR,
   SHIMMER_PORTRAIT,
 } from "@/lib/shimmer";
-import { registerVideo, updateRatio } from "@/lib/activeVideo";
+import { pauseAllVideos, registerVideo, updateRatio } from "@/lib/activeVideo";
 import { useHlsVideo } from "@/lib/useHlsVideo";
 import { useFeedPreferencesStore } from "@/stores/feedPreferences";
 import {
@@ -41,7 +40,7 @@ import {
 import { VideoProgressBar } from "./VideoProgressBar";
 import { gql } from "@apollo/client";
 import { useApolloClient, useMutation } from "@apollo/client/react";
-import { shouldFire, hasFired } from "@/lib/interactionDedup";
+import { shouldFire } from "@/lib/interactionDedup";
 import { useFeedChat } from "./FeedChatContext";
 import { fmtCompact as fmt } from "@/lib/format";
 import { avatarGradient, idInitials as initials } from "@/lib/avatar";
@@ -51,6 +50,14 @@ import { useFollow } from "../hooks/useFollow";
 import { BufferSpinner } from "./BufferSpinner";
 import { TikTokIcon } from "@/components/ui/TikTokIcon";
 import { usePageFocused } from "../hooks/usePageFocused";
+import { useVideoAnalytics } from "../hooks/useVideoAnalytics";
+import {
+  saveFeedVideoTime,
+  restoreFeedVideoTime,
+  clearFeedVideoTime,
+} from "../lib/videoResume";
+import { setImmersiveHandoff } from "../lib/immersiveHandoff";
+import { hlsUrlOf, posterOf } from "../lib/videoSource";
 import toBase64, { cn } from "@/lib/utils";
 import { timeAgo } from "@/lib/time";
 import {
@@ -59,7 +66,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { toast } from "sonner";
-import { absoluteContentUrl, contentPath } from "@/lib/content-url";
+import { absoluteContentUrl, contentPath, videoPath } from "@/lib/content-url";
 import { rememberScrollBeforeNavigation } from "@/components/layout/RouteScrollRestoration";
 import { profileHref } from "@/lib/profile-url";
 
@@ -322,7 +329,6 @@ function Avatar({
   lastName,
   isVerified,
 }: AvatarProps) {
-  const color = avatarGradient(creatorId);
   const label = firstName
     ? `${firstName[0]}${lastName?.[0] ?? ""}`.toUpperCase()
     : initials(creatorId);
@@ -347,10 +353,8 @@ function Avatar({
   }
 
   return (
-    <div
-      className={`w-10 h-10 rounded-full relative bg-linear-to-br ${color} flex items-center justify-center flex-shrink-0`}
-    >
-      <span className="text-white text-xs font-bold">{label}</span>
+    <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border border-border bg-main">
+      <span className="text-xs font-black text-elevated">{label}</span>
       {isVerified ? <VerifiedBadge /> : null}
     </div>
   );
@@ -358,46 +362,15 @@ function Avatar({
 
 // ── Video media block ─────────────────────────────────────────────────────────
 
-const feedVideoResumeTimes = new Map<string, number>();
-
-function saveFeedVideoTime(contentId: string, video: HTMLVideoElement | null) {
-  if (!video) return;
-  const time = video.currentTime;
-  if (!Number.isFinite(time) || time < 0.25) return;
-  const duration = video.duration;
-  if (Number.isFinite(duration) && duration > 0 && time >= duration - 0.5) {
-    feedVideoResumeTimes.delete(contentId);
-    return;
-  }
-  feedVideoResumeTimes.set(contentId, time);
-}
-
-function restoreFeedVideoTime(
-  contentId: string,
-  video: HTMLVideoElement | null,
-) {
-  if (!video) return;
-  const time = feedVideoResumeTimes.get(contentId);
-  if (!time || Math.abs(video.currentTime - time) < 0.4) return;
-  try {
-    video.currentTime = time;
-  } catch {
-    // Some native HLS implementations reject seeks before enough metadata loads.
-  }
-}
-
 function VideoMedia({
   post,
   priority,
-  fullscreenOpen,
-  resumeTime,
-  onFullscreen,
+  onOpen,
 }: {
   post: ContentCardFieldsFragment;
   priority?: boolean;
-  fullscreenOpen: boolean;
-  resumeTime: number;
-  onFullscreen: (time: number) => void;
+  /** Tapping the video hands off to the immersive viewer at this timestamp. */
+  onOpen: (time: number, muted: boolean) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(false);
@@ -410,14 +383,10 @@ function VideoMedia({
 
   const media = post.media?.[0];
   const mux = media?.muxMeta;
-  const hlsUrl = mux?.playbackId
-    ? `https://stream.mux.com/${mux.playbackId}.m3u8`
-    : null;
-  const thumbnail =
-    media?.thumbnailUrl ??
-    (mux?.playbackId
-      ? `https://image.mux.com/${mux.playbackId}/thumbnail.jpg?time=0&width=900&fit_mode=smartcrop`
-      : null);
+  // Shared with the immersive viewer and the /video route so all three agree
+  // on which posts can play and where the stream is.
+  const hlsUrl = hlsUrlOf(post);
+  const thumbnail = posterOf(post);
 
   const isLandscape = mux?.aspectRatio === "16:9";
 
@@ -429,14 +398,13 @@ function VideoMedia({
 
   const [ended, setEnded] = useState(false);
   const [actualMuted, setActualMuted] = useState(muted);
-  // Manual play/pause: tapping the video toggles this. It overrides autoplay
-  // until the video scrolls away (reset in the inactive effect below).
-  const [userPaused, setUserPaused] = useState(false);
 
-  // hls.js — fast ABR + buffering state
-  // Pause when the video ended OR the user tapped to pause, so useHlsVideo
-  // doesn't resume on its own.
-  const shouldPlay = active && pageFocused && !fullscreenOpen;
+  // hls.js — fast ABR + buffering state.
+  // Pausing is no longer a card concern: tapping the video opens the immersive
+  // viewer (the Facebook gesture), and pause lives in there. The card only
+  // stops for reasons outside the user's control — scrolled away, tab hidden,
+  // or the video finished.
+  const shouldPlay = active && pageFocused;
   // When the browser blocks unmuted autoplay, useHlsVideo may force only this
   // element muted. Keep that as local reality, not the persisted user preference.
   const onMutedChange = useCallback(
@@ -452,7 +420,7 @@ function VideoMedia({
   const { videoRef, buffering, playing } = useHlsVideo(
     hlsUrl,
     active && posterReady,
-    ended || userPaused || !pageFocused || fullscreenOpen,
+    ended || !pageFocused,
     onMutedChange,
   );
 
@@ -473,77 +441,24 @@ function VideoMedia({
     setVideoMuted(next);
   }, [actualMuted, videoRef, setVideoMuted]);
 
-  // Tap to play/pause. Base the decision on the video's ACTUAL state, not a
-  // blind boolean toggle — otherwise, when the video is already not playing
-  // (autoplay blocked, buffering, just entered view), the first tap would only
-  // flip the flag and a second tap would be needed to actually start it.
-  const toggleUserPaused = useCallback(() => {
+  // Tapping the video opens the immersive viewer, the way Facebook does. The
+  // current position and sound state travel with it so the first slide picks
+  // up mid-frame instead of restarting.
+  const handleOpen = useCallback(() => {
     const video = videoRef.current;
-    // If it finished, let the dedicated replay control handle it.
-    if (ended) return;
-    const isPaused = video ? video.paused : userPaused;
-    if (isPaused) {
-      setUserPaused(false);
-      video?.play().catch(() => {});
-    } else {
-      setUserPaused(true);
-      video?.pause();
-    }
-  }, [videoRef, ended, userPaused]);
+    onOpen(video?.currentTime ?? 0, video?.muted ?? actualMuted);
+  }, [onOpen, actualMuted, videoRef]);
 
-  const [trackInteractionMutation] = useMutation(gql`
-    mutation TrackInteractionFeed(
-      $contentId: String!
-      $type: InteractionType!
-      $watchDuration: Float
-      $completionRate: Float
-    ) {
-      trackInteraction(
-        input: {
-          contentId: $contentId
-          type: $type
-          watchDuration: $watchDuration
-          completionRate: $completionRate
-        }
-      )
-    }
-  `);
-  const endedCountRef = useRef(0);
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    const handleEnded = () => {
-      feedVideoResumeTimes.delete(post.id);
-      const duration = video.duration || 0;
-      const watched = video.currentTime || duration;
-      const completionRate = duration > 0 ? Math.min(watched / duration, 1) : 1;
-      if (!Number.isFinite(video.duration) || video.duration <= 0) {
-        // Metadata not yet loaded — completionRate falls back to 1 and won't
-        // reflect real watch ratio. Surface it so it's catchable in dev.
-        console.warn(
-          `[PostCard] video 'ended' fired without a valid duration for content ${post.id} ` +
-            `(duration=${video.duration}); completionRate defaulted to ${completionRate}.`,
-        );
-      }
-      endedCountRef.current += 1;
-      const type =
-        endedCountRef.current === 1 ? "VIDEO_COMPLETED" : "VIDEO_REPLAYED";
-      if (shouldFire(post.id, type)) {
-        trackInteractionMutation({
-          variables: {
-            contentId: post.id,
-            type,
-            completionRate,
-            watchDuration: watched,
-          },
-        }).catch(() => {});
-      }
-      setEnded(true);
-    };
-    video.addEventListener("ended", handleEnded);
-    return () => video.removeEventListener("ended", handleEnded);
-  }, [videoRef, post.id, trackInteractionMutation]);
+  // Watch reporting lives in a shared hook so the card and the immersive
+  // slide measure "completed" and "skipped" identically — these events feed
+  // the server's seen-decay ranking, so a divergence would skew the feed.
+  const handleVideoEnded = useCallback(() => setEnded(true), []);
+  const { trackReplay } = useVideoAnalytics({
+    videoRef,
+    contentId: post.id,
+    active,
+    onEnded: handleVideoEnded,
+  });
 
   useEffect(() => {
     const video = videoRef.current;
@@ -576,10 +491,10 @@ function VideoMedia({
     video.muted = muted;
     video.defaultMuted = muted;
     setActualMuted(video.muted);
-    if (!muted && shouldPlay && !ended && !userPaused) {
+    if (!muted && shouldPlay && !ended) {
       video.play().catch(() => {});
     }
-  }, [muted, shouldPlay, ended, userPaused, videoRef]);
+  }, [muted, shouldPlay, ended, videoRef]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -590,63 +505,25 @@ function VideoMedia({
     return () => video.removeEventListener("volumechange", syncActualMuted);
   }, [muted, videoRef]);
 
+  // Scrolling away banks the position and clears `ended`, so re-entering the
+  // card autoplays from where it left off. The SKIPPED event that used to live
+  // here now fires from useVideoAnalytics on the same `active` transition.
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video || fullscreenOpen || resumeTime <= 0) return;
-    video.currentTime = resumeTime;
-  }, [fullscreenOpen, resumeTime, videoRef]);
-
-  // Reset ended state and check for skip when video scrolls away
-  useEffect(() => {
-    if (!active) {
-      saveFeedVideoTime(post.id, videoRef.current);
-      // Defer resetting ended to avoid synchronous setState inside the effect
-      const t = setTimeout(() => {
-        setEnded(false);
-        // Clear any manual pause so the video autoplays again when re-entered
-        setUserPaused(false);
-      }, 0);
-      const video = videoRef.current;
-      if (!video) {
-        clearTimeout(t);
-        return;
-      }
-      const duration = video.duration || 0;
-      const watched = video.currentTime || 0;
-      // Skip = watched at least 1s but less than 50% of video length,
-      // and the video was never completed this session (completed > skipped)
-      if (
-        duration > 0 &&
-        watched >= 1 &&
-        watched < duration * 0.5 &&
-        !hasFired(post.id, "VIDEO_COMPLETED") &&
-        shouldFire(post.id, "SKIPPED")
-      ) {
-        trackInteractionMutation({
-          variables: {
-            contentId: post.id,
-            type: "SKIPPED",
-            watchDuration: watched,
-            completionRate: watched / duration,
-          },
-        }).catch(() => {});
-      }
-      return () => clearTimeout(t);
-    }
-  }, [active, videoRef, post.id, trackInteractionMutation]);
+    if (active) return;
+    saveFeedVideoTime(post.id, videoRef.current);
+    // Deferred so we don't setState synchronously inside the effect body.
+    const t = setTimeout(() => setEnded(false), 0);
+    return () => clearTimeout(t);
+  }, [active, videoRef, post.id]);
 
   function handleReplay() {
     const video = videoRef.current;
     if (!video) return;
-    feedVideoResumeTimes.delete(post.id);
-    endedCountRef.current += 1;
+    clearFeedVideoTime(post.id);
     setEnded(false);
     video.currentTime = 0;
     video.play().catch(() => {});
-    // VIDEO_REPLAYED is always allowed through (not in SESSION_ONCE)
-    trackInteractionMutation({
-      variables: { contentId: post.id, type: "VIDEO_REPLAYED" },
-    }).catch(() => {});
+    trackReplay();
   }
 
   // Register with the global video coordinator and report ratio changes.
@@ -687,7 +564,7 @@ function VideoMedia({
   return (
     <div
       ref={containerRef}
-      onClick={toggleUserPaused}
+      onClick={handleOpen}
       className="relative w-full bg-black overflow-hidden"
       style={{
         // Portrait videos get a taller budget (70svh) so they aren't squeezed;
@@ -756,21 +633,6 @@ function VideoMedia({
           </span>
         </button>
       )}
-      {/* Paused indicator — shown when the user tapped to pause (not ended).
-          Pointer-events-none so the tap falls through to the container toggle. */}
-      {active && userPaused && !ended && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
-          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm">
-            <svg
-              className="h-7 w-7 translate-x-0.5"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path d="M8 5v14l11-7z" />
-            </svg>
-          </span>
-        </div>
-      )}
       {/* TikTok-style buffer spinner */}
       {active && buffering && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -790,20 +652,9 @@ function VideoMedia({
           className="opacity-90"
         />
       )}
-      {hlsUrl && (
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            onFullscreen(videoRef.current?.currentTime ?? 0);
-          }}
-          aria-label="Open video fullscreen"
-          className="absolute left-3 top-3 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white/90 backdrop-blur-sm transition-transform active:scale-95"
-        >
-          <Maximize2 className="h-4.5 w-4.5" strokeWidth={2.2} />
-        </button>
-      )}
-      {/* Mute / unmute button — absolute, stops propagation so it doesn't navigate */}
+      {/* No expand button: the whole video is the affordance now, so a second
+          control opening the same viewer would only be a thing to drift. */}
+      {/* Mute / unmute button — absolute, stops propagation so it doesn't open */}
       {active && (
         <button
           onClick={(e) => {
@@ -1276,7 +1127,6 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [showCarousel, setShowCarousel] = useState(false);
-  const [fullscreenVideoTime, setFullscreenVideoTime] = useState(0);
   const [saveBurstKey, setSaveBurstKey] = useState(0);
   // Paints the chat shell instantly when "Message" is tapped, covering the
   // route-transition gap so opening a chat never flashes a blank page. The
@@ -1443,6 +1293,32 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
     }
   }
 
+  /**
+   * Tapping a video card enters the immersive viewer.
+   *
+   * Order matters. Every feed video is paused SYNCHRONOUSLY here, inside the
+   * click handler, so the outgoing element is already stopped before the route
+   * changes — on iOS that measurably improves the odds the viewer's first
+   * `play()` is honoured. A plain pause, not a suspension: the viewer takes the
+   * lock in its own mount effect and releases it on unmount, so suspending here
+   * as well left the count permanently above zero and every card stuck
+   * inactive once you came back. The handoff carries the frame and sound state
+   * so the first slide resumes rather than restarting. `{ scroll: false }` plus
+   * the remembered scroll position is what makes the back button land exactly
+   * where we left.
+   */
+  const openVideo = useCallback(
+    (time: number, videoMuted: boolean) => {
+      setImmersiveHandoff(post.id, { time, muted: videoMuted });
+      pauseAllVideos();
+      rememberScrollBeforeNavigation();
+      // Slug path, so the URL the user can copy straight out of the address
+      // bar is already the canonical one. The handoff stays keyed by id.
+      router.push(videoPath(lang, post), { scroll: false });
+    },
+    [post, lang, router],
+  );
+
   async function handleDownload() {
     const src = downloadSrc(post);
     if (!src || typeof document === "undefined") return;
@@ -1474,8 +1350,11 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
   return (
     <article ref={cardRef} className="bg-elevated overflow-hidden">
       {/* ── Header ─────────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-3 px-4 pt-3.5 pb-2.5">
-        <button className="lg:cursor-pointer" onClick={openCreatorProfile}>
+      <div className="flex items-center gap-3 px-4 pt-3.5 pb-2.5 max-[360px]:gap-2 max-[360px]:px-3">
+        <button
+          className="shrink-0 lg:cursor-pointer"
+          onClick={openCreatorProfile}
+        >
           <Avatar
             creatorId={post.creatorId}
             avatarUrl={creator?.profile?.avatar}
@@ -1490,7 +1369,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
           {creatorName ? (
             <button
               onClick={openCreatorProfile}
-              className="font-bold text-base leading-tight hover:underline block"
+              className="block max-w-full truncate text-left text-[15px] font-bold leading-tight hover:underline max-[360px]:text-[14px]"
             >
               {creatorName}
             </button>
@@ -1498,12 +1377,12 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
             <div className="h-3.5 w-24 rounded-full bg-surface animate-pulse" />
           )}
           {post.location && locationTrail(post.location) && (
-            <p className="flex items-center gap-0.5 text-muted-foreground text-[11px] mt-0.5 leading-tight">
+            <p className="mt-0.5 flex min-w-0 items-center gap-0.5 text-[11px] leading-tight text-muted-foreground max-[360px]:text-[10.5px]">
               <MapPin className="w-3 h-3 shrink-0" />
               <span className="truncate">{locationTrail(post.location)}</span>
             </p>
           )}
-          <p className="text-muted-foreground text-[11px] mt-0.5">
+          <p className="mt-0.5 truncate text-[11px] text-muted-foreground max-[360px]:text-[10.5px]">
             {timeAgo(post.createdAt)}
           </p>
         </div>
@@ -1513,7 +1392,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
           <button
             onClick={handleFollow}
             className={[
-              "flex items-center lg:cursor-pointer gap-1 text-[13px] font-semibold px-3 py-1.5 rounded-full transition-all active:scale-95",
+              "flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-semibold transition-all active:scale-95 max-[360px]:px-2.5 max-[360px]:text-[12px] lg:cursor-pointer",
               following
                 ? "text-muted-foreground bg-surface"
                 : "text-primary-strong dark:text-primary bg-primary-soft hover:bg-primary/20",
@@ -1543,7 +1422,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
               type="button"
               onClick={(e) => e.stopPropagation()}
               className={cn(
-                "flex h-10 w-10 items-center justify-center rounded-full bg-surface/80 text-muted-foreground transition-colors lg:cursor-pointer hover:bg-surface hover:text-default active:bg-muted",
+                "flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface/80 text-muted-foreground transition-colors hover:bg-surface hover:text-default active:bg-muted max-[360px]:h-9 max-[360px]:w-9 lg:cursor-pointer",
                 menuOpen && "bg-surface text-default",
               )}
               aria-label="Post options"
@@ -1650,7 +1529,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
 
       {/* ── Text content ───────────────────────────────────────────────── */}
       <div className="px-4 pb-2.5">
-        <p className="font-semibold text-default text-[15px] leading-snug mb-1">
+        <p className="mb-1 text-[15px] font-extrabold leading-snug text-main md:text-[18px]">
           {post.title}
         </p>
 
@@ -1680,7 +1559,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
           )}
         </div>
         {caption && (
-          <div className="text-sm leading-5 text-default">
+          <div className="text-sm font-semibold leading-5 text-main md:text-[16px] md:leading-6">
             <p ref={captionRef} className={cn(!expanded && "line-clamp-2")}>
               {caption}
             </p>
@@ -1714,8 +1593,8 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
       </div>
 
       {/* ── Media ──────────────────────────────────────────────────────── */}
-      {/* No PDP navigation: videos toggle play/pause; images (single or
-          multiple) open the in-place full-screen carousel dialog on tap. */}
+      {/* No PDP navigation: videos open the immersive viewer; images (single
+          or multiple) open the in-place full-screen carousel dialog on tap. */}
       <div className="relative">
         {/* TikTok posts render native once the background re-host has populated
             `media` (the post is then live). Until then we fall back to the live
@@ -1724,16 +1603,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
         {post.source === "TIKTOK_EMBED" && !post.media?.length ? (
           <TikTokEmbedMedia post={post} />
         ) : post.type === "VIDEO" ? (
-          <VideoMedia
-            post={post}
-            priority={priority}
-            fullscreenOpen={showCarousel}
-            resumeTime={fullscreenVideoTime}
-            onFullscreen={(time) => {
-              setFullscreenVideoTime(time);
-              setShowCarousel(true);
-            }}
-          />
+          <VideoMedia post={post} priority={priority} onOpen={openVideo} />
         ) : (
           <ImageMedia
             post={post}
@@ -1823,16 +1693,11 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
         </div>
       )}
 
-      {/* Hairline above the actions, inset so it reads as part of the card
-          rather than slicing it in two. On a post with no engagement yet the
-          summary row above is absent, so the divider needs its own breathing
-          room or it sits flush against the media. */}
-      <div
-        className={cn(
-          "mx-3 border-t border-border",
-          !hasEngagement && "mt-2.5",
-        )}
-      />
+      {/* No divider above the actions — the row reads as part of the card on
+          its own. The spacing still has to be reserved though: on a post with
+          no engagement the summary row above is absent, and without this the
+          buttons sit flush against the media. */}
+      {!hasEngagement && <div className="mt-2.5" />}
 
       {/* ── Action bar ──────────────────────────────────────────────────
           Flat, evenly-split buttons under a divider, the shape people already
@@ -1979,8 +1844,6 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
           (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
         )}
         title={post.title}
-        videoStartTime={fullscreenVideoTime}
-        onVideoTimeChange={setFullscreenVideoTime}
       />
 
       {/* ── Instant chat-shell overlay while the conversation route loads ── */}

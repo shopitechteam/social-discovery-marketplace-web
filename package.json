@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "codegen": "graphql-codegen --config codegen.ts",
-    "codegen:watch": "graphql-codegen --config codegen.ts --watch"
+    "codegen:watch": "graphql-codegen --config codegen.ts --watch",
+    "seo:audit": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/seo-content-audit.mjs"
   },
   "dependencies": {
     "@apollo/client": "^4.2.0",
@@ -41,6 +42,7 @@
     "react-hook-form": "^7.76.0",
     "rxjs": "^7.8.2",
     "server-only": "^0.0.1",
+    "sharp": "^0.34.5",
     "socket.io-client": "^4.8.3",
     "sonner": "^2.0.7",
     "tiktok-video-element": "^0.1.2",

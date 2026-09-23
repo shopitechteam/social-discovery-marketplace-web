@@ -135,6 +135,37 @@ query ForYouFeed($limit: Int, $after: String, $latitude: Float, $longitude: Floa
   }
 }
 
+# Immersive full-screen video viewer. `seedId` pins the tapped video first.
+#
+# Selects ContentCardFields VERBATIM, and must keep doing so. Content is
+# normalized on `id`, so this query writes the same cache entities the feed
+# does — but `ranking` is an embedded object with no `merge: true` in the type
+# policy, so a narrower selection here would silently wipe fields the feed had
+# already cached. Reusing the fragment is what makes that impossible.
+query VideoFeed(
+  $limit: Int
+  $after: String
+  $seedId: String
+  $latitude: Float
+  $longitude: Float
+) {
+  videoFeed(
+    limit: $limit
+    after: $after
+    seedId: $seedId
+    latitude: $latitude
+    longitude: $longitude
+  ) {
+    items {
+      ...ContentCardFields
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+
 query TrendingContent($county: String) {
   trendingContent(county: $county) {
     ...ContentCardFields

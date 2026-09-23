@@ -4,6 +4,14 @@ fragment ProfileUserFields on User {
   email
   isVerified
   tiktokOpenId
+  # Drives which account rows Settings can offer: changing a password only
+  # means something for an account that has one.
+  authProviders {
+    local
+    google
+    facebook
+    apple
+  }
   profile {
     firstName
     lastName
@@ -74,12 +82,16 @@ query GetUserProfile($username: String!) {
   }
 }
 
+# A seller's public grid renders the same tile as /explore and the Saved tab,
+# so it reads with the same fragment they do. Beyond matching the tile, this
+# keeps the shared Content entities in one shape: a narrower selection here
+# used to overwrite the feed's cached media and silently invalidate its cache.
 query GetUserPosts($userId: String!, $limit: Int, $afterId: String) {
   userPosts(userId: $userId, limit: $limit, afterId: $afterId) {
     hasMore
     nextCursor
     posts {
-      ...ProfilePostFields
+      ...ContentCardFields
     }
   }
 }
@@ -94,12 +106,20 @@ query GetMyPosts($limit: Int, $afterId: String) {
   }
 }
 
+# Saved posts use ContentCardFields, not ProfilePostFields.
+#
+# The Saved tab renders the same tile as /explore, and that tile needs fields
+# the profile fragment does not carry: isSavedByMe (so its save button starts
+# pressed), isLive and boost (the context chip), and the media duration. Reusing
+# the discover fragment keeps the tile and its data in step — extending
+# ProfilePostFields instead would have loaded those fields into the two
+# inventory queries that have no use for them.
 query GetMySavedContent($limit: Int, $afterId: String) {
   mySavedContent(limit: $limit, afterId: $afterId) {
     hasMore
     nextCursor
     items {
-      ...ProfilePostFields
+      ...ContentCardFields
     }
   }
 }
@@ -261,4 +281,54 @@ query GetTiktokConnectStatus {
 
 mutation GetTiktokConnectUrl($returnUrl: String) {
   tiktokConnectUrl(returnUrl: $returnUrl)
+}
+
+# ── Account security ─────────────────────────────────────────────────────────
+
+# Returns a fresh token pair: changing the password revokes every other
+# session, including the one that made this call, so the client must swap in
+# the new tokens or it signs itself out.
+mutation ChangePassword($input: ChangePasswordInput!) {
+  changePassword(input: $input) {
+    accessToken
+    refreshToken
+    user {
+      id
+    }
+  }
+}
+
+# `password` is required for accounts that have one and ignored for social-only
+# sign-ins, which have nothing to verify against.
+mutation DeleteMyAccount($password: String) {
+  deleteMyAccount(password: $password)
+}
+
+# ── Rate us ──────────────────────────────────────────────────────────────────
+
+fragment AppRatingFields on AppRating {
+  id
+  stars
+  comment
+  updatedAt
+}
+
+query MyAppRating {
+  myAppRating {
+    ...AppRatingFields
+  }
+}
+
+query AppRatingSummary {
+  appRatingSummary {
+    average
+    total
+    distribution
+  }
+}
+
+mutation SubmitAppRating($input: SubmitAppRatingInput!) {
+  submitAppRating(input: $input) {
+    ...AppRatingFields
+  }
 }

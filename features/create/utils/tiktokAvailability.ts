@@ -1,2 +1,1 @@
-export const SHOW_TIKTOK_CREATE_OPTIONS =
-  process.env.NODE_ENV === "development";
+export const SHOW_TIKTOK_CREATE_OPTIONS = true;

@@ -13,6 +13,12 @@ import {
 } from "@/lib/structured-data";
 import { contentPath } from "@/lib/content-url";
 import { localeAlternates } from "@/lib/metadata";
+import { profileHref } from "@/lib/profile-url";
+import {
+  cleanPublicText,
+  META_DESCRIPTION_MAX,
+  truncateAtWord,
+} from "@/lib/seo/public-text";
 
 type Props = { params: Promise<{ lang: string; id: string }> };
 
@@ -103,7 +109,12 @@ function categoryLabel(post: Post): string | null {
   );
 }
 
-/** A concise, human + engine-friendly description for the listing. */
+/**
+ * A concise, human + engine-friendly description for the listing: price and
+ * place first (what a buyer scans a results page for), then the seller's
+ * caption cleaned of emoji bullets, line breaks and contact numbers, cut at a
+ * word inside the length engines actually show.
+ */
 function buildDescription(post: Post): string {
   const bits: string[] = [];
   const price = priceLabel(post);
@@ -112,16 +123,16 @@ function buildDescription(post: Post): string {
   if (loc) bits.push(loc);
   const lead = bits.length ? `${bits.join(" · ")}. ` : "";
   const body =
-    post.caption?.trim() ||
+    cleanPublicText(post.caption) ||
     `${post.title} — available now on ${siteConfig.name}, Kenya's social marketplace. Message the seller directly.`;
   const details = (post.specs ?? [])
     .filter((item) => item.key?.trim() && item.value?.trim())
     .slice(0, 5)
     .map((item) => `${item.key}: ${item.value}`)
     .join("; ");
-  return `${lead}${body}${details ? ` Details: ${details}.` : ""}`.slice(
-    0,
-    300,
+  return truncateAtWord(
+    `${lead}${body}${details ? ` Details: ${details}.` : ""}`,
+    META_DESCRIPTION_MAX,
   );
 }
 
@@ -240,8 +251,10 @@ export default async function ContentDetailPage({ params }: Props) {
                 currency: post.price?.currency,
                 negotiable: post.price?.negotiable,
                 sellerName: sellerName(post),
+                // The canonical /@handle profile — /profile/* is a legacy
+                // address that redirects, which weakens the seller link.
                 sellerUrl: post.creator?.username
-                  ? `${siteConfig.url}/${lang}/profile/${post.creator.username}`
+                  ? `${siteConfig.url}${profileHref(lang, post.creator)}`
                   : null,
                 locationName: locationName(post),
                 category: categoryLabel(post),
@@ -264,9 +277,17 @@ export default async function ContentDetailPage({ params }: Props) {
                   ? new Date(post.updatedAt as string).toISOString()
                   : null,
               }),
+              // Home › Seller › Listing: the seller is the listing's real
+              // parent, and the crumb shows in results as a second link to
+              // their storefront. Falls back to Explore without a handle.
               breadcrumbSchema([
                 { name: "Home", url: `${siteConfig.url}/${lang}` },
-                { name: "Explore", url: `${siteConfig.url}/${lang}/explore` },
+                post.creator?.username
+                  ? {
+                      name: sellerName(post) ?? `@${post.creator.username}`,
+                      url: `${siteConfig.url}${profileHref(lang, post.creator)}`,
+                    }
+                  : { name: "Explore", url: `${siteConfig.url}/${lang}/explore` },
                 { name: post.title, url: canonical },
               ]),
             ),

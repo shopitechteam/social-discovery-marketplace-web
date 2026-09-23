@@ -1,36 +1,31 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useAppBack } from "@/lib/useAppBack";
+import {
+  DISCOVER_GRID,
+  DiscoverGridCard,
+} from "@/features/discover/components/DiscoverGridCard";
 import {
   ArrowLeft,
-  Bookmark,
+  CheckCircle2,
   ExternalLink,
-  Eye,
-  Link2,
-  MapPin,
-  Play,
-  Share2,
   Video,
 } from "lucide-react";
 import { useQuery, useMutation } from "@apollo/client/react";
-import { SHIMMER_AVATAR, SHIMMER_PORTRAIT } from "@/lib/shimmer";
+import { SHIMMER_AVATAR } from "@/lib/shimmer";
 import {
   GetUserPostsDocument,
   RecordProfileVisitDocument,
+  type ContentCardFieldsFragment,
   type ProfileUserFieldsFragment,
-  type ProfilePostFieldsFragment,
 } from "@/types/__generated__/graphql";
 import { useFollow } from "@/features/feed/hooks/useFollow";
-import {
-  HoverVideoPreview,
-  useHoverPreview,
-} from "@/features/video/components/HoverVideoPreview";
 import { useAuthStore } from "@/stores/auth";
+import { trackSellerEvent } from "@/lib/seller-analytics";
 import { Skeleton } from "@/components/ui/skeleton";
-import { absoluteContentUrl, contentPath } from "@/lib/content-url";
+import { appendUnique } from "../lib/appendUnique";
 
 function formatCompact(value: number | null | undefined) {
   if (value == null) return "0";
@@ -39,309 +34,53 @@ function formatCompact(value: number | null | undefined) {
   return String(value);
 }
 
-function formatDate(value: unknown) {
-  const date = new Date(String(value));
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleDateString("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
 /** "KSh 12,500" — grouped thousands, no decimals. */
-function formatPrice(amount: number, currency: string) {
-  return `${currency} ${Math.round(amount).toLocaleString("en-KE")}`;
-}
-
 /**
  * Readable location for a card: county first, then the more specific area, e.g.
  * "Nairobi, Westlands". Falls back gracefully and de-dupes when the area and
  * county are the same (so we never show "Nairobi, Nairobi").
  */
-function locationLabel(loc: {
-  placeName?: string | null;
-  subregion?: string | null;
-  county?: string | null;
-}): string | null {
-  const county = loc.county?.trim() || null;
-  const area = loc.placeName?.trim() || loc.subregion?.trim() || null;
-  const parts = [county, area].filter(
-    (p, i, arr): p is string => Boolean(p) && arr.indexOf(p) === i, // drop falsy + duplicates
-  );
-  return parts.length ? parts.join(", ") : null;
-}
-
-function getThumb(post: ProfilePostFieldsFragment): string | null {
-  const m = post.media?.[0];
-
-  // For videos, fall back to a Mux-derived thumbnail when no stored cover exists.
-  const muxPlaybackId = m?.muxMeta?.playbackId;
-  const muxDerivedThumb = muxPlaybackId
-    ? `https://image.mux.com/${muxPlaybackId}/thumbnail.jpg?time=0&width=540&fit_mode=smartcrop`
-    : null;
-
+function ProfileStat({ label, value }: { label: string; value: string }) {
   return (
-    m?.muxMeta?.thumbnailUrl ??
-    m?.thumbnailUrl ??
-    m?.r2Variants?.find((v) => v.variant === "thumbnail")?.url ??
-    m?.r2Variants?.[0]?.url ??
-    m?.url ??
-    muxDerivedThumb ??
-    null
-  );
-}
-
-// ── Stat pill ─────────────────────────────────────────────────────────────────
-
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-[rgb(229_231_235)] bg-[rgb(var(--color-bg-elevated)/0.82)] px-4 py-4 text-center shadow-sm sm:px-5">
-      <span
-        className="font-bold leading-tight"
-        style={{ fontSize: "var(--text-lg)", color: "rgb(var(--color-text))" }}
-      >
-        {value}
-      </span>
-      <span
-        className="mt-1 block"
-        style={{
-          fontSize: "var(--text-xs)",
-          color: "rgb(var(--color-text-muted))",
-        }}
-      >
-        {label}
-      </span>
+    <div className="min-w-0">
+      <p className="text-sm font-black text-main md:text-base">{value}</p>
+      <p className="mt-0.5 text-xs font-medium text-muted">{label}</p>
     </div>
   );
 }
 
-// ── Post tile ─────────────────────────────────────────────────────────────────
+/** Bio text, clamped to 3 lines with a "more"/"less" toggle. The toggle only
+ * renders when the text actually overflows 3 lines — measured against the
+ * DOM rather than guessed from character count, since a bio can wrap short
+ * on a narrow phone and long on desktop at the same length. */
+function ExpandableBio({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const [truncated, setTruncated] = useState(false);
+  const ref = useRef<HTMLParagraphElement>(null);
 
-function PostTile({
-  post,
-  lang,
-  onShare,
-  onCopyLink,
-}: {
-  post: ProfilePostFieldsFragment;
-  lang: string;
-  onShare: (post: ProfilePostFieldsFragment) => void;
-  onCopyLink: (post: ProfilePostFieldsFragment) => void;
-}) {
-  const thumb = getThumb(post);
-  const isVideo = post.type === "VIDEO";
-  const playbackId = post.media?.[0]?.muxMeta?.playbackId ?? null;
-  const { previewing, bind } = useHoverPreview(isVideo && !!playbackId);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const priceText =
-    post.price.amount <= 0
-      ? "Custom"
-      : formatPrice(post.price.amount, post.price.currency);
-  const place = post.location ? locationLabel(post.location) : null;
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    setTruncated(el.scrollHeight > el.clientHeight + 1);
+  }, [text]);
 
   return (
-    <div className="group overflow-hidden rounded-xl border border-[rgb(229_231_235)] bg-[rgb(var(--color-bg-elevated))]">
-      {/* Thumbnail */}
-      <div className="relative aspect-9/10" {...bind}>
-        {/* Whole thumbnail navigates to content detail */}
-        <Link
-          href={contentPath(lang, post)}
-          scroll={false}
-          className="absolute inset-0 z-10"
-          aria-label={post.title}
-        />
-
-        {thumb && isVideo ? (
-          <Image
-            src={thumb}
-            alt={post.title}
-            fill
-            className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-            sizes="(max-width: 767px) 50vw, (max-width: 1279px) 33vw, 280px"
-            placeholder="blur"
-            blurDataURL={SHIMMER_PORTRAIT}
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center">
-            <Image
-              src={
-                post.media.filter((m) => m.mediaType === "IMAGE")[0]
-                  ?.r2Variants?.[0]?.url ??
-                thumb ??
-                "/images/placeholder.png"
-              }
-              alt={post.title}
-              fill
-              className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-              sizes="(max-width: 767px) 50vw, (max-width: 1279px) 33vw, 280px"
-              placeholder="blur"
-              blurDataURL={SHIMMER_PORTRAIT}
-            />
-          </div>
-        )}
-
-        {/* Hover preview — under the z-10 Link overlay so clicks still
-            navigate; the thumbnail stays mounted behind it. */}
-        {previewing && playbackId && (
-          <HoverVideoPreview playbackId={playbackId} />
-        )}
-
-        {/* Play affordance for video posts */}
-        {isVideo && thumb && !previewing && (
-          <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white">
-              <Play
-                size={20}
-                fill="currentColor"
-                strokeWidth={0}
-                className="ml-0.5"
-              />
-            </span>
-          </span>
-        )}
-
-        {/* Price badge — primary marketplace signal. pointer-events-none so the
-            full-thumbnail Link overlay still handles taps. "Custom" when unpriced. */}
-        <span
-          className="pointer-events-none absolute bottom-2 left-2 z-20 rounded-lg bg-black/70 px-2 py-1 font-bold leading-none text-white backdrop-blur-sm"
-          style={{ fontSize: "var(--text-sm)" }}
-        >
-          {priceText}
-        </span>
-
-        {/* action menu — sits above the Link overlay */}
-        <div className="absolute right-2 top-2 z-20 opacity-0 transition-opacity group-hover:opacity-100">
-          <div className="relative">
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                setMenuOpen((v) => !v);
-              }}
-              className="inline-flex h-7 w-7 items-center justify-center rounded-lg border text-white"
-              style={{
-                backgroundColor: "rgba(0,0,0,0.5)",
-                borderColor: "rgba(255,255,255,0.2)",
-                backdropFilter: "blur(8px)",
-              }}
-              aria-label="Post actions"
-            >
-              <span className="flex flex-col items-center gap-0.5">
-                {[0, 1, 2].map((i) => (
-                  <span
-                    key={i}
-                    className="block h-0.5 w-0.5 rounded-full bg-white"
-                  />
-                ))}
-              </span>
-            </button>
-            {menuOpen && (
-              <div
-                className="absolute right-0 top-8 z-20 w-36 overflow-hidden rounded-xl border py-1 shadow-xl"
-                style={{
-                  backgroundColor: "rgb(var(--color-bg-elevated))",
-                  borderColor: "rgb(229 231 235)",
-                }}
-                onMouseLeave={() => setMenuOpen(false)}
-              >
-                <Link
-                  href={contentPath(lang, post)}
-                  scroll={false}
-                  className="flex items-center gap-2 px-3 py-2 font-medium transition-colors hover:bg-surface"
-                  style={{
-                    fontSize: "var(--text-sm)",
-                    color: "rgb(var(--color-text))",
-                  }}
-                >
-                  <Eye size={14} />
-                  View
-                </Link>
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    onShare(post);
-                    setMenuOpen(false);
-                  }}
-                  className="flex w-full items-center gap-2 px-3 py-2 font-medium transition-colors hover:bg-surface"
-                  style={{
-                    fontSize: "var(--text-sm)",
-                    color: "rgb(var(--color-text))",
-                  }}
-                >
-                  <Share2 size={14} />
-                  Share
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    onCopyLink(post);
-                    setMenuOpen(false);
-                  }}
-                  className="flex w-full items-center gap-2 px-3 py-2 font-medium transition-colors hover:bg-surface"
-                  style={{
-                    fontSize: "var(--text-sm)",
-                    color: "rgb(var(--color-text))",
-                  }}
-                >
-                  <Link2 size={14} />
-                  Copy link
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Meta — title / location / performance (matches /profile cards) */}
-      <Link
-        href={contentPath(lang, post)}
-        scroll={false}
-        className="block p-2.5"
+    <div>
+      <p
+        ref={ref}
+        className={`text-sm leading-6 text-main ${expanded ? "" : "line-clamp-3"}`}
       >
-        {post.title && (
-          <p
-            className="line-clamp-1 leading-tight"
-            style={{
-              fontSize: "var(--text-sm)",
-              color: "rgb(var(--color-text))",
-              fontWeight: 600,
-            }}
-          >
-            {post.title}
-          </p>
-        )}
-
-        {/* Location — where the buyer would collect it */}
-        {place && (
-          <p
-            className="mt-1 flex items-center gap-1 line-clamp-1"
-            style={{
-              fontSize: "var(--text-xs)",
-              color: "rgb(var(--color-text-muted))",
-            }}
-          >
-            <MapPin size={12} aria-hidden className="shrink-0" />
-            <span className="truncate">{place}</span>
-          </p>
-        )}
-
-        {/* Performance — views lead (reach), saves signal buying intent */}
-        <div
-          className="mt-1.5 flex items-center gap-3"
-          style={{
-            fontSize: "var(--text-xs)",
-            color: "rgb(var(--color-text-muted))",
-          }}
+        {text}
+      </p>
+      {truncated ? (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-0.5 text-sm font-bold text-primary"
         >
-          <span className="flex items-center gap-1">
-            <Eye size={12} /> {formatCompact(post.stats.views)}
-          </span>
-          <span className="flex items-center gap-1">
-            <Bookmark size={12} /> {formatCompact(post.stats.saves)}
-          </span>
-          <span className="ml-auto shrink-0">{formatDate(post.createdAt)}</span>
-        </div>
-      </Link>
+          {expanded ? "less" : "more"}
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -352,10 +91,23 @@ interface Props {
   user: ProfileUserFieldsFragment;
   lang: string;
   isOwnProfile: boolean;
+  /**
+   * First storefront page rendered on the server (public profile route). Shown
+   * until the client query answers, so the grid — and its links to every
+   * listing — is in the HTML crawlers read instead of arriving after JS.
+   */
+  initialPosts?: ContentCardFieldsFragment[];
 }
 
-export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
-  const router = useRouter();
+export function CreatorProfileView({
+  user,
+  lang,
+  isOwnProfile,
+  initialPosts,
+}: Props) {
+  // A profile link opened from outside has no app history to return to, so
+  // back would be a dead button. Send those to the feed.
+  const goBack = useAppBack(`/${lang}/for-you`);
 
   const firstName = user.profile?.firstName ?? "";
   const lastName = user.profile?.lastName ?? "";
@@ -392,6 +144,15 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
     recordProfileVisit({ variables: { userId: user.id } }).catch(() => {});
   }, [user.id, isOwnProfile, isAuthenticated, recordProfileVisit]);
 
+  // Funnel analytics: every visitor, signed in or not (the visit above only
+  // sees signed-in users). The API ignores sellers it isn't tracking.
+  const funnelViewTrackedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (isOwnProfile || !user.id || funnelViewTrackedRef.current === user.id) return;
+    funnelViewTrackedRef.current = user.id;
+    trackSellerEvent({ type: "PROFILE_VIEW", sellerId: user.id });
+  }, [user.id, isOwnProfile]);
+
   const {
     data,
     loading: postsLoading,
@@ -401,7 +162,7 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
     notifyOnNetworkStatusChange: true,
   });
 
-  const posts = data?.userPosts.posts ?? [];
+  const posts = data?.userPosts.posts ?? initialPosts ?? [];
   const hasMore = data?.userPosts.hasMore ?? false;
   const nextCursor = data?.userPosts.nextCursor ?? undefined;
 
@@ -429,10 +190,10 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
               return {
                 userPosts: {
                   ...fetchMoreResult.userPosts,
-                  posts: [
-                    ...prev.userPosts.posts,
-                    ...fetchMoreResult.userPosts.posts,
-                  ],
+                  posts: appendUnique(
+              prev.userPosts.posts,
+              fetchMoreResult.userPosts.posts,
+            ),
                 },
               };
             },
@@ -445,209 +206,113 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
     return () => observer.disconnect();
   }, [hasMore, postsLoading, nextCursor, fetchMore, user.id]);
 
-  const handleShare = useCallback(
-    (post: ProfilePostFieldsFragment) => {
-      const url = absoluteContentUrl(window.location.origin, lang, post);
-      if (navigator.share) {
-        navigator.share({ title: post.title, url }).catch(() => {});
-      } else {
-        navigator.clipboard.writeText(url).catch(() => {});
-      }
-    },
-    [lang],
-  );
 
-  const handleCopyLink = useCallback(
-    (post: ProfilePostFieldsFragment) => {
-      const url = absoluteContentUrl(window.location.origin, lang, post);
-      navigator.clipboard.writeText(url).catch(() => {});
-    },
-    [lang],
-  );
 
   return (
-    <div
-      className="min-h-screen"
-      style={{ backgroundColor: "rgb(var(--color-bg))" }}
-    >
-      {/* ── Hero header — subtle brand wash (Tailwind gradient; inline-style
-          gradients don't render in this build) ── */}
-      <div className="border-b border-[rgb(229_231_235)] bg-linear-160 from-primary/10 from-0% to-background to-60%">
-        <div className="w-full px-4 pb-6 pt-4 sm:px-6 lg:px-8 lg:pb-8 xl:px-10">
-          {/* Back button */}
-          <div>
-            <button
-              onClick={() => router.back()}
-              className="mb-4 inline-flex items-center gap-1.5 font-semibold transition-opacity active:opacity-60 lg:mb-6"
-              style={{
-                fontSize: "var(--text-sm)",
-                color: "rgb(var(--color-text))",
-              }}
-              aria-label="Go back"
-            >
-              <ArrowLeft size={18} strokeWidth={2.2} />
-              Back
-            </button>
-          </div>
+    <div className="min-h-screen bg-app">
+      <div className="border-b border-border">
+        <div className="w-full px-4 py-5 sm:px-6 lg:px-8 xl:px-10">
+          <button
+            onClick={goBack}
+            className="mb-5 inline-flex items-center gap-1.5 text-sm font-bold text-main transition-opacity active:opacity-60"
+            aria-label="Go back"
+          >
+            <ArrowLeft size={17} strokeWidth={2.2} />
+            Back
+          </button>
 
-          <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(280px,320px)_minmax(0,1fr)] lg:gap-6">
-            <div className="flex items-start gap-4 lg:flex-col lg:items-center lg:rounded-[28px] lg:border lg:border-[rgb(229_231_235)] lg:bg-[rgb(var(--color-bg-elevated)/0.78)] lg:p-6 lg:text-center lg:shadow-sm">
-              <div
-                className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-full border-2 border-elevated sm:h-24 sm:w-24 lg:h-32 lg:w-32 ${
-                  avatar
-                    ? "bg-surface"
-                    : "bg-linear-135 from-primary via-secondary via-60% to-accent"
-                }`}
-                style={{
-                  boxShadow: "0 12px 32px rgb(var(--brand-primary) / 0.18)",
-                }}
-              >
+          <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+            <div className="flex min-w-0 items-start gap-4">
+              <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full border border-border bg-main sm:h-24 sm:w-24">
                 {avatar ? (
                   <Image
                     src={avatar}
                     alt={displayName}
                     fill
-                    sizes="(max-width: 1023px) 96px, 128px"
+                    sizes="96px"
                     className="object-cover"
                     placeholder="blur"
                     blurDataURL={SHIMMER_AVATAR}
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center">
-                    <span
-                      className="select-none font-bold text-white"
-                      style={{ fontSize: "var(--text-xl)" }}
-                    >
+                    <span className="select-none text-xl font-black text-elevated">
                       {initials}
                     </span>
                   </div>
                 )}
               </div>
 
-              <div className="min-w-0 flex-1 pt-1 lg:flex lg:w-full lg:flex-col lg:items-center lg:pt-0">
-                <div className="flex flex-wrap items-center gap-2 lg:justify-center">
-                  <h1
-                    className="truncate font-bold"
-                    style={{
-                      fontSize: "var(--text-xl)",
-                      color: "rgb(var(--color-text))",
-                    }}
-                  >
+              <div className="min-w-0 flex-1 pt-0.5">
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                  <h1 className="truncate text-xl font-black leading-tight text-main md:text-2xl">
                     {displayName}
                   </h1>
-                  {user.isVerified && (
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 20 20"
-                      fill="none"
-                      className="shrink-0"
+                  {user.isVerified ? (
+                    <CheckCircle2
+                      className="h-5 w-5 shrink-0 text-primary"
                       aria-label="Verified"
-                    >
-                      <circle cx="10" cy="10" r="10" fill="#1D9BF0" />
-                      <path
-                        d="M6 10.5l2.5 2.5 5.5-5.5"
-                        stroke="white"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  )}
+                    />
+                  ) : null}
                 </div>
-                {user.username && (
-                  <p
-                    className="mt-0.5"
-                    style={{
-                      fontSize: "var(--text-sm)",
-                      color: "rgb(var(--color-text-muted))",
-                    }}
-                  >
+                {user.username ? (
+                  <p className="mt-1 text-sm font-medium text-muted">
                     @{user.username}
                   </p>
-                )}
+                ) : null}
 
-                <div className="mt-3 flex flex-wrap items-center gap-2 lg:justify-center">
-                  {!isOwnProfile && (
-                    <button
-                      onClick={toggleFollow}
-                      disabled={followLoading}
-                      className={[
-                        "flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-semibold transition-all active:scale-95 disabled:opacity-60",
-                        following
-                          ? "bg-surface text-muted-foreground"
-                          : "bg-primary/10 text-primary hover:bg-primary/20",
-                      ].join(" ")}
-                    >
-                      {following ? (
-                        "Following"
-                      ) : (
-                        <>
-                          <svg
-                            className="h-3.5 w-3.5"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                          >
-                            <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" />
-                          </svg>
-                          Follow
-                        </>
-                      )}
-                    </button>
-                  )}
-
-                  {hasTikTok && (
-                    <a
-                      href={`https://www.tiktok.com/@${user.username ?? ""}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[rgb(229_231_235)] bg-[rgb(var(--color-bg-elevated))] px-3 font-semibold transition-opacity active:opacity-75"
-                      style={{
-                        fontSize: "var(--text-sm)",
-                        color: "rgb(var(--color-text))",
-                      }}
-                    >
-                      <Video size={14} strokeWidth={2.2} />
-                      TikTok
-                      <ExternalLink
-                        size={12}
-                        strokeWidth={2}
-                        style={{ color: "rgb(var(--color-text-muted))" }}
-                      />
-                    </a>
-                  )}
+                <div className="mt-4 flex items-center gap-6">
+                  <ProfileStat
+                    label="Followers"
+                    value={formatCompact(followerCount)}
+                  />
+                  <ProfileStat
+                    label="Listings"
+                    value={formatCompact(user.postCount)}
+                  />
                 </div>
               </div>
             </div>
 
-            <div className="lg:rounded-[28px] lg:border lg:border-[rgb(229_231_235)] lg:bg-[rgb(var(--color-bg-elevated)/0.72)] lg:p-6 lg:shadow-sm">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                  Seller profile
-                </span>
-                {user.isVerified && (
-                  <span
-                    className="inline-flex items-center rounded-full border border-[rgb(229_231_235)] px-3 py-1 text-xs font-semibold"
-                    style={{ color: "rgb(var(--color-text-muted))" }}
-                  >
-                    Verified account
-                  </span>
-                )}
-              </div>
-
-              {user.profile?.bio && (
-                <p
-                  className="mt-4 leading-snug"
-                  style={{
-                    fontSize: "var(--text-sm)",
-                    color: "rgb(var(--color-text))",
-                    maxWidth: "42rem",
-                  }}
+            <div className="flex shrink-0 flex-wrap items-center gap-2 md:justify-end">
+              {!isOwnProfile ? (
+                <button
+                  onClick={toggleFollow}
+                  disabled={followLoading}
+                  className={[
+                    "inline-flex h-9 items-center justify-center rounded-full px-4 text-sm font-bold transition-all active:scale-95 disabled:opacity-60",
+                    following
+                      ? "border border-border text-main hover:bg-surface"
+                      : "bg-primary text-white",
+                  ].join(" ")}
                 >
-                  {user.profile.bio}
-                </p>
-              )}
-              {user.profile?.website && (
+                  {following ? "Following" : "Follow"}
+                </button>
+              ) : null}
+
+              {hasTikTok ? (
+                <a
+                  href={`https://www.tiktok.com/@${user.username ?? ""}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border px-4 text-sm font-bold text-main transition-colors hover:bg-surface"
+                >
+                  <Video size={15} strokeWidth={2.2} />
+                  TikTok
+                </a>
+              ) : null}
+            </div>
+          </div>
+
+          {/* Its own full-width block below the avatar row, not squeezed
+              into the narrow column beside the avatar — on a phone that
+              column wrapped a multi-line bio into a thin ribbon next to
+              empty space under the avatar. */}
+          {(user.profile?.bio || user.profile?.website) && (
+            <div className="mt-4 flex max-w-2xl flex-col gap-2">
+              {user.profile?.bio ? <ExpandableBio text={user.profile.bio} /> : null}
+
+              {user.profile?.website ? (
                 <a
                   href={
                     user.profile.website.startsWith("http")
@@ -656,99 +321,65 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
                   }
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-2 inline-flex items-center gap-1.5 font-semibold"
-                  style={{
-                    fontSize: "var(--text-sm)",
-                    color: "rgb(var(--brand-accent))",
-                  }}
+                  className="inline-flex w-fit max-w-full items-center gap-1.5 text-sm font-bold text-primary"
                 >
-                  <ExternalLink size={13} strokeWidth={2.2} />
-                  {user.profile.website.replace(/^https?:\/\//, "")}
+                  <ExternalLink size={14} strokeWidth={2.2} />
+                  <span className="truncate">
+                    {user.profile.website.replace(/^https?:\/\//, "")}
+                  </span>
                 </a>
-              )}
-
-              <div className="mt-5 grid grid-cols-3 gap-2 sm:gap-3 lg:mt-6 lg:max-w-3xl">
-                <StatCard
-                  label="Followers"
-                  value={formatCompact(followerCount)}
-                />
-                <StatCard
-                  label="Views"
-                  value={formatCompact(user.totalViews)}
-                />
-                <StatCard
-                  label="Listings"
-                  value={formatCompact(user.postCount)}
-                />
-              </div>
+              ) : null}
             </div>
-          </div>
+          )}
         </div>
       </div>
 
-      {/* ── Content grid ── */}
-      <div className="w-full px-4 pb-12 sm:px-6 lg:px-8 xl:px-10">
+      <div className="w-full px-4 pb-12 pt-5 sm:px-6 lg:px-8 xl:px-10">
         <div className="mb-4 flex items-center justify-between">
-          <h2
-            className="font-bold"
-            style={{
-              fontSize: "var(--text-base)",
-              color: "rgb(var(--color-text))",
-            }}
-          >
+          <h2 className="text-base font-black text-main">
             Storefront
           </h2>
-          <span
-            style={{
-              fontSize: "var(--text-sm)",
-              color: "rgb(var(--color-text-muted))",
-            }}
-          >
+          <span className="text-sm font-medium text-muted">
             {posts.length} shown
           </span>
         </div>
 
         {postsLoading && posts.length === 0 ? (
-          <div className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:gap-3 xl:grid-cols-5 min-[90rem]:grid-cols-6">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="aspect-9/10 rounded-xl" />
+          <div className={DISCOVER_GRID}>
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div key={i}>
+                <Skeleton className="aspect-3/4 w-full rounded-xl" />
+                <div className="space-y-2 pt-2">
+                  <Skeleton className="h-3.5 w-1/2" />
+                  <Skeleton className="h-3 w-4/5" />
+                </div>
+              </div>
             ))}
           </div>
         ) : posts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div
-              className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl border"
-              style={{
-                backgroundColor: "rgb(var(--color-bg-elevated))",
-                borderColor: "rgb(229 231 235)",
-              }}
-            >
-              <Play
-                size={22}
-                strokeWidth={1.8}
-                style={{ color: "rgb(var(--brand-primary))" }}
-              />
-            </div>
-            <p
-              className="font-semibold"
-              style={{
-                fontSize: "var(--text-base)",
-                color: "rgb(var(--color-text))",
-              }}
-            >
+          <div className="flex min-h-72 flex-col items-center justify-center py-12 text-center">
+            <p className="text-base font-black text-main">
               No listings yet
+            </p>
+            <p className="mt-1 max-w-sm text-sm leading-6 text-muted">
+              This storefront will show items once they are published.
             </p>
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:gap-3 xl:grid-cols-5 min-[90rem]:grid-cols-6">
-              {posts.map((post) => (
-                <PostTile
+            {/* The same tile as /explore and the Saved tab, so a listing looks
+                identical wherever it is browsed. */}
+            <div className={DISCOVER_GRID}>
+              {posts.map((post, index) => (
+                <DiscoverGridCard
                   key={post.id}
                   post={post}
                   lang={lang}
-                  onShare={handleShare}
-                  onCopyLink={handleCopyLink}
+                  priority={index < 4}
+                  // Every tile on this page belongs to the seller whose profile
+                  // it is, so the seller row would repeat the same name down
+                  // the whole grid.
+                  showSeller={false}
                 />
               ))}
             </div>
@@ -757,10 +388,12 @@ export function CreatorProfileView({ user, lang, isOwnProfile }: Props) {
             <div ref={sentinelRef} className="h-1" />
 
             {/* Skeleton tiles while fetching the next page */}
-            {postsLoading && posts.length > 0 && (
-              <div className="mt-2 grid grid-cols-2 gap-2 md:grid-cols-3 lg:gap-3 xl:grid-cols-5 min-[90rem]:grid-cols-6">
+            {/* Only for a real next-page fetch — not while the client's first
+                query refreshes the server-rendered page. */}
+            {postsLoading && Boolean(data) && posts.length > 0 && (
+              <div className={`mt-5 ${DISCOVER_GRID}`}>
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <Skeleton key={i} className="aspect-9/10 rounded-xl" />
+                  <Skeleton key={i} className="aspect-3/4 w-full rounded-xl" />
                 ))}
               </div>
             )}

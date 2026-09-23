@@ -25,7 +25,7 @@ const COPY = {
   en: {
     title: "Shopi FAQ — How Buying and Selling Works in Kenya",
     description:
-      "Answers about Shopi: how to sell online in Kenya for free, what Shopi Agent does, how buyers and sellers chat, why there is no checkout or commission, and where Shopi works.",
+      "Shopi FAQ: how to sell online in Kenya for free, what Shopi Agent does, how buyers and sellers chat, and why there is no checkout or commission.",
     heading: "Frequently asked questions",
     intro:
       "Everything about buying and selling on Shopi — fees, Shopi Agent, safety, messaging and coverage across Kenya. If something is not answered here, contact us.",
@@ -37,7 +37,7 @@ const COPY = {
   sw: {
     title: "Maswali Yanayoulizwa Mara kwa Mara — Shopi Kenya",
     description:
-      "Majibu kuhusu Shopi: jinsi ya kuuza mtandaoni Kenya bure, Shopi Agent hufanya nini, jinsi wanunuzi na wauzaji wanavyowasiliana, kwa nini hakuna checkout wala commission, na Shopi inahudumia wapi.",
+      "Maswali kuhusu Shopi: jinsi ya kuuza mtandaoni Kenya bure, Shopi Agent hufanya nini, wanunuzi na wauzaji huwasilianaje, na kwa nini hakuna commission.",
     heading: "Maswali yanayoulizwa mara kwa mara",
     intro:
       "Kila kitu kuhusu kununua na kuuza kwenye Shopi — ada, Shopi Agent, usalama, mawasiliano na maeneo tunayohudumia Kenya. Kama hujapata jibu hapa, wasiliana nasi.",

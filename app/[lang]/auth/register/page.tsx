@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ShopiLogo, Divider } from "@/features/auth/components/AuthIcons";
 import { SocialButtons } from "@/features/auth/components/SocialButtons";
 import { AuthDesktopShell } from "@/features/auth/components/AuthDesktopShell";
-import { ChevronLeftIcon, HomeIcon } from "lucide-react";
+import { ChevronLeftIcon } from "lucide-react";
 
 export const metadata = { title: "Create account" };
 
@@ -59,23 +59,16 @@ export default async function RegisterPage({
   );
 
   return (
-    <AuthDesktopShell lang={lang}>
+    <AuthDesktopShell lang={lang} from={from}>
       {/* ── Mobile layout ─────────────────────────────────────── */}
       <div className="relative mx-auto flex min-h-svh max-w-107.5 flex-col bg-app px-4 pb-6 pt-4 lg:hidden">
         <div className="flex items-center justify-between">
           <Link
-            href={`/${lang}/auth/auth-welcome`}
+            href={`/${lang}/auth/auth-welcome${from ? `?from=${encodeURIComponent(from)}` : ""}`}
             aria-label="Back"
             className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-elevated text-muted shadow-sm transition-opacity active:opacity-70"
           >
             <ChevronLeftIcon className="h-5 w-5" />
-          </Link>
-          <Link
-            href={`/${lang}`}
-            className="inline-flex h-10 items-center gap-2 rounded-full border border-border bg-elevated px-3 text-sm font-semibold text-muted shadow-sm transition-opacity active:opacity-70"
-          >
-            <HomeIcon className="h-4 w-4" />
-            Home
           </Link>
         </div>
 
@@ -86,7 +79,7 @@ export default async function RegisterPage({
           <h1 className="font-display text-3xl font-bold leading-tight tracking-tight text-default">
             Create your account
           </h1>
-          <p className="mt-2 text-sm leading-6 text-muted">
+          <p className="app-subcopy mt-2">
             Takes less than a minute.
           </p>
         </div>
@@ -103,7 +96,7 @@ export default async function RegisterPage({
           <h1 className="text-2xl font-bold text-default font-display tracking-tight">
             Create your Shopi account
           </h1>
-          <p className="mt-1.5 text-base text-muted leading-relaxed">
+          <p className="app-subcopy mt-1.5">
             Takes less than a minute.
           </p>
         </div>

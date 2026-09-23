@@ -3,13 +3,17 @@ import { query } from "@/lib/apollo/ApolloClient";
 import { GetContentDocument } from "@/types/__generated__/graphql";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { siteConfig } from "@/config/site";
-import { firstOgDecodableImage } from "@/lib/og-image";
+import {
+  OG_PHOTO_HEADERS,
+  ogJpegResponse,
+  ogPhotoJpeg,
+} from "@/lib/og-image";
 
 // Node runtime so we can reuse the Apollo `query` helper to fetch the listing.
 export const runtime = "nodejs";
 export const revalidate = 3600;
 export const size = { width: 1200, height: 630 };
-export const contentType = "image/png";
+export const contentType = "image/jpeg";
 
 type Post = ContentCardFieldsFragment;
 
@@ -25,20 +29,32 @@ async function fetchPost(id: string): Promise<Post | null> {
   }
 }
 
-function primaryImage(post: Post): string | null {
+/**
+ * Image URLs to try for the share preview, best first: the listing's lead
+ * photo (largest variant first, since wide photos fill a 1200px frame), then a
+ * video's poster, then a TikTok-embed cover.
+ */
+function photoCandidates(post: Post): (string | null | undefined)[] {
   const m = [...(post.media ?? [])].sort(
     (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
   )[0];
-  if (!m) return null;
-  // Walk every candidate rather than taking the best-quality one blindly: the
-  // "large" R2 variant is often .webp, which satori cannot decode.
-  return firstOgDecodableImage([
-    m.r2Variants?.find((v) => v.variant === "large")?.url,
-    ...(m.r2Variants ?? []).map((v) => v.url),
-    m.imageUrl,
-    m.muxMeta?.thumbnailUrl,
-    m.thumbnailUrl,
-  ]);
+  const variant = (name: string) =>
+    m?.r2Variants?.find((v) => v.variant === name)?.url;
+  const playbackId = m?.muxMeta?.playbackId;
+
+  return [
+    variant("original"),
+    variant("large"),
+    ...(m?.r2Variants ?? []).map((v) => v.url),
+    m?.imageUrl,
+    // Videos: a stored still, else Mux renders one for the playback ID.
+    m?.muxMeta?.thumbnailUrl,
+    m?.thumbnailUrl,
+    playbackId
+      ? `https://image.mux.com/${playbackId}/thumbnail.jpg?time=0&width=1200`
+      : null,
+    post.tiktokEmbed?.coverImageUrl,
+  ];
 }
 
 function priceLabel(post: Post): string | null {
@@ -81,12 +97,19 @@ export default async function ContentOgImage({ params }: ImageParams) {
   const { id } = await params;
   const post = await fetchPost(id);
 
-  const image = post ? primaryImage(post) : null;
+  // The real photo, framed as a link preview - not a designed card. Marketplaces
+  // share the product photo itself, and it is what a buyer recognises in a chat.
+  const photo = post ? await ogPhotoJpeg(photoCandidates(post), size) : null;
+  if (photo) {
+    return new Response(new Uint8Array(photo), { headers: OG_PHOTO_HEADERS });
+  }
+
+  // No usable photo (or no listing): fall back to the branded card.
   const title = post?.title ?? "Shopi";
   const price = post ? priceLabel(post) : null;
   const loc = post ? locationName(post) : null;
 
-  return new ImageResponse(
+  const rendered = new ImageResponse(
     (
       <div
         style={{
@@ -97,38 +120,19 @@ export default async function ContentOgImage({ params }: ImageParams) {
           fontFamily: "sans-serif",
         }}
       >
-        {/* Left: listing image */}
+        {/* Left: placeholder - the fallback only renders when there is no photo */}
         <div
           style={{
             width: 560,
             height: "100%",
             display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
             background: "#15151c",
-            position: "relative",
+            fontSize: 120,
           }}
         >
-          {image ? (
-            <img
-              src={image}
-              alt=""
-              width={560}
-              height={630}
-              style={{ width: 560, height: 630, objectFit: "cover" }}
-            />
-          ) : (
-            <div
-              style={{
-                width: "100%",
-                height: "100%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 120,
-              }}
-            >
-              🛍️
-            </div>
-          )}
+          🛍️
         </div>
 
         {/* Right: title + price + meta */}
@@ -202,4 +206,6 @@ export default async function ContentOgImage({ params }: ImageParams) {
     ),
     { ...size },
   );
+
+  return ogJpegResponse(rendered);
 }

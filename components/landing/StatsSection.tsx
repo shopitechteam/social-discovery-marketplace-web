@@ -20,7 +20,7 @@ export function StatsSection({ dict }: { dict: Dictionary }) {
           <h2 className="mt-3 text-balance font-display text-[clamp(1.65rem,2.7vw,2.45rem)] font-bold leading-tight tracking-normal text-default">
             {t.headline}
           </h2>
-          <p className="mt-4 max-w-2xl text-base leading-normal text-muted">
+          <p className="landing-subcopy mt-4 max-w-2xl">
             {t.intro}
           </p>
         </div>

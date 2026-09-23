@@ -51,7 +51,7 @@ export function PillarsSection({ dict }: { dict: Dictionary }) {
           <h2 className="font-display text-[clamp(1.65rem,2.8vw,2.5rem)] font-bold leading-tight tracking-normal text-foreground">
             {t.headline}
           </h2>
-          <p className="mt-4 max-w-2xl text-base leading-normal text-muted">
+          <p className="landing-subcopy mt-4 max-w-2xl">
             {t.intro}
           </p>
         </div>
@@ -68,7 +68,7 @@ export function PillarsSection({ dict }: { dict: Dictionary }) {
               <h3 className="mt-7 font-display text-xl font-semibold text-default">
                 {title}
               </h3>
-              <p className="mt-2 text-base leading-snug text-muted">
+              <p className="mt-2 text-sm leading-normal text-muted">
                 {tagline}
               </p>
               <div className="mt-6 border-t border-default pt-4">

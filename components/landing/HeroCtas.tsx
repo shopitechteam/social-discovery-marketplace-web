@@ -40,7 +40,7 @@ export function HeroCtas({
       >
         {isAuthenticated ? ctaPostShort : ctaPost}
       </Pill>
-      <Pill href={`/${lang}/feed`} variant="outline" className="px-7 py-3.5">
+      <Pill href={`/${lang}/for-you`} variant="outline" className="px-7 py-3.5">
         {isAuthenticated ? ctaFeedLoggedIn : ctaFeed}
       </Pill>
     </div>

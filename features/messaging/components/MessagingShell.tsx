@@ -120,6 +120,7 @@ export function MessagingShell({
           style={{ borderColor: "rgb(var(--color-border))" }}
         >
           <ConversationList
+            lang={lang}
             conversations={inbox.conversations}
             selectedConversationId={inbox.selectedConversationId}
             conversationsLoading={inbox.conversationsLoading}

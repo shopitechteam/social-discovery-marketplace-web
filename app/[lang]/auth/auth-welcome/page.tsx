@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Divider } from "@/features/auth/components/AuthIcons";
 import { SocialButtons } from "@/features/auth/components/SocialButtons";
 import { AuthDesktopShell } from "@/features/auth/components/AuthDesktopShell";
-import { HomeIcon } from "lucide-react";
+import { AuthExitButton } from "@/features/auth/components/AuthExitButton";
 
 export const metadata = { title: "Welcome" };
 
@@ -93,19 +93,19 @@ export default async function WelcomePage({
   );
 
   return (
-    <AuthDesktopShell lang={lang}>
+    <AuthDesktopShell lang={lang} from={from}>
       {/* ── Mobile layout ─────────────────────────────────────── */}
       <div
         className="relative mx-auto flex h-svh max-w-107.5 flex-col overflow-hidden bg-app lg:hidden"
       >
-        <div className="flex items-center justify-end px-6 pt-5 shrink-0">
-          <Link
-            href={`/${lang}`}
-            className="inline-flex items-center gap-2 rounded-full bg-surface px-3 py-2 text-sm font-medium text-muted transition-opacity active:opacity-70"
-          >
-            <HomeIcon className="h-4 w-4" />
-            Home
-          </Link>
+        {/* Left-aligned: this is a back control now, and back controls live on
+            the left. */}
+        <div className="flex items-center justify-start px-6 pt-5 shrink-0">
+          <AuthExitButton
+            lang={lang}
+            from={from}
+            className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-2 text-sm font-medium text-muted transition-opacity active:opacity-70"
+          />
         </div>
         {/* Subtle brand glow top-right */}
         <div
@@ -183,7 +183,7 @@ export default async function WelcomePage({
           <h1 className="text-2xl font-bold text-default font-display text-center leading-[1.2] tracking-tight text-balance">
             {copy.mobileHeadline}
           </h1>
-          <p className="mt-2 text-sm text-muted text-center leading-relaxed">
+          <p className="app-subcopy mt-2 text-center">
             {copy.mobileBody}
           </p>
         </div>
@@ -198,7 +198,7 @@ export default async function WelcomePage({
           <h1 className="text-[28px] text-center font-bold text-default font-display leading-tight tracking-tight">
             {copy.desktopHeadline}
           </h1>
-          <p className="mt-2 text-base text-center text-muted leading-relaxed">
+          <p className="app-subcopy mt-2 text-center">
             {copy.desktopBody}
           </p>
         </div>

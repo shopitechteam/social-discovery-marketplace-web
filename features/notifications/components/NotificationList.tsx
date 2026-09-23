@@ -8,13 +8,15 @@ import {
   CheckCheck,
   Loader2,
   Megaphone,
+  MessageSquareText,
   PlayCircle,
   Store,
   UserPlus,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { shortTime } from "@/features/messaging/lib/helpers";
+import { listTimestamp } from "@/features/messaging/lib/helpers";
 import { useInfiniteScroll } from "@/features/feed/hooks/useInfiniteScroll";
+import { TeamAvatar } from "@/features/team-messages/components/TeamAvatar";
 import type { NotificationItem } from "../types";
 
 interface Props {
@@ -58,15 +60,12 @@ export function NotificationList({
 
   return (
     <section className="flex min-h-[calc(100svh-48px)] flex-col md:mx-auto md:h-full md:w-full md:max-w-[1600px] md:bg-app">
-      <div
-        className="flex items-center justify-between border-b px-4 py-4 md:px-6 md:py-5"
-        style={{ borderColor: "rgb(var(--color-border))" }}
-      >
+      <div className="flex items-center justify-between border-b border-border px-4 py-4 md:px-0 md:py-5">
         <div>
-          <h1 className="font-semibold" style={{ fontSize: "var(--text-xl)" }}>
+          <h1 className="text-base font-black text-main md:text-lg">
             Notifications
           </h1>
-          <p className="text-muted" style={{ fontSize: "var(--text-sm)" }}>
+          <p className="mt-0.5 text-sm text-muted">
             {unreadCount > 0
               ? `${unreadCount} unread update${unreadCount === 1 ? "" : "s"}`
               : "You're all caught up"}
@@ -78,8 +77,7 @@ export function NotificationList({
             type="button"
             onClick={onMarkAllRead}
             disabled={markingAllRead}
-            className="flex h-9 w-9 items-center justify-center rounded-full border transition-colors disabled:opacity-60"
-            style={{ borderColor: "rgb(var(--color-border))" }}
+            className="inline-flex h-9 items-center gap-2 rounded-full px-3 text-xs font-bold text-primary transition-colors hover:bg-primary/10 disabled:opacity-60"
             aria-label="Mark all notifications as read"
             title="Mark all as read"
           >
@@ -88,16 +86,17 @@ export function NotificationList({
             ) : (
               <CheckCheck size={16} />
             )}
+            <span className="hidden sm:inline">Mark all read</span>
           </button>
         ) : null}
       </div>
 
       <div className="flex-1 overflow-y-auto pb-14 md:pb-6">
         {loading && notifications.length === 0 ? (
-          <div className="space-y-3 px-4 py-4 md:px-6 md:py-5">
+          <div className="space-y-4 px-4 py-5 md:px-0">
             {Array.from({ length: 10 }).map((_, index) => (
               <div key={index} className="flex gap-3">
-                <Skeleton className="h-12 w-12 rounded-full" />
+                <Skeleton className="h-10 w-10 rounded-full" />
                 <div className="flex-1 space-y-2 py-1">
                   <Skeleton className="h-4 w-full" />
                   <Skeleton className="h-3 w-3/4" />
@@ -107,20 +106,14 @@ export function NotificationList({
           </div>
         ) : notifications.length === 0 ? (
           <div className="flex min-h-[52svh] flex-col items-center justify-center gap-4 px-6 text-center md:min-h-[42svh] md:px-10">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-              <Bell size={28} />
+            <div className="flex h-12 w-12 items-center justify-center rounded-full border border-border text-muted">
+              <Bell size={22} />
             </div>
             <div className="space-y-1.5">
-              <h2
-                className="font-semibold text-default"
-                style={{ fontSize: "var(--text-lg)" }}
-              >
+              <h2 className="text-base font-black text-main">
                 No notifications yet
               </h2>
-              <p
-                className="mx-auto max-w-[18rem] text-muted leading-relaxed"
-                style={{ fontSize: "var(--text-sm)" }}
-              >
+              <p className="mx-auto max-w-[18rem] text-sm leading-6 text-muted">
                 New followers and account updates will appear here.
               </p>
             </div>
@@ -134,72 +127,63 @@ export function NotificationList({
                   key={notification.id}
                   type="button"
                   onClick={() => onSelect(notification)}
-                  className="flex w-full items-start gap-3 border-b px-4 py-3 text-left transition-colors md:px-6 md:py-4"
-                  style={{
-                    borderColor: "rgb(var(--color-border) / 0.6)",
-                    // LinkedIn-style: unread rows get a subtle blue wash.
-                    backgroundColor: notification.isRead
-                      ? "transparent"
-                      : "rgb(59 130 246 / 0.10)",
-                  }}
+                  className={`flex w-full items-start gap-3 border-b border-border/70 px-4 py-3.5 text-left transition-colors md:px-0 md:py-4 ${
+                    notification.isRead
+                      ? "hover:bg-surface/60"
+                      : "bg-primary/5 hover:bg-primary/10"
+                  }`}
                 >
-                  <div className="relative h-12 w-12 shrink-0">
-                    {actor?.avatar ? (
+                  <div className="relative h-10 w-10 shrink-0">
+                    {notification.type === "TEAM_MESSAGE" ? (
+                      <TeamAvatar size={40} />
+                    ) : actor?.avatar ? (
                       <Image
                         src={actor.avatar}
                         alt={actor.displayName}
                         fill
                         className="rounded-full object-cover"
-                        sizes="48px"
+                        sizes="40px"
                       />
                     ) : (
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-main text-xs font-black text-elevated">
                         {actorInitials(notification)}
                       </div>
                     )}
-                    <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white ring-2 ring-[rgb(var(--color-bg))]">
+                    <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border border-border bg-elevated text-muted">
                       {notification.type === "SAVE" ? (
-                        <Bookmark size={13} />
+                        <Bookmark size={11} />
                       ) : notification.type === "POST_REJECTED" ? (
-                        <AlertCircle size={13} />
+                        <AlertCircle size={11} />
                       ) : notification.type === "POST_LIVE" ? (
-                        <PlayCircle size={13} />
+                        <PlayCircle size={11} />
                       ) : notification.type === "POST_BOOSTED" ? (
-                        <Megaphone size={13} />
+                        <Megaphone size={11} />
                       ) : notification.type === "NEW_POST" ? (
-                        <Store size={13} />
+                        <Store size={11} />
+                      ) : notification.type === "TEAM_MESSAGE" ? (
+                        <MessageSquareText size={11} />
                       ) : (
-                        <UserPlus size={13} />
+                        <UserPlus size={11} />
                       )}
                     </span>
                   </div>
 
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-3">
-                      <p
-                        className={`min-w-0 leading-snug ${
-                          notification.isRead
-                            ? "text-default"
-                            : "font-semibold text-default"
-                        }`}
-                        style={{ fontSize: "var(--text-sm)" }}
-                      >
+                      <p className={`min-w-0 text-sm leading-5 text-main ${notification.isRead ? "font-medium" : "font-black"}`}>
                         {notification.body}
                       </p>
                       <span className="shrink-0 text-xs text-muted">
-                        {shortTime(notification.updatedAt)}
+                        {listTimestamp(notification.updatedAt)}
                       </span>
                     </div>
-                    <p className="mt-1 text-xs text-muted">
+                    <p className="mt-1 text-xs font-medium text-muted">
                       {notification.title}
                     </p>
                   </div>
 
                   {!notification.isRead ? (
-                    <span
-                      className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full"
-                      style={{ backgroundColor: "rgb(59 130 246)" }}
-                    />
+                    <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary" />
                   ) : null}
                 </button>
               );
@@ -209,13 +193,7 @@ export function NotificationList({
 
             {hasMore && loading ? (
               <div className="flex justify-center py-4" aria-hidden>
-                <div
-                  className="rounded-full border px-4 py-2.5"
-                  style={{
-                    borderColor: "rgb(var(--color-border))",
-                    backgroundColor: "rgb(var(--color-bg-elevated))",
-                  }}
-                >
+                <div className="rounded-full border border-border px-4 py-2.5">
                   <div className="flex items-center gap-1.5">
                     <span className="h-2 w-2 animate-bounce rounded-full bg-muted" />
                     <span className="h-2 w-2 animate-bounce rounded-full bg-muted [animation-delay:120ms]" />

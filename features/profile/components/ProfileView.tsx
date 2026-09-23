@@ -1,19 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type ReactNode } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useState } from "react";
 import {
   Bookmark,
   ChartColumn,
   FileEdit,
   LayoutGrid,
-  LogOut,
-  Palette,
   Plus,
   Settings,
   UserRound,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 
 // Icon may be a lucide icon or a custom SVG component (both take size/className)
 type TabIcon = React.ComponentType<{
@@ -34,10 +32,9 @@ import { ManagedPostsGrid } from "./ManagedPostsGrid";
 import { DraftsGrid } from "./DraftsGrid";
 import { AnalyticsPanel } from "./AnalyticsPanel";
 import { TiktokImportPanel } from "./TiktokImportPanel";
-import { LogoutButton } from "@/features/auth/components/LogoutButton";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { cn } from "@/lib/utils";
-import type { ProfileUserFieldsFragment } from "@/types/__generated__/graphql";
+import { SettingsList } from "./SettingsList";
+import { appendUnique } from "../lib/appendUnique";
 
 type Tab = "posts" | "drafts" | "saved" | "analytics" | "tiktok" | "settings";
 
@@ -185,8 +182,43 @@ const tabConfig: { key: Tab; label: string; icon: TabIcon }[] = [
   { key: "settings", label: "Settings", icon: Settings },
 ];
 
+function isTab(value: string | null): value is Tab {
+  return !!value && tabConfig.some((item) => item.key === value);
+}
+
 export function ProfileView({ lang }: Props) {
-  const [tab, setTab] = useState<Tab>("posts");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // The active sub-tab lives in the URL so leaving and coming back returns to
+  // it. Settings is the tab this matters most for: every row in it navigates
+  // away (Edit profile, Followers, and so on), and landing back on Posts each
+  // time meant re-finding the tab after every single one.
+  //
+  // Read once, as the initial value. Coming back is a fresh mount, so the
+  // param is picked up then; making it a live subscription instead would fight
+  // the replace() below on every tab press.
+  const [tab, setTab] = useState<Tab>(() => {
+    const requested = searchParams.get("tab");
+    return isTab(requested) ? requested : "posts";
+  });
+
+  // replace, not push: a tab is a view of this page, not a place in history.
+  // Pushing would mean back stepped through every tab the user had tried
+  // before it left the profile at all.
+  const selectTab = useCallback(
+    (next: Tab) => {
+      setTab(next);
+      const params = new URLSearchParams(searchParams.toString());
+      if (next === "posts") params.delete("tab");
+      else params.set("tab", next);
+      const query = params.toString();
+      router.replace(`/${lang}/profile${query ? `?${query}` : ""}`, {
+        scroll: false,
+      });
+    },
+    [router, lang, searchParams],
+  );
   const [postsLimit] = useState(18);
 
   const {
@@ -231,10 +263,10 @@ export function ProfileView({ lang }: Props) {
         return {
           myManagedContent: {
             ...fetchMoreResult.myManagedContent,
-            items: [
-              ...prev.myManagedContent.items,
-              ...fetchMoreResult.myManagedContent.items,
-            ],
+            items: appendUnique(
+              prev.myManagedContent.items,
+              fetchMoreResult.myManagedContent.items,
+            ),
           },
         };
       },
@@ -254,10 +286,10 @@ export function ProfileView({ lang }: Props) {
         return {
           mySavedContent: {
             ...fetchMoreResult.mySavedContent,
-            items: [
-              ...prev.mySavedContent.items,
-              ...fetchMoreResult.mySavedContent.items,
-            ],
+            items: appendUnique(
+              prev.mySavedContent.items,
+              fetchMoreResult.mySavedContent.items,
+            ),
           },
         };
       },
@@ -275,16 +307,8 @@ export function ProfileView({ lang }: Props) {
         lang={lang}
       />
 
-      <div
-        className="sticky top-0 z-20 border-b"
-        style={{
-          backgroundColor: "rgb(var(--color-bg) / 0.94)",
-          borderColor: "rgb(var(--color-border))",
-          backdropFilter: "blur(14px) saturate(150%)",
-          WebkitBackdropFilter: "blur(14px) saturate(150%)",
-        }}
-      >
-        <div className="mx-auto w-full  px-2 sm:px-6 ">
+      <div className="sticky top-0 z-20 border-b border-border bg-app/94 backdrop-blur-md md:top-(--desktop-top-nav-height,68px)">
+        <div className="w-full px-2 sm:px-6 lg:px-8">
           <div
             className="grid h-12 w-full grid-cols-5 md:hidden"
             role="tablist"
@@ -302,7 +326,7 @@ export function ProfileView({ lang }: Props) {
                   aria-selected={active}
                   aria-label={item.label}
                   title={item.label}
-                  onClick={() => setTab(item.key)}
+                  onClick={() => selectTab(item.key)}
                   className="relative flex h-12 min-w-0 items-center justify-center transition-opacity active:opacity-60"
                   style={{
                     color: active
@@ -322,12 +346,8 @@ export function ProfileView({ lang }: Props) {
             })}
           </div>
 
-          <div
-            className="hidden py-3 md:flex"
-            role="tablist"
-            aria-label="Profile sections"
-          >
-            <div className="inline-flex w-fit items-center gap-1 rounded-2xl border border-default bg-[rgb(var(--color-bg-elevated))] p-1">
+          <div className="hidden py-2 md:flex" role="tablist" aria-label="Profile sections">
+            <div className="flex w-full items-center gap-6 overflow-x-auto">
               {tabConfig.map((item) => {
                 const active = tab === item.key;
                 const Icon = item.icon;
@@ -338,12 +358,12 @@ export function ProfileView({ lang }: Props) {
                     type="button"
                     role="tab"
                     aria-selected={active}
-                    onClick={() => setTab(item.key)}
+                    onClick={() => selectTab(item.key)}
                     className={cn(
-                      "inline-flex h-11 min-w-34 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition-colors",
+                      "relative inline-flex h-10 shrink-0 items-center justify-center gap-2 text-sm font-bold transition-colors",
                       active
-                        ? "bg-primary/10 text-foreground"
-                        : "text-muted-foreground hover:bg-surface hover:text-foreground",
+                        ? "text-primary after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-full after:rounded-full after:bg-primary"
+                        : "text-muted hover:text-main",
                     )}
                   >
                     <Icon size={18} strokeWidth={2.15} />
@@ -369,7 +389,6 @@ export function ProfileView({ lang }: Props) {
 
       {tab === "saved" && (
         <PostsGrid
-          variant="saved"
           posts={savedPosts}
           hasMore={savedHasMore}
           onLoadMore={handleLoadMoreSaved}
@@ -465,198 +484,7 @@ export function ProfileView({ lang }: Props) {
 
       {tab === "tiktok" && <TiktokImportPanel lang={lang} />}
 
-      {tab === "settings" && <SettingsPanel lang={lang} user={user} />}
-    </div>
-  );
-}
-
-function SettingsPanel({
-  lang,
-  user,
-}: {
-  lang: string;
-  user: ProfileUserFieldsFragment;
-}) {
-  return (
-    <section className="w-full px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
-      {/* ── Mobile / tablet — single stacked list, unchanged ── */}
-      <div className="mx-auto lg:hidden">
-        <div className="mb-4">
-          <h2
-            className="font-bold leading-tight"
-            style={{
-              fontSize: "var(--text-base)",
-              color: "rgb(var(--color-text))",
-            }}
-          >
-            Settings
-          </h2>
-          <p
-            className="mt-1"
-            style={{
-              fontSize: "var(--text-sm)",
-              color: "rgb(var(--color-text-muted))",
-            }}
-          >
-            Account preferences
-          </p>
-        </div>
-
-        <div
-          className="overflow-hidden rounded-lg border"
-          style={{
-            backgroundColor: "rgb(var(--color-bg-elevated))",
-            borderColor: "rgb(var(--color-border))",
-            boxShadow: "var(--shadow-sm)",
-          }}
-        >
-          <SettingsRow
-            icon={Palette}
-            label="Appearance"
-            description="Light and dark theme"
-            tone="--brand-accent"
-          >
-            <ThemeToggle />
-          </SettingsRow>
-
-          {/* Desktop signs out from the SideNav user card; this row only
-              renders in the mobile/tablet block above (lg:hidden). */}
-          <div
-            style={{ height: 1, backgroundColor: "rgb(var(--color-border))" }}
-          />
-
-          <SettingsRow
-            icon={LogOut}
-            label="Sign out"
-            description="End this session"
-            tone="--color-error"
-          >
-            <LogoutButton lang={lang} />
-          </SettingsRow>
-        </div>
-      </div>
-
-      {/* ── Desktop — grouped cards with an account summary rail ── */}
-      <div className="hidden lg:block">
-        <div className="grid grid-cols-[minmax(0,320px)_minmax(0,1fr)] gap-6">
-          {/* Account summary card */}3{/* Settings groups */}
-          <div className="flex flex-col gap-5">
-            <SettingsGroup label="Appearance">
-              <SettingsRow
-                icon={Palette}
-                label="Theme"
-                description="Switch between light and dark mode"
-                tone="--brand-accent"
-              >
-                <ThemeToggle />
-              </SettingsRow>
-            </SettingsGroup>
-
-            <SettingsGroup label="Account">
-              <SettingsRow
-                icon={UserRound}
-                label="Profile details"
-                description="Name, bio, avatar, and links"
-                tone="--brand-primary"
-              >
-                <Link
-                  href={`/${lang}/profile/edit`}
-                  className="inline-flex h-9 items-center justify-center rounded-lg border px-3.5 font-semibold transition-colors hover:bg-surface"
-                  style={{
-                    fontSize: "var(--text-sm)",
-                    borderColor: "rgb(var(--color-border))",
-                    color: "rgb(var(--color-text))",
-                  }}
-                >
-                  Edit
-                </Link>
-              </SettingsRow>
-            </SettingsGroup>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function SettingsGroup({
-  label,
-  children,
-}: {
-  label: string;
-  children: ReactNode;
-}) {
-  return (
-    <div>
-      <p
-        className="mb-2.5 px-1 font-semibold tracking-wide uppercase"
-        style={{
-          fontSize: "var(--text-xs)",
-          color: "rgb(var(--color-text-muted))",
-          letterSpacing: "0.06em",
-        }}
-      >
-        {label}
-      </p>
-      <div
-        className="overflow-hidden rounded-2xl border"
-        style={{
-          backgroundColor: "rgb(var(--color-bg-elevated))",
-          borderColor: "rgb(var(--color-border))",
-          boxShadow: "var(--shadow-sm)",
-        }}
-      >
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function SettingsRow({
-  icon: Icon,
-  label,
-  description,
-  children,
-  tone,
-}: {
-  icon: LucideIcon;
-  label: string;
-  description: string;
-  children?: ReactNode;
-  tone: string;
-}) {
-  return (
-    <div className="flex items-center gap-3 p-4">
-      <div
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
-        style={{
-          backgroundColor: `rgb(var(${tone}) / 0.12)`,
-          color: `rgb(var(${tone}))`,
-        }}
-      >
-        <Icon size={18} strokeWidth={2.2} />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p
-          className="font-bold leading-tight"
-          style={{
-            fontSize: "var(--text-base)",
-            color: "rgb(var(--color-text))",
-          }}
-        >
-          {label}
-        </p>
-        <p
-          className="mt-1"
-          style={{
-            fontSize: "var(--text-sm)",
-            color: "rgb(var(--color-text-muted))",
-          }}
-        >
-          {description}
-        </p>
-      </div>
-      {children && <div className="shrink-0">{children}</div>}
+      {tab === "settings" && <SettingsList lang={lang} />}
     </div>
   );
 }

@@ -19,7 +19,11 @@ type Props = { params: Promise<{ lang: string }> };
 
 const TITLE = "Online Marketplaces in Kenya — How Shopi Compares";
 const DESCRIPTION =
-  "Comparing the ways Kenyans buy and sell online: classifieds sites, Facebook Marketplace, WhatsApp groups and TikTok. How Shopi differs — a local discovery feed, AI listings, direct chat and zero commission.";
+  "Comparing the ways Kenyans buy and sell online: Jiji, PigiaMe and other classifieds, Facebook Marketplace, WhatsApp groups and TikTok. How Shopi differs — a local discovery feed, AI listings, direct chat and zero commission.";
+// DESCRIPTION is also the on-page intro; the meta version is trimmed to fit
+// the ~155 characters a results page shows.
+const META_DESCRIPTION =
+  "Online marketplaces in Kenya compared: Jiji, PigiaMe, Facebook Marketplace, WhatsApp groups and TikTok — and how Shopi differs, with zero commission.";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { lang } = await params;
@@ -27,7 +31,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     lang,
     path: "/marketplace-alternatives-kenya",
     title: TITLE,
-    description: DESCRIPTION,
+    description: META_DESCRIPTION,
   });
 }
 
@@ -40,7 +44,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
  */
 const COMPARISONS = [
   {
-    channel: "Classifieds marketplaces",
+    // Named, not just described. Someone searching "Jiji alternative" or
+    // "sites like PigiaMe" is looking for the name they already know; a page
+    // that only says "classifieds marketplaces" never meets that query.
+    channel: "Classifieds sites (Jiji, PigiaMe)",
     how: "You search a category tree, filter, and contact sellers through the platform. Discovery is driven by what you already know to look for.",
     shopi:
       "Shopi leads with a feed instead of a search box. You come across things you weren't searching for, ranked by what's near you and what you've shown interest in — and you can still search when you know exactly what you want.",
@@ -168,6 +175,33 @@ export default async function AlternativesPage({ params }: Props) {
             </div>
           </section>
 
+          {/* Hub → spoke: the per-competitor pages own "jiji alternative" and
+              "pigiame alternative"; this hub owns the broader comparison. */}
+          <section className="mb-14 rounded-2xl border border-border bg-elevated p-6">
+            <h2 className="mb-2 font-display text-[1.25rem] font-bold text-foreground">
+              Looking for a Jiji or PigiaMe alternative?
+            </h2>
+            <p className="mb-4 text-[0.98rem] leading-[1.7] text-muted">
+              Side-by-side guides for the two classifieds sites Kenyan sellers ask about most:
+              what each offers, what&apos;s different on Shopi, and when the other site may suit
+              you better.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href={`/${lang}/jiji-alternative-kenya`}
+                className="rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-foreground no-underline"
+              >
+                Jiji alternative in Kenya
+              </Link>
+              <Link
+                href={`/${lang}/pigiame-alternative-kenya`}
+                className="rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-foreground no-underline"
+              >
+                PigiaMe alternative in Kenya
+              </Link>
+            </div>
+          </section>
+
           <section className="mb-14">
             <h2 className="mb-6 font-display text-[1.5rem] font-bold text-foreground">
               What Shopi does differently
@@ -202,10 +236,10 @@ export default async function AlternativesPage({ params }: Props) {
 
           <div className="flex flex-wrap gap-3">
             <Link
-              href={`/${lang}/feed`}
+              href={`/${lang}/for-you`}
               className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white"
             >
-              Try the feed
+              Try For You
             </Link>
             <Link
               href={`/${lang}/sell-in-kenya`}

@@ -152,7 +152,7 @@ export async function BrowseHub({
       </ul>
 
       <nav className="mt-8 flex flex-wrap gap-3 text-sm text-primary">
-        <Link href={`/${lang}/feed`}>Open the feed</Link>
+        <Link href={`/${lang}/for-you`}>Open For You</Link>
         <Link href={`/${lang}/explore`}>Explore listings</Link>
         <Link href={`/${lang}/shopi-agent`}>Shopi Agent</Link>
         <Link href={`/${lang}/sell-in-kenya`}>Sell on Shopi</Link>

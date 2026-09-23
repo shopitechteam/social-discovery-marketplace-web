@@ -30,12 +30,11 @@ export function CreateDrawer({ lang }: { lang: string }) {
   const { startImageUpload, startVideoUpload } = useMediaUpload();
 
   // Full-screen "Preparing…" overlay shown while navigating to the TikTok
-  // import page — that route loads + fetches the user's TikTok videos, which
-  // takes a moment, so we give immediate feedback instead of a frozen tab bar.
+  // import page, so we give immediate feedback instead of a frozen tab bar.
   const [preparingTiktok, setPreparingTiktok] = useState(false);
 
-  // Prefetch the TikTok import route as soon as the drawer opens so the
-  // navigation itself is near-instant once the user taps.
+  // Prefetch the TikTok import route as soon as the drawer opens so navigation
+  // itself is near-instant once the user taps.
   useEffect(() => {
     router.prefetch(`/${lang}/upload/tiktok`);
   }, [router, lang]);
@@ -50,7 +49,7 @@ export function CreateDrawer({ lang }: { lang: string }) {
     if (draftId && step !== "pick") {
       router.push(`/${lang}/upload/create`);
     } else {
-      window.location.href = `/${lang}/feed`;
+      window.location.href = `/${lang}/for-you`;
     }
   }
 
@@ -135,7 +134,7 @@ export function CreateDrawer({ lang }: { lang: string }) {
                 borderTopColor: "rgb(var(--brand-primary))",
               }}
             />
-            <p className="text-md font-medium text-default">Preparing TikTok import…</p>
+            <p className="text-md font-medium text-default">Opening TikTok import...</p>
           </div>
         </div>
       )}
@@ -203,7 +202,7 @@ export function CreateDrawer({ lang }: { lang: string }) {
                   disabled={preparingTiktok}
                   className="w-full h-14 rounded-none active:bg-surface transition-colors"
                 >
-                  <span className="text-md font-medium">TikTok Imports</span>
+                  <span className="text-md font-medium">TikTok import</span>
                 </Button>
               </>
             )}

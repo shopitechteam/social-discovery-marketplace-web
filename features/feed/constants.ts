@@ -11,7 +11,7 @@
  * first paint small; `FEED_LOAD_MORE_SIZE` refills ahead of the scroll so the
  * feed still feels endless.
  *
- * NOTE: the server preload in app/[lang]/(main)/feed/page.tsx must request this
+ * NOTE: the server preload in app/[lang]/(main)/for-you/page.tsx must request this
  * exact same limit, or the client's query misses the SSR cache and refetches
  * page 1 on hydration.
  */
@@ -23,3 +23,16 @@ export const FEED_PAGE_SIZE = 12;
  * outside the LCP window, so a bigger page just means fewer round trips.
  */
 export const FEED_LOAD_MORE_SIZE = 12;
+
+/**
+ * Immersive video viewer pages. Smaller than the feed's because every slide is
+ * a full viewport: only the active slide and its immediate neighbours keep a
+ * `<video>` alive, so a larger page buys no extra readiness and just costs
+ * payload on a surface that is usually opened on mobile data.
+ *
+ * The viewer prefetches when fewer than VIDEO_FEED_PREFETCH_AHEAD slides remain
+ * ahead of the active one, so pages land well before the user reaches the end.
+ */
+export const VIDEO_FEED_PAGE_SIZE = 8;
+export const VIDEO_FEED_LOAD_MORE_SIZE = 8;
+export const VIDEO_FEED_PREFETCH_AHEAD = 4;

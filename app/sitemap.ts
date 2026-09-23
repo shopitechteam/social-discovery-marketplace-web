@@ -4,6 +4,7 @@ import { blogPosts } from "@/lib/blog";
 import { locales } from "@/i18n/config";
 import { contentPath } from "@/lib/content-url";
 import { COUNTIES } from "@/lib/counties";
+import { fetchSocialProofSellers } from "@/features/social-proof/queries/socialProofSellers";
 import {
   searchIntentPages,
   searchIntentPath,
@@ -161,6 +162,85 @@ async function fetchRecentListings(): Promise<SitemapListing[]> {
   return listings.slice(0, LISTING_SITEMAP_MAX);
 }
 
+/** Per featured seller: a whole storefront is a few hundred URLs at most. */
+const FEATURED_SELLER_LISTINGS_MAX = 500;
+
+/**
+ * Every public listing of each homepage-featured seller.
+ *
+ * The recent-listings walk is newest-first and time-boxed, so a featured
+ * seller's older stock falls out of it as other sellers post — and their
+ * profile only exposes the first page of listings without JavaScript. These
+ * are the sellers we most want found when someone searches for an item they
+ * sell, so their full inventory is always submitted.
+ */
+async function fetchFeaturedSellerListings(sellerIds: string[]): Promise<SitemapListing[]> {
+  const api = process.env.NEXT_PUBLIC_API_URL;
+  if (!api || sellerIds.length === 0) return [];
+
+  const perSeller = await Promise.all(
+    sellerIds.map(async (userId) => {
+      const listings: SitemapListing[] = [];
+      let afterId: string | null = null;
+      try {
+        while (listings.length < FEATURED_SELLER_LISTINGS_MAX) {
+          const res: Response = await fetch(`${api}/graphql`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              query: `
+                query SitemapSellerListings($userId: String!, $limit: Int, $afterId: String) {
+                  userPosts(userId: $userId, limit: $limit, afterId: $afterId) {
+                    hasMore
+                    nextCursor
+                    posts {
+                      id
+                      slug
+                      title
+                      createdAt
+                      updatedAt
+                      creator { username }
+                      media {
+                        imageUrl
+                        thumbnailUrl
+                        sortOrder
+                        muxMeta { thumbnailUrl }
+                        r2Variants { url variant }
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: { userId, limit: LISTING_SITEMAP_PAGE, afterId },
+            }),
+            next: { revalidate: 3600 },
+          });
+          if (!res.ok) break;
+          const json = (await res.json()) as {
+            data?: {
+              userPosts?: {
+                hasMore?: boolean;
+                nextCursor?: string | null;
+                posts?: SitemapListing[];
+              };
+            };
+          };
+          const page = json.data?.userPosts;
+          if (!page?.posts?.length) break;
+          listings.push(...page.posts);
+          if (!page.hasMore || !page.nextCursor) break;
+          afterId = page.nextCursor;
+        }
+      } catch {
+        // Best-effort, like the recent-listings walk.
+      }
+      return listings;
+    }),
+  );
+
+  return perSeller.flat();
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   const { url } = siteConfig;
@@ -196,10 +276,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly",
       priority: 0.8,
     },
+    { path: "/jiji-alternative-kenya", changeFrequency: "monthly", priority: 0.85 },
+    { path: "/pigiame-alternative-kenya", changeFrequency: "monthly", priority: 0.85 },
     { path: "/about", changeFrequency: "monthly", priority: 0.7 },
-    { path: "/feed", changeFrequency: "always", priority: 0.9 },
+    { path: "/for-you", changeFrequency: "always", priority: 0.9 },
     { path: "/explore", changeFrequency: "hourly", priority: 0.8 },
     { path: "/search", changeFrequency: "hourly", priority: 0.8 },
+    // The seller directory. Worth crawling for its own sake and as the hub
+    // that links every storefront, which is how those profiles get found.
+    { path: "/stores", changeFrequency: "daily", priority: 0.85 },
+    { path: "/buy-and-sell-in-kenya", changeFrequency: "weekly", priority: 0.92 },
     { path: "/sell-in-kenya", changeFrequency: "weekly", priority: 0.9 },
     { path: "/sell-car-kenya", changeFrequency: "weekly", priority: 0.9 },
     {
@@ -217,6 +303,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly",
       priority: 0.9,
     },
+    { path: "/tiktok-downloader", changeFrequency: "monthly", priority: 0.7 },
     { path: "/contact", changeFrequency: "monthly", priority: 0.5 },
     { path: "/privacy", changeFrequency: "yearly", priority: 0.3 },
     { path: "/terms", changeFrequency: "yearly", priority: 0.3 },
@@ -286,13 +373,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const blogEntries: MetadataRoute.Sitemap = blogPosts.map((post) => ({
     url: langs("en", `/blog/${post.slug}`),
-    lastModified: new Date(post.publishedAt),
+    lastModified: new Date(post.updatedAt ?? post.publishedAt),
     changeFrequency: "monthly",
     priority: 0.75,
     alternates: alternates(`/blog/${post.slug}`),
   }));
 
-  const listings = await fetchRecentListings();
+  const [recentListings, featuredSellers] = await Promise.all([
+    fetchRecentListings(),
+    fetchSocialProofSellers(12, 0),
+  ]);
+  const featuredListings = await fetchFeaturedSellerListings(
+    featuredSellers.map((seller) => seller.id),
+  );
+  const listingIds = new Set<string>();
+  const listings = [...recentListings, ...featuredListings].filter((item) => {
+    if (!item?.id || listingIds.has(item.id)) return false;
+    listingIds.add(item.id);
+    return true;
+  });
   const listingEntries: MetadataRoute.Sitemap = listings.map((item) => {
     const path = contentPath("en", item).replace(/^\/en/, "");
     return {
@@ -309,7 +408,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     };
   });
 
+  // Sellers featured on the homepage (admin → Social proof) are the profiles we
+  // most want crawled, so they are always listed, at a higher priority, even
+  // when none of their listings fell inside this snapshot.
+  const featuredUsernames = new Set(featuredSellers.map((s) => s.username));
+
   const sellerLastModified = new Map<string, Date>();
+  for (const seller of featuredSellers) sellerLastModified.set(seller.username, now);
   for (const item of listings) {
     const username = item.creator?.username?.trim();
     if (!username) continue;
@@ -319,17 +424,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         ? new Date(item.createdAt)
         : now;
     const previous = sellerLastModified.get(username);
-    if (!previous || modified > previous)
+    if (!previous || previous === now || modified > previous)
       sellerLastModified.set(username, modified);
   }
   const sellerEntries: MetadataRoute.Sitemap = [...sellerLastModified].map(
     ([username, lastModified]) => {
-      const path = `/profile/${username}`;
+      // The canonical profile URL. /profile/{username} is a legacy address that
+      // permanently redirects here, and engines skip redirecting sitemap URLs.
+      const path = `/@${username}`;
       return {
         url: langs("en", path),
         lastModified,
         changeFrequency: "daily" as const,
-        priority: 0.6,
+        priority: featuredUsernames.has(username) ? 0.8 : 0.6,
         alternates: alternates(path),
       };
     },

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useAppBack } from "@/lib/useAppBack";
 import { ArrowLeft } from "lucide-react";
 import { useQuery } from "@apollo/client/react";
 import {
@@ -14,6 +14,7 @@ import { useFollow } from "@/features/feed/hooks/useFollow";
 import { SHIMMER_AVATAR } from "@/lib/shimmer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { profileHref } from "@/lib/profile-url";
+import { appendUnique } from "../lib/appendUnique";
 
 const PAGE_SIZE = 20;
 
@@ -169,7 +170,9 @@ interface Props {
 
 /** "Who viewed your profile" — paginated, infinite-scroll list. Owner-only. */
 export function ProfileVisitorsView({ lang }: Props) {
-  const router = useRouter();
+  // Owner-only, but still a linkable URL — an arrival with no app history
+  // behind it would otherwise get a back button that does nothing.
+  const goBack = useAppBack(`/${lang}/for-you`);
   const { data, loading, networkStatus, fetchMore } = useQuery(
     MyProfileVisitorsDocument,
     {
@@ -205,10 +208,10 @@ export function ProfileVisitorsView({ lang }: Props) {
         return {
           myProfileVisitors: {
             ...fetchMoreResult.myProfileVisitors,
-            visitors: [
-              ...prev.myProfileVisitors.visitors,
-              ...fetchMoreResult.myProfileVisitors.visitors,
-            ],
+            visitors: appendUnique(
+              prev.myProfileVisitors.visitors,
+              fetchMoreResult.myProfileVisitors.visitors,
+            ),
           },
         };
       },
@@ -248,7 +251,7 @@ export function ProfileVisitorsView({ lang }: Props) {
       >
         <button
           type="button"
-          onClick={() => router.back()}
+          onClick={goBack}
           className="flex h-9 w-9 items-center justify-center rounded-full transition-opacity active:opacity-60"
           style={{ color: "rgb(var(--color-text))" }}
           aria-label="Back"

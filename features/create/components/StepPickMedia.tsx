@@ -24,7 +24,7 @@ export function StepPickMedia() {
       router.back();
     } else {
       const lang = window.location.pathname.split("/")[1] || "en";
-      router.push(`/${lang}/feed`);
+      router.push(`/${lang}/for-you`);
     }
   }
 
@@ -71,6 +71,11 @@ export function StepPickMedia() {
     } finally {
       setCreating(false);
     }
+  }
+
+  function handleTiktokImport() {
+    const lang = window.location.pathname.split("/")[1] || "en";
+    router.push(`/${lang}/upload/tiktok`);
   }
 
   return (
@@ -243,8 +248,10 @@ export function StepPickMedia() {
         </button>
 
         {SHOW_TIKTOK_CREATE_OPTIONS && (
-          <div
-            className="rounded-2xl px-4 py-3 flex items-center gap-3"
+          <button
+            type="button"
+            onClick={handleTiktokImport}
+            className="rounded-2xl px-4 py-3 flex items-center gap-3 text-left"
             style={{
               backgroundColor: "rgb(var(--color-bg-subtle))",
               border: "1px solid rgb(var(--color-border))",
@@ -277,7 +284,7 @@ export function StepPickMedia() {
                   color: "rgb(var(--color-text-muted))",
                 }}
               >
-                Auto-converts your TikTok videos to posts
+                Paste a link or reuse a saved video
               </p>
             </div>
             <span
@@ -288,7 +295,7 @@ export function StepPickMedia() {
             >
               →
             </span>
-          </div>
+          </button>
         )}
       </div>
 

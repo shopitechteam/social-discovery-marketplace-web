@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment } from "react";
+import { Fragment, useState } from "react";
 import { PostCard } from "./PostCard";
 import {
   FeaturedSellerCard,
@@ -53,6 +53,23 @@ function FeedCards({
 }) {
   const sellers = useFeaturedSellers();
 
+  // A seller card may never be inserted into content that is already on
+  // screen.
+  //
+  // The sellers query resolves a beat after the first cards paint. Filling
+  // every eligible slot the moment it landed spliced a card into the middle of
+  // a list the user was already scrolling, pushing everything below it down —
+  // the largest layout shift in the feed, and the one that reads as the page
+  // jumping under your thumb.
+  //
+  // Both values are captured once, at mount, so they cannot move mid-scroll.
+  // If the sellers were already cached when the list first rendered, every
+  // slot is safe: the cards were there from the first frame. Otherwise only
+  // slots past the initially rendered items are filled, and those appear as
+  // new pages append — content the user has not reached yet.
+  const [sellersReadyAtMount] = useState(() => sellers.length > 0);
+  const [initialCount] = useState(items.length);
+
   return (
     <div className="flex flex-col gap-2">
       {items.map((post, i) => {
@@ -67,9 +84,12 @@ function FeedCards({
           : -1;
         // Cycle, so a long scroll keeps offering sellers instead of running dry
         // after the last ranked one.
-        const seller = slot >= 0 && sellers.length > 0
-          ? sellers[slot % sellers.length]
-          : null;
+        const seller =
+          slot >= 0 &&
+          sellers.length > 0 &&
+          (sellersReadyAtMount || i >= initialCount)
+            ? sellers[slot % sellers.length]
+            : null;
 
         return (
           <Fragment key={post.id}>
@@ -103,7 +123,7 @@ function LiveFeedCards({ lang, active }: { lang: string; active: boolean }) {
         <h3 className="font-bold text-default text-base mb-2">
           Your feed is empty
         </h3>
-        <p className="text-muted-foreground text-sm leading-relaxed">
+        <p className="app-subcopy">
           Follow sellers or explore categories to see content here.
         </p>
       </div>
@@ -117,7 +137,19 @@ function LiveFeedCards({ lang, active }: { lang: string; active: boolean }) {
       {/* ── Infinite scroll sentinel ─────────────────────────────────── */}
       <div ref={sentinelRef} className="h-1" />
 
-      {loadingMore && <FeedPaginationSkeleton />}
+      {/* The loader's space is reserved rather than inserted.
+          Mounting it only while a page was in flight changed the document
+          height by ~72px each time, and near the bottom of the feed a
+          shrinking document makes the browser clamp scrollTop — which reads
+          as the page jumping under your thumb, especially when scrolling up
+          and down repeatedly across the pagination trigger. */}
+      <div
+        className="flex items-center justify-center"
+        style={{ minHeight: hasMore ? "72px" : undefined }}
+        aria-hidden={!loadingMore}
+      >
+        {loadingMore && <FeedPaginationSkeleton />}
+      </div>
 
       {!hasMore && items.length > 0 && (
         <p className="text-center text-muted-foreground text-xs py-6">

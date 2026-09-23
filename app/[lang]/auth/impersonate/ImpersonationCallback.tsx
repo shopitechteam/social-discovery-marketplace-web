@@ -45,20 +45,33 @@ async function exchangeImpersonationToken(token: string): Promise<AuthPayload> {
     errors?: Array<{ message?: string }>;
   };
 
-  if (!res.ok || json.errors?.length || !json.data?.exchangeImpersonationToken) {
-    throw new Error(json.errors?.[0]?.message ?? "Unable to start impersonation session");
+  if (
+    !res.ok ||
+    json.errors?.length ||
+    !json.data?.exchangeImpersonationToken
+  ) {
+    throw new Error(
+      json.errors?.[0]?.message ?? "Unable to start impersonation session",
+    );
   }
 
   return json.data.exchangeImpersonationToken;
 }
 
-export function ImpersonationCallback({ lang, token }: { lang: string; token: string }) {
+export function ImpersonationCallback({
+  lang,
+  token,
+}: {
+  lang: string;
+  token: string;
+}) {
   const router = useRouter();
   const setAuth = useAuthStore((s) => s.setAuth);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError("Missing impersonation token.");
       return;
     }
@@ -69,11 +82,15 @@ export function ImpersonationCallback({ lang, token }: { lang: string; token: st
       .then((payload) => {
         if (cancelled) return;
         setAuth(payload);
-        router.replace(`/${lang}/feed`);
+        router.replace(`/${lang}/for-you`);
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        setError(err instanceof Error ? err.message : "Unable to start impersonation session");
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Unable to start impersonation session",
+        );
       });
 
     return () => {

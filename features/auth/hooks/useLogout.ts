@@ -18,7 +18,7 @@ export function useLogout(lang: string) {
       await logoutMutation({ variables: { refreshToken } });
     }
     useAuthStore.getState().clearAuth();
-    window.location.href = `/${lang}/feed`;
+    window.location.href = `/${lang}/for-you`;
   }, [refreshToken, logoutMutation, lang]);
 
   return { logout, loading };

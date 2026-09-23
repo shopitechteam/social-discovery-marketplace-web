@@ -4,6 +4,7 @@ import { LandingFooter } from "@/components/landing/LandingFooter";
 import { LegalNav } from "@/components/legal/LegalNav";
 import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import { CategoryCrossLinks } from "@/components/seo/CategoryCrossLinks";
+import { GuideLinks } from "@/components/seo/GuideLinks";
 import { siteConfig } from "@/config/site";
 import { isValidLocale } from "@/i18n/config";
 import { publicPageMetadata } from "@/lib/metadata";
@@ -40,6 +41,25 @@ const faq = [
     q: "How do buyers contact me?",
     a: "Buyers message you inside Shopi. From there you answer questions, negotiate, agree on pickup or delivery, and decide payment directly with the buyer.",
   },
+  // The questions people actually type when choosing where to list. Someone
+  // comparing sites is further down the decision than someone asking how to
+  // start, and the page had nothing for them.
+  {
+    q: "What is the best site to sell online in Kenya?",
+    a: "It depends on what you are selling. Classifieds sites such as Jiji and PigiaMe reach people already searching a category, Facebook Marketplace and WhatsApp groups reach people you are loosely connected to, and Shopi puts your listing in a local discovery feed where buyers come across it without searching for it. The practical questions to compare are: what does it cost to list, does the platform take a cut of the sale, and do you speak to the buyer directly. On Shopi listing is free, there is no commission, and the conversation is between the two of you.",
+  },
+  {
+    q: "Is there a free alternative to Jiji or PigiaMe in Kenya?",
+    a: "Shopi is free to list on and takes no commission on sales. You can post the same item on more than one site — nothing stops you listing on Shopi alongside anywhere else, and many sellers do exactly that to widen their reach.",
+  },
+  {
+    q: "How much does it cost to sell online in Kenya?",
+    a: "On Shopi, nothing. Posting is free, there are no listing fees, and Shopi takes no percentage of what you sell. Costs to plan for are the ones outside the platform: transport or courier if the buyer is not local, and your time answering messages and meeting buyers.",
+  },
+  {
+    q: "Do I need a business or a licence to sell online in Kenya?",
+    a: "No. You can sell as an individual on Shopi with no registered business, no shop, no website and no starting capital. A phone with a camera and something to sell is enough.",
+  },
 ];
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -47,9 +67,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return publicPageMetadata({
     lang,
     path: "/sell-in-kenya",
-    title: "How to Sell Online in Kenya Free — No Commission",
+    // Leads with the exact head term rather than the long tail.
+    //
+    // The old title opened "How to Sell Online in Kenya Free", which reads as
+    // an answer to "…for free" — and that is the query it ranked for, while
+    // the shorter, much larger "sell online in Kenya" went elsewhere. A "How
+    // to" prefix also narrows the page to instructional intent, when most of
+    // that traffic is deciding WHERE to sell, not asking for a tutorial.
+    title: "Sell Online in Kenya — Free Marketplace, No Commission",
     description:
-      "Want to sell online in Kenya? Post used items, cars, phones, furniture, fashion or farm produce on Shopi free in minutes, then message buyers directly. No commission, no fees.",
+      "Sell online in Kenya free on Shopi. List cars, phones, furniture, fashion or land in minutes and message buyers directly. No fees, no commission.",
   });
 }
 
@@ -113,8 +140,7 @@ export default async function SellInKenyaPage({ params }: Props) {
                 — the old one led with "A free site to sell…", which matched no
                 query anyone actually types. */}
             <h1 className="max-w-170 font-display text-[clamp(2rem,5vw,3.6rem)] font-bold tracking-normal leading-[1.08] text-foreground">
-              Sell online in Kenya, free — cars, phones, furniture, fashion and
-              everyday items.
+              Sell online in Kenya — free, and you keep the whole sale.
             </h1>
             <p className="mt-5 max-w-145 text-[1.05rem] leading-[1.75] text-muted">
               Wondering where to sell used items online in Kenya? Shopi is a
@@ -130,10 +156,10 @@ export default async function SellInKenyaPage({ params }: Props) {
                 Start selling free
               </Link>
               <Link
-                href={`/${safeLang}/feed`}
+                href={`/${safeLang}/for-you`}
                 className="rounded-full border border-border px-6 py-3 text-sm font-bold text-foreground no-underline"
               >
-                See the feed
+                Open For You
               </Link>
             </div>
           </div>
@@ -227,6 +253,17 @@ export default async function SellInKenyaPage({ params }: Props) {
             </ol>
           </div>
         </section>
+
+        <GuideLinks
+          lang={safeLang}
+          heading="Seller guides"
+          intro="Go deeper before you post: where each kind of used item sells best in Kenya, and every step of selling on Shopi from first listing to first sale."
+          slugs={[
+            "where-to-sell-used-items-in-kenya",
+            "how-to-sell-on-shopi-complete-guide-for-kenyan-sellers",
+            "how-nairobi-local-sellers-are-winning-online-with-short-videos",
+          ]}
+        />
 
         <section className="mx-auto max-w-170 px-5 py-16">
           <h2 className="mb-8 font-display text-[clamp(1.5rem,3vw,2.2rem)] font-bold tracking-normal text-foreground">

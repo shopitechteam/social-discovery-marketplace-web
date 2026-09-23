@@ -3,7 +3,18 @@
 import { useEffect, useLayoutEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@apollo/client/react";
-import { Bot, PenLine } from "lucide-react";
+import {
+  ArrowLeft,
+  Bot,
+  Check,
+  ChevronRight,
+  Images,
+  Music2,
+  PenLine,
+  Sparkles,
+  Video,
+  X,
+} from "lucide-react";
 import { useCreateStore } from "@/stores/create";
 import { useUiStore } from "@/stores/ui";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
@@ -20,64 +31,10 @@ import {
 import { SHOW_TIKTOK_CREATE_OPTIONS } from "@/features/create/utils/tiktokAvailability";
 import { getSuspendedAccountMessage } from "@/lib/apollo/suspended-account";
 
-const ICON_VIDEO = (
-  <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-    <rect
-      x="2"
-      y="5"
-      width="14"
-      height="14"
-      rx="2"
-      stroke="currentColor"
-      strokeWidth="1.7"
-    />
-    <path
-      d="M16 9.5l6-3v11l-6-3v-5Z"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
-const ICON_PHOTO = (
-  <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-    <rect
-      x="3"
-      y="3"
-      width="18"
-      height="18"
-      rx="3"
-      stroke="currentColor"
-      strokeWidth="1.7"
-    />
-    <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" />
-    <path
-      d="M3 15l5-5 4 4 3-3 6 6"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinejoin="round"
-      strokeLinecap="round"
-    />
-  </svg>
-);
-
-const ICON_TIKTOK = (
-  <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-    <path
-      d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
 /**
- * /upload — the "Upload & sell" entry point.
+ * /upload - the "Upload & sell" entry point.
  *
- * Desktop (≥ md): the whole create flow lives here in a shadcn Dialog with a
+ * Desktop (>= md): the whole create flow lives here in a shadcn Dialog with a
  * stepper and a live post preview (DesktopCreateFlow); no route hops.
  *
  * Mobile: this page is the type picker; picking a type creates the draft and
@@ -89,12 +46,7 @@ export function UploadPickerPage({ lang }: { lang: string }) {
   const [storeHydrated, setStoreHydrated] = useState(false);
   const [manualSelected, setManualSelected] = useState(false);
   const [creating, setCreating] = useState(false);
-  // TikTok import renders in place on this page (same surface as the other
-  // types — no route hop), then continues to /upload/create like they do.
   const [view, setView] = useState<"pick" | "tiktok">("pick");
-  // Draft-creation failures (e.g. "Maximum active drafts reached") shown in a
-  // dialog, same as the desktop create flow — for all three entry points
-  // (Video, Photos, TikTok import).
   const [createError, setCreateError] = useState<string | null>(null);
 
   const {
@@ -126,18 +78,12 @@ export function UploadPickerPage({ lang }: { lang: string }) {
     creationMode === "manual" ||
     (hasActiveDraft && creationMode !== "ai" && creationMode !== "choose");
 
-  // A guided draft resumes in its dedicated route. A legacy persisted draft
-  // has no creationMode, so it safely resumes in the established manual flow.
   useEffect(() => {
     if (storeHydrated && hasActiveDraft && creationMode === "ai") {
       router.replace(`/${lang}/upload/create-ai`);
     }
   }, [creationMode, hasActiveDraft, lang, router, storeHydrated]);
 
-  // Mobile only: if a draft is already in progress, skip the picker and resume
-  // it on the full-page flow. Desktop resumes inside the dialog instead.
-  // Paused while the TikTok picker is up — its "Use This Video" handler
-  // navigates explicitly once the draft is ready.
   useEffect(() => {
     if (
       showingManual &&
@@ -150,7 +96,6 @@ export function UploadPickerPage({ lang }: { lang: string }) {
     }
   }, [isDesktop, view, draftId, step, lang, router, showingManual]);
 
-  // Avoid a layout flash before the breakpoint is known.
   if (isDesktop === null || !storeHydrated) return null;
 
   if (hasActiveDraft && creationMode === "ai") return null;
@@ -174,9 +119,6 @@ export function UploadPickerPage({ lang }: { lang: string }) {
 
   if (isDesktop) return <DesktopCreateFlow lang={lang} />;
 
-  // Pick a media type → create the draft and jump straight to the details step.
-  // No native file picker here; the user chooses files on the details step via
-  // its dotted media picker (cleaner UX, lets them keep adding/removing photos).
   async function handlePickType(kind: "image" | "video") {
     if (creating) return;
     setError(null);
@@ -207,27 +149,26 @@ export function UploadPickerPage({ lang }: { lang: string }) {
       router.back();
       return;
     }
-    router.push(`/${lang}/feed`);
+    router.push(`/${lang}/for-you`);
   }
 
   const options = [
     {
       label: "Video",
-      description: "Share a short clip",
-      icon: ICON_VIDEO,
+      description: "Start with one short product clip.",
+      icon: Video,
       onClick: () => handlePickType("video"),
     },
     {
       label: "Photos",
-      description: "Up to 10 images",
-      icon: ICON_PHOTO,
+      description: "Add up to 10 clear item photos.",
+      icon: Images,
       onClick: () => handlePickType("image"),
     },
     {
       label: "TikTok Import",
-      description: "Bring your TikTok content",
-      icon: ICON_TIKTOK,
-      // In place on this page, like the other types — no route hop.
+      description: "Reuse a video you already posted.",
+      icon: Music2,
       onClick: () => setView("tiktok"),
       hidden: !SHOW_TIKTOK_CREATE_OPTIONS,
     },
@@ -240,39 +181,20 @@ export function UploadPickerPage({ lang }: { lang: string }) {
           message={createError}
           onClose={() => setCreateError(null)}
         />
-        <div
-          className="flex shrink-0 items-center gap-3 px-4 pt-4 pb-4"
-          style={{ borderBottom: "1px solid rgb(var(--color-border))" }}
-        >
-          <button
-            onClick={() => setView("pick")}
-            className="flex h-9 w-9 items-center justify-center rounded-full"
-            style={{ backgroundColor: "rgb(var(--color-bg-subtle))" }}
-            aria-label="Back"
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+        <header className="shrink-0 border-b border-border bg-app/95 backdrop-blur-md">
+          <div className="mx-auto flex h-14 w-full max-w-2xl items-center gap-3 px-4">
+            <button
+              onClick={() => setView("pick")}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface hover:text-foreground"
+              aria-label="Back"
             >
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
-          </button>
-          <h1
-            className="font-semibold"
-            style={{
-              fontSize: "var(--text-xl)",
-              color: "rgb(var(--color-text))",
-            }}
-          >
-            Add from TikTok
-          </h1>
-        </div>
+              <ArrowLeft size={20} />
+            </button>
+            <h1 className="text-base font-semibold text-foreground">
+              Add from TikTok
+            </h1>
+          </div>
+        </header>
         <TikTokPicker
           lang={lang}
           onUsed={() => router.push(`/${lang}/upload/create`)}
@@ -283,99 +205,70 @@ export function UploadPickerPage({ lang }: { lang: string }) {
   }
 
   return (
-    <div className="create-flow-card flex flex-col bg-app">
+    <div className="create-flow-card flex min-h-svh flex-col bg-app">
       <CreateErrorDialog
         message={createError}
         onClose={() => setCreateError(null)}
       />
-      <div
-        className="flex shrink-0 items-center gap-3 px-4"
-        style={{
-          height: 56,
-          borderBottom: "1px solid rgb(var(--color-border))",
-        }}
-      >
-        <button
-          onClick={closePicker}
-          className="flex items-center justify-center rounded-full transition-opacity active:opacity-60"
-          style={{ width: 36, height: 36, color: "rgb(var(--color-text))" }}
-          aria-label="Back"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M15 18l-6-6 6-6"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
-        <h1
-          className="font-semibold"
-          style={{
-            fontSize: "var(--text-lg)",
-            color: "rgb(var(--color-text))",
-          }}
-        >
-          Create
-        </h1>
-      </div>
-
-      <div className="flex flex-col gap-3 px-4 pt-6 pb-8">
-        {options.map((opt) => (
+      <header className="shrink-0 border-b border-border bg-app/95 backdrop-blur-md">
+        <div className="mx-auto flex h-14 w-full max-w-2xl items-center gap-3 px-4">
           <button
-            key={opt.label}
-            onClick={opt.onClick}
-            disabled={creating}
-            className={`${opt.hidden ? "hidden" : "flex"} w-full items-center gap-4 rounded-2xl text-left transition-transform active:scale-[0.98] disabled:opacity-50`}
-            style={{
-              padding: "18px 20px",
-              backgroundColor: "rgb(var(--color-bg-elevated))",
-              border: "1px solid rgb(var(--color-border))",
-              color: "rgb(var(--color-text))",
-            }}
+            onClick={closePicker}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface hover:text-foreground active:opacity-70"
+            aria-label="Back"
           >
-            <span style={{ color: "rgb(var(--brand-primary))" }}>
-              {opt.icon}
-            </span>
-
-            <div className="flex flex-1 flex-col gap-0.5">
-              <span
-                className="font-semibold"
-                style={{ fontSize: "var(--text-base)" }}
-              >
-                {opt.label}
-              </span>
-              <span
-                style={{
-                  fontSize: "var(--text-sm)",
-                  color: "rgb(var(--color-text-muted))",
-                }}
-              >
-                {opt.description}
-              </span>
-            </div>
-
-            <svg
-              className="ml-auto shrink-0"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              style={{ color: "rgb(var(--color-text-muted))" }}
-            >
-              <path
-                d="M9 6l6 6-6 6"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <ArrowLeft size={20} />
           </button>
-        ))}
-      </div>
+          <div className="min-w-0">
+            <h1 className="text-base font-semibold text-foreground">
+              Choose media
+            </h1>
+            <p className="text-xs leading-tight text-muted">
+              You can review everything before posting.
+            </p>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 py-5">
+        <div className="mb-5 rounded-lg border border-border bg-surface px-4 py-3">
+          <p className="text-sm font-semibold text-foreground">
+            What are you selling with?
+          </p>
+          <p className="mt-1 text-xs leading-5 text-muted">
+            Pick the media you already have. Details come next.
+          </p>
+        </div>
+
+        <div className="flex flex-col overflow-hidden rounded-lg border border-border bg-elevated">
+          {options.map((opt) => {
+            const Icon = opt.icon;
+            return (
+              <button
+                key={opt.label}
+                onClick={opt.onClick}
+                disabled={creating}
+                className={`${opt.hidden ? "hidden" : "flex"} min-h-20 w-full items-center gap-3 border-b border-border px-4 py-4 text-left transition-colors last:border-b-0 hover:bg-surface disabled:opacity-50`}
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary">
+                  <Icon size={20} strokeWidth={2.1} />
+                </span>
+
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold text-foreground">
+                    {opt.label}
+                  </span>
+                  <span className="mt-0.5 block text-xs leading-5 text-muted">
+                    {opt.description}
+                  </span>
+                </span>
+
+                <ChevronRight className="shrink-0 text-muted" size={18} />
+              </button>
+            );
+          })}
+        </div>
+      </main>
     </div>
   );
 }
@@ -390,7 +283,7 @@ const CREATION_MODES = [
     heading: "Guided setup",
     recommended: true,
     description:
-      "Shopi Agent looks at your media and works out the title, details and category with you — the fastest way to sell.",
+      "Upload media and let Shopi Agent draft the title, category and useful details with you.",
   },
   {
     key: "manual" as const,
@@ -398,30 +291,18 @@ const CREATION_MODES = [
     icon: PenLine,
     heading: "Full control",
     recommended: false,
-    description:
-      "Use the editor and enter every detail of your listing yourself.",
+    description: "Use the editor and enter every listing detail yourself.",
   },
 ];
 
-/** Ring + dot radio indicator matching the selected-card treatment. */
-function RadioDot({ selected, onDark }: { selected: boolean; onDark: boolean }) {
+function RadioDot({ selected }: { selected: boolean }) {
   return (
     <span
-      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
-        onDark
-          ? "border-white"
-          : selected
-            ? "border-primary"
-            : "border-muted"
+      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors ${
+        selected ? "border-primary bg-primary" : "border-border bg-elevated"
       }`}
     >
-      {selected && (
-        <span
-          className={`h-2.5 w-2.5 rounded-full ${
-            onDark ? "bg-white" : "bg-primary"
-          }`}
-        />
-      )}
+      {selected && <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />}
     </span>
   );
 }
@@ -439,23 +320,15 @@ function CreationModeChooser({
 }) {
   const router = useRouter();
   const setBottomNavHidden = useUiStore((s) => s.setBottomNavHidden);
-  // Recommended option is pre-selected, mirroring the "continue with the
-  // suggested plan" pattern.
   const [selected, setSelected] = useState<CreationModeKey>("agent");
 
-  // Hide the mobile bottom nav while choosing. It stays mounted and only gains
-  // a `hidden` class (see useUiStore) — no unmount, so no remount flicker.
-  // Layout effect so the class lands before the browser paints this screen,
-  // avoiding a one-frame flash of the nav on entry. Safe on the server: the
-  // parent gates this subtree to client-only, so it never renders during SSR.
-  // (No-op visual on desktop, where the nav is already md:hidden.)
   useLayoutEffect(() => {
     setBottomNavHidden(true);
     return () => setBottomNavHidden(false);
   }, [setBottomNavHidden]);
 
   function close() {
-    router.replace(`/${lang}/feed`);
+    router.replace(`/${lang}/for-you`);
   }
 
   function handleContinue() {
@@ -463,12 +336,11 @@ function CreationModeChooser({
     else onManual();
   }
 
-  // Shared between the mobile full-screen layout and the desktop dialog.
   const modeCards = (
     <div
       role="radiogroup"
       aria-label="How would you like to create your listing?"
-      className="flex flex-col gap-4"
+      className="overflow-hidden rounded-lg border border-border bg-elevated"
     >
       {CREATION_MODES.map((mode) => {
         const isSelected = selected === mode.key;
@@ -480,41 +352,41 @@ function CreationModeChooser({
             role="radio"
             aria-checked={isSelected}
             onClick={() => setSelected(mode.key)}
-            className={`overflow-hidden rounded-2xl text-left transition-all outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
-              isSelected
-                ? "border-2 border-primary shadow-sm"
-                : "border border-border"
+            className={`flex w-full items-start gap-3 border-b border-border px-4 py-4 text-left outline-none transition-colors last:border-b-0 hover:bg-surface focus-visible:bg-surface ${
+              isSelected ? "bg-primary/5" : "bg-elevated"
             }`}
           >
-            <div
-              className={`flex items-center justify-between px-5 py-3.5 transition-colors ${
-                isSelected ? "bg-primary text-white" : "bg-surface text-primary"
+            <span
+              className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+                isSelected
+                  ? "bg-primary text-white"
+                  : "bg-surface text-foreground"
               }`}
             >
-              <span className="flex items-center gap-2.5">
-                <Icon size={18} strokeWidth={2.2} />
-                <span className="text-sm font-bold uppercase tracking-wide">
-                  {mode.label}
-                </span>
-              </span>
-              <RadioDot selected={isSelected} onDark={isSelected} />
-            </div>
+              <Icon size={19} strokeWidth={2.1} />
+            </span>
 
-            <div className="bg-elevated px-5 py-4">
-              <div className="flex flex-wrap items-center gap-2.5">
-                <span className="text-xl font-bold text-foreground">
+            <span className="min-w-0 flex-1">
+              <span className="flex flex-wrap items-center gap-2">
+                <span className="text-sm font-semibold text-foreground">
                   {mode.heading}
                 </span>
                 {mode.recommended && (
-                  <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700 dark:bg-green-500/15 dark:text-green-300">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2 py-0.5 text-[11px] font-semibold text-primary-strong dark:text-primary">
+                    <Sparkles size={12} />
                     Recommended
                   </span>
                 )}
-              </div>
-              <p className="mt-2 text-sm leading-relaxed text-muted">
+              </span>
+              <span className="mt-1 block text-xs font-medium text-muted">
+                {mode.label}
+              </span>
+              <span className="app-subcopy mt-2 block">
                 {mode.description}
-              </p>
-            </div>
+              </span>
+            </span>
+
+            <RadioDot selected={isSelected} />
           </button>
         );
       })}
@@ -525,14 +397,12 @@ function CreationModeChooser({
     <button
       type="button"
       onClick={handleContinue}
-      className="flex h-11 w-full items-center justify-center rounded-xl bg-primary text-sm font-semibold text-white transition-transform active:scale-[0.99]"
+      className="flex h-11 w-full items-center justify-center rounded-lg bg-primary text-sm font-semibold text-white transition-colors hover:bg-primary/90 active:scale-[0.99]"
     >
       Continue
     </button>
   );
 
-  // ── Desktop: a centred dialog on the branded backdrop, matching the manual
-  // create flow (DesktopCreateFlow) so both entry surfaces feel the same. ──
   if (isDesktop) {
     return (
       <>
@@ -543,27 +413,29 @@ function CreationModeChooser({
             if (!open) close();
           }}
         >
-          <DialogContent className="w-[min(94vw,460px)] max-w-none gap-0 overflow-hidden rounded-3xl border border-default bg-app p-0">
+          <DialogContent className="w-[min(94vw,440px)] max-w-none gap-0 overflow-hidden rounded-xl border border-default bg-app p-0 shadow-xl">
             <DialogTitle className="sr-only">Create a listing</DialogTitle>
             <DialogDescription className="sr-only">
               Choose how you&apos;d like to create your listing.
             </DialogDescription>
 
             <div className="px-6 pt-6 pb-6">
-              {/* pr-8 keeps the heading clear of the dialog's built-in ✕. */}
               <div className="pr-8">
-                <h1 className="text-lg font-bold text-foreground">
+                <p className="text-xs font-semibold uppercase text-primary">
+                  Upload and sell
+                </p>
+                <h1 className="mt-2 text-lg font-semibold text-foreground">
                   Create a listing
                 </h1>
-                <p className="mt-0.5 text-sm text-muted">
-                  Select how you&apos;d like to continue
+                <p className="app-subcopy mt-1">
+                  Choose the path that fits how much help you want.
                 </p>
               </div>
 
               <div className="mt-5">{modeCards}</div>
-              <div className="mt-6">{continueButton}</div>
+              <div className="mt-5">{continueButton}</div>
 
-              <p className="mt-4 text-center text-xs leading-relaxed text-muted">
+              <p className="mt-4 text-center text-xs leading-5 text-muted">
                 Nothing is posted until you review and confirm it.
               </p>
             </div>
@@ -573,7 +445,6 @@ function CreationModeChooser({
     );
   }
 
-  // ── Mobile: full-screen (unchanged). ──
   return (
     <div className="flex min-h-svh flex-col bg-background">
       <header className="border-b border-border bg-elevated">
@@ -584,27 +455,33 @@ function CreationModeChooser({
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface hover:text-foreground"
             aria-label="Close create"
           >
-            <span aria-hidden className="text-2xl font-light leading-none">
-              ×
-            </span>
+            <X size={20} />
           </button>
           <div className="flex-1 text-center">
             <h1 className="text-base font-semibold text-foreground">
               Create a listing
             </h1>
             <p className="text-xs leading-tight text-muted">
-              Select how you&apos;d like to continue
+              Choose how to start
             </p>
           </div>
-          {/* Balances the close button so the title stays centred. */}
           <span aria-hidden className="h-10 w-10 shrink-0" />
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 md:px-6 md:py-10">
+      <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-5 md:px-6 md:py-10">
+        <div className="mb-5 rounded-lg border border-border bg-surface px-4 py-3">
+          <p className="text-sm font-semibold text-foreground">
+            Start faster with Shopi Agent.
+          </p>
+          <p className="app-microcopy mt-1">
+            Manual is still here when you want direct control.
+          </p>
+        </div>
+
         {modeCards}
 
-        <p className="mt-4 px-1 text-xs leading-relaxed text-muted">
+        <p className="mt-4 px-1 text-xs leading-5 text-muted">
           Nothing is posted until you review and confirm it.
         </p>
       </main>

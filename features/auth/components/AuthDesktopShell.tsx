@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ShopiLogo } from "./AuthIcons";
+import { AuthExitButton } from "./AuthExitButton";
 
 /** Floating social-product card stack — shared between welcome & desktop panel */
 export function CardStack() {
@@ -68,9 +69,12 @@ export function CardStack() {
  */
 export function AuthDesktopShell({
   lang,
+  from,
   children,
 }: {
   lang: string;
+  /** Passed through to the back control; see AuthExitButton. */
+  from?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -156,26 +160,13 @@ export function AuthDesktopShell({
         <div className="flex flex-1 items-center justify-center overflow-y-auto bg-app p-8 xl:p-16">
           {/* Card container — lifted surface on large screens */}
           <div className="relative w-full max-w-110 rounded-2xl border border-border bg-elevated p-8 shadow-(--shadow-lg) xl:p-10">
-            <div className="mb-6 flex justify-end">
-              <Link
-                href={`/${lang}`}
-                className="inline-flex items-center gap-2 rounded-full border border-border bg-app px-3 py-2 text-sm font-semibold text-muted transition-colors hover:text-default"
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M3 10.5 12 3l9 7.5" />
-                  <path d="M5 9.5V21h14V9.5" />
-                </svg>
-                Home
-              </Link>
+            {/* Back, not Home — see AuthExitButton. Left-aligned to match. */}
+            <div className="mb-6 flex justify-start">
+              <AuthExitButton
+                lang={lang}
+                from={from}
+                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-app px-3 py-2 text-sm font-semibold text-muted transition-colors hover:text-default"
+              />
             </div>
             {children}
           </div>

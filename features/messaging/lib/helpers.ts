@@ -268,6 +268,55 @@ export function shortTime(value?: string | null): string {
   });
 }
 
+/** Midnight local time for the day a date falls on. */
+function startOfLocalDay(date: Date): number {
+  return new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+  ).getTime();
+}
+
+/**
+ * Timestamp for a row in a list — conversations, notifications.
+ *
+ * Time of day alone is only meaningful for today. A message from last Tuesday
+ * showing "14:32" tells you the hour and nothing else, so every older row in
+ * both inbox tabs looked like it had just arrived. This is the ladder people
+ * already know from WhatsApp:
+ *
+ *   today      → 14:32
+ *   yesterday  → Yesterday
+ *   this week  → Thursday
+ *   older      → 03/09/2026
+ *
+ * Days are compared as local calendar days, not 24-hour windows, so something
+ * sent at 23:50 reads "Yesterday" at 00:10 rather than still counting as today.
+ *
+ * Individual chat bubbles deliberately keep `shortTime`: inside a conversation
+ * the day is already established by the thread, and the bubble only needs the
+ * clock.
+ */
+export function listTimestamp(value?: string | null): string {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const dayDiff = Math.round(
+    (startOfLocalDay(new Date()) - startOfLocalDay(date)) / 86_400_000,
+  );
+
+  // `<= 0` rather than `=== 0`: a clock a few seconds behind the server would
+  // otherwise render a brand-new message as a future date.
+  if (dayDiff <= 0) return shortTime(value);
+  if (dayDiff === 1) return "Yesterday";
+  if (dayDiff < 7) return date.toLocaleDateString(undefined, { weekday: "long" });
+  // en-GB rather than the runtime locale, so the day/month order is the one
+  // Kenya uses and cannot flip to US month/day on a differently configured
+  // device.
+  return date.toLocaleDateString("en-GB");
+}
+
 export function lastSeenLabel(conversation?: Conversation | null): string {
   if (!conversation?.otherParticipant) return "";
   if (conversation.otherParticipantOnline) return "Online";

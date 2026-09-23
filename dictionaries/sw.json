@@ -4,8 +4,8 @@
     "tagline": "Post bure. Uza karibu nawe.",
     "loading": "Inapakia…",
     "error": "Kuna hitilafu fulani",
-    "continueWeb": "Fungua feed →",
-    "openFeed": "Fungua feed",
+    "continueWeb": "Fungua For You →",
+    "openFeed": "Fungua For You",
     "startFree": "Post bidhaa"
   },
   "nav": {
@@ -59,7 +59,7 @@
     "sectionLabel": "Jinsi inavyofanya kazi",
     "eyebrow": "Kutoka picha hadi tangazo",
     "headline": "Hatua nne, na bidhaa yako iko mbele ya wanunuzi wa karibu.",
-    "intro": "Hakuna fomu ndefu ya kupambana nayo na hakuna cha kulipa. Fungua akaunti bure, weka picha zako, acha Shopi Agent iandike maneno, kisha chapisha. Tangazo lako linaingia kwenye feed ya karibu papo hapo.",
+    "intro": "Fungua akaunti bure, weka picha zako, acha Shopi Agent iandike maneno, kisha chapisha. Tangazo lako linaingia kwenye feed ya karibu papo hapo.",
     "steps": {
       "1": {
         "title": "Fungua akaunti yako bure",
@@ -99,12 +99,29 @@
     "sectionLabel": "Nani hupost kwenye Shopi",
     "headline": "Wauzaji wa kawaida. Bidhaa halisi. Hakuna duka linalohitajika."
   },
+  "socialProof": {
+    "eyebrow": "Wanaouza kwenye Shopi sasa hivi",
+    "headline": "Usichukue neno letu tu. Tazama kilicho hewani leo.",
+    "intro": "Wauzaji halisi, bidhaa halisi, matangazo yaliyo hai. Kila bidhaa ina bei, mahali na muuzaji unayeweza kumtumia ujumbe.",
+    "featured": "Muuzaji aliyeangaziwa",
+    "verified": "Muuzaji aliyethibitishwa",
+    "listings": "matangazo hai",
+    "listingOne": "tangazo hai",
+    "views": "mara yametazamwa",
+    "followers": "wafuasi",
+    "since": "Kwenye Shopi tangu {date}",
+    "summary": "{name} ana matangazo {count} yaliyo hai kwenye Shopi.",
+    "summaryOne": "{name} ana tangazo 1 lililo hai kwenye Shopi.",
+    "latestFrom": "Mapya kutoka kwa {name}",
+    "visitShop": "Tembelea duka",
+    "seeAll": "Tazama matangazo yote {count}"
+  },
   "download": {
     "sectionLabel": "Anza kuuza",
     "headline": "Post leo. Acha wanunuzi wa karibu wakujie.",
-    "body": "Fungua akaunti yako bure, weka unachouza, na wanunuzi wa eneo lako watalipata kwenye feed na kukutumia ujumbe. Kupost ni bure, Shopi haichukui commission, na unabaki na kila shilingi mliyokubaliana na mnunuzi.",
+    "body": "Piga picha, acha Shopi Agent iandike tangazo, kisha chapisha. Ni bure, hakuna commission, na mnunuzi anakulipa moja kwa moja.",
     "webCta": "Post bidhaa yako ya kwanza — bure",
-    "secondaryCta": "Ona feed kwanza",
+    "secondaryCta": "Fungua For You kwanza",
     "reassurance": "Bure kupost · 0% commission · Huhitaji biashara iliyosajiliwa"
   },
   "footer": {
@@ -157,7 +174,7 @@
     }
   },
   "routes": {
-    "feed": "Nyumbani",
+    "feed": "For You",
     "explore": "Chunguza",
     "notifications": "Kikasha",
     "profile": "Wasifu Wangu",
@@ -167,12 +184,12 @@
     "hero": {
       "eyebrow": "Soko la kijamii la bure la Kenya",
       "headline": "Post bure. Uza karibu nawe.",
-      "subheadline": "Piga picha moja na Shopi Agent itakuandikia kichwa, maelezo na taarifa za bidhaa. Weka bei yako, chapisha, na wanunuzi wa karibu watalipata kwenye feed na kukutumia ujumbe ndani ya Shopi. Hakuna commission, hakuna ada ya tangazo, hakuna mtu wa katikati.",
+      "subheadline": "Piga picha moja na Shopi Agent iandike tangazo. Wanunuzi wa karibu wanalipata kwenye feed na kukutumia ujumbe — hakuna ada, hakuna commission.",
       "ctaPost": "Post bidhaa yako ya kwanza — bure",
       "ctaPostShort": "Post bidhaa",
       "ctaFeed": "Ona kilicho karibu nawe",
-      "ctaFeedShort": "Fungua feed",
-      "ctaFeedLoggedIn": "Endelea kwenye feed yako",
+      "ctaFeedShort": "Fungua For You",
+      "ctaFeedLoggedIn": "Nenda For You",
       "reassurance": "Bure kupost · 0% commission · Huhitaji biashara iliyosajiliwa",
       "figures": {
         "commission": "commission kwenye mauzo yako",
@@ -183,7 +200,7 @@
     "pillars": {
       "eyebrow": "Kwa nini uuze hapa",
       "headline": "Bidhaa yako inaonekana bila kulipia kuonekana.",
-      "intro": "Shopi ni feed, si search box. Watu wanateleza kama wanavyoteleza apps za social, na matangazo ya karibu nao yanakuja kwanza — kwa hivyo post yako inawafikia wanunuzi ambao hawakuwa bado wanaitafuta. Ni bure kupost, hakuna commission, na kila ujumbe unakujia wewe.",
+      "intro": "Shopi ni feed ya karibu, kama app ya social. Post yako inawafikia wanunuzi wa karibu hata kabla hawajaitafuta, na kila ujumbe unakujia wewe.",
       "feed": {
         "title": "Feed, si search box",
         "tagline": "Wanunuzi wanakutana na bidhaa yako wakiteleza, si tu wakitafuta maneno kamili."
@@ -200,7 +217,7 @@
     "stats": {
       "eyebrow": "Inakugharimu nini",
       "headline": "Hakuna commission. Hakuna ada ya tangazo. Hakuna kinachotolewa.",
-      "intro": "Shopi haikai ndani ya biashara yako. Haichakati malipo, haishiki pesa yako wala haipangi usafirishaji — ndiyo maana hakuna cha kutoa kwenye mauzo yako.",
+      "intro": "Shopi haichakati malipo, haishiki pesa wala haipangi delivery. Mnunuzi anakulipa moja kwa moja, na pesa yote inabaki kwako.",
       "zero": {
         "figure": "KES 0",
         "label": "Commission na ada za matangazo",
@@ -221,7 +238,7 @@
       "feed": {
         "eyebrow": "Kwa wanunuzi",
         "title": "Pata ulichokuwa hujui unakitafuta.",
-        "body": "Shopi si search box tu. Feed hujifunza unachofungua, kuhifadhi na kuzungumzia, kisha huweka matangazo ya karibu nawe kwanza — kutoka simu na samani hadi mazao freshi na magari.",
+        "body": "Teleza uone simu, sofa, gari au mazao ambayo huenda hukupanga kutafuta. Feed huonyesha matangazo ya karibu kwanza.",
         "bullets": [
           "Matangazo ya karibu yanaonekana kwanza, kuanzia mtaa wako",
           "Picha halisi, video, bei na mahali kutoka kwa wauzaji wa karibu",
@@ -233,7 +250,7 @@
       "chat": {
         "eyebrow": "Chat ya moja kwa moja",
         "title": "Ongea na mtu, si checkout.",
-        "body": "Ukipata bidhaa unayotaka, mtumie muuzaji ujumbe ndani ya Shopi. Bei, malipo na pa kuchukua mnakubaliana nyinyi wawili. Shopi haishiki pesa kamwe, kwa hivyo hakuna cha kutolewa na hakuna wa kusubiri.",
+        "body": "Mtumie muuzaji ujumbe ndani ya Shopi. Bei, malipo na pa kuchukua mnakubaliana nyinyi wawili, bila commission wala mtu wa kusubiri.",
         "bullets": [
           "Mbonyezo mmoja kutoka tangazo hadi mazungumzo halisi",
           "Omba picha zaidi, jadiliana bei, na mchague pa kukutana",
@@ -245,7 +262,7 @@
       "sell": {
         "eyebrow": "Shopi Agent",
         "title": "Picha moja. Tangazo kamili.",
-        "body": "Sababu kubwa inayowazuia watu kupost ni kuandika. Pakia picha na Shopi Agent itaandaa kichwa, maelezo, kategoria na taarifa za bidhaa. Hakuna kinachochapishwa kabla hujasoma na kukifanya kiwe chako.",
+        "body": "Pakia picha na Shopi Agent itaandaa kichwa, maelezo, kategoria na taarifa za bidhaa. Hakuna kinachochapishwa kabla hujakagua.",
         "bullets": [
           "Picha ndani, tangazo kamili nje",
           "Hariri neno lolote kabla halijachapishwa — hakuna kinachopostwa chenyewe",
@@ -258,20 +275,17 @@
     "welcomeBack": {
       "message": "Karibu tena, {name}!",
       "messageNoName": "Karibu tena!",
-      "cta": "Rudi kwenye feed yako",
+      "cta": "Nenda For You",
       "dismiss": "Funga"
-    },
-    "tiktokSaver": {
-      "eyebrow": "Ukiwa hapa",
-      "title": "Unahitaji nakala safi ya video ya TikTok?",
-      "body": "Bandika link ya TikTok uhifadhi video kwenye kifaa chako bila watermark — inafaa unapotaka kutumia tena video zako za bidhaa kwenye Shopi, WhatsApp status, au popote pengine.",
-      "placeholder": "Bandika link ya TikTok…",
-      "button": "Pata video",
-      "fetching": "Inatafuta…",
-      "save": "Hifadhi video",
-      "tryAnother": "Jaribu link nyingine",
-      "error": "Imeshindwa kupata video hiyo. Angalia link kisha ujaribu tena.",
-      "disclaimer": "Hifadhi tu video ulizotengeneza au ulizo na ruhusa ya kuzitumia."
     }
+  },
+  "tiktokSaver": {
+    "placeholder": "Bandika link ya TikTok…",
+    "button": "Pata video",
+    "fetching": "Inatafuta…",
+    "save": "Hifadhi video",
+    "tryAnother": "Jaribu link nyingine",
+    "error": "Imeshindwa kupata video hiyo. Angalia link kisha ujaribu tena.",
+    "disclaimer": "Hifadhi tu video ulizotengeneza au ulizo na ruhusa ya kuzitumia."
   }
 }

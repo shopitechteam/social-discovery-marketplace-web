@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getBlogPost, getAllSlugs, blogPosts } from "@/lib/blog";
+import { getBlogPost, getAllSlugs, getRelatedPosts } from "@/lib/blog";
 import { siteConfig } from "@/config/site";
 import { localeAlternates } from "@/lib/metadata";
 import { LegalNav } from "@/components/legal/LegalNav";
@@ -38,6 +38,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: post.title,
       description: post.description,
       publishedTime: post.publishedAt,
+      modifiedTime: post.updatedAt ?? post.publishedAt,
       authors: [post.author.name],
       siteName: siteConfig.name,
       locale: siteConfig.locale,
@@ -66,7 +67,13 @@ export default async function BlogPostPage({ params }: Props) {
   const post = getBlogPost(slug);
   if (!post) notFound();
 
-  const related = blogPosts.filter((p) => p.slug !== post.slug).slice(0, 2);
+  const related = getRelatedPosts(post, 2);
+  const formatDate = (iso: string) =>
+    new Date(iso).toLocaleDateString("en-KE", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
 
   /* JSON-LD structured data — Article + FAQPage */
   const articleJsonLd = {
@@ -164,13 +171,20 @@ export default async function BlogPostPage({ params }: Props) {
                 {post.category}
               </span>
               <span className="text-[0.8rem] text-muted">{post.readTime}</span>
-              <span className="text-[0.8rem] text-muted">
-                {new Date(post.publishedAt).toLocaleDateString("en-KE", {
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                })}
-              </span>
+              <time
+                dateTime={post.publishedAt}
+                className="text-[0.8rem] text-muted"
+              >
+                {formatDate(post.publishedAt)}
+              </time>
+              {post.updatedAt && post.updatedAt !== post.publishedAt && (
+                <span className="text-[0.8rem] text-muted">
+                  · Updated{" "}
+                  <time dateTime={post.updatedAt}>
+                    {formatDate(post.updatedAt)}
+                  </time>
+                </span>
+              )}
             </div>
 
             {/* Title */}
@@ -344,14 +358,14 @@ export default async function BlogPostPage({ params }: Props) {
                 Ready to buy and sell locally?
               </h3>
               <p className="mb-5 text-[0.875rem] text-muted">
-                Open the feed, discover what is selling near you, and message
+                Open For You, discover what is selling near you, and message
                 the seller directly. Free to use.
               </p>
               <Link
-                href={`/${lang}/feed`}
+                href={`/${lang}/for-you`}
                 className="inline-flex items-center gap-2 rounded-full bg-primary px-7 py-3 text-[0.9rem] font-bold text-white no-underline"
               >
-                Open the feed →
+                Open For You →
               </Link>
             </div>
           </article>

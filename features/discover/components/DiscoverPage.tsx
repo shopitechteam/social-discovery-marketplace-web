@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import {
@@ -8,11 +9,12 @@ import {
   useRef,
   useState,
 } from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { gql, NetworkStatus, type TypedDocumentNode } from "@apollo/client";
 import { useQuery } from "@apollo/client/react";
 import {
   ArrowUpDown,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Check,
@@ -34,26 +36,27 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FeedLoader } from "@/components/ui/feed-loader";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
-import { DiscoverGridCard } from "./DiscoverGridCard";
+import { useIsDesktop } from "@/hooks/useIsDesktop";
+import {
+  useDiscoverFiltersStore,
+  type DiscoverContentType,
+} from "@/stores/discoverFilters";
+import { useSearchStore } from "@/stores/search";
+import type {
+  ContentCardFieldsFragment,
+  ContentType,
+} from "@/types/__generated__/graphql";
+import { DISCOVER_GRID, DiscoverGridCard } from "./DiscoverGridCard";
 import { SubcategoryRow } from "./SubcategoryRow";
-import { FEED_PAGE_SIZE } from "@/features/feed/constants";
 import { useInfiniteScroll } from "@/features/feed/hooks/useInfiniteScroll";
 import { usePaginationGuard } from "@/features/feed/hooks/useFeed";
-import {
-  DISCOVERY_CATEGORIES,
-  type CategoryFacet,
-} from "../categories";
+import { DISCOVERY_CATEGORIES, type CategoryFacet } from "../categories";
 
 type DiscoverySort =
   | "RELEVANCE"
@@ -85,6 +88,7 @@ type DiscoveryFeedData = {
 type DiscoveryFeedVars = {
   query?: string;
   categoryId?: string;
+  type?: ContentType;
   countyId?: string;
   subCountyId?: string;
   wardId?: string;
@@ -100,6 +104,7 @@ type DiscoveryFeedVars = {
 type DiscoveryFacetsVars = {
   query?: string;
   categoryId?: string;
+  type?: ContentType;
   subcategory?: string;
   countyId?: string;
   subCountyId?: string;
@@ -113,7 +118,10 @@ type DiscoveryResultCountData = {
   discoveryResultCount: number;
 };
 
-const PAGE_SIZE = FEED_PAGE_SIZE;
+// The grid tops out at 5 columns (min-[90rem] in DISCOVER_GRID), so pages are
+// a multiple of 5 — a page always fills whole rows instead of leaving a
+// ragged last row while the next page loads.
+const PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 280;
 
 const DISCOVERY_FEED: TypedDocumentNode<DiscoveryFeedData, DiscoveryFeedVars> =
@@ -121,6 +129,7 @@ const DISCOVERY_FEED: TypedDocumentNode<DiscoveryFeedData, DiscoveryFeedVars> =
     query DiscoveryFeed(
       $query: String
       $categoryId: String
+      $type: ContentType
       $subcategory: String
       $countyId: String
       $subCountyId: String
@@ -135,6 +144,7 @@ const DISCOVERY_FEED: TypedDocumentNode<DiscoveryFeedData, DiscoveryFeedVars> =
       discoveryFeed(
         query: $query
         categoryId: $categoryId
+        type: $type
         subcategory: $subcategory
         countyId: $countyId
         subCountyId: $subCountyId
@@ -239,6 +249,7 @@ const DISCOVERY_LOCATION_FACETS: TypedDocumentNode<
   query DiscoveryLocationFacets(
     $query: String
     $categoryId: String
+    $type: ContentType
     $subcategory: String
     $countyId: String
     $subCountyId: String
@@ -250,6 +261,7 @@ const DISCOVERY_LOCATION_FACETS: TypedDocumentNode<
     discoveryFacets(
       query: $query
       categoryId: $categoryId
+      type: $type
       subcategory: $subcategory
       countyId: $countyId
       subCountyId: $subCountyId
@@ -307,6 +319,7 @@ const DISCOVERY_SUBCATEGORY_FACETS: TypedDocumentNode<
   query DiscoverySubcategoryFacets(
     $query: String
     $categoryId: String
+    $type: ContentType
     $countyId: String
     $subCountyId: String
     $wardId: String
@@ -317,6 +330,7 @@ const DISCOVERY_SUBCATEGORY_FACETS: TypedDocumentNode<
     discoveryFacets(
       query: $query
       categoryId: $categoryId
+      type: $type
       countyId: $countyId
       subCountyId: $subCountyId
       wardId: $wardId
@@ -340,6 +354,7 @@ const DISCOVERY_RESULT_COUNT: TypedDocumentNode<
   query DiscoveryResultCount(
     $query: String
     $categoryId: String
+    $type: ContentType
     $subcategory: String
     $countyId: String
     $subCountyId: String
@@ -351,6 +366,7 @@ const DISCOVERY_RESULT_COUNT: TypedDocumentNode<
     discoveryResultCount(
       query: $query
       categoryId: $categoryId
+      type: $type
       subcategory: $subcategory
       countyId: $countyId
       subCountyId: $subCountyId
@@ -394,13 +410,14 @@ const SORT_OPTIONS: Array<{
   },
 ];
 
-function pillButton(active: boolean) {
-  return cn(
-    "inline-flex h-9 items-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors",
-    active
-      ? "border-transparent bg-primary text-white shadow-sm"
-      : "border-default bg-app text-default",
-  );
+function isDiscoverySort(value: string | null): value is DiscoverySort {
+  return SORT_OPTIONS.some((option) => option.value === value);
+}
+
+function isDiscoverContentType(
+  value: string | null,
+): value is DiscoverContentType {
+  return value === "IMAGE" || value === "VIDEO";
 }
 
 /**
@@ -465,10 +482,10 @@ function DiscoverFeedSkeleton() {
     <div className="px-4 pb-8 pt-3 lg:px-0">
       {/* 15 tiles so every column count (2 → 5) fills the viewport with full
           rows — fewer left the tail columns empty on wide screens. */}
-      <div className="grid grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-3 md:gap-x-4 md:gap-y-6 xl:grid-cols-4 min-[90rem]:grid-cols-5">
+      <div className={DISCOVER_GRID}>
         {Array.from({ length: 15 }).map((_, i) => (
           <div key={i}>
-            <Skeleton className="aspect-3/4 w-full rounded-xl md:aspect-4/5" />
+            <Skeleton className="aspect-3/4 w-full rounded-xl" />
             <div className="space-y-2 pt-2">
               <Skeleton className="h-3.5 w-1/2" />
               <Skeleton className="h-3 w-4/5" />
@@ -493,7 +510,7 @@ function EmptyState({ title, body }: { title: string; body: string }) {
         <Search size={22} />
       </div>
       <h2 className="mt-4 text-base font-semibold text-default">{title}</h2>
-      <p className="mt-2 text-sm leading-6 text-muted-foreground">{body}</p>
+      <p className="app-subcopy mx-auto mt-2 max-w-sm">{body}</p>
     </div>
   );
 }
@@ -501,38 +518,185 @@ function EmptyState({ title, body }: { title: string; body: string }) {
 function LocationOption({
   item,
   active,
-  onClick,
+  onSelect,
+  onDrillIn,
   indicator = "check",
 }: {
   item: LocationFacet;
   active: boolean;
-  onClick: () => void;
+  /** Tapping the row's name/body — marks this item the active choice for the
+   * current step. It doesn't navigate or close; the step's sticky footer picks
+   * up whatever is active and is the one control that applies + closes. */
+  onSelect: () => void;
+  /**
+   * The chevron control — marks the item active *and* advances into its
+   * children. Only meaningful on a chevron row; omit it for a leaf level
+   * (wards) that has nothing left to drill into.
+   */
+  onDrillIn?: () => void;
   indicator?: "check" | "chevron";
 }) {
+  const disabled = item.count === 0;
+  const countLabel = `${item.count} ${item.count === 1 ? "item" : "items"}`;
+
+  if (indicator === "chevron" && onDrillIn) {
+    return (
+      <div
+        className={cn(
+          "flex w-full items-stretch overflow-hidden rounded-2xl border transition-colors",
+          active ? "border-primary bg-primary/5" : "border-default bg-app",
+          disabled && "opacity-50",
+        )}
+      >
+        <button
+          type="button"
+          onClick={onSelect}
+          disabled={disabled}
+          className="min-w-0 flex-1 px-4 py-3 text-left disabled:cursor-not-allowed"
+        >
+          <p className="truncate text-sm font-medium text-default">
+            {item.name}
+          </p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{countLabel}</p>
+        </button>
+        <button
+          type="button"
+          onClick={onDrillIn}
+          disabled={disabled}
+          aria-label={`View places inside ${item.name}`}
+          className={cn(
+            "relative flex shrink-0 items-center border-l px-3 transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:hover:bg-transparent",
+            active
+              ? "border-primary/20 bg-primary/10"
+              : "border-default text-muted-foreground",
+          )}
+        >
+          {/* Once a row is the active choice, drilling further in is the one
+              obvious next move — a ping ring behind the chevron reads as
+              "tap me", not just as a static "this has children" affordance.
+              (animate-pulse on the icon itself was too subtle to notice.) */}
+          {active ? (
+            <span
+              className="absolute inset-1.5 animate-ping rounded-full bg-primary/40"
+              aria-hidden
+            />
+          ) : null}
+          <ChevronRight
+            size={18}
+            className={cn("relative", active && "text-primary")}
+          />
+        </button>
+      </div>
+    );
+  }
+
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={onSelect}
+      disabled={disabled}
       className={cn(
-        "flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-colors",
+        "flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50",
         active ? "border-primary bg-primary/5" : "border-default bg-app",
       )}
     >
       <div className="min-w-0">
         <p className="truncate text-sm font-medium text-default">{item.name}</p>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          {item.count} {item.count === 1 ? "item" : "items"}
-        </p>
+        <p className="mt-0.5 text-xs text-muted-foreground">{countLabel}</p>
       </div>
-      {indicator === "chevron" ? (
-        <ChevronRight
-          size={18}
-          className={active ? "text-primary" : "text-muted-foreground"}
-        />
-      ) : active ? (
-        <Check size={18} className="text-primary" />
-      ) : null}
+      {active ? <Check size={18} className="text-primary" /> : null}
     </button>
+  );
+}
+
+/** Client-side filter box shared by all three location steps — the facet
+ * lists are already fully loaded, so this never hits the network. */
+function LocationSearchInput({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+}) {
+  return (
+    <div className="mb-3 flex items-center gap-2 rounded-full border border-default bg-surface px-3.5 py-2">
+      <Search
+        size={15}
+        className="shrink-0 text-muted-foreground"
+        aria-hidden
+      />
+      <input
+        type="text"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className="h-5 min-w-0 flex-1 bg-transparent text-sm text-default outline-none placeholder:text-muted-foreground"
+      />
+      {value ? (
+        <button
+          type="button"
+          onClick={() => onChange("")}
+          className="shrink-0 text-muted-foreground"
+          aria-label="Clear search"
+        >
+          <X size={15} />
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Sticky action at the bottom of every location step. It always reflects
+ * whatever is currently the active choice for that step (nationwide, or a
+ * facet) — tapping a row above updates it live, and this is the one control
+ * that actually applies the selection and closes the picker.
+ */
+function LocationStepFooter({
+  count,
+  label,
+  onConfirm,
+}: {
+  count: number;
+  label: string;
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="shrink-0 border-t border-default px-4 py-3">
+      <button
+        type="button"
+        onClick={onConfirm}
+        disabled={count === 0}
+        className="flex h-11 w-full items-center justify-center rounded-full bg-primary text-sm font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        Show {count} {count === 1 ? "item" : "items"} {label}
+      </button>
+    </div>
+  );
+}
+
+/**
+ * Stand-in for a list of LocationOptions while the facet query is still in
+ * flight. Without this, a county with a slow-to-arrive (but non-empty)
+ * subcounty list flashes the "nothing here" copy before the real rows land.
+ */
+function LocationOptionSkeletonList() {
+  return (
+    <div className="space-y-2" aria-hidden>
+      {Array.from({ length: 4 }).map((_, index) => (
+        <div
+          key={index}
+          className="flex w-full items-center justify-between rounded-2xl border border-default px-4 py-3"
+        >
+          <div className="min-w-0 flex-1 space-y-2">
+            <Skeleton className="h-3.5 w-2/5" />
+            <Skeleton className="h-3 w-1/4" />
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -617,48 +781,121 @@ function locationSheetDepth(step: LocationSheetStep | null) {
 }
 
 export function DiscoverPage({ lang }: { lang: string }) {
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   // Seed the search box from a ?q= deep link (e.g. /search?q=iphone, and the
   // /explore?q= URL advertised in our WebSite SearchAction structured data).
   // useState reads its argument only on the first render, so this is a plain
   // initial value — no effect, no cascading render — after which the input owns
   // the term and the mirror effect keeps the URL in sync.
-  const [searchDraft, setSearchDraft] = useState(
-    () => searchParams.get("q")?.trim() ?? "",
+  // The draft lives in a store rather than here because the desktop nav's
+  // search box writes to it too — see stores/search.ts. `query` stays local:
+  // it is the debounced value this page actually searches on, and nothing
+  // outside needs it.
+  const searchDraft = useSearchStore((s) => s.draft);
+  const setSearchDraft = useSearchStore((s) => s.setDraft);
+  const [query, setQuery] = useState(() => searchParams.get("q")?.trim() ?? "");
+
+  // Seed the shared draft from a ?q= deep link on mount. The store outlives
+  // this page (it is a module singleton), so without this a term typed on
+  // /explore would still be sitting in the nav box on the next visit, and a
+  // ?q= link would open with the box showing the previous search.
+  useEffect(() => {
+    setSearchDraft(searchParams.get("q")?.trim() ?? "");
+    // Mount only: after this the input owns the term. Re-running on
+    // searchParams would fight the debounce, because the mirror effect below
+    // writes ?q= back from `query` on every keystroke.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const selectedCategory = useDiscoverFiltersStore(
+    (s) => s.selectedCategory as CategoryFacet | null,
   );
-  const [query, setQuery] = useState(
-    () => searchParams.get("q")?.trim() ?? "",
+  const setSelectedCategory = useDiscoverFiltersStore(
+    (s) => s.setSelectedCategory,
   );
-  const [selectedCategory, setSelectedCategory] =
-    useState<CategoryFacet | null>(null);
-  // Level-2 label, e.g. "Cables & Adapters". Held as a plain string because the
-  // API has no subcategory rows to key against — the label IS the filter.
-  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(
-    () => searchParams.get("subcategory")?.trim() || null,
+  const selectedSubcategory = useDiscoverFiltersStore(
+    (s) => s.selectedSubcategory,
   );
-  const [selectedCounty, setSelectedCounty] = useState<LocationFacet | null>(
-    null,
+  const setSelectedSubcategory = useDiscoverFiltersStore(
+    (s) => s.setSelectedSubcategory,
   );
-  const [selectedSubCounty, setSelectedSubCounty] =
-    useState<LocationFacet | null>(null);
-  const [selectedWard, setSelectedWard] = useState<LocationFacet | null>(null);
-  const [sort, setSort] = useState<DiscoverySort>("RELEVANCE");
-  // Keep raw strings for friendly number inputs; parsed values are sent to the
-  // feed, facets and result-count queries below.
-  const [minPrice, setMinPrice] = useState("");
-  const [maxPrice, setMaxPrice] = useState("");
-  const [negotiableOnly, setNegotiableOnly] = useState(false);
+  const selectedCounty = useDiscoverFiltersStore(
+    (s) => s.selectedCounty as LocationFacet | null,
+  );
+  const setSelectedCounty = useDiscoverFiltersStore((s) => s.setSelectedCounty);
+  const selectedSubCounty = useDiscoverFiltersStore(
+    (s) => s.selectedSubCounty as LocationFacet | null,
+  );
+  const setSelectedSubCounty = useDiscoverFiltersStore(
+    (s) => s.setSelectedSubCounty,
+  );
+  const selectedWard = useDiscoverFiltersStore(
+    (s) => s.selectedWard as LocationFacet | null,
+  );
+  const setSelectedWard = useDiscoverFiltersStore((s) => s.setSelectedWard);
+  const selectedType = useDiscoverFiltersStore(
+    (s) => s.selectedType as ContentType | null,
+  );
+  const setSelectedType = useDiscoverFiltersStore((s) => s.setSelectedType);
+  const sort = useDiscoverFiltersStore((s) => s.sort as DiscoverySort);
+  const setSort = useDiscoverFiltersStore((s) => s.setSort);
+  const minPrice = useDiscoverFiltersStore((s) => s.minPrice);
+  const setMinPrice = useDiscoverFiltersStore((s) => s.setMinPrice);
+  const maxPrice = useDiscoverFiltersStore((s) => s.maxPrice);
+  const setMaxPrice = useDiscoverFiltersStore((s) => s.setMaxPrice);
+  const negotiableOnly = useDiscoverFiltersStore((s) => s.negotiableOnly);
+  const setNegotiableOnly = useDiscoverFiltersStore((s) => s.setNegotiableOnly);
+  const requestLocationPicker = useDiscoverFiltersStore(
+    (s) => s.requestLocationPicker,
+  );
+  const setStoreSubcategories = useDiscoverFiltersStore(
+    (s) => s.setSubcategories,
+  );
   const [locationStep, setLocationStep] = useState<LocationSheetStep | null>(
     null,
   );
+  // The location picker is a right-side sheet on mobile (matches Filters/Sort)
+  // but a centered dialog on desktop, where a slide-in panel reads as a leftover
+  // mobile pattern rather than a deliberate desktop control.
+  const isDesktop = useIsDesktop({ ssrDefault: false });
+  // One search box shared by all three location steps — only one step is ever
+  // visible at a time, so a single term is enough. It's client-side (the
+  // facet lists are already fully loaded); every step transition below clears
+  // it so leftover text from "county" doesn't linger into "ward".
+  const [locationSearch, setLocationSearch] = useState("");
   const [sortOpen, setSortOpen] = useState(false);
-  // Desktop uses an anchored popover instead of the bottom drawer used on
-  // mobile, so it needs its own open state.
-  const [sortPopoverOpen, setSortPopoverOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [locationParamsApplied, setLocationParamsApplied] = useState(() => {
+    return !(
+      searchParams.get("countyId") ||
+      searchParams.get("subCountyId") ||
+      searchParams.get("wardId")
+    );
+  });
+  const initialLocationParams = useRef({
+    countyId: searchParams.get("countyId"),
+    subCountyId: searchParams.get("subCountyId"),
+    wardId: searchParams.get("wardId"),
+  });
 
   const parsedMinPrice = parsePriceFilter(minPrice);
   const parsedMaxPrice = parsePriceFilter(maxPrice);
+
+  useEffect(() => {
+    const initialSort = searchParams.get("sort");
+    setSort(isDiscoverySort(initialSort) ? initialSort : "RELEVANCE");
+    const initialType = searchParams.get("type");
+    setSelectedType(isDiscoverContentType(initialType) ? initialType : null);
+    setSelectedSubcategory(searchParams.get("subcategory")?.trim() || null);
+    setMinPrice(searchParams.get("minPrice") ?? "");
+    setMaxPrice(searchParams.get("maxPrice") ?? "");
+    setNegotiableOnly(searchParams.get("negotiable") === "1");
+    // Mount only: query params seed the shared desktop sidebar filters once.
+    // After that, the shared filter store owns changes and the URL mirror below
+    // persists them without fighting user input.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const handle = window.setTimeout(() => {
@@ -683,6 +920,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
     () => ({
       query: query || undefined,
       categoryId: selectedCategory?.id,
+      type: selectedType ?? undefined,
       countyId: selectedCounty?.id,
       subCountyId: selectedSubCounty?.id,
       wardId: selectedWard?.id,
@@ -693,6 +931,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
     [
       query,
       selectedCategory?.id,
+      selectedType,
       selectedCounty?.id,
       selectedSubCounty?.id,
       selectedWard?.id,
@@ -716,6 +955,10 @@ export function DiscoverPage({ lang }: { lang: string }) {
     [subcategoryFacetsData?.discoveryFacets.subcategories],
   );
 
+  useEffect(() => {
+    setStoreSubcategories(subcategories);
+  }, [setStoreSubcategories, subcategories]);
+
   /**
    * The subcategory actually applied to the queries.
    *
@@ -737,6 +980,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
     () => ({
       query: query || undefined,
       categoryId: selectedCategory?.id,
+      type: selectedType ?? undefined,
       subcategory: subcategory || undefined,
       countyId: selectedCounty?.id,
       subCountyId: selectedSubCounty?.id,
@@ -750,6 +994,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
     [
       query,
       selectedCategory?.id,
+      selectedType,
       subcategory,
       selectedCounty?.id,
       selectedSubCounty?.id,
@@ -765,6 +1010,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
     () => ({
       query: query || undefined,
       categoryId: selectedCategory?.id,
+      type: selectedType ?? undefined,
       subcategory: subcategory || undefined,
       countyId: selectedCounty?.id,
       subCountyId: selectedSubCounty?.id,
@@ -776,6 +1022,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
     [
       query,
       selectedCategory?.id,
+      selectedType,
       subcategory,
       selectedCounty?.id,
       selectedSubCounty?.id,
@@ -812,11 +1059,14 @@ export function DiscoverPage({ lang }: { lang: string }) {
 
   // Location facets follow the active filters (their post counts depend on the
   // current query/category). Kept separate so they don't disturb categories.
-  const { data: locationFacetsData } = useQuery(DISCOVERY_LOCATION_FACETS, {
-    variables: facetVariables,
-    fetchPolicy: "cache-and-network",
-    nextFetchPolicy: "cache-first",
-  });
+  const { data: locationFacetsData, loading: locationFacetsLoading } = useQuery(
+    DISCOVERY_LOCATION_FACETS,
+    {
+      variables: facetVariables,
+      fetchPolicy: "cache-and-network",
+      nextFetchPolicy: "cache-first",
+    },
+  );
 
   /** Picking a category drops the subcategory — it only means something inside its parent. */
   const selectCategory = useCallback((next: CategoryFacet | null) => {
@@ -870,8 +1120,6 @@ export function DiscoverPage({ lang }: { lang: string }) {
     rootMargin: "1200px",
   });
 
-  const activeSort =
-    SORT_OPTIONS.find((option) => option.value === sort) ?? SORT_OPTIONS[0];
   const locationLabel =
     selectedWard?.name ??
     selectedSubCounty?.name ??
@@ -886,6 +1134,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
     selectedCounty || selectedSubCounty || selectedWard,
   );
   const activeFilterCount =
+    (selectedType ? 1 : 0) +
     (hasLocation ? 1 : 0) +
     (minPrice.trim() || maxPrice.trim() ? 1 : 0) +
     (negotiableOnly ? 1 : 0);
@@ -923,11 +1172,12 @@ export function DiscoverPage({ lang }: { lang: string }) {
   }, []);
 
   const clearFilters = useCallback(() => {
+    setSelectedType(null);
     clearLocation();
     setMinPrice("");
     setMaxPrice("");
     setNegotiableOnly(false);
-  }, [clearLocation]);
+  }, [clearLocation, setSelectedType]);
 
   const clearPrice = useCallback(() => {
     setMinPrice("");
@@ -937,7 +1187,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
   const clearSearch = useCallback(() => {
     setSearchDraft("");
     setQuery("");
-  }, []);
+  }, [setSearchDraft]);
 
   const closeTopOverlayState = useCallback(() => {
     if (locationStep === "ward") {
@@ -1032,7 +1282,15 @@ export function DiscoverPage({ lang }: { lang: string }) {
   const openCountySheet = useCallback(() => {
     setSortOpen(false);
     setLocationStep("county");
+    setLocationSearch("");
   }, []);
+
+  const handledLocationRequestRef = useRef(requestLocationPicker);
+  useEffect(() => {
+    if (requestLocationPicker === handledLocationRequestRef.current) return;
+    handledLocationRequestRef.current = requestLocationPicker;
+    openCountySheet();
+  }, [openCountySheet, requestLocationPicker]);
 
   const collapseLocationSheets = useCallback(() => {
     const depth = locationSheetDepth(locationStep);
@@ -1041,44 +1299,47 @@ export function DiscoverPage({ lang }: { lang: string }) {
     requestHistoryClose(depth);
   }, [locationStep, requestHistoryClose]);
 
-  const applyNationwideLocation = useCallback(() => {
+  // Tapping a row's name/body only marks it the active choice for the step
+  // it's on — it doesn't navigate or close. The sticky footer at the bottom of
+  // each step reads whichever selection is currently active and is the one
+  // thing that actually applies it and closes the picker. The chevron on a
+  // county/subcounty row is the only thing that drills in one level.
+  const selectNationwide = useCallback(() => {
     clearLocation();
-    collapseLocationSheets();
-  }, [clearLocation, collapseLocationSheets]);
-
-  const applyCountyOnly = useCallback(() => {
-    setSelectedSubCounty(null);
-    setSelectedWard(null);
-    collapseLocationSheets();
-  }, [collapseLocationSheets]);
-
-  const applySubCountyOnly = useCallback(() => {
-    setSelectedWard(null);
-    collapseLocationSheets();
-  }, [collapseLocationSheets]);
+  }, [clearLocation]);
 
   const handleCountySelection = useCallback((item: LocationFacet) => {
     setSelectedCounty(item);
     setSelectedSubCounty(null);
     setSelectedWard(null);
+  }, []);
+
+  const drillIntoSubcounties = useCallback((item: LocationFacet) => {
+    setSelectedCounty(item);
+    setSelectedSubCounty(null);
+    setSelectedWard(null);
     setLocationStep("subcounty");
+    setLocationSearch("");
   }, []);
 
   const handleSubCountySelection = useCallback((item: LocationFacet) => {
     setSelectedSubCounty(item);
     setSelectedWard(null);
-    setLocationStep("ward");
   }, []);
 
-  const handleWardSelection = useCallback(
-    (item: LocationFacet) => {
-      setSelectedWard(item);
-      collapseLocationSheets();
-    },
-    [collapseLocationSheets],
-  );
+  const drillIntoWards = useCallback((item: LocationFacet) => {
+    setSelectedSubCounty(item);
+    setSelectedWard(null);
+    setLocationStep("ward");
+    setLocationSearch("");
+  }, []);
+
+  const handleWardSelection = useCallback((item: LocationFacet) => {
+    setSelectedWard(item);
+  }, []);
 
   const stepBackLocationSheet = useCallback(() => {
+    setLocationSearch("");
     if (locationStep === "ward") {
       setLocationStep("subcounty");
       requestHistoryClose();
@@ -1130,45 +1391,8 @@ export function DiscoverPage({ lang }: { lang: string }) {
     // would hide the category bar and scope results, so clear it.
     setSearchDraft("");
     setQuery("");
-  }, [categoryParam, categories]);
+  }, [categoryParam, categories, setSearchDraft, setSelectedCategory]);
 
-  // Mirror the committed (debounced) search term back into the URL so the deep
-  // link stays truthful and shareable — replace, not push, so typing doesn't
-  // spam history. Runs alongside the category mirror below.
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const next = query || null;
-    if ((params.get("q") ?? null) === next) return;
-    if (next) params.set("q", next);
-    else params.delete("q");
-    const qs = params.toString();
-    window.history.replaceState(
-      window.history.state,
-      "",
-      `${window.location.pathname}${qs ? `?${qs}` : ""}`,
-    );
-  }, [query]);
-
-  // Mirror in-page category changes back into the URL (replace, not push) so
-  // the deep link stays truthful — clearing or switching in-page must not
-  // leave a stale ?category= that would re-assert itself on reload.
-  useEffect(() => {
-    // A param still waiting to be applied above (categories loading) must not
-    // be wiped by the initial null selection.
-    if (categoryParam && appliedCategoryParam.current !== categoryParam) return;
-    const params = new URLSearchParams(window.location.search);
-    const next = selectedCategory?.slug ?? null;
-    if ((params.get("category") ?? null) === next) return;
-    if (next) params.set("category", next);
-    else params.delete("category");
-    appliedCategoryParam.current = next;
-    const qs = params.toString();
-    window.history.replaceState(
-      window.history.state,
-      "",
-      `${window.location.pathname}${qs ? `?${qs}` : ""}`,
-    );
-  }, [selectedCategory, categoryParam]);
   const counties = useMemo(
     () => locationFacets?.counties ?? [],
     [locationFacets?.counties],
@@ -1186,6 +1410,113 @@ export function DiscoverPage({ lang }: { lang: string }) {
     [counties],
   );
 
+  // Client-side filter for whichever list the location picker is currently
+  // showing — the facets are already fully loaded, so there's no round trip.
+  const locationSearchTerm = locationSearch.trim().toLowerCase();
+  const filteredCounties = useMemo(
+    () =>
+      locationSearchTerm
+        ? counties.filter((item) =>
+            item.name.toLowerCase().includes(locationSearchTerm),
+          )
+        : counties,
+    [counties, locationSearchTerm],
+  );
+  const filteredSubCounties = useMemo(
+    () =>
+      locationSearchTerm
+        ? subCounties.filter((item) =>
+            item.name.toLowerCase().includes(locationSearchTerm),
+          )
+        : subCounties,
+    [subCounties, locationSearchTerm],
+  );
+  const filteredWards = useMemo(
+    () =>
+      locationSearchTerm
+        ? wards.filter((item) =>
+            item.name.toLowerCase().includes(locationSearchTerm),
+          )
+        : wards,
+    [wards, locationSearchTerm],
+  );
+
+  useEffect(() => {
+    if (locationParamsApplied) return;
+
+    const { countyId, subCountyId, wardId } = initialLocationParams.current;
+    const county = countyId
+      ? counties.find((item) => item.id === countyId || item.slug === countyId)
+      : null;
+    const subCounty = subCountyId
+      ? subCounties.find(
+          (item) => item.id === subCountyId || item.slug === subCountyId,
+        )
+      : null;
+    const ward = wardId
+      ? wards.find((item) => item.id === wardId || item.slug === wardId)
+      : null;
+
+    if (countyId && !county) return;
+    if (subCountyId && !subCounty) return;
+    if (wardId && !ward) return;
+
+    if (county) setSelectedCounty(county);
+    if (subCounty) setSelectedSubCounty(subCounty);
+    if (ward) setSelectedWard(ward);
+    setLocationParamsApplied(true);
+  }, [counties, locationParamsApplied, subCounties, wards]);
+
+  // Keep share/reload-worthy filters in the URL and use Next navigation so
+  // other client components (notably the desktop sidebar) see changes.
+  useEffect(() => {
+    if (categoryParam && appliedCategoryParam.current !== categoryParam) return;
+    if (!locationParamsApplied) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const setOrDelete = (key: string, value: string | null) => {
+      if (value) params.set(key, value);
+      else params.delete(key);
+    };
+
+    setOrDelete("q", query || null);
+    setOrDelete("category", selectedCategory?.slug ?? null);
+    setOrDelete("type", selectedType ?? null);
+    setOrDelete("subcategory", selectedSubcategory || null);
+    setOrDelete("sort", sort === "RELEVANCE" ? null : sort);
+    setOrDelete("countyId", selectedCounty?.id ?? null);
+    setOrDelete("subCountyId", selectedSubCounty?.id ?? null);
+    setOrDelete("wardId", selectedWard?.id ?? null);
+    setOrDelete("minPrice", minPrice.trim() || null);
+    setOrDelete("maxPrice", maxPrice.trim() || null);
+    setOrDelete("negotiable", negotiableOnly ? "1" : null);
+
+    appliedCategoryParam.current = selectedCategory?.slug ?? null;
+
+    const qs = params.toString();
+    const next = `${pathname}${qs ? `?${qs}` : ""}`;
+    const current = `${window.location.pathname}${window.location.search}`;
+    if (next !== current) {
+      router.replace(next, { scroll: false });
+    }
+  }, [
+    categoryParam,
+    locationParamsApplied,
+    maxPrice,
+    minPrice,
+    negotiableOnly,
+    pathname,
+    query,
+    router,
+    selectedCategory,
+    selectedCounty,
+    selectedSubcategory,
+    selectedSubCounty,
+    selectedType,
+    selectedWard,
+    sort,
+  ]);
+
   // When searching, results span every category, so the category bar would be
   // misleading (most categories hide / counts no longer reflect the row). Hide
   // it during an active search and show the full set again once search clears.
@@ -1193,111 +1524,9 @@ export function DiscoverPage({ lang }: { lang: string }) {
 
   return (
     <div className="min-h-svh bg-app pb-24 md:pb-8">
-      <div className="mx-auto w-full  lg:grid lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-6 lg:px-6 lg:pt-6">
-        <aside className="hidden lg:block">
-          <div className="sticky top-6 space-y-4 rounded-3xl border border-default bg-app p-4">
-            <div>
-              <p className="text-lg font-semibold text-default">Discover</p>
-              <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                Search by intent, then narrow by category and place.
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <button
-                type="button"
-                onClick={openCountySheet}
-                className="flex w-full items-center justify-between rounded-2xl border border-default px-4 py-3 text-left"
-              >
-                <div>
-                  <p className="text-sm font-medium text-default">Location</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {locationLabel}
-                  </p>
-                </div>
-                <MapPin size={18} className="text-muted-foreground" />
-              </button>
-
-              <Popover open={sortPopoverOpen} onOpenChange={setSortPopoverOpen}>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    className="flex w-full items-center justify-between rounded-2xl border border-default px-4 py-3 text-left"
-                  >
-                    <div>
-                      <p className="text-sm font-medium text-default">Sort</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {activeSort.label}
-                      </p>
-                    </div>
-                    <ArrowUpDown size={18} className="text-muted-foreground" />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent
-                  align="start"
-                  className="w-[--radix-popover-trigger-width] bg-white border border-gray-200 shadow-2xl space-y-2 p-2"
-                >
-                  {SORT_OPTIONS.map((option) => (
-                    <SortOption
-                      key={option.value}
-                      label={option.label}
-                      hint={option.hint}
-                      active={sort === option.value}
-                      onClick={() => {
-                        setSort(option.value);
-                        setSortPopoverOpen(false);
-                      }}
-                    />
-                  ))}
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            {showCategories ? (
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <p className="text-sm font-semibold text-default">
-                    Categories
-                  </p>
-                  {selectedCategory ? (
-                    <button
-                      type="button"
-                      onClick={() => selectCategory(null)}
-                      className="text-xs text-primary"
-                    >
-                      Clear
-                    </button>
-                  ) : null}
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => selectCategory(null)}
-                    className={pillButton(selectedCategory === null)}
-                  >
-                    All
-                  </button>
-                  {categories.map((category) => (
-                    <button
-                      key={category.id}
-                      type="button"
-                      onClick={() => selectCategory(category)}
-                      className={pillButton(
-                        selectedCategory?.id === category.id,
-                      )}
-                    >
-                      <span>{category.icon ?? "#"}</span>
-                      <span>{category.name}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-          </div>
-        </aside>
-
+      <div className="mx-auto w-full lg:max-w-390 lg:px-8 lg:pt-4">
         <main className="min-w-0">
-          <div className="sticky top-0 z-30 border-b border-default bg-app/92 backdrop-blur-md lg:static lg:border-b-0 lg:bg-transparent lg:backdrop-blur-none">
+          <div className="sticky top-0 z-30 border-b border-default bg-app/92 backdrop-blur-md lg:hidden">
             <div className="flex items-center gap-2 px-4 pb-3 pt-3 lg:px-0 lg:pt-0">
               <div className="flex border border-gray-300 min-w-0 flex-1 items-center gap-2.5 rounded-full bg-surface px-4 py-2.5">
                 <Search
@@ -1309,7 +1538,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
                   value={searchDraft}
                   onChange={(event) => setSearchDraft(event.target.value)}
                   placeholder="Search cars, dresses, fresh produce..."
-                  className="h-5 min-w-0 flex-1 bg-transparent text-sm text-default outline-none placeholder:text-muted-foreground"
+                  className="h-5 min-w-0 flex-1 bg-transparent text-sm text-default outline-none  placeholder:text-muted-foreground"
                 />
                 {searchDraft ? (
                   <button
@@ -1380,93 +1609,99 @@ export function DiscoverPage({ lang }: { lang: string }) {
             ) : null}
           </div>
 
-          {/* Subcategory tiles — the second level of the taxonomy, and the only
+          <div className="min-w-0">
+            {/* Subcategory tiles — the second level of the taxonomy, and the only
               way to narrow inside a category. Renders itself away when the
               category has too few subcategories to be worth a row.
 
               Hidden entirely on "All": types only mean something underneath a
               chosen category, and offering them across the whole catalogue
               mixes unrelated levels of the taxonomy into one row. */}
-          {selectedCategory && (
-            <SubcategoryRow
-              subcategories={subcategories}
-              selected={subcategory}
-              onSelect={setSelectedSubcategory}
-            />
-          )}
-
-          {error && items.length === 0 ? (
-            <div className="px-4 py-12 lg:px-0">
-              <div className="rounded-[22px] border border-default bg-app p-6 text-center">
-                <p className="text-base font-semibold text-default">
-                  Couldn&apos;t load Discover
-                </p>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Check the connection to the API, then try again.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => void refetch()}
-                  className="mt-4 inline-flex h-10 items-center rounded-full bg-primary px-5 text-sm font-medium text-white"
-                >
-                  Try again
-                </button>
+            {selectedCategory && (
+              <div className="lg:hidden">
+                <SubcategoryRow
+                  subcategories={subcategories}
+                  selected={subcategory}
+                  onSelect={setSelectedSubcategory}
+                />
               </div>
-            </div>
-          ) : null}
+            )}
 
-          {/* A full reload (filter/search/sort change) — NOT pagination — is in
-              flight. Show only the skeleton; the stale results grid below is
-              hidden so we never stack old items under a loader. */}
-          {isReloading && <DiscoverFeedSkeleton />}
-
-          {!loading && items.length === 0 && !error ? (
-            <EmptyState
-              title="No posts match this search"
-              body="Try a broader keyword, another category, or a wider location around you."
-            />
-          ) : null}
-
-          {!isReloading && items.length > 0 ? (
-            <div className="px-4 pb-6 pt-3 lg:px-0">
-              <div className="mb-3 flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-default">
-                    {query
-                      ? `Results for “${query}”`
-                      : "Listings picked for discovery"}
+            {error && items.length === 0 ? (
+              <div className="px-4 py-12 lg:px-0">
+                <div className="rounded-[22px] border border-default bg-app p-6 text-center">
+                  <p className="text-base font-semibold text-default">
+                    Couldn&apos;t load Discover
                   </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {selectedWard?.name ??
-                      selectedSubCounty?.name ??
-                      selectedCounty?.name ??
-                      "Across Kenya"}
+                  <p className="app-subcopy mt-2">
+                    Check the connection to the API, then try again.
                   </p>
+                  <button
+                    type="button"
+                    onClick={() => void refetch()}
+                    className="mt-4 inline-flex h-10 items-center rounded-full bg-primary px-5 text-sm font-medium text-white"
+                  >
+                    Try again
+                  </button>
                 </div>
               </div>
+            ) : null}
 
-              <div className="grid grid-cols-2 gap-x-3 gap-y-5 md:grid-cols-3 md:gap-x-4 md:gap-y-6 xl:grid-cols-4 min-[90rem]:grid-cols-5">
-                {items.map((post, index) => (
-                  <DiscoverGridCard
-                    key={post.id}
-                    post={post}
-                    lang={lang}
-                    priority={index < 4}
-                  />
-                ))}
+            {/* A full reload (filter/search/sort change) — NOT pagination — is in
+              flight. Show only the skeleton; the stale results grid below is
+              hidden so we never stack old items under a loader. */}
+            {isReloading && <DiscoverFeedSkeleton />}
+
+            {!loading && items.length === 0 && !error ? (
+              <EmptyState
+                title="No posts match this search"
+                body="Try a broader keyword, another category, or a wider location around you."
+              />
+            ) : null}
+
+            {!isReloading && items.length > 0 ? (
+              <div className="px-4 pb-6 pt-3 lg:px-0">
+                {/* Only a search gets a heading now. The old one labelled the
+                  default state "Listings picked for discovery" over "Across
+                  Kenya", which restated what the page already is and what the
+                  location control already shows — two lines of chrome above
+                  every visit. A hairline does the separating instead. */}
+                {query ? (
+                  <p className="mb-3 text-sm font-semibold text-default">
+                    Results for “{query}”
+                  </p>
+                ) : (
+                  // `border-border`, not `border-default`: the latter is a
+                  // hand-written class in globals.css rather than a theme token,
+                  // so Tailwind cannot apply an opacity modifier to it — the
+                  // `/60` was dropped and the border fell back to currentColor,
+                  // which painted a near-black line instead of a hairline.
+                  <div className="mb-4 border-t border-border/60" />
+                )}
+
+                <div className={DISCOVER_GRID}>
+                  {items.map((post, index) => (
+                    <DiscoverGridCard
+                      key={post.id}
+                      post={post}
+                      lang={lang}
+                      priority={index < 4}
+                    />
+                  ))}
+                </div>
+
+                <div ref={sentinelRef} className="h-2" />
+
+                {isFetchingMore ? <FeedLoader /> : null}
+
+                {!pageInfo?.hasNextPage ? (
+                  <p className="py-6 text-center text-xs text-muted-foreground">
+                    You&apos;ve seen the latest matches.
+                  </p>
+                ) : null}
               </div>
-
-              <div ref={sentinelRef} className="h-2" />
-
-              {isFetchingMore ? <FeedLoader /> : null}
-
-              {!pageInfo?.hasNextPage ? (
-                <p className="py-6 text-center text-xs text-muted-foreground">
-                  You&apos;ve seen the latest matches.
-                </p>
-              ) : null}
-            </div>
-          ) : null}
+            ) : null}
+          </div>
         </main>
       </div>
 
@@ -1485,12 +1720,12 @@ export function DiscoverPage({ lang }: { lang: string }) {
       >
         <SheetContent
           side="right"
-          className="flex w-full max-w-none flex-col gap-0 bg-app p-0 sm:max-w-none"
+          className="flex w-full max-w-none flex-col gap-0 bg-app p-0 sm:max-w-none lg:max-w-md"
         >
           <SheetHeader className="flex-row items-center justify-between border-b border-default px-5 py-4 text-left">
             <div>
               <SheetTitle className="text-base">Filters</SheetTitle>
-              <p className="mt-0.5 text-xs text-muted-foreground">
+              <p className="app-microcopy mt-0.5">
                 {activeFilterCount > 0
                   ? `${activeFilterCount} active ${activeFilterCount === 1 ? "filter" : "filters"}`
                   : "Narrow down what you want"}
@@ -1563,7 +1798,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
                   <p className="truncate text-sm font-medium text-default">
                     {locationLabel}
                   </p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
+                  <p className="app-microcopy mt-0.5">
                     Drill down from county to ward
                   </p>
                 </div>
@@ -1630,7 +1865,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
                   <p className="text-sm font-medium text-default">
                     Negotiable only
                   </p>
-                  <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
+                  <p className="app-microcopy mt-0.5">
                     Show listings where the seller is open to discussing the
                     price.
                   </p>
@@ -1665,214 +1900,329 @@ export function DiscoverPage({ lang }: { lang: string }) {
         </SheetContent>
       </Sheet>
 
-      <Sheet
-        open={locationDepth >= 1}
-        onOpenChange={(open) => {
-          if (!open && locationStep === "county") stepBackLocationSheet();
-        }}
-      >
-        <SheetContent
-          side="right"
-          // The location sheets stack (county → subcounty → ward), and each
-          // Radix Sheet paints its own 80% overlay — stacked, they compound
-          // into an ever-darker backdrop. Keep a single backdrop: only paint
-          // one here when this is the base layer (no filter sheet underneath).
-          overlayClassName={filterOpen ? "!bg-transparent" : undefined}
-          className="flex w-full max-w-none flex-col gap-0 bg-app p-0 sm:max-w-sm [&>button:last-of-type]:hidden"
-        >
-          <LocationSheetHeader
-            title="Choose county"
-            subtitle="Start broad, then drill into the exact place."
-            onBack={stepBackLocationSheet}
-            action={
-              hasLocation ? (
+      {(() => {
+        // The footer always mirrors the deepest currently-active choice for
+        // this step, whether that came from tapping a row on this screen or
+        // from the parent step that got you here.
+        const countyFooterFacet = selectedCounty;
+        const subcountyFooterFacet = selectedSubCounty ?? selectedCounty;
+        const wardFooterFacet = selectedWard ?? selectedSubCounty;
+
+        const countySearchEmpty =
+          locationSearchTerm.length > 0 && filteredCounties.length === 0;
+        const countyBody = (
+          <>
+            <div className="flex-1 overflow-y-auto px-4 py-4">
+              <LocationSearchInput
+                value={locationSearch}
+                onChange={setLocationSearch}
+                placeholder="Search counties"
+              />
+
+              {!locationSearchTerm ? (
                 <button
                   type="button"
-                  onClick={clearLocation}
-                  className="h-9 shrink-0 rounded-full px-3 text-xs font-semibold text-primary"
+                  onClick={selectNationwide}
+                  disabled={nationwideCount === 0}
+                  className={cn(
+                    "mb-2 flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+                    !hasLocation
+                      ? "border-primary bg-primary/5"
+                      : "border-default bg-app",
+                  )}
                 >
-                  Clear
+                  <div>
+                    <p className="text-sm font-medium text-default">
+                      All Kenya
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {nationwideCount}{" "}
+                      {nationwideCount === 1 ? "item" : "items"} available
+                      nationwide
+                    </p>
+                  </div>
+                  {!hasLocation ? (
+                    <Check size={18} className="text-primary" />
+                  ) : null}
                 </button>
-              ) : undefined
-            }
-          />
-
-          <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
-            <button
-              type="button"
-              onClick={applyNationwideLocation}
-              className={cn(
-                "flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-colors",
-                !hasLocation
-                  ? "border-primary bg-primary/5"
-                  : "border-default bg-app",
-              )}
-            >
-              <div>
-                <p className="text-sm font-medium text-default">All Kenya</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  {nationwideCount} {nationwideCount === 1 ? "item" : "items"}{" "}
-                  available nationwide
-                </p>
-              </div>
-              {!hasLocation ? (
-                <Check size={18} className="text-primary" />
               ) : null}
-            </button>
 
-            <div className="space-y-2">
-              {counties.map((item) => (
-                <LocationOption
-                  key={item.id}
-                  item={item}
-                  active={selectedCounty?.id === item.id}
-                  indicator="chevron"
-                  onClick={() => handleCountySelection(item)}
+              <div className="space-y-2">
+                {countySearchEmpty ? (
+                  <p className="rounded-2xl border border-dashed border-default px-4 py-3 text-sm leading-6 text-muted-foreground">
+                    {`No counties match "${locationSearch.trim()}".`}
+                  </p>
+                ) : (
+                  filteredCounties.map((item) => (
+                    <LocationOption
+                      key={item.id}
+                      item={item}
+                      active={selectedCounty?.id === item.id}
+                      indicator="chevron"
+                      onSelect={() => handleCountySelection(item)}
+                      onDrillIn={() => drillIntoSubcounties(item)}
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+            <LocationStepFooter
+              count={
+                countyFooterFacet ? countyFooterFacet.count : nationwideCount
+              }
+              label={
+                countyFooterFacet
+                  ? `in ${countyFooterFacet.name}`
+                  : "nationwide"
+              }
+              onConfirm={collapseLocationSheets}
+            />
+          </>
+        );
+
+        // Loading is only trusted as "still fetching" when there's nothing to
+        // show yet — a background refetch of an already-populated list (e.g.
+        // switching sort) shouldn't flash a skeleton over rows already on screen.
+        const subCountiesLoading =
+          subCounties.length === 0 && locationFacetsLoading;
+        const subcountySearchEmpty =
+          !subCountiesLoading &&
+          subCounties.length > 0 &&
+          locationSearchTerm.length > 0 &&
+          filteredSubCounties.length === 0;
+        const subcountyBody = (
+          <>
+            <div className="flex-1 overflow-y-auto px-4 py-4">
+              {subCounties.length > 0 || subCountiesLoading ? (
+                <LocationSearchInput
+                  value={locationSearch}
+                  onChange={setLocationSearch}
+                  placeholder="Search subcounties"
                 />
-              ))}
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
+              ) : null}
 
-      <Sheet
-        open={locationDepth >= 2}
-        onOpenChange={(open) => {
-          if (!open && locationStep === "subcounty") stepBackLocationSheet();
-        }}
-      >
-        <SheetContent
-          side="right"
-          // Deeper location layer — the county sheet under it already paints
-          // the backdrop, so a transparent overlay here avoids compounding it.
-          overlayClassName="!bg-transparent"
-          className="flex w-full max-w-none flex-col gap-0 bg-app p-0 sm:max-w-sm [&>button:last-of-type]:hidden"
-        >
-          <LocationSheetHeader
-            title={subCountySheetTitle}
-            subtitle="Pick a subcounty, or keep the whole county selected."
-            onBack={stepBackLocationSheet}
-          />
-
-          <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
-            {selectedCounty ? (
-              <button
-                type="button"
-                onClick={applyCountyOnly}
-                className={cn(
-                  "flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-colors",
-                  selectedCounty !== null &&
-                    selectedSubCounty === null &&
-                    selectedWard === null
-                    ? "border-primary bg-primary/5"
-                    : "border-default bg-app",
+              <div className="space-y-2">
+                {subCountiesLoading ? (
+                  <LocationOptionSkeletonList />
+                ) : subCounties.length === 0 ? (
+                  <p className="rounded-2xl border border-dashed border-default px-4 py-3 text-sm leading-6 text-muted-foreground">
+                    No subcounty clusters yet for this county. You can keep the
+                    county selection and continue browsing.
+                  </p>
+                ) : subcountySearchEmpty ? (
+                  <p className="rounded-2xl border border-dashed border-default px-4 py-3 text-sm leading-6 text-muted-foreground">
+                    {`No subcounties match "${locationSearch.trim()}".`}
+                  </p>
+                ) : (
+                  filteredSubCounties.map((item) => (
+                    <LocationOption
+                      key={item.id}
+                      item={item}
+                      active={selectedSubCounty?.id === item.id}
+                      indicator="chevron"
+                      onSelect={() => handleSubCountySelection(item)}
+                      onDrillIn={() => drillIntoWards(item)}
+                    />
+                  ))
                 )}
-              >
-                <div>
-                  <p className="text-sm font-medium text-default">
-                    Use {selectedCounty.name}
-                  </p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {selectedCounty.count}{" "}
-                    {selectedCounty.count === 1 ? "item" : "items"} in this
-                    county
-                  </p>
-                </div>
-                {selectedSubCounty === null && selectedWard === null ? (
-                  <Check size={18} className="text-primary" />
-                ) : null}
-              </button>
-            ) : null}
-
-            <div className="space-y-2">
-              {subCounties.length === 0 ? (
-                <p className="rounded-2xl border border-dashed border-default px-4 py-3 text-sm leading-6 text-muted-foreground">
-                  No subcounty clusters yet for this county. You can keep the
-                  county selection and continue browsing.
-                </p>
-              ) : (
-                subCounties.map((item) => (
-                  <LocationOption
-                    key={item.id}
-                    item={item}
-                    active={selectedSubCounty?.id === item.id}
-                    indicator="chevron"
-                    onClick={() => handleSubCountySelection(item)}
-                  />
-                ))
-              )}
+              </div>
             </div>
-          </div>
-        </SheetContent>
-      </Sheet>
+            {subcountyFooterFacet ? (
+              <LocationStepFooter
+                count={subcountyFooterFacet.count}
+                label={`in ${subcountyFooterFacet.name}`}
+                onConfirm={collapseLocationSheets}
+              />
+            ) : null}
+          </>
+        );
 
-      <Sheet
-        open={locationDepth >= 3}
-        onOpenChange={(open) => {
-          if (!open && locationStep === "ward") stepBackLocationSheet();
-        }}
-      >
-        <SheetContent
-          side="right"
-          // Deepest location layer — same reasoning as the subcounty sheet:
-          // keep this overlay transparent so backdrops don't compound.
-          overlayClassName="!bg-transparent"
-          className="flex w-full max-w-none flex-col gap-0 bg-app p-0 sm:max-w-sm [&>button:last-of-type]:hidden"
-        >
-          <LocationSheetHeader
-            title={wardSheetTitle}
-            subtitle={wardSheetSubtitle}
-            onBack={stepBackLocationSheet}
-          />
+        const wardsLoading = wards.length === 0 && locationFacetsLoading;
+        const wardSearchEmpty =
+          !wardsLoading &&
+          wards.length > 0 &&
+          locationSearchTerm.length > 0 &&
+          filteredWards.length === 0;
+        const wardBody = (
+          <>
+            <div className="flex-1 overflow-y-auto px-4 py-4">
+              {wards.length > 0 || wardsLoading ? (
+                <LocationSearchInput
+                  value={locationSearch}
+                  onChange={setLocationSearch}
+                  placeholder="Search wards"
+                />
+              ) : null}
 
-          <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
-            {selectedSubCounty ? (
-              <button
-                type="button"
-                onClick={applySubCountyOnly}
-                className={cn(
-                  "flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-colors",
-                  selectedSubCounty !== null && selectedWard === null
-                    ? "border-primary bg-primary/5"
-                    : "border-default bg-app",
+              <div className="space-y-2">
+                {wardsLoading ? (
+                  <LocationOptionSkeletonList />
+                ) : wards.length === 0 ? (
+                  <p className="rounded-2xl border border-dashed border-default px-4 py-3 text-sm leading-6 text-muted-foreground">
+                    Ward-level options will show up here whenever listings are
+                    tagged that precisely.
+                  </p>
+                ) : wardSearchEmpty ? (
+                  <p className="rounded-2xl border border-dashed border-default px-4 py-3 text-sm leading-6 text-muted-foreground">
+                    {`No wards match "${locationSearch.trim()}".`}
+                  </p>
+                ) : (
+                  filteredWards.map((item) => (
+                    <LocationOption
+                      key={item.id}
+                      item={item}
+                      active={selectedWard?.id === item.id}
+                      onSelect={() => handleWardSelection(item)}
+                    />
+                  ))
                 )}
-              >
-                <div>
-                  <p className="text-sm font-medium text-default">
-                    Use {selectedSubCounty.name}
-                  </p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {selectedSubCounty.count}{" "}
-                    {selectedSubCounty.count === 1 ? "item" : "items"} in this
-                    subcounty
-                  </p>
-                </div>
-                {selectedWard === null ? (
-                  <Check size={18} className="text-primary" />
-                ) : null}
-              </button>
-            ) : null}
-
-            <div className="space-y-2">
-              {wards.length === 0 ? (
-                <p className="rounded-2xl border border-dashed border-default px-4 py-3 text-sm leading-6 text-muted-foreground">
-                  Ward-level options will show up here whenever listings are
-                  tagged that precisely.
-                </p>
-              ) : (
-                wards.map((item) => (
-                  <LocationOption
-                    key={item.id}
-                    item={item}
-                    active={selectedWard?.id === item.id}
-                    onClick={() => handleWardSelection(item)}
-                  />
-                ))
-              )}
+              </div>
             </div>
-          </div>
-        </SheetContent>
-      </Sheet>
+            {wardFooterFacet ? (
+              <LocationStepFooter
+                count={wardFooterFacet.count}
+                label={`in ${wardFooterFacet.name}`}
+                onConfirm={collapseLocationSheets}
+              />
+            ) : null}
+          </>
+        );
+
+        const countyClearAction = hasLocation ? (
+          <button
+            type="button"
+            onClick={clearLocation}
+            className="h-9 shrink-0 rounded-full px-3 text-xs font-semibold text-primary"
+          >
+            Clear
+          </button>
+        ) : undefined;
+
+        // Desktop: one centered dialog whose content swaps per step — a
+        // slide-in side sheet reads as a mobile pattern left in place rather
+        // than a considered desktop control. Escape/backdrop click closes the
+        // whole picker regardless of step; the header's back chevron still
+        // steps back one level at a time.
+        if (isDesktop) {
+          return (
+            <Dialog
+              open={locationDepth >= 1}
+              onOpenChange={(open) => {
+                if (!open) collapseLocationSheets();
+              }}
+            >
+              <DialogContent className="flex h-[min(80svh,640px)] w-[min(92vw,480px)] max-w-none flex-col gap-0 overflow-hidden rounded-3xl bg-app p-0 [&>button:last-of-type]:hidden">
+                {locationStep === "subcounty" ? (
+                  <>
+                    <LocationSheetHeader
+                      title={subCountySheetTitle}
+                      subtitle="Pick a subcounty, or keep the whole county selected."
+                      onBack={stepBackLocationSheet}
+                    />
+                    {subcountyBody}
+                  </>
+                ) : locationStep === "ward" ? (
+                  <>
+                    <LocationSheetHeader
+                      title={wardSheetTitle}
+                      subtitle={wardSheetSubtitle}
+                      onBack={stepBackLocationSheet}
+                    />
+                    {wardBody}
+                  </>
+                ) : (
+                  <>
+                    <LocationSheetHeader
+                      title="Choose county"
+                      subtitle="Start broad, then drill into the exact place."
+                      onBack={stepBackLocationSheet}
+                      action={countyClearAction}
+                    />
+                    {countyBody}
+                  </>
+                )}
+              </DialogContent>
+            </Dialog>
+          );
+        }
+
+        return (
+          <>
+            <Sheet
+              open={locationDepth >= 1}
+              onOpenChange={(open) => {
+                if (!open && locationStep === "county") stepBackLocationSheet();
+              }}
+            >
+              <SheetContent
+                side="right"
+                // The location sheets stack (county → subcounty → ward), and
+                // each Radix Sheet paints its own 80% overlay — stacked, they
+                // compound into an ever-darker backdrop. Keep a single
+                // backdrop: only paint one here when this is the base layer
+                // (no filter sheet underneath).
+                overlayClassName={filterOpen ? "!bg-transparent" : undefined}
+                className="flex w-full max-w-none flex-col gap-0 bg-app p-0 sm:max-w-sm [&>button:last-of-type]:hidden"
+              >
+                <LocationSheetHeader
+                  title="Choose county"
+                  subtitle="Start broad, then drill into the exact place."
+                  onBack={stepBackLocationSheet}
+                  action={countyClearAction}
+                />
+                {countyBody}
+              </SheetContent>
+            </Sheet>
+
+            <Sheet
+              open={locationDepth >= 2}
+              onOpenChange={(open) => {
+                if (!open && locationStep === "subcounty")
+                  stepBackLocationSheet();
+              }}
+            >
+              <SheetContent
+                side="right"
+                // Deeper location layer — the county sheet under it already
+                // paints the backdrop, so a transparent overlay here avoids
+                // compounding it.
+                overlayClassName="!bg-transparent"
+                className="flex w-full max-w-none flex-col gap-0 bg-app p-0 sm:max-w-sm [&>button:last-of-type]:hidden"
+              >
+                <LocationSheetHeader
+                  title={subCountySheetTitle}
+                  subtitle="Pick a subcounty, or keep the whole county selected."
+                  onBack={stepBackLocationSheet}
+                />
+                {subcountyBody}
+              </SheetContent>
+            </Sheet>
+
+            <Sheet
+              open={locationDepth >= 3}
+              onOpenChange={(open) => {
+                if (!open && locationStep === "ward") stepBackLocationSheet();
+              }}
+            >
+              <SheetContent
+                side="right"
+                // Deepest location layer — same reasoning as the subcounty
+                // sheet: keep this overlay transparent so backdrops don't
+                // compound.
+                overlayClassName="!bg-transparent"
+                className="flex w-full max-w-none flex-col gap-0 bg-app p-0 sm:max-w-sm [&>button:last-of-type]:hidden"
+              >
+                <LocationSheetHeader
+                  title={wardSheetTitle}
+                  subtitle={wardSheetSubtitle}
+                  onBack={stepBackLocationSheet}
+                />
+                {wardBody}
+              </SheetContent>
+            </Sheet>
+          </>
+        );
+      })()}
 
       <Drawer
         open={sortOpen}

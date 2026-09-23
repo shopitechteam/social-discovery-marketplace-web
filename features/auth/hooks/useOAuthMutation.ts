@@ -13,6 +13,36 @@ import { useCallback, useState } from "react";
 import { getSuspendedAccountMessage } from "@/lib/apollo/suspended-account";
 import { trackAuthSuccess, trackSignup } from "@/lib/analytics";
 import { attributionInput } from "@/lib/attribution";
+import {
+  authDestination,
+  navigateAfterAuth,
+} from "@/features/auth/lib/postAuthNavigate";
+
+// Auth pages render the Google button once for their mobile layout and once
+// for their desktop layout — both always mounted, only CSS-toggled by
+// breakpoint — so two identical hook instances each call
+// `google.accounts.id.initialize()` on the same page. That's a page-global
+// singleton in GIS: it logs "only the last initialized instance will be
+// used," and worse, only that last instance's credential callback ever runs.
+// If GIS happened to wire itself to the CSS-hidden copy, the visible
+// button's loading/error state never updates on click — indistinguishable
+// from nothing happening.
+//
+// Fix: whichever instance's initialize() call GIS ends up using, broadcast
+// its loading/error outcome to every currently-mounted button on the page
+// (registered/unregistered per mount below), not just the one that owns it.
+const googleUiSubscribers = new Set<{
+  setLoading: (value: boolean) => void;
+  onError: (message: string) => void;
+}>();
+
+function broadcastGoogleLoading(value: boolean) {
+  googleUiSubscribers.forEach((sub) => sub.setLoading(value));
+}
+
+function broadcastGoogleError(message: string) {
+  googleUiSubscribers.forEach((sub) => sub.onError(message));
+}
 
 export function useOAuthMutation(
   lang: string,
@@ -44,26 +74,21 @@ export function useOAuthMutation(
   const mutationLoading = googleLoading || appleLoading || facebookLoading;
 
   function getDestination() {
-    return from && from.startsWith("/") ? from : `/${lang}/feed`;
+    return authDestination(from, lang);
   }
 
-  // After a successful social login we MUST land on the destination — every time.
-  //
-  // Why a hard navigation instead of router.replace(): the destination is often a
-  // proxy-guarded route (see proxy.ts) that checks the "shopi-auth-hint" cookie.
-  // setAuth() writes that cookie via document.cookie, but a soft client navigation
-  // can fire its RSC request before the cookie write is committed/sent — so the
-  // proxy sees no session and bounces back to auth-welcome (the "reload fixes it"
-  // bug). A full-document navigation guarantees the freshly-set cookie is sent with
-  // the request, so the proxy always sees the session. It also gives the server a
-  // clean render with the new auth state (equivalent to the manual reload).
+  /**
+   * Land on the destination after a social sign-in.
+   *
+   * This was a hard `window.location.assign`, to guarantee the freshly written
+   * `shopi-auth-hint` cookie reached the proxy — a soft navigation that raced
+   * the write got bounced back to auth. navigateAfterAuth keeps that guarantee
+   * by checking the cookie is readable first and only then navigating
+   * client-side, so the Apollo cache (and the feed position inside it) is no
+   * longer thrown away on every sign-in.
+   */
   function goToDestination() {
-    const dest = getDestination();
-    if (typeof window !== "undefined") {
-      window.location.assign(dest);
-    } else {
-      router.replace(dest);
-    }
+    navigateAfterAuth(router, getDestination());
   }
 
   function extractError(error: unknown): string {
@@ -150,11 +175,15 @@ export function useOAuthMutation(
     async (
       container: HTMLElement,
       onError: (message: string) => void,
-    ): Promise<void> => {
+    ): Promise<() => void> => {
+      const subscriber = { setLoading, onError };
+      googleUiSubscribers.add(subscriber);
+      const unsubscribe = () => googleUiSubscribers.delete(subscriber);
+
       const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
       if (!googleClientId) {
         onError("Google client ID not configured.");
-        return;
+        return unsubscribe;
       }
 
       type GIS = {
@@ -232,13 +261,13 @@ export function useOAuthMutation(
           client_id: googleClientId,
           callback: async (response: { credential?: string; error?: string }) => {
             if (!response.credential) {
-              onError(response.error ?? "Google sign-in cancelled.");
+              broadcastGoogleError(response.error ?? "Google sign-in cancelled.");
               return;
             }
-            setLoading(true);
+            broadcastGoogleLoading(true);
             const error = await loginWithGoogle(response.credential);
-            setLoading(false);
-            if (error) onError(error);
+            broadcastGoogleLoading(false);
+            if (error) broadcastGoogleError(error);
           },
           ux_mode: "popup",
           cancel_on_tap_outside: true,
@@ -258,6 +287,7 @@ export function useOAuthMutation(
       } catch (error) {
         onError(error instanceof Error ? error.message : "Google sign-in failed to load.");
       }
+      return unsubscribe;
     },
     // loginWithGoogle closes over the current locale/destination.
     // eslint-disable-next-line react-hooks/exhaustive-deps

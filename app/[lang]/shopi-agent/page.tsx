@@ -20,6 +20,10 @@ type Props = { params: Promise<{ lang: string }> };
 const TITLE = "Shopi Agent — AI That Writes Your Listing and Finds Products";
 const DESCRIPTION =
   "Shopi Agent is the free AI assistant built into Shopi. Upload a photo and it writes your listing — title, description and specs. Describe what you want and it finds nearby matches. No forms, no filters, no commission.";
+// DESCRIPTION is also the on-page intro; the meta version is trimmed to fit
+// the ~155 characters a results page shows.
+const META_DESCRIPTION =
+  "Shopi Agent is Shopi's free AI assistant: upload a photo and it writes your listing, or describe what you want and it finds nearby matches.";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { lang } = await params;
@@ -27,7 +31,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     lang,
     path: "/shopi-agent",
     title: TITLE,
-    description: DESCRIPTION,
+    description: META_DESCRIPTION,
   });
 }
 

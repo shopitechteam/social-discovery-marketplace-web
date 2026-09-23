@@ -12,7 +12,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { gql, type TypedDocumentNode } from "@apollo/client";
 import { useQuery } from "@apollo/client/react";
-import { ArrowUpRight, Flame, Store } from "lucide-react";
+import { Flame } from "lucide-react";
 import { useTrending } from "../hooks/useFeed";
 import { useFollow } from "../hooks/useFollow";
 import { fmtCompact as fmt } from "@/lib/format";
@@ -251,28 +251,6 @@ export function DesktopTrendingRail({
 
   return (
     <div className="flex min-h-full flex-col gap-4">
-      <Link
-        href={`/${lang}/upload`}
-        scroll={false}
-        className="block rounded-2xl bg-primary p-4 text-white shadow-[0_18px_46px_rgb(var(--brand-primary)/0.28)]"
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-base font-black leading-tight">
-              Got something to sell?
-            </p>
-            <p className="mt-1 text-xs font-medium leading-snug text-white/85">
-              List it in seconds and reach buyers near you.
-            </p>
-          </div>
-          <Store className="h-5 w-5 shrink-0" />
-        </div>
-        <span className="mt-4 flex items-center justify-center gap-1 rounded-lg bg-white px-3 py-2 text-xs font-black text-primary">
-          Start selling
-          <ArrowUpRight className="h-3.5 w-3.5" />
-        </span>
-      </Link>
-
       <section className="rounded-2xl border border-default bg-elevated p-4">
         <div className="mb-3 flex items-center justify-between px-1">
           <h2 className="flex items-center gap-1.5 text-base font-black text-default">
@@ -286,7 +264,7 @@ export function DesktopTrendingRail({
 
         {showSkeleton ? (
           <div className="flex flex-col gap-2">
-            {[...Array(6)].map((_, i) => (
+            {[...Array(12)].map((_, i) => (
               <div
                 key={i}
                 className="flex animate-pulse items-center gap-3 p-2"
@@ -309,7 +287,7 @@ export function DesktopTrendingRail({
           </p>
         ) : (
           <div className="flex flex-col gap-0.5">
-            {items.slice(0, 6).map((post, i) => (
+            {items.slice(0, 12).map((post, i) => (
               <TrendingRow
                 key={post.id}
                 post={post}

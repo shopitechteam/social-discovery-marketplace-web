@@ -172,7 +172,7 @@ export function MediaCarouselDialog({
         <div
           ref={trackRef}
           onScroll={handleScroll}
-          className="flex h-svh w-screen snap-x snap-mandatory overflow-x-auto scrollbar-hide"
+          className="flex h-svh w-screen snap-x snap-mandatory overflow-x-auto no-scroll-indicator"
           style={{ scrollSnapType: "x mandatory" }}
         >
           {media.map((item, i) => {

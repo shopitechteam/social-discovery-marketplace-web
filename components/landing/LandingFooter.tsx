@@ -58,12 +58,16 @@ export function LandingFooter({
                 { label: "The Feed", href: `/${lang}#dive-feed` },
                 { label: "Shopi Agent", href: `/${lang}/shopi-agent` },
                 { label: "Sell on Shopi", href: `/${lang}#creators` },
+                {
+                  label: "TikTok video downloader",
+                  href: `/${lang}/tiktok-downloader`,
+                },
               ],
             },
             {
               heading: "Marketplace",
               links: [
-                { label: "Open the feed", href: `/${lang}/feed` },
+                { label: "Open For You", href: `/${lang}/for-you` },
                 { label: "Explore listings", href: `/${lang}/explore` },
                 { label: "Search", href: `/${lang}/search` },
                 { label: "Sell in Kenya", href: `/${lang}/sell-in-kenya` },
@@ -102,6 +106,14 @@ export function LandingFooter({
                 {
                   label: "Compare marketplaces",
                   href: `/${lang}/marketplace-alternatives-kenya`,
+                },
+                {
+                  label: "Jiji alternative",
+                  href: `/${lang}/jiji-alternative-kenya`,
+                },
+                {
+                  label: "PigiaMe alternative",
+                  href: `/${lang}/pigiame-alternative-kenya`,
                 },
                 { label: "Blog", href: `/${lang}/blog` },
                 {

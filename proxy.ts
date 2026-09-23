@@ -18,10 +18,15 @@ const PRIVATE_PROFILE_PATHS = [
   "/profile/followers",
   "/profile/visitors",
   "/profile/posts",
+  // Account settings sub-pages. These are static segments so they beat the
+  // /profile/{username} dynamic route, but they must also be listed here or a
+  // signed-out visitor reaches them instead of the sign-in screen.
+  "/profile/change-password",
+  "/profile/rate",
 ];
 
 // Routes a logged-in user shouldn't see — the auth flows. They're redirected
-// straight to the feed instead. The landing root stays accessible to everyone.
+// straight to the feed instead.
 const GUEST_ONLY_PATHS = ["/auth"];
 
 // …except the OAuth callback, which must run even when a session already exists
@@ -67,11 +72,30 @@ function getPathLocale(pathname: string) {
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const pathnameLocale = getPathLocale(pathname);
+  const barePath = getBarePath(pathname);
 
   // accessToken is stored in localStorage by Zustand, so the proxy can't read
   // it directly. We rely on a lightweight "shopi-auth-hint" cookie that the
   // client sets on login and clears on logout (see stores/auth.ts).
   const hasSession = !!request.cookies.get("shopi-auth-hint")?.value;
+
+  // /feed was the old app URL. Keep it alive for shared links and crawlers,
+  // but make /for-you the canonical destination.
+  if (barePath === "/feed" || barePath.startsWith("/feed/")) {
+    const locale = pathnameLocale ?? defaultLocale;
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = `/${locale}${barePath.replace(/^\/feed/, "/for-you")}`;
+    return NextResponse.redirect(redirectUrl, 308);
+  }
+
+  // Signed-in users should enter the app, not the marketing homepage.
+  if (hasSession && barePath === "/") {
+    const locale = pathnameLocale ?? defaultLocale;
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = `/${locale}/for-you`;
+    redirectUrl.search = "";
+    return NextResponse.redirect(redirectUrl);
+  }
 
   // ── Auth guard ────────────────────────────────────────────────────────────
   if (isProtected(pathname) && !hasSession) {
@@ -87,7 +111,7 @@ export function proxy(request: NextRequest) {
   // A signed-in user shouldn't land on the marketing page or the auth flows.
   // Send them back to wherever they came from — the auth route itself may
   // carry a "from" param (e.g. an old login link), otherwise fall back to the
-  // same-origin Referer, otherwise the feed.
+  // same-origin Referer, otherwise For You.
   if (hasSession && isGuestOnly(pathname)) {
     const locale = pathnameLocale ?? defaultLocale;
 
@@ -117,7 +141,7 @@ export function proxy(request: NextRequest) {
       redirectUrl.pathname = target.pathname;
       redirectUrl.search = target.search;
     } else {
-      redirectUrl.pathname = `/${locale}/feed`;
+      redirectUrl.pathname = `/${locale}/for-you`;
       redirectUrl.search = "";
     }
     return NextResponse.redirect(redirectUrl);

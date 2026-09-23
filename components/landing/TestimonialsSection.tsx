@@ -24,13 +24,13 @@ const useCases: {
   {
     node: (
       <>
-        A farmer in Kiambu films the animals in the shamba, adds a price and a
-        location, and posts. Buyers see it in the local feed and message
-        directly, so no broker sets the price or the conversation.
+        A farmer in Kiambu films the animals in the shamba, sets the price and
+        posts. Buyers nearby message directly, so the price is the
+        farmer&apos;s to set, not a broker&apos;s.
       </>
     ),
     who: "Farm produce & livestock",
-    href: "/feed",
+    href: "/for-you",
     linkLabel: "See what's in the feed",
     accentBar: "bg-primary",
     accentText: "text-primary",
@@ -93,7 +93,7 @@ export function TestimonialsSection({
                 className="flex flex-col gap-5 rounded-lg border border-border bg-elevated p-8"
               >
                 <div className={`h-1 w-9 rounded-sm ${accentBar}`} />
-                <p className="flex-1 text-md leading-[1.6] text-foreground">
+                <p className="flex-1 text-sm leading-normal text-muted">
                   {node}
                 </p>
                 <div>

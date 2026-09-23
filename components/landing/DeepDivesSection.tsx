@@ -23,7 +23,7 @@ export function DeepDivesSection({
       copy: t.feed,
       mockup: <FeedMockup />,
       tint: "bg-[rgb(var(--brand-primary)/0.07)]",
-      primaryHref: `/${lang}/feed`,
+      primaryHref: `/${lang}/for-you`,
       secondaryHref: "#how-it-works",
     },
     {
@@ -31,10 +31,10 @@ export function DeepDivesSection({
       copy: t.chat,
       mockup: <ChatMockup />,
       tint: "bg-[rgb(var(--brand-accent)/0.07)]",
-      primaryHref: `/${lang}/feed`,
+      primaryHref: `/${lang}/for-you`,
       // "Browse nearby" should land on the feed's Nearby tab, not the
       // how-it-works anchor the other rows use.
-      secondaryHref: `/${lang}/feed?tab=nearby`,
+      secondaryHref: `/${lang}/for-you?tab=nearby`,
     },
     {
       id: "creators",
@@ -75,14 +75,14 @@ export function DeepDivesSection({
                 <h2 className="mt-3 max-w-md text-balance font-display text-[clamp(1.6rem,3vw,2.4rem)] font-bold leading-tight tracking-normal text-default">
                   {copy.title}
                 </h2>
-                <p className="mt-4 max-w-lg text-base leading-normal text-muted">
+                <p className="landing-subcopy mt-4 max-w-lg">
                   {copy.body}
                 </p>
                 <ul className="mt-6 flex flex-col gap-3">
                   {copy.bullets.map((b) => (
                     <li
                       key={b}
-                      className="flex items-start gap-2.5 text-base text-default"
+                      className="flex items-start gap-2.5 text-sm leading-normal text-default"
                     >
                       <Check
                         size={18}

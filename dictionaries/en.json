@@ -4,8 +4,8 @@
     "tagline": "Post it free. Sell it near you.",
     "loading": "Loading…",
     "error": "Something went wrong",
-    "continueWeb": "Browse the feed →",
-    "openFeed": "Browse the feed",
+    "continueWeb": "Open For You →",
+    "openFeed": "Open For You",
     "startFree": "Post an item"
   },
   "nav": {
@@ -22,7 +22,7 @@
     "headline": "Kenya’s social local marketplace—tuned to what you like, and where you are.",
     "subheadline": "Scroll real things being sold around you: cars in Rongai, phones in town, furniture down the road, fresh produce from a farmer nearby. Shopi also learns what you keep opening and saves your taste, so the feed stays local and relevant. When something feels right, message the seller and agree directly. Shopi does not take payments or commission.",
     "reassurance": "Free to browse · Free to post · Buyer and seller agree directly",
-    "ctaExplore": "Open the feed",
+    "ctaExplore": "Open For You",
     "ctaHowItWorks": "See how it works"
   },
   "features": {
@@ -59,11 +59,11 @@
     "sectionLabel": "How it works",
     "eyebrow": "From photo to published",
     "headline": "Four steps, and your item is in front of nearby buyers.",
-    "intro": "There is no long form to fight with and nothing to pay. Create a free account, add your photos, let Shopi Agent draft the words, then publish. Your listing enters the local feed straight away.",
+    "intro": "Create a free account, add your photos, let Shopi Agent draft the words, then publish. Your listing enters the local feed straight away.",
     "steps": {
       "1": {
         "title": "Create your free account",
-        "body": "Sign up with Google, with an email address, or with Apple on an iPhone. You do not need a registered business, a website or a verified phone number to sell here."
+        "body": "You don't need a registered business, a website or a verified phone number to sell here. Sign up with Google, an email address, or Apple on an iPhone."
       },
       "2": {
         "title": "Add photos or a video",
@@ -86,7 +86,7 @@
       "tag": "For buyers",
       "title": "Find useful things before you think to search.",
       "body": "Maybe you came for a phone and ended up spotting a sofa, a good mitumba bale, a used car, or fresh produce nearby. Shopi keeps discovery open, uses your interests to tune the feed, then lets you message the seller when something makes sense.",
-      "cta": "Open the feed"
+      "cta": "Open For You"
     },
     "sellers": {
       "tag": "For sellers",
@@ -97,14 +97,31 @@
   },
   "testimonials": {
     "sectionLabel": "Who posts on Shopi",
-    "headline": "Everyday sellers. Real items. No shopfront required."
+    "headline": "Sound like you? You already have everything you need."
+  },
+  "socialProof": {
+    "eyebrow": "Selling on Shopi right now",
+    "headline": "Don't take our word for it. Here's what's live today.",
+    "intro": "Real sellers, real stock, live listings. Every item has a price, a location and a seller you can message.",
+    "featured": "Featured seller",
+    "verified": "Verified seller",
+    "listings": "live listings",
+    "listingOne": "live listing",
+    "views": "listing views",
+    "followers": "followers",
+    "since": "On Shopi since {date}",
+    "summary": "{name} has {count} live listings on Shopi.",
+    "summaryOne": "{name} has 1 live listing on Shopi.",
+    "latestFrom": "Latest from {name}",
+    "visitShop": "Visit shop",
+    "seeAll": "See all {count} listings"
   },
   "download": {
     "sectionLabel": "Start selling",
     "headline": "Post it today. Let nearby buyers come to you.",
-    "body": "Create your free account, put up what you are selling, and buyers in your area find it in the feed and message you. Posting costs nothing, Shopi takes no commission, and you keep every shilling you agree with the buyer.",
+    "body": "Take a photo, let Shopi Agent write the listing, and publish. It's free, there's no commission, and the buyer pays you directly.",
     "webCta": "Post your first item — free",
-    "secondaryCta": "Browse the feed first",
+    "secondaryCta": "Open For You first",
     "reassurance": "Free to post · 0% commission · No business registration needed"
   },
   "footer": {
@@ -157,7 +174,7 @@
     }
   },
   "routes": {
-    "feed": "Home",
+    "feed": "For You",
     "explore": "Explore",
     "notifications": "Inbox",
     "profile": "My Profile",
@@ -166,62 +183,62 @@
   "landing": {
     "hero": {
       "eyebrow": "Kenya's free social marketplace",
-      "headline": "Post it free. Sell it near you.",
-      "subheadline": "Take one photo and Shopi Agent writes the title, description and details for you. Set your price, publish, and buyers nearby find it in the feed and message you inside Shopi. No commission, no listing fees, nobody in the middle of your sale.",
+      "headline": "Sell it with one photo. Keep every shilling.",
+      "subheadline": "Take one photo and Shopi Agent writes the listing. Nearby buyers find it in the feed and message you directly — no listing fees, no commission.",
       "ctaPost": "Post your first item — free",
       "ctaPostShort": "Post an item",
       "ctaFeed": "Browse what's near you",
-      "ctaFeedShort": "Browse the feed",
-      "ctaFeedLoggedIn": "Continue to your feed",
+      "ctaFeedShort": "Open For You",
+      "ctaFeedLoggedIn": "Go to For You",
       "reassurance": "Free to post · 0% commission · No business registration needed",
       "figures": {
         "commission": "commission on your sale",
         "photo": "photo becomes a full listing",
-        "counties": "counties, one local feed"
+        "counties": "counties, nearby buyers first"
       }
     },
     "pillars": {
       "eyebrow": "Why sell here",
       "headline": "Your item gets found without paying to be seen.",
-      "intro": "Shopi is a feed, not a search box. People scroll it the way they scroll social apps, and listings near them come first — so your post reaches buyers who were not searching for it yet. Free to post, no commission, and every message lands with you.",
+      "intro": "On Shopi, people scroll a local feed like a social app. Your post reaches nearby buyers even before they search, and every message comes straight to you.",
       "feed": {
-        "title": "A feed, not a search box",
-        "tagline": "Buyers come across your item while scrolling, not only when they search the exact words."
+        "title": "Get found by people who weren't searching",
+        "tagline": "Buyers come across your item while they scroll, not only when they type the exact words."
       },
       "chat": {
-        "title": "Buyers message you directly",
-        "tagline": "No cart, no checkout, no agent in between. You answer, you negotiate, you agree the pickup."
+        "title": "Every buyer talks to you, not a middleman",
+        "tagline": "No cart, no checkout, no broker in between. You answer, you negotiate, you agree the pickup."
       },
       "sell": {
-        "title": "Shopi Agent writes the listing",
-        "tagline": "Upload a photo and get a title, description and specifications you can edit before publishing."
+        "title": "Skip the writing — Shopi Agent drafts it",
+        "tagline": "Upload a photo and get a title, description and specifications to edit, instead of a blank form."
       }
     },
     "stats": {
       "eyebrow": "What it costs you",
-      "headline": "No commission. No listing fees. Nothing deducted.",
-      "intro": "Shopi never sits inside your transaction. It does not process payments, hold your money or arrange delivery — which is exactly why there is nothing for it to take out of your sale.",
+      "headline": "The price you agree is the price you keep.",
+      "intro": "Shopi does not process payments, hold money or arrange delivery. The buyer pays you directly, and all of it stays with you.",
       "zero": {
         "figure": "KES 0",
         "label": "Commission and listing fees",
-        "body": "Posting is free and Shopi takes nothing from the sale. The buyer pays you directly, not us."
+        "body": "Sell a sofa for KES 45,000 and you keep KES 45,000. Posting is free, and nothing comes off the sale."
       },
       "counties": {
         "figure": "47",
-        "label": "Counties, one feed",
-        "body": "Nearby posts surface first — Nairobi, Mombasa, Kisumu, Nakuru, Meru and every town in between."
+        "label": "Counties, nearby buyers first",
+        "body": "Your post reaches the people closest to you first, whether you're in Nairobi, Mombasa, Kisumu, Nakuru, Meru or anywhere in between."
       },
       "chat": {
         "figure": "1",
-        "label": "Chat, from first message to deal",
-        "body": "Buyers reach you inside Shopi. Answer questions, agree a price and set the pickup without leaving the app."
+        "label": "Chat, from first question to done deal",
+        "body": "Buyers message you inside Shopi. Answer questions, agree the price and set the pickup in one thread you can scroll back through."
       }
     },
     "dives": {
       "feed": {
         "eyebrow": "For buyers",
         "title": "Find what you didn't know you were looking for.",
-        "body": "Shopi is not just a search box. The feed learns what you open, save and message about, and puts listings near you first — from phones and furniture to fresh produce and cars.",
+        "body": "Scroll and spot the sofa, phone or car you might never search for. The feed learns what you open and shows nearby listings first.",
         "bullets": [
           "Nearby listings appear first, from your neighbourhood outward",
           "Real photos, videos, prices and locations from local sellers",
@@ -233,7 +250,7 @@
       "chat": {
         "eyebrow": "Direct chat",
         "title": "Deal with the person, not a checkout.",
-        "body": "When you find the right item, message the seller inside Shopi. Price, payment and pickup are agreed between the two of you. Shopi never holds the money, so there is nothing to deduct and nobody to wait on.",
+        "body": "Message the seller inside Shopi. Price, payment and pickup stay between the two of you, so there is nothing to deduct and nobody to wait on.",
         "bullets": [
           "One tap from the listing to a real conversation",
           "Ask for more photos, negotiate, and choose where to meet",
@@ -245,7 +262,7 @@
       "sell": {
         "eyebrow": "Shopi Agent",
         "title": "One photo. A finished listing.",
-        "body": "The reason most people never post is the writing. Upload a photo and Shopi Agent drafts the title, description, category and specifications for you. Nothing publishes until you have read it and made it yours.",
+        "body": "Upload a photo and Shopi Agent drafts the title, description, category and specifications. Nothing publishes until you review it.",
         "bullets": [
           "Photo in, complete draft listing out",
           "Edit any word before it goes live — nothing is posted automatically",
@@ -258,20 +275,17 @@
     "welcomeBack": {
       "message": "Welcome back, {name}!",
       "messageNoName": "Welcome back!",
-      "cta": "Jump back to your feed",
+      "cta": "Go to For You",
       "dismiss": "Dismiss"
-    },
-    "tiktokSaver": {
-      "eyebrow": "By the way",
-      "title": "Need a clean copy of a TikTok video?",
-      "body": "Paste a TikTok link and save the video to your device without the watermark — handy when you want to reuse your own product videos on Shopi, WhatsApp status, or anywhere else.",
-      "placeholder": "Paste a TikTok link…",
-      "button": "Get video",
-      "fetching": "Fetching…",
-      "save": "Save video",
-      "tryAnother": "Try another link",
-      "error": "Couldn't fetch that video. Check the link and try again.",
-      "disclaimer": "Only save videos you created or have permission to use."
     }
+  },
+  "tiktokSaver": {
+    "placeholder": "Paste a TikTok link…",
+    "button": "Get video",
+    "fetching": "Fetching…",
+    "save": "Save video",
+    "tryAnother": "Try another link",
+    "error": "Couldn't fetch that video. Check the link and try again.",
+    "disclaimer": "Only save videos you created or have permission to use."
   }
 }

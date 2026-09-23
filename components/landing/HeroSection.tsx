@@ -20,16 +20,12 @@ export function HeroSection({
     >
       <div className="mx-auto grid max-w-(--landing-page-max) items-center gap-10 lg:grid-cols-[1fr_0.78fr]">
         <div>
-          {/* The eyebrow carries the entity and the head term ("Kenya's free
-              social marketplace") so the H1 is free to be an outcome rather
-              than a category label. Both are crawlable text above the fold. */}
-          <p className="mb-4 text-sm font-bold uppercase tracking-widest text-primary">
-            {t.eyebrow}
-          </p>
+          {/* Eyebrow (dict.landing.hero.eyebrow) intentionally hidden; the
+              string is kept in the dictionaries so it can be restored here. */}
           <h1 className="max-w-4xl text-balance font-display text-[clamp(2.45rem,5.2vw,4.85rem)] font-semibold leading-[1.02] tracking-normal text-default">
             {t.headline}
           </h1>
-          <p className="mt-6 max-w-2xl text-base leading-normal text-muted md:text-md">
+          <p className="landing-subcopy mt-6 max-w-2xl">
             {t.subheadline}
           </p>
           <HeroCtas

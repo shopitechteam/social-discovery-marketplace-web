@@ -140,32 +140,49 @@ export const siteConfig = {
     "Nakuru marketplace",
     "Meru marketplace",
 
-    // Competitor searches
+    // Competitor searches. People look for the name they already know, so the
+    // comparison page has to be reachable by it.
     "Jiji alternative Kenya",
+    "sites like Jiji Kenya",
+    "PigiaMe alternative",
+    "alternative to Jiji and PigiaMe",
+    "best site to sell online in Kenya",
+    "free classifieds Kenya",
     "Facebook Marketplace Kenya",
     "TikTok marketplace Kenya",
   ],
 
   routes: {
+    // for-you/explore/search are indexed (see app/sitemap.ts), so their titles
+    // carry the query people type rather than the in-app tab name.
     feed: {
-      path: "/feed",
-      title: "Feed",
+      path: "/for-you",
+      title: "For You — Products for Sale Near You in Kenya",
       description:
-        "Discover nearby products in a personalized social feed tailored to your interests.",
+        "Shopi For You is a personalized marketplace feed of products for sale near you in Kenya — phones, cars, fashion, furniture and more. Message local sellers directly.",
     },
 
     explore: {
       path: "/explore",
-      title: "Explore",
+      title: "Explore Products for Sale Near You in Kenya",
       description:
-        "Explore nearby products or ask Shopi Agent to help you find exactly what you're looking for.",
+        "Explore products for sale near you in Kenya by category, or ask Shopi Agent to find exactly what you need and chat with local sellers directly.",
     },
 
     search: {
       path: "/search",
-      title: "Search",
+      title: "Search Cars, Phones and More for Sale in Kenya",
       description:
         "Search cars, phones, fashion, furniture, farm produce and thousands of local listings across Kenya.",
+    },
+
+    // The directory of sellers. Indexed: every card is an internal link to a
+    // storefront, which is how those profiles earn their own indexing.
+    stores: {
+      path: "/stores",
+      title: "Online Stores and Sellers in Kenya",
+      description:
+        "Browse verified sellers and online stores across Kenya on Shopi — phones, fashion, furniture, cars and more. See live stock counts and message sellers directly.",
     },
 
     notifications: {

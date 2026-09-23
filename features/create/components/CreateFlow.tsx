@@ -203,8 +203,8 @@ export function CreateFlow({ lang, embedded = false }: CreateFlowProps) {
             | "friends_only"
             | "private") ?? "public",
         );
-        setAllowDownload(d.allowDownload ?? false);
-        setHdEnabled(d.hdEnabled ?? false);
+        setAllowDownload(d.allowDownload ?? true);
+        setHdEnabled(d.hdEnabled ?? true);
         if (d.price) {
           setPrice(d.price.amount, d.price.amount === 0);
           setNegotiable(d.price.negotiable);

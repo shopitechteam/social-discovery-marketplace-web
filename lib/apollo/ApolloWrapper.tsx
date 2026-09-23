@@ -17,6 +17,7 @@ import {
   getSuspendedAccountMessage,
 } from "@/lib/apollo/suspended-account";
 import { SuspendedAccountDialogProvider } from "@/components/providers/SuspendedAccountDialogProvider";
+import { RefetchOnAuthChange } from "./RefetchOnAuthChange";
 
 let clientSingleton: ReturnType<typeof createClient> | undefined;
 
@@ -115,6 +116,84 @@ function mergeFeedPage(
   };
 }
 
+/**
+ * Take the incoming value, unless it is null and we already know better.
+ *
+ * The replacement for `merge: false` on fields that some queries select but
+ * do not populate. Undefined means the field was not part of the response at
+ * all, which Apollo handles before reaching a merge function.
+ */
+function keepUnlessNull<T>(existing: T, incoming: T): T {
+  return incoming == null && existing != null ? existing : incoming;
+}
+
+type CachedMedia = Record<string, unknown> | null | undefined;
+
+/**
+ * Identity for one media item, which has no id of its own.
+ *
+ * Two entries are "the same picture" when they point at the same asset. The
+ * Mux playback id is the strongest signal, then the source URL; sortOrder is
+ * the last resort and only agrees when the media type does too.
+ */
+function sameMediaItem(a: CachedMedia, b: CachedMedia): boolean {
+  if (!a || !b) return false;
+  const mux = (m: CachedMedia) =>
+    (m?.muxMeta as { playbackId?: string } | undefined)?.playbackId;
+  const aMux = mux(a);
+  const bMux = mux(b);
+  if (aMux && bMux) return aMux === bMux;
+  if (a.url && b.url) return a.url === b.url;
+  if (a.imageUrl && b.imageUrl) return a.imageUrl === b.imageUrl;
+  return a.sortOrder != null && a.sortOrder === b.sortOrder && a.mediaType === b.mediaType;
+}
+
+/**
+ * Merge `Content.media` field-wise instead of replacing it.
+ *
+ * `MediaItem` has no id, so Apollo stores it inline and, by default, an
+ * incoming array REPLACES the cached one. Different screens select different
+ * media subsets — the profile grid asks for a handful of fields, the feed card
+ * asks for `imageUrl`, `displayWidth/Height`, `muxMeta.duration` and more — so
+ * simply visiting a profile used to overwrite every shared Content entity with
+ * the narrower shape.
+ *
+ * That was silent but severe: the feed's own cache read then went INCOMPLETE,
+ * Apollo treated it as a miss, and coming back from a profile refetched page
+ * one, throwing away an accumulated feed and the scroll position with it.
+ *
+ * Merging per element fixes it, but only when the two entries are the same
+ * asset — otherwise a post whose media genuinely changed would end up a
+ * chimera of the old and new item. When they differ, incoming wins outright.
+ * The result always has the incoming length, so removals still take effect.
+ */
+function mergeMediaList(
+  existing: readonly CachedMedia[] | undefined,
+  incoming: readonly CachedMedia[] | undefined,
+): readonly CachedMedia[] | undefined {
+  if (!incoming) return existing;
+  if (!existing?.length) return incoming;
+
+  return incoming.map((item, index) => {
+    // Same position first (the common case), then anywhere in the old list —
+    // a reordered gallery should still keep its richer cached fields.
+    const previous = sameMediaItem(existing[index], item)
+      ? existing[index]
+      : existing.find((candidate) => sameMediaItem(candidate, item));
+    if (!previous || !item) return item;
+
+    const merged: Record<string, unknown> = { ...previous, ...item };
+    // muxMeta is itself an embedded object, so it needs the same treatment or
+    // a narrow selection of it wipes duration/animatedThumbnailUrl.
+    const previousMux = previous.muxMeta as Record<string, unknown> | undefined;
+    const incomingMux = item.muxMeta as Record<string, unknown> | undefined;
+    if (previousMux && incomingMux) {
+      merged.muxMeta = { ...previousMux, ...incomingMux };
+    }
+    return merged;
+  });
+}
+
 function createClient() {
   const httpLink = new HttpLink({
     uri: `${process.env.NEXT_PUBLIC_API_URL}/graphql`,
@@ -204,6 +283,15 @@ function createClient() {
               keyArgs: [],
               merge: mergeFeedPage,
             },
+            videoFeed: {
+              // seedId MUST key. Two seeds are two differently ordered lists
+              // with different item 0s. Sharing one entry would send the
+              // second open down mergeFeedPage's "first page on a populated
+              // cache" branch, which preserves the FIRST seed's order — the
+              // viewer would open on the wrong video.
+              keyArgs: ["seedId", "latitude", "longitude"],
+              merge: mergeFeedPage,
+            },
             localFeed: {
               // Each location/radius is its own list; cursor args don't key it.
               keyArgs: ["latitude", "longitude", "radiusKm", "county", "subregion"],
@@ -217,6 +305,7 @@ function createClient() {
               keyArgs: [
                 "query",
                 "categoryId",
+                "type",
                 // The subcategory facet query omits this arg while the location
                 // one sends it, so it must key — otherwise the two selections
                 // collide on one cache entry.
@@ -238,6 +327,7 @@ function createClient() {
               keyArgs: [
                 "query",
                 "categoryId",
+                "type",
                 "subcategory",
                 "countyId",
                 "subCountyId",
@@ -288,12 +378,20 @@ function createClient() {
         Content: {
           keyFields: ["id"],
           fields: {
-            // These are FieldResolver values that differ per-viewer.
-            // merge: false tells Apollo to always take the incoming value
-            // rather than trying to deep-merge, which prevents stale data.
-            isLikedByMe: { merge: false },
-            isMyContent: { merge: false },
-            creator: { merge: false },
+            // These are FieldResolver values that differ per-viewer, so the
+            // incoming value must win rather than being deep-merged — that is
+            // what keeps a guest-fetched entity from going stale once the same
+            // item is refetched as a signed-in user.
+            //
+            // A NULL incoming value is the exception. Not every query resolves
+            // these: `userPosts`, for one, returns `creator: null` while still
+            // selecting it, and taking that literally wiped the seller from
+            // every one of their posts in the feed — cards fell back to
+            // "Seller bb9868". Absent is not the same as "there is nobody".
+            isLikedByMe: { merge: keepUnlessNull },
+            isMyContent: { merge: keepUnlessNull },
+            isSavedByMe: { merge: keepUnlessNull },
+            creator: { merge: keepUnlessNull },
             // EngagementStats / ContentLocation have no IDs of their own and
             // different queries select different subsets of their fields.
             // Without merge:true an incoming subset REPLACES the cached object
@@ -302,6 +400,17 @@ function createClient() {
             stats: { merge: true },
             location: { merge: true },
             price: { merge: true },
+            // Same hazard as the three above, and the one that actually bit.
+            // `ranking` and `boost` are embedded objects with no id, and
+            // `tiktokEmbed` likewise; a query selecting a subset of any of
+            // them would otherwise wipe the rest.
+            ranking: { merge: true },
+            boost: { merge: true },
+            tiktokEmbed: { merge: true },
+            // `media` is a LIST of embedded objects with no ids, so the same
+            // rule applies per element — see mergeMediaList for why a plain
+            // replace corrupted the feed.
+            media: { merge: mergeMediaList },
           },
         },
 
@@ -328,6 +437,15 @@ function createClient() {
           fields: {
             isFollowedByMe: { merge: false },
             followerCount: { merge: false },
+            // Embedded objects with no id of their own, so an incoming subset
+            // would REPLACE the cached one and drop the rest. Real case: the
+            // TikTok status query asks only for authProviders.tiktok while the
+            // settings list needs authProviders.local — without this the two
+            // knock each other out and the read goes incomplete. Same class of
+            // bug as Content.media, same fix.
+            authProviders: { merge: true },
+            profile: { merge: true },
+            location: { merge: true },
             posts: {
               keyArgs: ["first", "after"],
               merge(existing, incoming, { args }) {
@@ -375,6 +493,7 @@ function createClient() {
 export function ApolloWrapper({ children }: React.PropsWithChildren) {
   return (
     <ApolloNextAppProvider makeClient={makeClient}>
+      <RefetchOnAuthChange />
       {children}
       <SuspendedAccountDialogProvider />
     </ApolloNextAppProvider>

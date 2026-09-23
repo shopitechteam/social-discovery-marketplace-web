@@ -52,7 +52,7 @@ export function NearbyGrid({ lang, active = true }: Props) {
     return (
       <div className="flex min-h-[93svh] fixed top-0 left-0 w-full right-0 bottom-0 flex-col items-center justify-center px-6 text-center gap-4">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-        <p className="text-muted-foreground text-sm">Checking location…</p>
+        <p className="app-subcopy">Checking location…</p>
       </div>
     );
   }
@@ -80,7 +80,7 @@ export function NearbyGrid({ lang, active = true }: Props) {
           <h3 className="font-bold text-default text-base mb-1">
             Discover sellers near you
           </h3>
-          <p className="text-muted-foreground text-sm leading-relaxed">
+          <p className="app-subcopy max-w-xs">
             See listings from sellers in your area. We only use your location to
             find nearby content.
           </p>
@@ -100,7 +100,7 @@ export function NearbyGrid({ lang, active = true }: Props) {
     return (
       <div className="flex min-h-[93svh] fixed top-0 left-0 w-full right-0 bottom-0 flex-col items-center justify-center px-6 text-center gap-4">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-        <p className="text-muted-foreground text-sm">Finding your location…</p>
+        <p className="app-subcopy">Finding your location…</p>
       </div>
     );
   }
@@ -113,7 +113,7 @@ export function NearbyGrid({ lang, active = true }: Props) {
         <h3 className="font-bold text-default text-base">
           Location access denied
         </h3>
-        <p className="text-muted-foreground text-sm leading-relaxed">
+        <p className="app-subcopy max-w-xs">
           To see nearby listings, enable location access in your browser
           settings and reload.
         </p>
@@ -126,7 +126,7 @@ export function NearbyGrid({ lang, active = true }: Props) {
     return (
       <div className="flex min-h-[93svh] fixed top-0 left-0 w-full right-0 bottom-0 flex-col items-center justify-center px-6 text-center gap-4">
         <div className="text-4xl">📍</div>
-        <p className="text-muted-foreground text-sm">
+        <p className="app-subcopy">
           Location is not supported on this device.
         </p>
       </div>
@@ -141,7 +141,7 @@ export function NearbyGrid({ lang, active = true }: Props) {
     return (
       <div className="flex min-h-[93svh] fixed top-0 left-0 w-full right-0 bottom-0 flex-col items-center justify-center px-6 text-center gap-4">
         <div className="text-4xl">⚠️</div>
-        <p className="text-muted-foreground text-sm">{geoError}</p>
+        <p className="app-subcopy">{geoError}</p>
         <button
           onClick={() => requestLocation()}
           className="px-5 py-2.5 bg-primary text-white rounded-full text-sm font-semibold"
@@ -160,7 +160,7 @@ export function NearbyGrid({ lang, active = true }: Props) {
         <h3 className="font-bold text-default text-base">
           No listings nearby yet
         </h3>
-        <p className="text-muted-foreground text-sm leading-relaxed">
+        <p className="app-subcopy max-w-xs">
           No sellers found within <strong>{nearbyRadiusKm} km</strong> of your
           current location yet. Try expanding the radius.
         </p>

@@ -50,6 +50,14 @@
   --radius-md: 12px;
   --radius-lg: 20px;
   --radius-full: 9999px;
+
+  /* Layout — the desktop top nav's height. Six places hang off this (the nav
+     itself, the side rail's top, MainShell's padding, and the sticky headers
+     in the feed and profile), and until now every one of them just repeated
+     `80px` as a var fallback with nothing ever defining the var. Defining it
+     here makes those fallbacks inert and gives the height one home. */
+  --desktop-top-nav-height: 68px;
+  --side-nav-width: 304px;
 }
 
 /* ─── Dark mode — toggled by .dark on <html> ───────────────────── */
@@ -170,6 +178,36 @@
     --text-xl: 1.5rem; /* 24px */
     --text-2xl: 1.75rem; /* 28px */
   }
+}
+
+/* Landing supporting copy should sit clearly below headings in the hierarchy:
+   shorter measure, normal weight, softer color, and no desktop size bump that
+   competes with section titles. */
+.landing-subcopy {
+  color: rgb(var(--color-text-muted) / 0.82);
+  font-size: var(--text-sm);
+  font-weight: 400;
+  line-height: 1.62;
+}
+
+@media (min-width: 768px) {
+  .landing-subcopy {
+    font-size: 0.9375rem;
+  }
+}
+
+.app-subcopy {
+  color: rgb(var(--color-text-muted) / 0.78);
+  font-size: var(--text-sm);
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.app-microcopy {
+  color: rgb(var(--color-text-muted) / 0.72);
+  font-size: var(--text-xs);
+  font-weight: 400;
+  line-height: 1.45;
 }
 
 /* ─── Base ─────────────────────────────────────────────────────── */
@@ -363,6 +401,13 @@ body {
   color: rgb(var(--color-text-placeholder));
 }
 
+/* Android Chrome can auto-enlarge text inside narrow, media-heavy feeds. Keep
+   the feed's own calibrated scale stable without changing landing or form text. */
+.feed-mobile-shell {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 .btn-primary {
   background-color: rgb(var(--brand-primary));
   color: rgb(var(--color-text-on-brand));
@@ -479,31 +524,24 @@ textarea.no-scroll-indicator::-webkit-scrollbar {
 
 /* trigger rebuild */
 
-@media only screen and (max-width: 767px) {
-  input[type="date"],
-  input[type="datetime"],
-  input[type="datetime-local"],
-  input[type="email"],
-  input[type="month"],
-  input[type="number"],
-  input[type="password"],
-  input[type="phone"],
-  input[type="search"],
-  input[type="tel"],
-  input[type="text"],
-  input[type="time"],
-  input[type="url"],
-  input[type="week"],
-  select,
-  textarea {
-    font-size: 16px;
-  }
-}
+/* iOS Safari zooms the whole page whenever a focused form control renders
+   below 16px, and no amount of viewport meta prevents it — the only fix is to
+   not go below 16px. Two earlier attempts at this rule had no effect: they
+   used element selectors, which any Tailwind `text-sm` (specificity 0,1,0) or
+   inline style outranks, and this app sets one or the other on nearly every
+   input. Hence !important. It is the narrowest tool that actually holds, and
+   the rule is scoped to phone widths so the desktop type scale is untouched.
 
-@media screen and (max-device-width: 600px) {
+   Placeholders come along so a 16px field doesn't pair with 14px hint text. */
+@media only screen and (max-width: 767px) {
   input,
   select,
   textarea {
-    font-size: 16px;
+    font-size: 16px !important;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    font-size: 16px !important;
   }
 }

@@ -37,6 +37,7 @@ import {
 } from "@/types/__generated__/graphql";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { useAuthGuard } from "../hooks/useAuthGuard";
+import { useAppBack } from "@/lib/useAppBack";
 import { useSellerPhone } from "../hooks/useSellerPhone";
 import { formatStoredPhone } from "@/lib/phone";
 import { useHlsVideo } from "@/lib/useHlsVideo";
@@ -56,6 +57,7 @@ import { absoluteContentUrl } from "@/lib/content-url";
 import { ContentDetailDocument } from "../queries/contentDetail";
 import { ListingSeoSummary } from "./ListingSeoSummary";
 import { profileHref } from "@/lib/profile-url";
+import { trackSellerEvent } from "@/lib/seller-analytics";
 
 const MediaCarouselDialog = dynamic(() =>
   import("./MediaCarouselDialog").then((mod) => mod.MediaCarouselDialog),
@@ -128,7 +130,7 @@ function MobileImageCarousel({
     <div
       ref={trackRef}
       onScroll={handleScroll}
-      className="flex h-full overflow-x-auto snap-x snap-mandatory scrollbar-hide"
+      className="flex h-full overflow-x-auto snap-x snap-mandatory no-scroll-indicator"
       style={{ scrollSnapType: "x mandatory" }}
     >
       {media.map((item, i) => {
@@ -482,7 +484,10 @@ export function ContentDetail({
   initialPost,
 }: Props) {
   const router = useRouter();
-  const goBack = onRequestClose ?? (() => router.back());
+  // A listing link shared into WhatsApp opens with no app history behind it,
+  // so a plain back() leaves the user stuck on the page. Land on the feed.
+  const backOrFeed = useAppBack(`/${lang}/for-you`);
+  const goBack = onRequestClose ?? backOrFeed;
   const { requireAuth } = useAuthGuard(lang);
   const isSheet = desktopMode === "sheet";
   // Stored in state (not a ref) so the Popover portal target is stable across
@@ -567,12 +572,19 @@ export function ContentDetail({
   const muted = useFeedPreferencesStore((s) => s.videoMuted);
   const setVideoMuted = useFeedPreferencesStore((s) => s.setVideoMuted);
   const isDesktop = useIsDesktop();
+  /** Conversion intent: counted at the tap, before any sign-in prompt. */
+  const trackMessageIntent = useCallback(() => {
+    if (resolvedContentId) {
+      trackSellerEvent({ type: "MESSAGE_CLICK", contentId: resolvedContentId });
+    }
+  }, [resolvedContentId]);
   const openChat = useCallback(() => {
     if (!resolvedContentId) return;
+    trackMessageIntent();
     if (!requireAuth({ contentId: resolvedContentId })) return;
     setChatOpen(true);
     onChatOpenChange?.(true);
-  }, [requireAuth, resolvedContentId, onChatOpenChange]);
+  }, [requireAuth, resolvedContentId, onChatOpenChange, trackMessageIntent]);
   const openMessageRoute = useCallback(() => {
     if (!resolvedContentId) return;
     const href = `/${lang}/notifications/${resolvedContentId}?source=content`;
@@ -637,6 +649,16 @@ export function ContentDetail({
       () => {},
     );
   }, [resolvedContentId, viewMutation]);
+
+  // Seller funnel analytics (featured sellers): one listing view per listing,
+  // with the session's traffic source. Skipped on the seller's own listing.
+  const funnelViewTrackedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!post?.id || post.isMyContent || funnelViewTrackedRef.current === post.id)
+      return;
+    funnelViewTrackedRef.current = post.id;
+    trackSellerEvent({ type: "LISTING_VIEW", contentId: post.id });
+  }, [post?.id, post?.isMyContent]);
 
   // ── Video completion / replay tracking ────────────────────────────────────
   const handleVideoCompleted = useCallback(
@@ -1309,6 +1331,7 @@ export function ContentDetail({
               return;
             }
             if (!resolvedContentId) return;
+            trackMessageIntent();
             if (!requireAuth({ contentId: resolvedContentId })) return;
             openMessageRoute();
           }}
@@ -1771,11 +1794,22 @@ export function ContentDetail({
                   a six-figure laptop is not helped by being told nobody else has
                   spoken up. Zeros are dropped rather than displayed, and the
                   comment count is left to the Comments heading further down,
-                  which already carries it. */}
-              {(post.stats.views > 0 || resolvedSaveCount > 0) && (
+                  which already carries it.
+
+                  Views are shown to the seller only. On a young marketplace the
+                  true number is usually small, and "3 views" tells a buyer the
+                  listing is being ignored — a signal that discourages the
+                  contact we want, about a figure that says nothing about the
+                  product. The seller still needs it, so it stays on their own
+                  listings and in their analytics; it is hidden from everyone
+                  else, not removed. */}
+              {((isOwnPost && post.stats.views > 0) ||
+                resolvedSaveCount > 0) && (
                 <p className="mt-3 text-xs font-medium text-muted-foreground">
                   {[
-                    post.stats.views > 0 ? `${fmt(post.stats.views)} views` : null,
+                    isOwnPost && post.stats.views > 0
+                      ? `${fmt(post.stats.views)} views`
+                      : null,
                     resolvedSaveCount > 0
                       ? `${fmt(resolvedSaveCount)} saved`
                       : null,
@@ -1792,6 +1826,7 @@ export function ContentDetail({
                     type="button"
                     onClick={() => {
                       if (!resolvedContentId) return;
+                      trackMessageIntent();
                       if (!requireAuth({ contentId: resolvedContentId }))
                         return;
                       openMessageRoute();
