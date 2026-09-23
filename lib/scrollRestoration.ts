@@ -369,7 +369,8 @@ function findAnchorElement(
 /** Where the page is right now, anchored to the item on screen. */
 export function captureScrollPosition(): ScrollPosition {
   return {
-    y: Math.round(readScrollY()),
+    // iOS rubber-banding past the top reports a negative offset.
+    y: Math.max(0, Math.round(readScrollY())),
     a: captureAnchor(),
     t: Date.now(),
   };
@@ -643,23 +644,25 @@ export function handleRouteCommit() {
       : pendingTraversal.url === url);
   const isReturn = isFresh(pendingReturn) && pendingReturn.url === url;
 
-  // Same history entry: the page rewrote its own URL (filters, a sub-tab, a
-  // search term). That is not a navigation — leave the page where it is, and
-  // let any restore already running finish. Without the Navigation API the
-  // best available proxy is "same pathname and not back/forward".
+  // Same history entry and same page: the page rewrote its own URL (filters, a
+  // sub-tab, a search term). That is not a navigation — leave the page where it
+  // is, and let any restore already running finish. Without the Navigation API
+  // the best available proxy is "same pathname and not back/forward".
   const sameEntry =
     entry !== null
       ? entry === previousEntry
       : !traversal && pathname === previousPathname;
-  if (sameEntry && !isReturn) return;
+  if (sameEntry && pathname === previousPathname && !isReturn) return;
 
   pendingTraversal = null;
   pendingReturn = null;
   cancelScrollRestore();
 
   // An entry seen before can only be reached by back/forward, even when the
-  // popstate that led here was missed.
-  const revisit = entry !== null && knownEntries.has(entry);
+  // popstate that led here was missed. A replace that swapped in a different
+  // page (a back button's no-history fallback) keeps the entry but is a new
+  // page, so it starts at the top like a push.
+  const revisit = !sameEntry && entry !== null && knownEntries.has(entry);
   if (entry) knownEntries.add(entry);
 
   if (isOverlayPath(pathname)) {
@@ -675,7 +678,7 @@ export function handleRouteCommit() {
     return;
   }
 
-  if (traversal || revisit) {
+  if ((traversal && !sameEntry) || revisit) {
     restoreScrollPosition(
       (entry ? readPosition(ENTRY_PREFIX + entry) : null) ??
         readPosition(URL_PREFIX + url),
@@ -759,10 +762,17 @@ export function installScrollTracking(): () => void {
     if (url.origin !== window.location.origin) return;
 
     const isTab = link.hasAttribute(NAV_TAB_ATTR);
-    if (isTab && url.pathname === window.location.pathname) {
+    if (
+      isTab &&
+      url.pathname === window.location.pathname &&
+      url.search === window.location.search
+    ) {
       // Re-tapping the tab you are on: straight back to the top, like every
       // native tab bar. Cancelling the click stops next/link from running a
-      // navigation to the page already on screen.
+      // navigation to the page already on screen. A tab link always points at
+      // the screen that tab last showed (navTabMemory), so this is exact-URL:
+      // tapping Profile from inside one of its pushed sections still pops
+      // back to the profile, as a tab bar does from deeper in its stack.
       event.preventDefault();
       scrollToTopLikeNative();
       return;
