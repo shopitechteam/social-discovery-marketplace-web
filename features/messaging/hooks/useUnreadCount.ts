@@ -11,7 +11,10 @@ import {
   DirectMessageCreatedPayload,
   WS_EVENTS,
 } from "@/lib/socket/socket-events";
-import { MY_UNREAD_CONVERSATION_COUNT } from "../graphql/unread";
+import {
+  MY_UNREAD_CONVERSATION_COUNT,
+  MY_UNREAD_MESSAGE_COUNT,
+} from "../graphql/unread";
 
 /**
  * Total unread direct-conversation count for the bottom-nav badge. Backed by the
@@ -67,8 +70,60 @@ export function useUnreadConversationCount(): number {
   );
 }
 
+/**
+ * Unread *messages* across every thread — the number a badge should show.
+ *
+ * {@link useUnreadConversationCount} counts threads, which reads as wrong on a
+ * badge: four new messages from one person showed as "1". Kept live by the same
+ * socket events, for the same reason.
+ */
+export function useUnreadMessageCount(): number {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated());
+  const currentUserId = useAuthStore((s) => s.user?.id);
+  const { on } = useSocket();
+
+  const { data, refetch } = useQuery(MY_UNREAD_MESSAGE_COUNT, {
+    skip: !isAuthenticated,
+    fetchPolicy: "cache-first",
+  });
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    return on<DirectMessageCreatedPayload>(
+      WS_EVENTS.DM_MESSAGE_CREATED,
+      (payload) => {
+        if (payload.senderId !== currentUserId) void refetch();
+      },
+    );
+  }, [currentUserId, isAuthenticated, on, refetch]);
+
+  // Reading or removing a thread clears its messages from the total, so the
+  // badge has to re-read on the same events the thread count does.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    return on<DirectConversationUpdatedPayload>(
+      WS_EVENTS.DM_CONVERSATION_UPDATED,
+      () => void refetch(),
+    );
+  }, [isAuthenticated, on, refetch]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    return on<DirectConversationRemovedPayload>(
+      WS_EVENTS.DM_CONVERSATION_REMOVED,
+      () => void refetch(),
+    );
+  }, [isAuthenticated, on, refetch]);
+
+  if (!isAuthenticated) return 0;
+  return (
+    (data as { myUnreadDirectMessageCount?: number } | undefined)
+      ?.myUnreadDirectMessageCount ?? 0
+  );
+}
+
 export function useInboxUnreadCount(): number {
-  const unreadConversations = useUnreadConversationCount();
+  const unreadMessages = useUnreadMessageCount();
   const unreadNotifications = useUnreadNotificationCount();
-  return unreadConversations + unreadNotifications;
+  return unreadMessages + unreadNotifications;
 }
