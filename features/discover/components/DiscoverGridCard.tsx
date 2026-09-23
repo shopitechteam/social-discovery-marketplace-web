@@ -200,7 +200,8 @@ function DiscoverGridCardImpl({
   return (
     // Not one big Link: the seller row links to the profile and the rest links
     // to the post, and an <a> inside an <a> is invalid and un-clickable.
-    <div className="group/tile flex flex-col">
+    // data-scroll-anchor: what a return to this grid lines back up with.
+    <div data-scroll-anchor={post.id} className="group/tile flex flex-col">
       {/* ---- 1. Who --------------------------------------------------- */}
       {seller && creator ? (
         <Link

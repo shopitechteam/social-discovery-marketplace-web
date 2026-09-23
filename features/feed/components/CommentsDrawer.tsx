@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { X } from "lucide-react";
 import { motion, type PanInfo } from "framer-motion";
+import { isOverlayPath } from "@/lib/scrollRestoration";
 import { CommentThread } from "./CommentThread";
 
 interface Props {
@@ -82,6 +83,7 @@ export function CommentsDrawer({
     }
 
     const scrollY = window.scrollY;
+    const lockedPath = `${window.location.pathname}${window.location.search}`;
     const prev = {
       position: body.style.position,
       top: body.style.top,
@@ -105,7 +107,16 @@ export function CommentsDrawer({
       body.style.right = prev.right;
       body.style.width = prev.width;
       body.style.overflow = prev.overflow;
-      window.scrollTo(0, scrollY);
+      // Only put the page back if it is still the page on screen. When the
+      // sheet closes because the user tapped through to somewhere else (a
+      // commenter's profile), this cleanup runs after the new route has
+      // mounted — scrolling here would open that page at the feed's offset.
+      // An overlay route (a listing opened from a comment) is drawn over the
+      // same page, so that one is still restored.
+      const { pathname, search } = window.location;
+      if (`${pathname}${search}` === lockedPath || isOverlayPath(pathname)) {
+        window.scrollTo(0, scrollY);
+      }
     };
   }, [desktopInline, open, lockBody]);
 

@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useInboxUnreadCount } from "@/features/messaging/hooks/useUnreadCount";
 import { useUiStore } from "@/stores/ui";
+import { useNavTabHref } from "@/lib/navTabMemory";
 
 type Tab = {
   key: string;
@@ -81,6 +82,14 @@ export function BottomNav({ lang = "en" }: { lang: string }) {
   // to hide the nav WITHOUT unmounting it — a class toggle, so there's no
   // remount flash when they appear or leave.
   const bottomNavHidden = useUiStore((s) => s.bottomNavHidden);
+  // Each tab returns to the screen it was left on — the feed's sub-tab, the
+  // Explore search, the inbox tab — and RouteScrollRestoration puts the scroll
+  // back where it was. Profile always opens its root (see navTabMemory).
+  const tabHrefs: Record<string, string> = {
+    feed: useNavTabHref("feed", `/${lang}/for-you`),
+    explore: useNavTabHref("explore", `/${lang}/explore`),
+    notifications: useNavTabHref("notifications", `/${lang}/notifications`),
+  };
 
   // Hide on the full create flow, content detail, creator profile, and chat detail pages
   if (shouldHideBottomNav(pathname)) return null;
@@ -93,7 +102,7 @@ export function BottomNav({ lang = "en" }: { lang: string }) {
     >
       <div className="relative flex h-(--nav-height) items-center justify-between border-t border-border">
         {tabs.map((tab) => {
-          const href = `/${lang}/${tab.path}`;
+          const href = tabHrefs[tab.key] ?? `/${lang}/${tab.path}`;
           const Icon = tab.icon;
 
           // Center Post button — one flat brand-coloured squircle. It used to
@@ -131,6 +140,9 @@ export function BottomNav({ lang = "en" }: { lang: string }) {
               key={tab.key}
               href={href}
               scroll={false}
+              // A tab: returns to where it was left, and re-tapping it while
+              // on it scrolls to the top (lib/scrollRestoration.ts).
+              data-nav-tab={tab.key}
               className={`flex min-h-11 flex-1 select-none flex-col items-center justify-center gap-0.5 py-1 transition-colors duration-150 [-webkit-tap-highlight-color:transparent] ${
                 isActive ? "text-primary" : "text-muted"
               }`}

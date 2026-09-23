@@ -158,6 +158,7 @@ export function ConversationList({
             return (
               <button
                 key={conversation.id}
+                data-scroll-anchor={conversation.id}
                 type="button"
                 onClick={() => {
                   // Suppress the click that follows a long-press release.

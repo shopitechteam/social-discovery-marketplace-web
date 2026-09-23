@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { MessagingShell } from "@/features/messaging/components/MessagingShell";
 import { useUnreadMessageCount } from "@/features/messaging/hooks/useUnreadCount";
@@ -34,13 +34,10 @@ export function NotificationsScreen({ lang }: Props) {
   const unreadMessages = useUnreadMessageCount();
   const notifications = useNotifications();
 
-  // Always land at the top on mount. Returning from a chat detail otherwise
-  // restores the previous scroll position, leaving the inbox scrolled down.
-  // Deferred to the next frame so it wins over the router's scroll restoration.
-  useEffect(() => {
-    const raf = requestAnimationFrame(() => window.scrollTo(0, 0));
-    return () => cancelAnimationFrame(raf);
-  }, []);
+  // No scroll handling of its own. This used to force the top on every mount,
+  // which also threw away the list position when coming back from a chat or
+  // switching tabs; RouteScrollRestoration now opens a fresh visit at the top
+  // and returns a back/tab visit to where the inbox was left.
 
   function handleTabChange(next: SubTab) {
     if (next === tab) return;

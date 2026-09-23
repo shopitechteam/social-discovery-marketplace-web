@@ -19,6 +19,12 @@ import { LocationPermissionBanner } from "./LocationPermissionBanner";
 import { PostCard } from "./PostCard";
 import { DesktopTrendingRail } from "./DesktopTrendingRail";
 import { SHOW_ASK_SHOPI } from "@/features/feed/utils/askShopiAvailability";
+import {
+  captureScrollPosition,
+  restoreScrollPosition,
+  type ScrollPosition,
+} from "@/lib/scrollRestoration";
+import { rememberNavTabUrl } from "@/lib/navTabMemory";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 
 type Tab = "for-you" | "following" | "nearby" | "ask-shopi";
@@ -46,6 +52,13 @@ const isTab = (v: string | null): v is Tab =>
 const isDesktopViewport = () =>
   typeof window !== "undefined" &&
   window.matchMedia("(min-width: 768px)").matches;
+
+/**
+ * Where each sub-tab was left, kept for the whole visit rather than per mount
+ * (see FeedPage's twin). Anchored positions, so a column that re-lays out
+ * still comes back to the same post.
+ */
+const subTabPositions: Partial<Record<Tab, ScrollPosition>> = {};
 
 function ColumnSkeleton() {
   return (
@@ -219,18 +232,11 @@ export default function DesktopFeed({
   const [openedTabs, setOpenedTabs] = useState<Set<Tab>>(
     () => new Set([initialTab]),
   );
-  const scrollByTab = useRef<Record<Tab, number>>({
-    "for-you": 0,
-    following: 0,
-    nearby: 0,
-    "ask-shopi": 0,
-  });
   const prevTab = useRef<Tab>(initialTab);
 
   useLayoutEffect(() => {
     if (prevTab.current !== tab) {
-      if (isDesktopViewport())
-        window.scrollTo(0, scrollByTab.current[tab] ?? 0);
+      if (isDesktopViewport()) restoreScrollPosition(subTabPositions[tab]);
       prevTab.current = tab;
     }
   }, [tab]);
@@ -238,7 +244,7 @@ export default function DesktopFeed({
   const selectTab = useCallback((next: Tab) => {
     const current = prevTab.current;
     if (next === current) return;
-    if (isDesktopViewport()) scrollByTab.current[current] = window.scrollY;
+    if (isDesktopViewport()) subTabPositions[current] = captureScrollPosition();
     setTab(next);
     setOpenedTabs((prev) => (prev.has(next) ? prev : new Set(prev).add(next)));
     const params = new URLSearchParams(window.location.search);
@@ -250,6 +256,9 @@ export default function DesktopFeed({
       "",
       `${window.location.pathname}${qs ? `?${qs}` : ""}`,
     );
+    // Next does not see a bare replaceState, so tell the nav tab memory the
+    // For You tab now returns to this sub-tab.
+    rememberNavTabUrl();
   }, []);
 
   useEffect(() => {
@@ -258,7 +267,7 @@ export default function DesktopFeed({
     if (!isTab(t)) return;
     const current = prevTab.current;
     if (t === current) return;
-    if (isDesktopViewport()) scrollByTab.current[current] = window.scrollY;
+    if (isDesktopViewport()) subTabPositions[current] = captureScrollPosition();
     setTab(t);
     setOpenedTabs((prev) => (prev.has(t) ? prev : new Set(prev).add(t)));
   }, [searchParams, visible]);

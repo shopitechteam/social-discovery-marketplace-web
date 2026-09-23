@@ -1,6 +1,12 @@
 "use client";
 
-import { useState, useEffect, useLayoutEffect, useRef } from "react";
+import {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useSyncExternalStore,
+} from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { FeedHeader } from "./FeedHeader";
@@ -8,6 +14,12 @@ import FeedGrid from "./FeedGrid";
 import { FeedSkeleton } from "./FeedSkeleton";
 import { useUiStore } from "@/stores/ui";
 import { SHOW_ASK_SHOPI } from "@/features/feed/utils/askShopiAvailability";
+import {
+  captureScrollPosition,
+  restoreScrollPosition,
+  type ScrollPosition,
+} from "@/lib/scrollRestoration";
+import { rememberNavTabUrl } from "@/lib/navTabMemory";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 
 const FollowingGrid = dynamic(() =>
@@ -41,11 +53,45 @@ const isTab = (v: string | null): v is Tab =>
   v === "nearby" ||
   (SHOW_ASK_SHOPI && v === "ask-shopi");
 
+const DESKTOP_QUERY = "(min-width: 768px)";
+
 /** The mobile card feed is hidden on md+ (DesktopFeed owns the window scroll
  *  there), so its save/restore must not fire on desktop viewports. */
 const isMobileViewport = () =>
-  typeof window !== "undefined" &&
-  !window.matchMedia("(min-width: 768px)").matches;
+  typeof window !== "undefined" && !window.matchMedia(DESKTOP_QUERY).matches;
+
+function subscribeViewport(onChange: () => void) {
+  const media = window.matchMedia(DESKTOP_QUERY);
+  media.addEventListener("change", onChange);
+  return () => media.removeEventListener("change", onChange);
+}
+const isDesktopViewportNow = () => window.matchMedia(DESKTOP_QUERY).matches;
+const serverIsDesktop = () => false;
+
+/**
+ * Where each sub-tab was left, kept for the whole visit rather than per mount,
+ * so coming back to the feed and switching to another sub-tab still lands
+ * where that one was. Anchored positions, like the route-level ones.
+ */
+const subTabPositions: Partial<Record<Tab, ScrollPosition>> = {};
+
+/**
+ * Mirror the sub-tab into the address bar, as DesktopFeed does, so the For You
+ * nav tab (lib/navTabMemory) can bring the user back to it. A bare
+ * replaceState on purpose: it is not a navigation, and Next must not re-render
+ * the route for it.
+ */
+function mirrorTabToUrl(tab: Tab) {
+  const url = new URL(window.location.href);
+  if (tab === "for-you") url.searchParams.delete("tab");
+  else url.searchParams.set("tab", tab);
+  window.history.replaceState(
+    window.history.state,
+    "",
+    `${url.pathname}${url.search}${url.hash}`,
+  );
+  rememberNavTabUrl();
+}
 
 export function FeedPage({ lang, visible = true, initialItems }: Props) {
   const searchParams = useSearchParams();
@@ -58,15 +104,15 @@ export function FeedPage({ lang, visible = true, initialItems }: Props) {
   // The server snapshot stays mobile-first so the PageSpeed/Lighthouse viewport
   // receives useful HTML immediately. Desktop swaps to its dedicated tree just
   // after hydration and gets a lightweight reserved-height fallback meanwhile.
-  const [desktop, setDesktop] = useState(false);
-
-  useEffect(() => {
-    const media = window.matchMedia("(min-width: 768px)");
-    const syncViewport = () => setDesktop(media.matches);
-    syncViewport();
-    media.addEventListener("change", syncViewport);
-    return () => media.removeEventListener("change", syncViewport);
-  }, []);
+  // On a client-side navigation there is no hydration, so the real viewport is
+  // read on the first render — the desktop feed is there in the same commit,
+  // which is what lets a return to the feed restore its scroll before paint
+  // instead of flashing the skeleton at the top first.
+  const desktop = useSyncExternalStore(
+    subscribeViewport,
+    isDesktopViewportNow,
+    serverIsDesktop,
+  );
 
   const initialParam = searchParams.get("tab");
   const initialTab: Tab = isTab(initialParam) ? initialParam : "for-you";
@@ -80,13 +126,8 @@ export function FeedPage({ lang, visible = true, initialItems }: Props) {
   );
   // The page scrolls on `window` (there's no inner scroll container), so hiding
   // the inactive feed collapses the document height and the browser loses the
-  // position. We remember each tab's scrollY and restore it on return.
-  const scrollByTab = useRef<Record<Tab, number>>({
-    "for-you": 0,
-    following: 0,
-    nearby: 0,
-    "ask-shopi": 0,
-  });
+  // position. Each sub-tab's position is kept in `subTabPositions` and
+  // restored on return.
   const prevTab = useRef<Tab>(initialTab);
 
   // Ask Shopi owns the bottom edge of the mobile viewport, so remove both the
@@ -99,12 +140,12 @@ export function FeedPage({ lang, visible = true, initialItems }: Props) {
 
   // Restore the incoming tab's scroll AFTER the show/hide classes apply but
   // before paint, so there's no flash at the wrong offset. Layout effects run
-  // post-DOM-mutation, by which point the restored feed has its full height back.
+  // post-DOM-mutation, by which point the restored feed has its full height
+  // back; a sub-tab opened for the first time is waited for until its cards
+  // render. Nothing saved means the top.
   useLayoutEffect(() => {
     if (prevTab.current !== tab) {
-      if (isMobileViewport()) {
-        window.scrollTo(0, scrollByTab.current[tab] ?? 0);
-      }
+      if (isMobileViewport()) restoreScrollPosition(subTabPositions[tab]);
       prevTab.current = tab;
     }
   }, [tab]);
@@ -118,7 +159,7 @@ export function FeedPage({ lang, visible = true, initialItems }: Props) {
     if (!visible) return;
     const t = searchParams.get("tab");
     if (isTab(t) && t !== tab) {
-      if (isMobileViewport()) scrollByTab.current[tab] = window.scrollY;
+      if (isMobileViewport()) subTabPositions[tab] = captureScrollPosition();
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setTab(t);
       setOpenedTabs((prev) => (prev.has(t) ? prev : new Set(prev).add(t)));
@@ -130,9 +171,10 @@ export function FeedPage({ lang, visible = true, initialItems }: Props) {
   function handleTabChange(next: Tab) {
     if (next === tab) return;
     // Remember where we are on the tab we're leaving, before it gets hidden.
-    if (isMobileViewport()) scrollByTab.current[tab] = window.scrollY;
+    if (isMobileViewport()) subTabPositions[tab] = captureScrollPosition();
     setTab(next);
     setOpenedTabs((prev) => (prev.has(next) ? prev : new Set(prev).add(next)));
+    mirrorTabToUrl(next);
   }
 
   return (
