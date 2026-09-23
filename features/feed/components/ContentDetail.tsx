@@ -37,6 +37,7 @@ import {
 } from "@/types/__generated__/graphql";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 import { useAuthGuard } from "../hooks/useAuthGuard";
+import { useVideoDownload } from "../hooks/useVideoDownload";
 import { useAppBack } from "@/lib/useAppBack";
 import { useSellerPhone } from "../hooks/useSellerPhone";
 import { formatStoredPhone } from "@/lib/phone";
@@ -164,17 +165,17 @@ function MobileImageCarousel({
   );
 }
 
-function downloadSrc(post: DetailPost): string | null {
+/**
+ * The file to save for an image post.
+ *
+ * Videos deliberately don't go through here. Their only client-side URL is the
+ * HLS manifest, which is a playlist rather than a file — saving it produces a
+ * useless `.m3u8`. Video downloads go via useVideoDownload, which asks the API
+ * for a real MP4.
+ */
+function imageDownloadSrc(post: DetailPost): string | null {
   const first = post.media?.[0];
   if (!first) return null;
-
-  if (post.type === "VIDEO") {
-    const playbackId = first.muxMeta?.playbackId;
-    return (
-      first.url ??
-      (playbackId ? `https://stream.mux.com/${playbackId}.m3u8` : null)
-    );
-  }
 
   const preferredVariant = post.hdEnabled ? "original" : "large";
   return (
@@ -620,8 +621,19 @@ export function ContentDetail({
   } = mobileThread;
 
   const [captionExpanded, setCaptionExpanded] = useState(false);
+  // Images save straight from their R2 URL; videos go through the API, which
+  // resolves them to a Mux MP4 and may have to wait on the encode.
   const [isDownloading, setIsDownloading] = useState(false);
+  const videoDownload = useVideoDownload(post?.id ?? "");
+  const { error: videoDownloadError, clearError: clearVideoDownloadError } =
+    videoDownload;
   const commentsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!videoDownloadError) return;
+    toast.error(videoDownloadError);
+    clearVideoDownloadError();
+  }, [videoDownloadError, clearVideoDownloadError]);
 
   const isVideo = post?.type === "VIDEO";
   const media = [...(post?.media ?? [])].sort(
@@ -761,7 +773,15 @@ export function ContentDetail({
 
   async function handleDownload() {
     if (!post || typeof document === "undefined") return;
-    const src = downloadSrc(post);
+
+    // Videos have no usable client-side file URL — the API resolves them to a
+    // Mux MP4, and may need a moment to encode one.
+    if (post.type === "VIDEO") {
+      await videoDownload.download();
+      return;
+    }
+
+    const src = imageDownloadSrc(post);
     if (!src) return;
 
     setIsDownloading(true);
@@ -1086,11 +1106,15 @@ export function ContentDetail({
             <button
               type="button"
               onClick={handleDownload}
-              disabled={isDownloading}
+              disabled={isDownloading || videoDownload.isDownloading}
               className="flex lg:cursor-pointer w-full text-sm items-center gap-3 px-4 py-3 rounded-xl font-semibold text-default hover:bg-surface transition-colors disabled:opacity-60"
             >
               <Download className="w-4 h-4 shrink-0" strokeWidth={1.8} />
-              {isDownloading ? "Downloading…" : "Download"}
+              {videoDownload.isPreparing
+                ? "Preparing…"
+                : isDownloading || videoDownload.isDownloading
+                  ? "Downloading…"
+                  : "Download"}
             </button>
           )}
 

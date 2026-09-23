@@ -46,6 +46,7 @@ import { fmtCompact as fmt } from "@/lib/format";
 import { avatarGradient, idInitials as initials } from "@/lib/avatar";
 import { useInteractions } from "../hooks/useInteractions";
 import { useAuthGuard } from "../hooks/useAuthGuard";
+import { useVideoDownload } from "../hooks/useVideoDownload";
 import { useFollow } from "../hooks/useFollow";
 import { BufferSpinner } from "./BufferSpinner";
 import { TikTokIcon } from "@/components/ui/TikTokIcon";
@@ -817,17 +818,17 @@ function aspectRatioOf(item: MediaEntry | undefined): number {
   return 4 / 5; // unknown → portrait-ish placeholder
 }
 
-function downloadSrc(post: ContentCardFieldsFragment): string | null {
+/**
+ * The file to save for an image post.
+ *
+ * Videos deliberately don't go through here. Their only client-side URL is the
+ * HLS manifest, which is a playlist rather than a file — saving it produces a
+ * useless `.m3u8`. Video downloads go via useVideoDownload, which asks the API
+ * for a real MP4.
+ */
+function imageDownloadSrc(post: ContentCardFieldsFragment): string | null {
   const first = post.media?.[0];
   if (!first) return null;
-
-  if (post.type === "VIDEO") {
-    const playbackId = first.muxMeta?.playbackId;
-    return (
-      first.url ??
-      (playbackId ? `https://stream.mux.com/${playbackId}.m3u8` : null)
-    );
-  }
 
   const preferredVariant = post.hdEnabled ? "original" : "large";
   return (
@@ -1123,7 +1124,12 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
   const captionRef = useRef<HTMLParagraphElement>(null);
   const [expanded, setExpanded] = useState(false);
   const [captionOverflows, setCaptionOverflows] = useState(false);
+  // Images save straight from their R2 URL; videos go through the API, which
+  // resolves them to a Mux MP4 and may have to wait on the encode.
   const [isDownloading, setIsDownloading] = useState(false);
+  const videoDownload = useVideoDownload(post.id);
+  const { error: videoDownloadError, clearError: clearVideoDownloadError } =
+    videoDownload;
   const [menuOpen, setMenuOpen] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [showCarousel, setShowCarousel] = useState(false);
@@ -1132,6 +1138,14 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
   // route-transition gap so opening a chat never flashes a blank page. The
   // overlay unmounts with the PostCard once the conversation route takes over.
   const [isOpeningChat, setIsOpeningChat] = useState(false);
+
+  // The download button lives in a menu that closes on tap, so an inline error
+  // there would never be read. A toast outlives the menu.
+  useEffect(() => {
+    if (!videoDownloadError) return;
+    toast.error(videoDownloadError);
+    clearVideoDownloadError();
+  }, [videoDownloadError, clearVideoDownloadError]);
 
   const mediaCount = post.media?.length ?? 0;
 
@@ -1320,7 +1334,14 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
   );
 
   async function handleDownload() {
-    const src = downloadSrc(post);
+    // Videos have no usable client-side file URL — the API resolves them to a
+    // Mux MP4, and may need a moment to encode one.
+    if (post.type === "VIDEO") {
+      await videoDownload.download();
+      return;
+    }
+
+    const src = imageDownloadSrc(post);
     if (!src || typeof document === "undefined") return;
 
     setIsDownloading(true);
@@ -1454,10 +1475,10 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
             {post.allowDownload && (
               <button
                 onClick={handleDownload}
-                disabled={isDownloading}
+                disabled={isDownloading || videoDownload.isDownloading}
                 className="flex text-sm lg:cursor-pointer w-full items-center gap-3 px-4 py-3 rounded-xl  font-semibold text-default hover:bg-surface transition-colors"
               >
-                {isDownloading ? (
+                {isDownloading || videoDownload.isDownloading ? (
                   <>
                     <svg
                       className="w-4 h-4 animate-spin"
@@ -1478,7 +1499,14 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
                         d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
                       />
                     </svg>
-                    <span>Down.…</span>
+                    {/* Mux encodes the MP4 on demand for older uploads, so a
+                        video download can sit here for a few seconds. Saying
+                        "Preparing" rather than "Downloading" is the difference
+                        between a wait that looks intentional and one that
+                        looks broken. */}
+                    <span>
+                      {videoDownload.isPreparing ? "Preparing…" : "Downloading…"}
+                    </span>
                   </>
                 ) : (
                   <>

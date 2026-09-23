@@ -71,8 +71,6 @@ export function SideNav({ lang = "en" }: { lang: string }) {
       .toUpperCase() || "S";
   const homeActive =
     pathname === `/${lang}` || pathname.startsWith(`/${lang}/for-you`);
-  const isFeedRoute =
-    pathname === `/${lang}` || pathname.startsWith(`/${lang}/for-you`);
   const browseActive =
     pathname.startsWith(`/${lang}/explore`) ||
     pathname.startsWith(`/${lang}/search`);
@@ -137,14 +135,15 @@ export function SideNav({ lang = "en" }: { lang: string }) {
               <NavSearch lang={lang} className="hidden w-full lg:flex" />
             </div>
 
-            {!isFeedRoute ? (
-              <Link
-                href={`/${lang}/upload`}
-                className="inline-flex h-8 shrink-0 items-center justify-center rounded-full bg-surface px-4 text-[13px] font-bold text-main transition-colors hover:bg-subtle"
-              >
-                Sell item
-              </Link>
-            ) : null}
+            {/* Present on every desktop route, the feed included. Posting is
+                the one action the whole app exists for, and hiding it on the
+                busiest page meant the nav changed shape as you moved around. */}
+            <Link
+              href={`/${lang}/upload`}
+              className="inline-flex h-8 shrink-0 items-center justify-center rounded-full bg-surface px-4 text-[13px] font-bold text-main transition-colors hover:bg-subtle"
+            >
+              Sell item
+            </Link>
 
             <div className="flex items-center gap-0.5">
               {/* Messages/Inbox/Saved all need an account behind them — for a
