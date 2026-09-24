@@ -115,7 +115,9 @@ export function LandingNav({
     const el = document.getElementById(id);
     if (el) {
       e.preventDefault();
-      const top = el.getBoundingClientRect().top + window.scrollY - 72;
+      // Clear the fixed header: 56px on phones, 76px from md up.
+      const header = window.matchMedia("(min-width: 768px)").matches ? 76 : 56;
+      const top = el.getBoundingClientRect().top + window.scrollY - header - 8;
       window.scrollTo({ top, behavior: "smooth" });
       return;
     }
@@ -124,7 +126,7 @@ export function LandingNav({
   return (
     <>
       <nav
-        className={`fixed top-0 right-0 left-0 z-50 h-19 border-b bg-[rgb(var(--color-bg)/0.95)] px-4 backdrop-blur-[18px] transition-[background-color,border-color] duration-250 lg:px-30 ${
+        className={`fixed top-0 right-0 left-0 z-50 h-14 border-b md:h-19 bg-[rgb(var(--color-bg)/0.95)] px-4 backdrop-blur-[18px] transition-[background-color,border-color] duration-250 lg:px-30 ${
           scrolled ? "border-border" : "border-transparent"
         }`}
       >
@@ -137,7 +139,8 @@ export function LandingNav({
               href={homeBase}
               className="flex items-center gap-2 no-underline"
             >
-              <ShopiLogo height={72} />
+              {/* 36px on phones, 52px (the old height={72}) from md up. */}
+              <ShopiLogo className="h-9 w-auto md:h-13" />
             </Link>
 
             {/* Desktop nav links */}
@@ -172,12 +175,12 @@ export function LandingNav({
           <div className="flex items-center gap-[0.65rem]">
             {/* Sign in — quiet text link */}
             {/* Theme toggle */}
-            <div className="h-9 w-9">
+            <div className="h-10 w-10 md:h-9 md:w-9">
               {hydrated && (
                 <button
                   onClick={toggleTheme}
                   aria-label="Toggle theme"
-                  className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-border bg-elevated text-foreground"
+                  className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-border bg-elevated text-foreground md:h-9 md:w-9"
                 >
                   {resolvedTheme === "dark" ? (
                     <Sun size={17} />
@@ -245,7 +248,7 @@ export function LandingNav({
             <button
               aria-label={menuOpen ? "Close menu" : "Open menu"}
               onClick={() => setMenuOpen((v) => !v)}
-              className="flex h-9 w-9 shrink-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-sm border border-border bg-elevated p-0 md:hidden"
+              className="flex h-10 w-10 shrink-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-full border border-border bg-elevated p-0 md:hidden"
             >
               {menuOpen ? <X size={18} /> : <Menu size={18} />}
             </button>
@@ -255,7 +258,7 @@ export function LandingNav({
 
       {/* Mobile menu overlay */}
       {menuOpen && (
-        <div className="fixed top-19 right-0 bottom-0 left-0 z-49 flex flex-col overflow-y-auto bg-[rgb(var(--color-bg)/0.97)] px-(--landing-page-x) py-5 backdrop-blur-[18px]">
+        <div className="fixed top-14 right-0 bottom-0 left-0 z-49 md:top-19 flex flex-col overflow-y-auto bg-[rgb(var(--color-bg)/0.97)] px-(--landing-page-x) py-5 backdrop-blur-[18px]">
           {NAV_LINKS.map(({ label, href, kind }) => {
             const className = `border-b border-border py-[0.65rem] text-[0.85rem] text-foreground ${
               kind === "section" && activeHash === href

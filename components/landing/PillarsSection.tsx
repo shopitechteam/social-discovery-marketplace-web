@@ -26,19 +26,19 @@ export function PillarsSection({ dict }: { dict: Dictionary }) {
   ];
 
   return (
-    <section id="features" className="px-(--landing-page-x) pb-14 md:pb-20">
+    <section id="features" className="px-(--landing-page-x) pb-8 md:pb-20">
       <div className="mx-auto max-w-(--landing-page-max)">
         <h2 className="sr-only">{t.heading}</h2>
-        <ul className="grid list-none grid-cols-2 gap-3 p-0 md:grid-cols-4 md:gap-5">
+        <ul className="grid list-none grid-cols-2 gap-2 p-0 md:grid-cols-4 md:gap-5">
           {items.map(({ key, label, icon: Icon }, i) => (
             <li
               key={key}
-              className={`landing-reveal flex items-center gap-3 rounded-[1.2rem] border border-default bg-elevated p-4 shadow-sm md:p-5 ${REVEAL_DELAYS[i] ?? ""}`}
+              className={`landing-reveal flex items-center gap-2.5 rounded-2xl border border-default bg-elevated p-3 md:gap-3 md:rounded-[1.2rem] md:p-5 md:shadow-sm ${REVEAL_DELAYS[i] ?? ""}`}
             >
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-default bg-elevated text-primary shadow-sm md:h-11 md:w-11">
-                <Icon size={20} />
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary md:h-11 md:w-11 md:border md:border-default md:bg-elevated md:shadow-sm">
+                <Icon className="size-4.5 md:size-5" />
               </span>
-              <span className="font-display text-base font-semibold leading-tight text-default md:text-lg">
+              <span className="font-display text-[0.875rem] font-semibold leading-snug text-default md:text-lg md:leading-tight">
                 {label}
               </span>
             </li>

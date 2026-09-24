@@ -14,14 +14,15 @@ export function LandingFooter({
   return (
     // Self-contained landing shell: pages that render the footer outside the
     // landing wrapper still get the same inset and --landing-page-* values.
-    <div className="lg:px-30 [--landing-page-max:1400px] [--landing-page-x:clamp(0.875rem,1.2vw,1.25rem)]">
-      <footer className="mb-8 rounded-md border-t border-border bg-surface px-(--landing-page-x) pt-12 pb-8">
+    <div className="lg:px-30 [--landing-page-max:1400px] [--landing-page-x:1rem] md:[--landing-page-x:clamp(0.875rem,1.2vw,1.25rem)]">
+      <footer className="rounded-md border-t border-border bg-surface px-(--landing-page-x) pt-8 pb-6 md:mb-8 md:pt-12 md:pb-8">
         {/* Brand column + five link columns. Keep the track count in step with
             the array below — adding a column without widening this template
             silently wraps it onto a second row. */}
-        <div className="mx-auto mb-12 grid max-w-(--landing-page-max) grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-[1.7fr_1fr_1fr_1fr_1fr_1fr] lg:gap-10">
+        {/* Phones: two compact link columns under the brand, not one long list. */}
+        <div className="mx-auto mb-8 grid max-w-(--landing-page-max) grid-cols-2 gap-x-4 gap-y-7 md:mb-12 md:gap-8 lg:grid-cols-[1.7fr_1fr_1fr_1fr_1fr_1fr] lg:gap-10">
           {/* Brand */}
-          <div>
+          <div className="col-span-2 sm:col-span-1">
             <div className="mb-4 flex items-center gap-2">
               <div className="h-7.5  font-display text-[0.875rem]">
                 <ShopiLogo height={56} />
@@ -144,15 +145,15 @@ export function LandingFooter({
             <div key={heading}>
               {/* h3, not h4: the section above the footer ends at h2, so h3 keeps
                 the page heading outline sequential (WCAG / Lighthouse). */}
-              <h3 className="mb-4 text-sm font-bold tracking-[0.02em] text-foreground">
+              <h3 className="mb-2 text-[0.8125rem] font-bold tracking-[0.02em] text-foreground md:mb-4 md:text-sm">
                 {heading}
               </h3>
-              <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
+              <ul className="m-0 flex list-none flex-col gap-1 p-0 md:gap-2.5">
                 {links.map(({ label, href }) => (
                   <li key={label}>
                     <Link
                       href={href}
-                      className="text-sm text-muted no-underline transition-colors duration-150 hover:text-foreground"
+                      className="inline-block py-1 text-[0.8125rem] text-muted no-underline transition-colors duration-150 hover:text-foreground md:py-0 md:text-sm"
                     >
                       {label}
                     </Link>

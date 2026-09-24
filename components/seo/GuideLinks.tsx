@@ -1,29 +1,33 @@
 import Link from "next/link";
-import { getBlogPost } from "@/lib/blog";
+import { articlePath, getArticle, type Article } from "@/lib/articles";
 
 /**
  * Hub → guide links. The blog guides already link up to their landing page;
  * without the link back down, the guides only get internal equity from the
  * blog index, and the landing page misses the chance to send a reader who
  * isn't ready to post yet to the long-form answer. Titles and excerpts come
- * from lib/blog.ts so a renamed post never leaves a stale anchor behind.
+ * from the article registry so a renamed post never leaves a stale anchor
+ * behind. Pass `slugs` to pick guides by hand, or `articles` when the page has
+ * already chosen them (e.g. every guide that links to it).
  */
 export function GuideLinks({
   lang,
-  slugs,
+  slugs = [],
+  articles,
   eyebrow = "Guides",
   heading,
   intro,
   surface = false,
 }: {
   lang: string;
-  slugs: string[];
+  slugs?: string[];
+  articles?: Article[];
   eyebrow?: string;
   heading: string;
   intro?: string;
   surface?: boolean;
 }) {
-  const posts = slugs.flatMap((slug) => getBlogPost(slug) ?? []);
+  const posts = articles ?? slugs.flatMap((slug) => getArticle(slug) ?? []);
   if (posts.length === 0) return null;
 
   return (
@@ -44,7 +48,7 @@ export function GuideLinks({
           {posts.map((post) => (
             <Link
               key={post.slug}
-              href={`/${lang}/blog/${post.slug}`}
+              href={`/${lang}${articlePath(post.slug)}`}
               className="rounded-lg border border-border bg-elevated p-5 no-underline transition-colors hover:border-[rgb(var(--color-border-strong))]"
             >
               <h3 className="font-display text-[1.05rem] font-bold text-foreground">

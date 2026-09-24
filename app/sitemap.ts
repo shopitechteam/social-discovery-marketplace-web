@@ -1,6 +1,13 @@
 import type { MetadataRoute } from "next";
 import { siteConfig } from "@/config/site";
-import { blogPosts } from "@/lib/blog";
+import {
+  articlePath,
+  categoryPath,
+  getActiveCategories,
+  getArticles,
+  getArticlesInCategory,
+  lastModified,
+} from "@/lib/articles";
 import { locales } from "@/i18n/config";
 import { contentPath } from "@/lib/content-url";
 import { COUNTIES } from "@/lib/counties";
@@ -263,7 +270,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: number;
   }[] = [
     { path: "", changeFrequency: "weekly", priority: 1 },
-    { path: "/blog", changeFrequency: "weekly", priority: 0.85 },
     { path: "/faq", changeFrequency: "monthly", priority: 0.8 },
     { path: "/shopi-agent", changeFrequency: "monthly", priority: 0.9 },
     {
@@ -371,13 +377,41 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   );
 
-  const blogEntries: MetadataRoute.Sitemap = blogPosts.map((post) => ({
-    url: langs("en", `/blog/${post.slug}`),
-    lastModified: new Date(post.updatedAt ?? post.publishedAt),
-    changeFrequency: "monthly",
-    priority: 0.75,
-    alternates: alternates(`/blog/${post.slug}`),
-  }));
+  // The blog is English-only, so its pages canonicalise to /en and carry no
+  // Kiswahili alternate (see features/blog/metadata.ts) — the sitemap has to
+  // say the same. Articles that set their own canonicalUrl live elsewhere
+  // and are left out.
+  const englishOnly = (path: string) => ({
+    languages: { en: langs("en", path), "x-default": langs("en", path) },
+  });
+  const articles = getArticles().filter((article) => !article.canonicalUrl);
+  const newest = (dates: string[]) =>
+    new Date(dates.reduce((a, b) => (a > b ? a : b), "1970-01-01"));
+
+  const blogEntries: MetadataRoute.Sitemap = [
+    {
+      url: langs("en", "/blog"),
+      lastModified: newest(articles.map(lastModified)),
+      changeFrequency: "weekly",
+      priority: 0.85,
+      alternates: englishOnly("/blog"),
+    },
+    ...getActiveCategories().map((category) => ({
+      url: langs("en", categoryPath(category.slug)),
+      lastModified: newest(getArticlesInCategory(category.slug).map(lastModified)),
+      changeFrequency: "weekly" as const,
+      priority: 0.8,
+      alternates: englishOnly(categoryPath(category.slug)),
+    })),
+    ...articles.map((article) => ({
+      url: langs("en", articlePath(article.slug)),
+      lastModified: new Date(lastModified(article)),
+      // Articles with live listings change as inventory does.
+      changeFrequency: article.listings ? ("daily" as const) : ("monthly" as const),
+      priority: article.listings ? 0.8 : 0.75,
+      alternates: englishOnly(articlePath(article.slug)),
+    })),
+  ];
 
   const [recentListings, featuredSellers] = await Promise.all([
     fetchRecentListings(),
