@@ -32,15 +32,20 @@ export function HeroCtas({
 }) {
   const { isAuthenticated } = useAuthSession();
 
+  // Phones: two equal 48px buttons side by side, in thumb reach.
   return (
-    <div className="mt-8 flex flex-wrap items-center gap-3 md:mt-10">
+    <div className="mt-5 grid grid-cols-2 gap-2.5 md:mt-10 md:flex md:flex-wrap md:items-center md:gap-3">
       <Pill
         href={`/${lang}/upload`}
-        className="bg-primary px-7 py-3.5 text-white hover:opacity-90"
+        className="h-12 bg-primary px-4 py-0 text-[0.9375rem] text-white hover:opacity-90 md:h-auto md:px-7 md:py-3.5 md:text-sm"
       >
         {isAuthenticated ? ctaPostShort : ctaPost}
       </Pill>
-      <Pill href={`/${lang}/for-you`} variant="outline" className="px-7 py-3.5">
+      <Pill
+        href={`/${lang}/for-you`}
+        variant="outline"
+        className="h-12 px-4 py-0 text-[0.9375rem] md:h-auto md:px-7 md:py-3.5 md:text-sm"
+      >
         {isAuthenticated ? ctaFeedLoggedIn : ctaFeed}
       </Pill>
     </div>

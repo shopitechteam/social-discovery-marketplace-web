@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ChevronDown } from "lucide-react";
 //import { BlogSection } from "@/components/landing/BlogSection";
 import { DeepDivesSection } from "@/components/landing/DeepDivesSection";
 import { DownloadSection } from "@/components/landing/DownloadSection";
@@ -7,6 +8,7 @@ import { PillarsSection } from "@/components/landing/PillarsSection";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { LandingNav } from "@/components/landing/LandingNav";
 import { MarketplaceCategoriesSection } from "@/components/landing/MarketplaceCategoriesSection";
+import { MobileActionBar } from "@/components/landing/MobileActionBar";
 import { ShopiAgentSection } from "@/components/landing/ShopiAgentSection";
 import { WelcomeBackBanner } from "@/components/landing/WelcomeBackBanner";
 //import { SupportChat } from "@/components/landing/SupportChat";
@@ -158,7 +160,9 @@ export default async function Rootpage({ params }: PageProps<"/[lang]">) {
         // The two --landing-page-* vars tune every landing section at once.
         // LandingFooter carries its own copy of this shell, so it renders
         // outside this wrapper (below) to avoid doubling the lg inset.
-        className="lg:px-30 [--landing-page-max:1400px] [--landing-page-x:clamp(0.875rem,1.2vw,1.25rem)]"
+        // Phones get the standard 16px app gutter; tablets and up keep the
+        // fluid inset.
+        className="lg:px-30 [--landing-page-max:1400px] [--landing-page-x:1rem] md:[--landing-page-x:clamp(0.875rem,1.2vw,1.25rem)]"
       >
         {/* Structured data — Organization, WebSite (+search), marketplace app,
             Shopi Agent, popular categories, FAQ */}
@@ -213,6 +217,7 @@ export default async function Rootpage({ params }: PageProps<"/[lang]">) {
       </div>
       <LandingFooter dict={dict} lang={lang} />
       <WelcomeBackBanner dict={dict} lang={lang} />
+      <MobileActionBar dict={dict} lang={lang} />
       {/* Landing-only floating video greeter; dismissible for the session. */}
       {/* <VideoBubble /> */}
       {/* <SupportChat dict={dict} /> */}
@@ -224,24 +229,31 @@ function HomeFaq({ items, lang }: { items: FaqItem[]; lang: Locale }) {
   return (
     <section
       id="faq"
-      className="mx-auto max-w-[min(760px,var(--landing-page-max))] px-(--landing-page-x) py-20"
+      className="mx-auto max-w-[min(760px,var(--landing-page-max))] px-(--landing-page-x) py-8 md:py-20"
     >
-      <div className="mb-10">
-        <h2 className="font-display text-[clamp(1.6rem,3.2vw,2.5rem)] font-bold tracking-normal leading-tight text-foreground">
+      <div className="mb-4 md:mb-10">
+        <h2 className="font-display text-[1.375rem] font-bold tracking-normal leading-tight text-foreground md:text-[clamp(1.6rem,3.2vw,2.5rem)]">
           {lang === "sw" ? "Maswali ya kawaida" : "Common questions"}
         </h2>
       </div>
 
-      <div className="flex flex-col gap-3">
+      {/* Phones: one grouped list, like a settings screen. Wider screens:
+          separate cards. */}
+      <div className="flex flex-col max-md:divide-y max-md:divide-border max-md:overflow-hidden max-md:rounded-2xl max-md:border max-md:border-border max-md:bg-[rgb(var(--color-bg-elevated))] md:gap-3">
         {items.map(({ q, a }) => (
           <details
             key={q}
-            className="overflow-hidden rounded-[14px] border border-border bg-elevated"
+            className="group md:overflow-hidden md:rounded-[14px] md:border md:border-border md:bg-elevated"
           >
-            <summary className="cursor-pointer list-none px-5 py-4 text-md font-semibold text-foreground select-none">
+            <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-[0.9375rem] leading-snug font-semibold text-foreground select-none md:px-5 md:py-4 md:text-md">
               {q}
+              <ChevronDown
+                size={18}
+                aria-hidden
+                className="shrink-0 text-muted transition-transform group-open:rotate-180"
+              />
             </summary>
-            <div className="px-5 pb-[1.1rem] text-base leading-[1.7] text-muted">
+            <div className="px-4 pb-4 text-[0.875rem] leading-relaxed text-muted md:px-5 md:pb-[1.1rem] md:text-base md:leading-[1.7]">
               {a}
             </div>
           </details>

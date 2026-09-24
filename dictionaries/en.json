@@ -167,6 +167,8 @@
       "chat": "Message directly"
     },
     "dives": {
+      "heading": "How it works",
+      "swipe": "Swipe",
       "sell": {
         "eyebrow": "Sell",
         "title": "Sell in a few taps.",

@@ -52,7 +52,7 @@ export function FeedMockup() {
         <div className="relative aspect-4/3 overflow-hidden">
           <PhotoTile
             src={landingPhotos.sofa}
-            alt="Brown leather sofa in a bright living room"
+            alt="Green three-seater sofa in a bright living room"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
           <span className="absolute bottom-2.5 left-2.5 rounded-full bg-black/70 px-2.5 py-1 text-xs font-bold tracking-normal text-white tabular-nums">
@@ -78,7 +78,7 @@ export function FeedMockup() {
             </div>
           </div>
           <p className="text-sm text-default">
-            3-seater leather sofa, barely used. Pickup this weekend.
+            3-seater velvet sofa, barely used. Pickup this weekend.
           </p>
           <div className="mt-0.5 flex items-center gap-4 text-muted">
             <span className="flex items-center gap-1 text-xs font-medium tabular-nums">
@@ -120,7 +120,7 @@ export function ChatMockup() {
         <div className="min-w-0 leading-tight">
           <p className="text-sm font-semibold text-default">Wanjiku M.</p>
           <p className="truncate text-xs text-muted tabular-nums">
-            Leather sofa · KES 45,000
+            3-seater sofa · KES 45,000
           </p>
         </div>
       </div>
@@ -183,7 +183,7 @@ export function SellMockup() {
         </div>
         {/* Fields */}
         <div className="rounded-xl bg-subtle px-3.5 py-2.5 text-sm text-default">
-          3-seater leather sofa
+          3-seater velvet sofa
         </div>
         <div className="rounded-xl bg-subtle px-3.5 py-2.5 text-sm font-semibold text-default tabular-nums">
           KES 45,000

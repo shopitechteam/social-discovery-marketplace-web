@@ -106,7 +106,7 @@ export async function SocialProofSection({
     <section
       id="social-proof"
       aria-labelledby="social-proof-heading"
-      className="px-(--landing-page-x) py-14 md:py-20"
+      className="px-(--landing-page-x) py-8 md:py-20"
     >
       <script
         type="application/ld+json"
@@ -114,10 +114,10 @@ export async function SocialProofSection({
       />
       <div className="mx-auto max-w-(--landing-page-max)">
         {/* Headline only: the listings below are the proof. */}
-        <div className="mb-8 max-w-3xl md:mb-10">
+        <div className="mb-4 max-w-3xl md:mb-10">
           <h2
             id="social-proof-heading"
-            className="text-balance font-display text-[clamp(1.65rem,2.8vw,2.5rem)] font-bold leading-tight tracking-normal text-foreground"
+            className="text-balance font-display text-[1.375rem] font-bold leading-tight tracking-normal text-foreground md:text-[clamp(1.65rem,2.8vw,2.5rem)]"
           >
             {t.headline}
           </h2>
@@ -128,9 +128,9 @@ export async function SocialProofSection({
           {sellers.length === 1 ? (
             <SellerSpotlight seller={sellers[0]} lang={lang} locale={locale} t={t} />
           ) : (
-            <ul className="grid list-none gap-5 p-0 md:grid-cols-2 xl:grid-cols-3">
+            <ul className="-mx-(--landing-page-x) flex list-none snap-x snap-mandatory scroll-px-(--landing-page-x) gap-3 overflow-x-auto p-0 px-(--landing-page-x) pb-1 scrollbar-none md:mx-0 md:grid md:snap-none md:scroll-px-0 md:grid-cols-2 md:gap-5 md:overflow-visible md:px-0 md:pb-0 xl:grid-cols-3">
               {sellers.map((seller) => (
-                <li key={seller.id} className="flex">
+                <li key={seller.id} className="flex w-[85%] shrink-0 snap-start md:w-auto">
                   <SellerCard seller={seller} lang={lang} locale={locale} t={t} />
                 </li>
               ))}
@@ -167,15 +167,19 @@ function SellerSpotlight({
           stacked only on phones. */}
       <div className="grid md:grid-cols-[minmax(0,17rem)_minmax(0,1fr)] xl:grid-cols-[minmax(0,21rem)_minmax(0,1fr)]">
         {/* Seller */}
-        <div className="flex flex-col border-b border-default p-6 md:border-r md:border-b-0 xl:p-8">
-          <span className="mb-5 inline-flex w-fit items-center rounded-full bg-primary-soft px-3 py-1 text-xs font-bold text-primary-strong">
+        <div className="flex flex-col border-b border-default p-4 md:border-r md:border-b-0 md:p-6 xl:p-8">
+          <span className="mb-3 inline-flex w-fit items-center rounded-full bg-primary-soft px-3 py-1 text-xs font-bold text-primary-strong md:mb-5">
             {t.featured}
           </span>
 
           <div className="flex items-center gap-4">
-            <SellerAvatar seller={seller} size={64} />
+            <SellerAvatar
+              seller={seller}
+              size={64}
+              className="max-md:size-12! max-md:text-base!"
+            />
             <div className="min-w-0">
-              <h3 className="font-display text-xl font-bold leading-tight text-default">
+              <h3 className="font-display text-lg font-bold leading-tight text-default md:text-xl">
                 <Link href={href} className="text-default no-underline hover:underline">
                   {seller.displayName}
                 </Link>
@@ -194,17 +198,17 @@ function SellerSpotlight({
           </div>
 
           {seller.headline && (
-            <p className="mt-5 text-base font-semibold leading-snug text-default">
+            <p className="mt-3 text-[0.9375rem] font-semibold leading-snug text-default md:mt-5 md:text-base">
               {seller.headline}
             </p>
           )}
 
-          <SellerPlace seller={seller} className="mt-3" />
+          <SellerPlace seller={seller} className="mt-2 md:mt-3" />
 
-          <SellerStats seller={seller} locale={locale} t={t} className="mt-6" />
+          <SellerStats seller={seller} locale={locale} t={t} className="mt-4 md:mt-6" />
 
           {/* Quotable one-liner for answer engines; visible, not hidden. */}
-          <p className="mt-5 text-sm leading-normal text-muted">
+          <p className="mt-3 text-[0.8125rem] leading-normal text-muted md:mt-5 md:text-sm">
             {fill(seller.listingCount === 1 ? t.summaryOne : t.summary, {
               name: seller.displayName,
               count,
@@ -212,8 +216,13 @@ function SellerSpotlight({
             <SinceLabel seller={seller} locale={locale} t={t} />
           </p>
 
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Pill href={href} className="bg-primary px-6 text-white hover:opacity-90">
+          {/* Desktop only: on phones the "Visit shop" link heads the listings
+              one row below, so a second button would just repeat it. */}
+          <div className="mt-6 hidden flex-wrap gap-3 md:flex">
+            <Pill
+              href={href}
+              className="h-11 w-full bg-primary px-6 py-0 text-white hover:opacity-90 md:h-auto md:w-auto md:py-3"
+            >
               {t.visitShop}
             </Pill>
           </div>
@@ -277,7 +286,7 @@ function SellerCard({
   return (
     <article
       data-sp-seller={seller.id}
-      className="flex w-full flex-col rounded-[1.2rem] border border-default bg-elevated p-5 shadow-sm"
+      className="flex w-full flex-col rounded-[1.2rem] border border-default bg-elevated p-4 shadow-sm md:p-5"
     >
       <div className="flex items-center gap-3">
         <SellerAvatar seller={seller} size={48} />
@@ -352,7 +361,16 @@ function SellerCard({
 
 // ── Shared pieces ────────────────────────────────────────────────────────────
 
-function SellerAvatar({ seller, size }: { seller: SocialProofSeller; size: number }) {
+function SellerAvatar({
+  seller,
+  size,
+  className = "",
+}: {
+  seller: SocialProofSeller;
+  size: number;
+  /** Overrides the inline size per breakpoint (use `!` classes). */
+  className?: string;
+}) {
   const initials = seller.displayName
     .split(/\s+/)
     .map((word) => word[0])
@@ -363,7 +381,7 @@ function SellerAvatar({ seller, size }: { seller: SocialProofSeller; size: numbe
 
   return (
     <span
-      className="relative flex shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-elevated bg-primary font-display font-bold text-white shadow-sm"
+      className={`relative flex shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-elevated bg-primary font-display font-bold text-white shadow-sm ${className}`}
       style={{ width: size, height: size, fontSize: size * 0.34 }}
     >
       {avatar ? (
@@ -433,7 +451,7 @@ function SellerStats({
           </dt>
           <dd
             className={`m-0 font-display font-bold leading-none text-default tabular-nums ${
-              compact ? "text-xl" : "text-[1.75rem]"
+              compact ? "text-xl" : "text-xl md:text-[1.75rem]"
             }`}
           >
             {value.toLocaleString(locale)}
