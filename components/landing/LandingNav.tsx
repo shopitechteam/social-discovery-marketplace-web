@@ -229,13 +229,13 @@ export function LandingNav({
               {isAuthenticated
                 ? (dict?.landing.hero.ctaFeedLoggedIn ??
                   "Go to For You")
-                : (dict?.common.openFeed ?? "Open For You")}
+                : (dict?.landing.hero.ctaFeed ?? "Browse Shopi")}
             </Link>
             <Link
               href={`${homeBase}/upload`}
               className="hidden items-center rounded-full bg-primary px-[1.1rem] py-2 text-sm font-semibold whitespace-nowrap text-white no-underline md:inline-flex"
             >
-              {dict?.landing.hero.ctaPostShort ?? "Post an item"}
+              {dict?.landing.hero.ctaPostShort ?? "Sell for Free"}
             </Link>
 
             {/* Language switcher */}
@@ -305,9 +305,8 @@ export function LandingNav({
               className="flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-[0.85rem] text-[0.9rem] font-bold text-white no-underline"
             >
               {isAuthenticated
-                ? (dict?.landing.hero.ctaPostShort ?? "Post an item")
-                : (dict?.landing.hero.ctaPost ??
-                  "Post your first item — free")}
+                ? (dict?.landing.hero.ctaPostShort ?? "Sell for Free")
+                : (dict?.landing.hero.ctaPost ?? "Sell for Free")}
               <span aria-hidden>→</span>
             </Link>
             <Link
@@ -318,7 +317,7 @@ export function LandingNav({
               {isAuthenticated
                 ? (dict?.landing.hero.ctaFeedLoggedIn ??
                   "Go to For You")
-                : (dict?.common.openFeed ?? "Open For You")}
+                : (dict?.landing.hero.ctaFeed ?? "Browse Shopi")}
             </Link>
             {!isAuthenticated && (
               <p className="text-center text-[0.78rem] text-muted">

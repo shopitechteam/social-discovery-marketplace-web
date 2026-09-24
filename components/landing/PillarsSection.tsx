@@ -1,84 +1,49 @@
 import type { Dictionary } from "@/i18n/getDictionary";
-import { MessageCircle, PlusCircle, ScanSearch } from "lucide-react";
+import { MapPin, MessageCircle, Percent, Tag } from "lucide-react";
 
 /**
- * The three product pillars — Feed, Direct chat, Sell — as copy-led cards.
- * Images stay out of this section so the value proposition remains the focus.
+ * The quick-benefits strip under the hero: four facts the product keeps —
+ * free to post, no commission, local, direct chat — one line each. The
+ * sections below show how each works, so nothing here is explained.
  */
-const REVEAL_DELAYS = ["", "[animation-delay:90ms]", "[animation-delay:180ms]"];
+const REVEAL_DELAYS = [
+  "",
+  "[animation-delay:70ms]",
+  "[animation-delay:140ms]",
+  "[animation-delay:210ms]",
+];
 
 export function PillarsSection({ dict }: { dict: Dictionary }) {
   const t = dict.landing.pillars;
-  const dives = dict.landing.dives;
 
-  const cards = [
-    {
-      key: "feed",
-      title: t.feed.title,
-      tagline: t.feed.tagline,
-      icon: ScanSearch,
-      proof: dives.feed.bullets[0],
-      tint: "bg-[linear-gradient(180deg,rgb(var(--brand-primary)/0.12),transparent_58%)]",
-    },
-    {
-      key: "chat",
-      title: t.chat.title,
-      tagline: t.chat.tagline,
-      icon: MessageCircle,
-      proof: dives.chat.bullets[0],
-      tint: "bg-[linear-gradient(180deg,rgb(var(--brand-accent)/0.12),transparent_58%)]",
-    },
-    {
-      key: "sell",
-      title: t.sell.title,
-      tagline: t.sell.tagline,
-      icon: PlusCircle,
-      proof: dives.sell.bullets[0],
-      tint: "bg-[linear-gradient(180deg,rgb(var(--brand-secondary)/0.16),transparent_58%)]",
-    },
+  // Flat tiles, no tints: the strip should read as plain facts and leave the
+  // colour to the post CTA.
+  const items = [
+    { key: "free", label: t.free, icon: Tag },
+    { key: "commission", label: t.commission, icon: Percent },
+    { key: "local", label: t.local, icon: MapPin },
+    { key: "chat", label: t.chat, icon: MessageCircle },
   ];
 
   return (
-    <section id="features" className="px-(--landing-page-x) pb-18 md:pb-24">
+    <section id="features" className="px-(--landing-page-x) pb-14 md:pb-20">
       <div className="mx-auto max-w-(--landing-page-max)">
-        {/* Header copy lives in the dictionary — it used to be hardcoded
-            English, which left Kiswahili visitors reading an untranslated
-            section in the middle of a translated page. */}
-        <div className="mb-8 max-w-3xl">
-          <p className="mb-3 text-xs font-bold uppercase tracking-normal text-primary md:text-sm">
-            {t.eyebrow}
-          </p>
-          <h2 className="font-display text-[clamp(1.65rem,2.8vw,2.5rem)] font-bold leading-tight tracking-normal text-foreground">
-            {t.headline}
-          </h2>
-          <p className="landing-subcopy mt-4 max-w-2xl">
-            {t.intro}
-          </p>
-        </div>
-
-        <div className="grid gap-5 md:grid-cols-3">
-          {cards.map(({ key, title, tagline, icon: Icon, proof, tint }, i) => (
-            <article
+        <h2 className="sr-only">{t.heading}</h2>
+        <ul className="grid list-none grid-cols-2 gap-3 p-0 md:grid-cols-4 md:gap-5">
+          {items.map(({ key, label, icon: Icon }, i) => (
+            <li
               key={key}
-              className={`landing-reveal rounded-[1.2rem] border border-default bg-elevated p-6 shadow-sm transition-transform duration-300 hover:-translate-y-1 ${tint} ${REVEAL_DELAYS[i] ?? ""}`}
+              className={`landing-reveal flex items-center gap-3 rounded-[1.2rem] border border-default bg-elevated p-4 shadow-sm md:p-5 ${REVEAL_DELAYS[i] ?? ""}`}
             >
-              <span className="flex h-11 w-11 items-center justify-center rounded-full border border-default bg-elevated text-primary shadow-sm">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-default bg-elevated text-primary shadow-sm md:h-11 md:w-11">
                 <Icon size={20} />
               </span>
-              <h3 className="mt-7 font-display text-xl font-semibold text-default">
-                {title}
-              </h3>
-              <p className="mt-2 text-sm leading-normal text-muted">
-                {tagline}
-              </p>
-              <div className="mt-6 border-t border-default pt-4">
-                <p className="text-sm font-medium leading-normal text-default">
-                  {proof}
-                </p>
-              </div>
-            </article>
+              <span className="font-display text-base font-semibold leading-tight text-default md:text-lg">
+                {label}
+              </span>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
     </section>
   );

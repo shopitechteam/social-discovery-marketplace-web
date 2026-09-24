@@ -1,6 +1,6 @@
 import type { Dictionary } from "@/i18n/getDictionary";
 import Image from "next/image";
-import { MapPin, MessageCircle, ShieldCheck } from "lucide-react";
+import { MapPin, MessageCircle } from "lucide-react";
 import { landingPhotos } from "./mockups";
 import { HeroCtas } from "./HeroCtas";
 
@@ -25,7 +25,11 @@ export function HeroSection({
           <h1 className="max-w-4xl text-balance font-display text-[clamp(2.45rem,5.2vw,4.85rem)] font-semibold leading-[1.02] tracking-normal text-default">
             {t.headline}
           </h1>
-          <p className="landing-subcopy mt-6 max-w-2xl">
+          {/* Photo → price → post in six words. It is the whole seller pitch,
+              so it reads at a glance rather than as muted body copy. The
+              free / 0% / nearby / direct facts sit in the strip right below
+              the hero (PillarsSection), not repeated here. */}
+          <p className="mt-6 max-w-2xl text-lg font-medium text-muted md:text-xl">
             {t.subheadline}
           </p>
           <HeroCtas
@@ -35,32 +39,6 @@ export function HeroSection({
             ctaFeed={t.ctaFeed}
             ctaFeedLoggedIn={t.ctaFeedLoggedIn}
           />
-          {/* Only figures the product actually keeps: zero commission, the
-              photo-to-listing flow, and nationwide coverage. No user or
-              listing counts — nothing here is a number we cannot stand on. */}
-          <div className="mt-6 grid max-w-xl gap-3 sm:grid-cols-3">
-            {[
-              ["KES 0", t.figures.commission],
-              ["1", t.figures.photo],
-              ["47", t.figures.counties],
-            ].map(([figure, label]) => (
-              <div
-                key={label}
-                className="rounded-2xl border border-default bg-elevated px-4 py-3"
-              >
-                <p className="font-display text-xl font-bold leading-none text-default tabular-nums">
-                  {figure}
-                </p>
-                <p className="mt-1 text-xs font-semibold uppercase tracking-normal text-muted">
-                  {label}
-                </p>
-              </div>
-            ))}
-          </div>
-          <p className="mt-5 flex items-center gap-2 text-sm text-muted">
-            <ShieldCheck size={15} className="shrink-0 text-primary" />
-            {t.reassurance}
-          </p>
         </div>
 
         <div>
@@ -109,11 +87,10 @@ function FocusedListing() {
             </span>
             <div>
               <p className="text-sm font-bold text-default">
-                Buyers message you right here
+                Buyers message you here
               </p>
               <p className="mt-1 text-xs leading-snug text-muted">
-                They ask, you answer, you agree the price and the pickup.
-                Shopi never touches the money.
+                You agree the price and pickup.
               </p>
             </div>
           </div>

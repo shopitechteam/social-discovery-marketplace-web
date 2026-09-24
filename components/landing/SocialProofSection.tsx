@@ -122,19 +122,14 @@ export async function SocialProofSection({
         dangerouslySetInnerHTML={{ __html: jsonLd(itemList) }}
       />
       <div className="mx-auto max-w-(--landing-page-max)">
+        {/* Headline only: the listings below are the proof. */}
         <div className="mb-8 max-w-3xl md:mb-10">
-          <p className="mb-3 text-xs font-bold uppercase tracking-normal text-primary md:text-sm">
-            {t.eyebrow}
-          </p>
           <h2
             id="social-proof-heading"
             className="text-balance font-display text-[clamp(1.65rem,2.8vw,2.5rem)] font-bold leading-tight tracking-normal text-foreground"
           >
             {t.headline}
           </h2>
-          <p className="landing-subcopy mt-4 max-w-2xl">
-            {t.intro}
-          </p>
         </div>
 
         {/* Impressions and clicks per seller → admin Social proof page. */}
@@ -181,7 +176,7 @@ function SellerSpotlight({
           stacked only on phones. */}
       <div className="grid md:grid-cols-[minmax(0,17rem)_minmax(0,1fr)] xl:grid-cols-[minmax(0,21rem)_minmax(0,1fr)]">
         {/* Seller */}
-        <div className="flex flex-col border-b border-default bg-[linear-gradient(180deg,rgb(var(--brand-primary)/0.09),transparent_62%)] p-6 md:border-r md:border-b-0 xl:p-8">
+        <div className="flex flex-col border-b border-default p-6 md:border-r md:border-b-0 xl:p-8">
           <span className="mb-5 inline-flex w-fit items-center rounded-full bg-primary-soft px-3 py-1 text-xs font-bold text-primary-strong">
             {t.featured}
           </span>
