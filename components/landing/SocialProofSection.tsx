@@ -11,9 +11,12 @@ import {
   isUsableImageUrl,
   listingCover,
   withCoversFirst,
-  type SocialProofListing,
   type SocialProofSeller,
 } from "@/features/social-proof/queries/socialProofSellers";
+import {
+  ListingPhotoCard,
+  listingPlaceLabel,
+} from "@/components/listings/ListingPhotoCard";
 import { Pill } from "./Pill";
 import { SellerAvatarImage } from "./SellerAvatarImage";
 import { SocialProofTracker } from "./SocialProofTracker";
@@ -62,18 +65,6 @@ function profileHref(lang: string, seller: SocialProofSeller) {
 /** "See all 12 listings" reads wrong for one listing, so that case says "Visit shop". */
 function seeAllLabel(t: Copy, seller: SocialProofSeller, count: string) {
   return seller.listingCount === 1 ? t.visitShop : fill(t.seeAll, { count });
-}
-
-function placeLabel(place?: string | null, county?: string | null) {
-  return [place, county]
-    .filter((part, i, parts) => part && parts.indexOf(part) === i)
-    .join(", ");
-}
-
-function priceLabel(listing: SocialProofListing, locale: string) {
-  const price = listing.price;
-  if (!price || price.amount <= 0) return null;
-  return `${price.currency} ${price.amount.toLocaleString(locale)}`;
 }
 
 export async function SocialProofSection({
@@ -256,7 +247,7 @@ function SellerSpotlight({
                 data-sp-content={listing.id}
                 className={`w-[46%] shrink-0 snap-start @sm:w-auto ${ONE_ROW[index] ?? "@sm:hidden"}`}
               >
-                <ListingCard listing={listing} lang={lang} locale={locale} />
+                <ListingPhotoCard listing={listing} lang={lang} locale={locale} />
               </li>
             ))}
           </ul>
@@ -396,7 +387,7 @@ function SellerPlace({
   seller: SocialProofSeller;
   className?: string;
 }) {
-  const place = placeLabel(seller.placeName, seller.county);
+  const place = listingPlaceLabel(seller.placeName, seller.county);
   if (!place) return null;
   return (
     <p className={`flex items-center gap-1.5 text-sm text-muted ${className}`}>
@@ -467,52 +458,5 @@ function SinceLabel({
   const date = since.toLocaleDateString(locale, { month: "long", year: "numeric" });
   return (
     <time dateTime={since.toISOString()}>{fill(t.since, { date })}</time>
-  );
-}
-
-function ListingCard({
-  listing,
-  lang,
-  locale,
-}: {
-  listing: SocialProofListing;
-  lang: string;
-  locale: string;
-}) {
-  const cover = listingCover(listing);
-  const price = priceLabel(listing, locale);
-  const place = placeLabel(listing.location?.placeName, listing.location?.county);
-
-  return (
-    <Link
-      href={contentPath(lang, listing)}
-      className="group flex h-full flex-col overflow-hidden rounded-2xl border border-default bg-surface no-underline transition-colors hover:border-[rgb(var(--color-border-strong))]"
-    >
-      <div className="relative aspect-square overflow-hidden bg-subtle">
-        {cover ? (
-          <Image
-            src={cover}
-            alt={listing.title ?? ""}
-            fill
-            sizes="(max-width: 640px) 46vw, (max-width: 1280px) 30vw, 240px"
-            unoptimized={shouldUnoptimize(cover)}
-            className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-          />
-        ) : (
-          <ImageIcon size={22} className="absolute inset-0 m-auto text-muted" aria-hidden />
-        )}
-        {price && (
-          <span className="absolute bottom-2 left-2 rounded-full bg-white px-2.5 py-1 text-xs font-bold text-black shadow-sm tabular-nums">
-            {price}
-          </span>
-        )}
-      </div>
-      <div className="flex flex-1 flex-col p-3">
-        <p className="line-clamp-2 text-sm font-semibold leading-snug text-default">
-          {listing.title}
-        </p>
-        {place && <p className="mt-auto truncate pt-1.5 text-xs text-muted">{place}</p>}
-      </div>
-    </Link>
   );
 }

@@ -5,6 +5,8 @@ import { LandingFooter } from "@/components/landing/LandingFooter";
 import { LegalNav } from "@/components/legal/LegalNav";
 import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import { CategoryCrossLinks } from "@/components/seo/CategoryCrossLinks";
+import { GuideLinks } from "@/components/seo/GuideLinks";
+import { getArticlesLinkingTo } from "@/lib/articles";
 import { siteConfig } from "@/config/site";
 import { fetchRecentListings } from "@/features/discover/queries/recentListings";
 import { isValidLocale, locales } from "@/i18n/config";
@@ -110,6 +112,7 @@ export default async function SearchIntentLandingPage({ params }: Props) {
   const listings = await fetchRecentListings(12, undefined, page.query);
   // Non-null only for models that have a seller-intent counterpart page.
   const sellPage = getSellCarPage(page.slug);
+  const guides = getArticlesLinkingTo({ kind: "forSale", slug: page.slug });
   const relatedPages = page.related
     .map((relatedSlug) => getSearchIntentPage(relatedSlug))
     .filter((related): related is SearchIntentPageData => Boolean(related));
@@ -322,6 +325,14 @@ export default async function SearchIntentLandingPage({ params }: Props) {
             </div>
           </section>
         )}
+
+        {/* Every blog guide that links to this page, found automatically —
+            "Toyota Vitz price in Kenya" appears here without anyone adding it. */}
+        <GuideLinks
+          lang={safeLang}
+          articles={guides.slice(0, 3)}
+          heading="Price and buying guides"
+        />
 
         <section className="bg-surface px-5 py-16">
           <div className="mx-auto max-w-170">

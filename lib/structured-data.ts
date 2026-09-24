@@ -539,6 +539,95 @@ export function listingItemListSchema(input: {
 }
 
 /**
+ * A blog article as a BlogPosting.
+ *
+ * The author and publisher are written out in full rather than referenced by
+ * @id alone: the Organization node is only defined on the homepage, and an @id
+ * that doesn't resolve on the page itself leaves engines without a name.
+ */
+export function articleSchema(input: {
+  url: string;
+  headline: string;
+  description: string;
+  datePublished: string;
+  dateModified: string;
+  section: string;
+  keywords?: string[];
+  image?: string;
+  wordCount?: number;
+  author: { name: string; kind: "Organization" | "Person"; url?: string };
+  blogUrl: string;
+}) {
+  const organization = {
+    "@type": "Organization",
+    "@id": `${url}/#organization`,
+    name,
+    url,
+    logo: { "@type": "ImageObject", url: `${url}/assets/shopi-logo.png` },
+  };
+  return {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "@id": `${input.url}#article`,
+    headline: input.headline,
+    description: input.description,
+    url: input.url,
+    mainEntityOfPage: { "@type": "WebPage", "@id": input.url },
+    datePublished: input.datePublished,
+    dateModified: input.dateModified,
+    inLanguage: "en-KE",
+    articleSection: input.section,
+    ...(input.keywords?.length ? { keywords: input.keywords.join(", ") } : {}),
+    ...(input.wordCount ? { wordCount: input.wordCount } : {}),
+    ...(input.image ? { image: [input.image] } : {}),
+    author:
+      input.author.kind === "Organization"
+        ? organization
+        : {
+            "@type": "Person",
+            name: input.author.name,
+            ...(input.author.url ? { url: input.author.url } : {}),
+          },
+    publisher: organization,
+    isPartOf: { "@type": "Blog", "@id": `${input.blogUrl}#blog`, name: `${name} Blog` },
+  };
+}
+
+/**
+ * A page that lists other pages — the blog index and its category hubs. The
+ * ItemList mirrors the article cards the page renders, nothing more.
+ */
+export function collectionPageSchema(input: {
+  url: string;
+  name: string;
+  description: string;
+  items: { name: string; url: string }[];
+  blog?: boolean;
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": input.blog ? ["CollectionPage", "Blog"] : "CollectionPage",
+    "@id": input.blog ? `${input.url}#blog` : `${input.url}#collection`,
+    url: input.url,
+    name: input.name,
+    description: input.description,
+    inLanguage: "en-KE",
+    isPartOf: { "@id": `${url}/#website` },
+    publisher: { "@type": "Organization", "@id": `${url}/#organization`, name, url },
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: input.items.length,
+      itemListElement: input.items.map((item, i) => ({
+        "@type": "ListItem",
+        position: i + 1,
+        name: item.name,
+        url: item.url,
+      })),
+    },
+  };
+}
+
+/**
  * A county landing page as a CollectionPage about a real Place.
  *
  * Gives engines an explicit place entity to bind local-intent queries to

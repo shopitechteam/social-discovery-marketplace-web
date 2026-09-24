@@ -1,439 +1,331 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { notFound } from "next/navigation";
-import Link from "next/link";
-import { getBlogPost, getAllSlugs, getRelatedPosts } from "@/lib/blog";
-import { siteConfig } from "@/config/site";
-import { localeAlternates } from "@/lib/metadata";
-import { LegalNav } from "@/components/legal/LegalNav";
-import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import { LandingFooter } from "@/components/landing/LandingFooter";
+import { LegalNav } from "@/components/legal/LegalNav";
+import { siteConfig } from "@/config/site";
+import { ArticleBlocks } from "@/features/blog/components/ArticleBlocks";
+import {
+  ArticleCard,
+  formatArticleDate,
+} from "@/features/blog/components/ArticleCard";
+import { ArticleCta } from "@/features/blog/components/ArticleCta";
+import { Breadcrumbs } from "@/features/blog/components/Breadcrumbs";
+import { LinkList } from "@/features/blog/components/LinkList";
+import { blogCanonical, blogPageMetadata } from "@/features/blog/metadata";
+import {
+  fetchArticleListings,
+  type ArticleListingsResult,
+} from "@/features/blog/queries/articleListings";
+import { withCoversFirst } from "@/features/social-proof/queries/socialProofSellers";
+import {
+  articlePath,
+  categoryPath,
+  getArticle,
+  getArticles,
+  getAuthor,
+  getCategory,
+  getRelatedArticles,
+  isLive,
+  lastModified,
+  readingTime,
+  wordCount,
+  type Article,
+} from "@/lib/articles";
+import { contentPath } from "@/lib/content-url";
+import {
+  articleSchema,
+  breadcrumbSchema,
+  faqSchema,
+  jsonLd,
+  listingItemListSchema,
+} from "@/lib/structured-data";
 
 type Props = { params: Promise<{ lang: string; slug: string }> };
 
-/* ── Static params for build-time generation ─────────────────────── */
+// Hourly, including articles with live listings: their listing fetch is set
+// to the same interval (features/blog/queries/articleListings.ts), overriding
+// the Apollo client's 30-second default that would otherwise win.
+export const revalidate = 3600;
+
+// Drafts render locally (noindexed) so writers can preview them.
+const PREVIEW_DRAFTS = process.env.NODE_ENV !== "production";
+
 export function generateStaticParams() {
-  return getAllSlugs().map((slug) => ({ slug }));
+  return getArticles().map((article) => ({ slug: article.slug }));
 }
 
-/* ── Per-page metadata ───────────────────────────────────────────── */
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { lang, slug } = await params;
-  const post = getBlogPost(slug);
-  if (!post) return {};
+  const { slug } = await params;
+  const article = getArticle(slug, { includeDrafts: PREVIEW_DRAFTS });
+  if (!article) return {};
+  const author = getAuthor(article.author);
 
-  const url = `${siteConfig.url}/${lang}/blog/${post.slug}`;
-
-  return {
-    title: post.title,
-    description: post.description,
-    keywords: post.keywords,
-    authors: [{ name: post.author.name }],
-    alternates: {
-      canonical: url,
-      ...localeAlternates(`/blog/${post.slug}`),
+  return blogPageMetadata({
+    path: articlePath(article.slug),
+    title: article.seoTitle ?? article.title,
+    description: article.seoDescription,
+    canonicalUrl: article.canonicalUrl,
+    keywords: [article.primaryKeyword, ...(article.keywords ?? [])],
+    noindex: !isLive(article),
+    article: {
+      publishedTime: article.publishedAt,
+      modifiedTime: lastModified(article),
+      authors: [author?.name ?? siteConfig.name],
+      section: getCategory(article.category)?.name ?? "Guides",
+      tags: article.tags,
     },
-    openGraph: {
-      type: "article",
-      url,
-      title: post.title,
-      description: post.description,
-      publishedTime: post.publishedAt,
-      modifiedTime: post.updatedAt ?? post.publishedAt,
-      authors: [post.author.name],
-      siteName: siteConfig.name,
-      locale: siteConfig.locale,
-      images: [
-        {
-          url: siteConfig.ogImage,
-          width: 1200,
-          height: 630,
-          alt: post.title,
-        },
-      ],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: post.title,
-      description: post.description,
-      site: siteConfig.twitterHandle,
-      images: [siteConfig.ogImage],
-    },
-  };
+  });
 }
 
-/* ── Page component ─────────────────────────────────────────────── */
-export default async function BlogPostPage({ params }: Props) {
+/** Data-first intents put the photo after the first section, not before the answer. */
+const DATA_FIRST = new Set<Article["intent"]>([
+  "price-guide",
+  "budget-guide",
+  "location-guide",
+]);
+
+function FeaturedImage({
+  article,
+  priority,
+}: {
+  article: Article;
+  /** Only when the photo is above the fold. */
+  priority: boolean;
+}) {
+  const image = article.featuredImage;
+  if (!image) return null;
+  return (
+    <figure className="my-8">
+      <div className="relative aspect-video overflow-hidden rounded-2xl bg-surface">
+        <Image
+          src={image.src}
+          alt={image.alt}
+          fill
+          priority={priority}
+          sizes="(max-width: 768px) 92vw, 720px"
+          className="object-cover"
+        />
+      </div>
+      {image.credit && (
+        <figcaption className="mt-2 text-xs text-muted">
+          Photo:{" "}
+          <a
+            href={image.credit.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-muted underline"
+          >
+            {image.credit.name}
+          </a>
+        </figcaption>
+      )}
+    </figure>
+  );
+}
+
+export default async function ArticlePage({ params }: Props) {
   const { lang, slug } = await params;
-  const post = getBlogPost(slug);
-  if (!post) notFound();
+  const article = getArticle(slug, { includeDrafts: PREVIEW_DRAFTS });
+  if (!article) notFound();
 
-  const related = getRelatedPosts(post, 2);
-  const formatDate = (iso: string) =>
-    new Date(iso).toLocaleDateString("en-KE", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
+  const category = getCategory(article.category);
+  const author = getAuthor(article.author);
+  const related = getRelatedArticles(article, 3);
+  const listings: ArticleListingsResult | null = article.listings
+    ? await fetchArticleListings(article.listings)
+    : null;
 
-  /* JSON-LD structured data — Article + FAQPage */
-  const articleJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Article",
-    headline: post.title,
-    description: post.description,
-    keywords: post.keywords.join(", "),
-    datePublished: post.publishedAt,
-    dateModified: post.updatedAt ?? post.publishedAt,
-    // Posts are authored by the Shopi team, not named individuals — an
-    // Organization author is the accurate schema for that.
-    author: {
-      "@type": "Organization",
-      name: siteConfig.name,
-      url: siteConfig.url,
-    },
-    publisher: {
-      "@type": "Organization",
-      name: siteConfig.name,
-      url: siteConfig.url,
-    },
-    mainEntityOfPage: {
-      "@type": "WebPage",
-      "@id": `${siteConfig.url}/${lang}/blog/${post.slug}`,
-    },
-  };
+  const url = blogCanonical(articlePath(article.slug), article.canonicalUrl);
+  const blogUrl = `${siteConfig.url}/en/blog`;
+  // One trail, two uses: links in the reader's locale, schema on the
+  // canonical English URLs.
+  const trailFor = (prefix: string) => [
+    { name: "Home", href: prefix },
+    { name: "Blog", href: `${prefix}/blog` },
+    ...(category
+      ? [{ name: category.name, href: `${prefix}${categoryPath(category.slug)}` }]
+      : []),
+    { name: article.title, href: `${prefix}${articlePath(article.slug)}` },
+  ];
+  const trail = trailFor(`/${lang}`);
+  // The listings the grid actually shows — the ItemList may only describe those.
+  const shownListings =
+    listings?.ok && article.listings
+      ? withCoversFirst(listings.listings).slice(0, article.listings.show ?? 6)
+      : [];
+  const marketplaceLinks = article.marketplaceLinks.length
+    ? article.marketplaceLinks
+    : (category?.marketplace ?? []);
+  const imageFirst = !DATA_FIRST.has(article.intent);
 
-  const faqJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: post.faq.map(({ q, a }) => ({
-      "@type": "Question",
-      name: q,
-      acceptedAnswer: { "@type": "Answer", text: a },
-    })),
-  };
-
-  const categoryColors: Record<string, string> = {
-    "AI Guide": "#d81470",
-    Trends: "rgb(var(--brand-primary))",
-    "Seller Guide": "#10b981",
-    Industry: "#8b5cf6",
-    "Success Stories": "#f59e0b",
-  };
-  const catColor = categoryColors[post.category] ?? "rgb(var(--brand-primary))";
-  const resolveRelatedHref = (url: string) =>
-    url.startsWith("/") ? `/${lang}${url}` : url;
-  const isExternalRelatedLink = (url: string) => /^https?:\/\//.test(url);
+  const schemas: object[] = [
+    articleSchema({
+      url,
+      headline: article.title,
+      description: article.seoDescription,
+      datePublished: article.publishedAt,
+      dateModified: lastModified(article),
+      section: category?.name ?? "Guides",
+      keywords: [article.primaryKeyword, ...(article.keywords ?? [])],
+      image: article.featuredImage
+        ? `${siteConfig.url}${article.featuredImage.src}`
+        : `${siteConfig.url}${siteConfig.ogImage}`,
+      wordCount: wordCount(article),
+      author: {
+        name: author?.name ?? siteConfig.name,
+        kind: author?.kind ?? "Organization",
+        url: author?.url,
+      },
+      blogUrl,
+    }),
+    breadcrumbSchema(
+      trailFor(`${siteConfig.url}/en`).map((item, i, all) => ({
+        name: item.name,
+        url: i === all.length - 1 ? url : item.href,
+      })),
+    ),
+    ...(article.faq?.length ? [faqSchema(article.faq)] : []),
+    ...(shownListings.length
+      ? [
+          listingItemListSchema({
+            id: `${url}#listings`,
+            name: `${article.listings?.label ?? article.title} listings on Shopi`,
+            items: shownListings.map((listing) => ({
+              name: listing.title ?? article.title,
+              url: `${siteConfig.url}${contentPath("en", listing)}`,
+            })),
+          }),
+        ]
+      : []),
+  ];
 
   return (
     <>
-      {/* JSON-LD */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLd(...schemas) }}
       />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-      />
-
       <LegalNav lang={lang} />
-      <BreadcrumbJsonLd
-        lang={lang}
-        trail={[
-          { name: "Blog", path: "/blog" },
-          { name: post.title, path: `/blog/${post.slug}` },
-        ]}
-      />
 
-      <main className="mx-auto max-w-[1100px] px-4 pt-16 pb-12 sm:px-5 sm:pt-20 sm:pb-16">
-        <div className="grid grid-cols-1 items-start gap-8 min-[900px]:grid-cols-[1fr_300px] min-[900px]:gap-12">
-          {/* ── Article body ─────────────────────────────────────── */}
-          <article>
-            {/* Breadcrumb */}
-            <nav className="mb-8 text-[0.8rem] text-muted">
-              <Link href={`/${lang}`} className="text-muted no-underline">
-                Home
-              </Link>
-              <span className="mx-2">›</span>
-              <Link href={`/${lang}/blog`} className="text-muted no-underline">
-                Blog
-              </Link>
-              <span className="mx-2">›</span>
-              <span className="text-foreground">{post.category}</span>
-            </nav>
+      <main className="mx-auto max-w-275 px-4 pt-8 pb-12 sm:px-5 sm:pt-12 sm:pb-16">
+        <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-[minmax(0,720px)_260px] lg:justify-between">
+          <article className="min-w-0">
+            <Breadcrumbs trail={trail} />
 
-            {/* Category + meta */}
-            <div className="mb-5 flex flex-wrap items-center gap-2.5">
-              <span
-                className="rounded-full px-3 py-[3px] text-[0.7rem] font-bold tracking-[0.05em] uppercase"
-                style={{ background: `${catColor}22`, color: catColor }}
-              >
-                {post.category}
-              </span>
-              <span className="text-[0.8rem] text-muted">{post.readTime}</span>
-              <time
-                dateTime={post.publishedAt}
-                className="text-[0.8rem] text-muted"
-              >
-                {formatDate(post.publishedAt)}
-              </time>
-              {post.updatedAt && post.updatedAt !== post.publishedAt && (
-                <span className="text-[0.8rem] text-muted">
-                  · Updated{" "}
-                  <time dateTime={post.updatedAt}>
-                    {formatDate(post.updatedAt)}
-                  </time>
-                </span>
-              )}
-            </div>
+            <header>
+              <h1 className="font-display text-[clamp(1.9rem,5vw,2.75rem)] leading-[1.1] font-bold tracking-[-0.02em] text-foreground">
+                {article.title}
+              </h1>
+              <p className="mt-4 text-[0.85rem] text-muted">
+                {author?.name ?? siteConfig.name} ·{" "}
+                {article.updatedAt && article.updatedAt !== article.publishedAt
+                  ? "Updated "
+                  : ""}
+                <time dateTime={lastModified(article)}>
+                  {formatArticleDate(lastModified(article))}
+                </time>{" "}
+                · {readingTime(article)}
+              </p>
+              <p className="mt-5 text-[1.15rem] leading-[1.65] text-foreground">
+                {article.excerpt}
+              </p>
+            </header>
 
-            {/* Title */}
-            <h1 className="mb-5 font-display text-[clamp(1.75rem,3.5vw,2.75rem)] font-bold tracking-[-0.03em] leading-[1.1] text-foreground">
-              {post.title}
-            </h1>
+            {imageFirst && <FeaturedImage article={article} priority />}
 
-            {/* Author */}
-            <div className="mb-10 flex items-center gap-3 border-b border-border pb-8">
-              <div
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[0.85rem] font-bold text-white"
-                style={{ background: post.author.color }}
-              >
-                {post.author.initials}
-              </div>
-              <div>
-                <div className="text-[0.9rem] font-bold text-foreground">
-                  {post.author.name}
-                </div>
-                <div className="text-[0.78rem] text-muted">
-                  {post.author.role} · Shopi
-                </div>
-              </div>
-            </div>
-
-            {/* Lead / excerpt */}
-            <p
-              className="mb-10 border-l-[3px] pl-4 text-[0.95rem] leading-[1.7] text-muted italic sm:text-[1.1rem]"
-              style={{ borderLeftColor: catColor }}
-            >
-              {post.excerpt}
-            </p>
-
-            {/* Body sections */}
-            {post.sections.map((section, i) => (
-              <section key={i} className="mb-10">
-                <h2 className="mb-3.5 font-display text-[clamp(1.1rem,2vw,1.45rem)] font-bold tracking-[-0.02em] leading-[1.25] text-foreground">
+            {article.sections.map((section, i) => (
+              <section key={section.id} id={section.id} className="mt-10 scroll-mt-20">
+                <h2 className="mb-3 font-display text-[clamp(1.35rem,3vw,1.7rem)] leading-tight font-bold tracking-[-0.01em] text-foreground">
                   {section.heading}
                 </h2>
-                {section.body.split("\n\n").map((para, j) => (
-                  <p
-                    key={j}
-                    className="mb-4 text-[1rem] leading-[1.8] text-muted"
-                  >
-                    {para}
-                  </p>
-                ))}
-                {section.list && (
-                  <ul className="mt-4 mb-0 flex list-none flex-col gap-2.5 p-0">
-                    {section.list.map((item, k) => (
-                      <li
-                        key={k}
-                        className="flex items-start gap-3 text-[0.95rem] leading-[1.65] text-muted"
-                      >
-                        <span
-                          className="mt-[3px] flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
-                          style={{
-                            background: `${catColor}22`,
-                            color: catColor,
-                          }}
-                        >
-                          <svg
-                            width="11"
-                            height="11"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="3"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <path d="M20 6L9 17l-5-5" />
-                          </svg>
-                        </span>
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
+                <ArticleBlocks
+                  blocks={section.blocks}
+                  article={article}
+                  listings={listings}
+                  lang={lang}
+                />
+                {!imageFirst && i === 0 && (
+                  <FeaturedImage article={article} priority={false} />
                 )}
               </section>
             ))}
 
-            {/* Keywords / tags */}
-            <div className="mb-12 border-t border-border pt-6">
-              <div className="mb-3 text-[0.75rem] font-semibold tracking-[0.05em] uppercase text-muted">
-                Topics
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {post.keywords.map((kw) => (
-                  <span
-                    key={kw}
-                    className="rounded-full border border-border bg-surface px-3 py-1 text-[0.75rem] text-muted"
-                  >
-                    {kw}
-                  </span>
-                ))}
-              </div>
-            </div>
+            <ArticleCta article={article} lang={lang} />
 
-            {/* Further reading */}
-            {post.relatedLinks && post.relatedLinks.length > 0 && (
-              <div className="mb-12 border-t border-border pt-6">
-                <div className="mb-4 text-[0.75rem] font-semibold tracking-[0.05em] uppercase text-muted">
-                  Further reading
-                </div>
+            {article.faq && article.faq.length > 0 && (
+              <section aria-labelledby="faq" className="mt-12">
+                <h2
+                  id="faq"
+                  className="mb-4 font-display text-[clamp(1.35rem,3vw,1.7rem)] font-bold text-foreground"
+                >
+                  Questions
+                </h2>
                 <div className="flex flex-col gap-3">
-                  {post.relatedLinks.map(
-                    ({ label, url, description: desc }) => (
-                      <a
-                        key={url}
-                        href={resolveRelatedHref(url)}
-                        target={isExternalRelatedLink(url) ? "_blank" : undefined}
-                        rel={
-                          isExternalRelatedLink(url)
-                            ? "noopener noreferrer"
-                            : undefined
-                        }
-                        className="flex items-start gap-4 rounded-[10px] border border-border bg-surface px-4 py-3.5 no-underline transition-colors duration-150"
-                      >
-                        <span
-                          className="mt-[7px] h-2 w-2 shrink-0 rounded-full"
-                          style={{ background: catColor }}
-                        />
-                        <div>
-                          <div className="mb-1 text-[0.875rem] font-semibold text-foreground">
-                            {label}
-                            {isExternalRelatedLink(url) ? " ↗" : ""}
-                          </div>
-                          <div className="text-[0.8rem] leading-[1.5] text-muted">
-                            {desc}
-                          </div>
-                        </div>
-                      </a>
-                    ),
-                  )}
+                  {article.faq.map(({ q, a }) => (
+                    <details
+                      key={q}
+                      className="group overflow-hidden rounded-xl border border-border bg-elevated"
+                    >
+                      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 text-[0.975rem] font-semibold text-foreground select-none">
+                        {q}
+                        <span className="shrink-0 text-lg text-primary transition-transform group-open:rotate-45" aria-hidden>
+                          +
+                        </span>
+                      </summary>
+                      <p className="border-t border-border px-4 py-3.5 text-[0.95rem] leading-relaxed text-muted">
+                        {a}
+                      </p>
+                    </details>
+                  ))}
                 </div>
-              </div>
+              </section>
             )}
 
-            {/* FAQ — AEO structured section */}
-            <section aria-label="Frequently asked questions" className="mb-12">
-              <h2 className="mb-5 font-display text-[1.4rem] font-bold tracking-[-0.02em] text-foreground">
-                Frequently asked questions
-              </h2>
-              <div className="flex flex-col gap-4">
-                {post.faq.map(({ q, a }, i) => (
-                  <details
-                    key={i}
-                    className="overflow-hidden rounded-md border border-border bg-elevated"
-                  >
-                    <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-4 text-[0.95rem] font-semibold text-foreground select-none">
-                      {q}
-                      <span
-                        className="ml-3 shrink-0 text-[1.1rem]"
-                        style={{ color: catColor }}
-                      >
-                        +
-                      </span>
-                    </summary>
-                    <div className="border-t border-border px-5 pt-3.5 pb-4 text-[0.9rem] leading-[1.7] text-muted">
-                      {a}
-                    </div>
-                  </details>
-                ))}
-              </div>
-            </section>
-
-            {/* CTA */}
-            <div className="rounded-2xl border border-border bg-surface p-8 text-center">
-              <h3 className="mb-2 font-display text-[1.2rem] font-bold text-foreground">
-                Ready to buy and sell locally?
-              </h3>
-              <p className="mb-5 text-[0.875rem] text-muted">
-                Open For You, discover what is selling near you, and message
-                the seller directly. Free to use.
-              </p>
-              <Link
-                href={`/${lang}/for-you`}
-                className="inline-flex items-center gap-2 rounded-full bg-primary px-7 py-3 text-[0.9rem] font-bold text-white no-underline"
-              >
-                Open For You →
-              </Link>
-            </div>
+            <LinkList
+              title="Browse on Shopi"
+              links={marketplaceLinks}
+              lang={lang}
+              headingLevel="h2"
+            />
           </article>
 
-          {/* ── Sidebar ───────────────────────────────────────────── */}
-          <aside className="static min-[900px]:sticky min-[900px]:top-24">
-            {/* Table of contents */}
-            <div className="mb-6 rounded-[14px] border border-border bg-elevated p-5">
-              <div className="mb-3.5 text-[0.7rem] font-bold tracking-[0.05em] uppercase text-muted">
-                In this article
-              </div>
-              <nav>
-                {post.sections.map((s, i) => (
-                  <div
-                    key={i}
-                    className={`py-[0.45rem] text-[0.8rem] leading-[1.4] text-muted ${
-                      i < post.sections.length - 1
-                        ? "border-b border-border"
-                        : ""
-                    }`}
-                  >
-                    <span
-                      className="mr-1.5 text-[0.7rem]"
-                      style={{ color: catColor }}
+          {/* Desktop only: on a phone the answer comes first, not a contents list. */}
+          <aside className="sticky top-20 hidden lg:block">
+            <nav aria-label="In this guide" className="rounded-2xl border border-border bg-elevated p-5">
+              <p className="mb-3 text-xs font-bold tracking-wide text-muted uppercase">
+                In this guide
+              </p>
+              <ol className="m-0 flex list-none flex-col gap-2.5 p-0">
+                {article.sections.map((section) => (
+                  <li key={section.id}>
+                    <a
+                      href={`#${section.id}`}
+                      className="text-[0.85rem] leading-snug text-muted no-underline hover:text-foreground"
                     >
-                      {i + 1}.
-                    </span>
-                    {s.heading}
-                  </div>
+                      {section.heading}
+                    </a>
+                  </li>
                 ))}
-              </nav>
-            </div>
-
-            {/* Related posts */}
-            <div className="rounded-[14px] border border-border bg-elevated p-5">
-              <div className="mb-3.5 text-[0.7rem] font-bold tracking-[0.05em] uppercase text-muted">
-                More from Shopi
-              </div>
-              <div className="flex flex-col gap-4">
-                {related.map((r) => (
-                  <Link
-                    key={r.slug}
-                    href={`/${lang}/blog/${r.slug}`}
-                    className="no-underline"
-                  >
-                    <div className="rounded-[10px] border border-border bg-surface p-3 transition-colors duration-150">
-                      <span
-                        className="mb-2 inline-block rounded-full px-[7px] py-[2px] text-[0.65rem] font-bold tracking-[0.04em] uppercase"
-                        style={{
-                          background: `${categoryColors[r.category] ?? catColor}22`,
-                          color: categoryColors[r.category] ?? catColor,
-                        }}
-                      >
-                        {r.category}
-                      </span>
-                      <div className="mb-[0.4rem] text-[0.82rem] font-semibold leading-[1.35] text-foreground">
-                        {r.title}
-                      </div>
-                      <div className="text-[0.72rem] text-muted">
-                        {r.readTime}
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
+              </ol>
+            </nav>
           </aside>
         </div>
+
+        {related.length > 0 && (
+          <section aria-labelledby="related" className="mt-14 border-t border-border pt-10">
+            <h2 id="related" className="mb-5 font-display text-[1.4rem] font-bold text-foreground">
+              Related guides
+            </h2>
+            <ul className="m-0 grid list-none grid-cols-1 gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3">
+              {related.map((other) => (
+                <li key={other.slug}>
+                  <ArticleCard article={other} lang={lang} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
       </main>
 
       <LandingFooter lang={lang} />
