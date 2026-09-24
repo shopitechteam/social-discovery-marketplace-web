@@ -1,117 +1,88 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
-import { Pill } from "./Pill";
+import {
+  Car,
+  Flower2,
+  House,
+  Laptop,
+  Shirt,
+  Smartphone,
+  Sofa,
+  Sprout,
+  type LucideIcon,
+} from "lucide-react";
+import type { Dictionary } from "@/i18n/getDictionary";
+
+type CategoryKey = Exclude<keyof Dictionary["landing"]["categories"], "heading">;
 
 /**
- * Seller-side pitch for the four category landing pages.
+ * Visual category grid: an icon and a word per card, nothing to read.
  *
- * A marketplace is only as good as its supply, so this section talks to the
- * person with something to sell, not the browser. Every claim here is one the
- * product actually keeps — free to post, no commission, buyers message you
- * directly — and every `href` is a real route (the four /*-kenya pages,
- * /sell-in-kenya and /upload). Nothing links to a page we haven't built.
+ * Every `href` is a real route. The four category hubs (/phones-electronics-
+ * kenya, /property-for-sale-kenya, /sell-car-kenya, /beauty-cosmetics-kenya)
+ * stay linked from here — they are the homepage's popular-categories
+ * structured data. The rest go to /for-sale/* search-intent pages; fashion
+ * has no page yet, so it opens a search.
  */
-const categories = [
-  {
-    title: "Phones and electronics",
-    body: "The Samsung or iPhone you upgraded from loses value every month it sits in a drawer. Post it, or that spare laptop or TV, with the condition and price, and buyers message you directly.",
-    items: ["Samsung", "iPhone", "Used phones", "Smart TVs", "Laptops"],
-    href: "/phones-electronics-kenya",
-    cta: "Sell phones and electronics",
-  },
-  {
-    title: "Land, plots and property",
-    body: "Put plots, land, and houses for sale or rent in front of local buyers — from Nairobi to Nyahururu and Nyandarua — with photos, price and location.",
-    items: ["Plots", "Land", "Houses for sale", "Houses for rent"],
-    href: "/property-for-sale-kenya",
-    cta: "List land and property",
-  },
-  {
-    title: "Cars for sale",
-    body: "Skip the broker and keep what they would have taken. Post real photos or a walkaround video with the make, year, mileage and price, and serious buyers chat with you directly.",
-    items: ["Used cars", "Saloons", "SUVs", "Pickups"],
-    href: "/sell-car-kenya",
-    cta: "Sell your car",
-  },
-  {
-    title: "Beauty and cosmetics",
-    body: "Turn a beauty hustle into a shopfront. Post skincare, makeup, perfumes, wigs and hair products with shades, sizes and delivery options.",
-    items: ["Skincare", "Makeup", "Perfumes", "Wigs", "Hair products"],
-    href: "/beauty-cosmetics-kenya",
-    cta: "Sell beauty products",
-  },
+const categories: {
+  key: CategoryKey;
+  icon: LucideIcon;
+  href: string;
+  tint: string;
+}[] = [
+  { key: "phones", icon: Smartphone, href: "/for-sale/phones", tint: "primary" },
+  { key: "cars", icon: Car, href: "/sell-car-kenya", tint: "secondary" },
+  { key: "fashion", icon: Shirt, href: "/search?q=fashion", tint: "accent" },
+  { key: "furniture", icon: Sofa, href: "/for-sale/furniture", tint: "primary" },
+  { key: "property", icon: House, href: "/property-for-sale-kenya", tint: "secondary" },
+  { key: "beauty", icon: Flower2, href: "/beauty-cosmetics-kenya", tint: "accent" },
+  { key: "farm", icon: Sprout, href: "/for-sale/farm-produce", tint: "primary" },
+  { key: "electronics", icon: Laptop, href: "/phones-electronics-kenya", tint: "secondary" },
 ];
 
-export function MarketplaceCategoriesSection({ lang }: { lang: string }) {
+const TINTS: Record<string, string> = {
+  primary: "bg-[rgb(var(--brand-primary)/0.12)] text-primary",
+  secondary: "bg-[rgb(var(--brand-secondary)/0.16)] text-secondary-strong",
+  accent: "bg-[rgb(var(--brand-accent)/0.12)] text-accent",
+};
+
+export function MarketplaceCategoriesSection({
+  dict,
+  lang,
+}: {
+  dict: Dictionary;
+  lang: string;
+}) {
+  const t = dict.landing.categories;
+
   return (
     <section
       id="marketplace-categories"
       className="border-y border-default bg-surface px-(--landing-page-x) py-14 md:py-20"
     >
       <div className="mx-auto max-w-(--landing-page-max)">
-        <div className="mb-9 max-w-3xl">
-          <p className="mb-3 text-xs font-bold uppercase tracking-normal text-primary md:text-sm">
-            Start selling
-          </p>
-          <h2 className="font-display text-[clamp(1.65rem,2.8vw,2.5rem)] font-bold leading-tight tracking-normal text-foreground">
-            Whatever you have, someone nearby is looking for it.
-          </h2>
-          <p className="landing-subcopy mt-4 max-w-2xl">
-            The phone you upgraded from. The plot you inherited. The car you
-            are done with. The skincare you sell from home. Post it manually or
-            let Shopi Agent turn a photo into a complete listing, then deal with
-            buyers yourself from the first message to the final shilling.
-          </p>
-        </div>
+        <h2 className="mb-8 font-display text-[clamp(1.65rem,2.8vw,2.5rem)] font-bold leading-tight tracking-normal text-foreground">
+          {t.heading}
+        </h2>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          {categories.map(({ title, body, items, href, cta }) => (
-            <Link
-              key={title}
-              href={`/${lang}${href}`}
-              className="group flex flex-col rounded-lg border border-border bg-elevated p-5 no-underline transition-colors hover:border-[rgb(var(--color-border-strong))]"
-            >
-              <article className="flex h-full flex-col">
-                <h3 className="font-display text-[1.1rem] font-bold text-foreground">
-                  {title}
-                </h3>
-                <p className="mt-3 text-[0.95rem] leading-[1.7] text-muted">
-                  {body}
-                </p>
-                <ul className="mt-4 flex list-none flex-wrap gap-2 p-0">
-                  {items.map((item) => (
-                    <li
-                      key={item}
-                      className="rounded-full border border-border bg-surface px-3 py-1 text-xs font-semibold text-muted"
-                    >
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-                {/* Not a nested <a> — the whole card is the link. */}
-                <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-bold text-primary">
-                  {cta}
-                  <ArrowRight
-                    className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
-                    strokeWidth={2}
-                  />
+        <ul className="grid list-none grid-cols-2 gap-3 p-0 sm:grid-cols-4 md:gap-4">
+          {categories.map(({ key, icon: Icon, href, tint }) => (
+            <li key={key}>
+              <Link
+                href={`/${lang}${href}`}
+                className="group flex h-full flex-col items-center gap-3 rounded-[1.1rem] border border-border bg-elevated px-4 py-6 text-center no-underline transition-colors hover:border-[rgb(var(--color-border-strong))]"
+              >
+                <span
+                  className={`flex h-14 w-14 items-center justify-center rounded-2xl transition-transform group-hover:scale-105 ${TINTS[tint]}`}
+                >
+                  <Icon size={26} strokeWidth={1.9} aria-hidden />
                 </span>
-              </article>
-            </Link>
+                <span className="font-display text-base font-semibold text-foreground">
+                  {t[key]}
+                </span>
+              </Link>
+            </li>
           ))}
-        </div>
-
-        <div className="mt-8 flex flex-wrap items-center gap-3">
-          <Pill
-            href={`/${lang}/upload`}
-            className="bg-primary px-7 py-3.5 text-white hover:opacity-90"
-          >
-            Post your first item — free
-          </Pill>
-          <Pill href={`/${lang}/sell-in-kenya`} variant="outline">
-            How selling works
-          </Pill>
-        </div>
+        </ul>
       </div>
     </section>
   );

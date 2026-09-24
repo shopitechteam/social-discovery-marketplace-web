@@ -3,15 +3,13 @@ import type { Metadata } from "next";
 import { DeepDivesSection } from "@/components/landing/DeepDivesSection";
 import { DownloadSection } from "@/components/landing/DownloadSection";
 import { HeroSection } from "@/components/landing/HeroSection";
-import { HowItWorksSection } from "@/components/landing/HowItWorksSection";
 import { PillarsSection } from "@/components/landing/PillarsSection";
-import { StatsSection } from "@/components/landing/StatsSection";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { LandingNav } from "@/components/landing/LandingNav";
 import { MarketplaceCategoriesSection } from "@/components/landing/MarketplaceCategoriesSection";
+import { ShopiAgentSection } from "@/components/landing/ShopiAgentSection";
 import { WelcomeBackBanner } from "@/components/landing/WelcomeBackBanner";
 //import { SupportChat } from "@/components/landing/SupportChat";
-import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
 import { SocialProofSection } from "@/components/landing/SocialProofSection";
 //import { VideoBubble } from "@/components/landing/VideoBubble";
 import { getDictionary } from "@/i18n/getDictionary";
@@ -73,6 +71,9 @@ export async function generateMetadata({
   const canonical = `${siteConfig.url}/${safeLang}`;
 
   const { title, description, ogLocale } = HOME_META[safeLang];
+  // The share card is localised (see ./opengraph-image.tsx), so each locale
+  // points at its own rather than the site-wide English default.
+  const ogImage = `/${safeLang}/opengraph-image`;
 
   return {
     title: {
@@ -98,9 +99,10 @@ export async function generateMetadata({
       locale: ogLocale,
       images: [
         {
-          url: siteConfig.ogImage,
+          url: ogImage,
           width: 1200,
           height: 630,
+          type: "image/jpeg",
           alt: title,
         },
       ],
@@ -110,7 +112,7 @@ export async function generateMetadata({
       site: siteConfig.twitterHandle,
       title,
       description,
-      images: [siteConfig.ogImage],
+      images: [ogImage],
     },
   };
 }
@@ -187,24 +189,23 @@ export default async function Rootpage({ params }: PageProps<"/[lang]">) {
         />
 
         <LandingNav dict={dict} lang={lang} />
+        {/* Written to be understood in a few seconds of scrolling: one idea
+            per section, a headline and a short line, and the UI (listings,
+            mockups, icons) doing the explaining. Say each benefit once — the
+            strip under the hero owns free / 0% / nearby / direct. */}
         <HeroSection dict={dict} lang={lang} />
         <PillarsSection dict={dict} />
-        {/* Order is a funnel, not a tour. After the reasons to post comes the
-            proof that posting is easy (the four steps), then what it costs
-            (nothing), then what to post. The effort objection is the one that
-            stops people publishing, so it is answered before anything else. */}
-        <HowItWorksSection dict={dict} />
-        <StatsSection dict={dict} />
-        <MarketplaceCategoriesSection lang={lang} />
-        <DeepDivesSection dict={dict} lang={lang} />
-        {/* Real featured sellers (admin-controlled) before the illustrative
-            use cases: proof first, then "sound like you?". Renders nothing
-            when no seller is featured or the API is unreachable. */}
+        {/* Real featured sellers (admin-controlled) straight after the hero:
+            live listings show what Shopi is faster than copy can. Renders
+            nothing when no seller is featured or the API is unreachable. */}
         <SocialProofSection dict={dict} lang={lang} />
-        <TestimonialsSection dict={dict} lang={lang} />
+        {/* Sell → find → talk, then the Shopi Agent line. */}
+        <DeepDivesSection dict={dict} lang={lang} />
+        <ShopiAgentSection dict={dict} lang={lang} />
+        <MarketplaceCategoriesSection dict={dict} lang={lang} />
         {/* The TikTok saver lives on /tiktok-downloader (linked from the
-            footer), so the funnel runs straight from proof to the FAQ and the
-            closing CTA. */}
+            footer), so the funnel runs straight from categories to the FAQ
+            and the closing CTA. */}
         {/* <BlogSection dict={dict} /> */}
         {/* Visible FAQ — strong AEO signal and matches the FAQ structured data */}
         <HomeFaq items={faq} lang={lang} />
@@ -226,13 +227,8 @@ function HomeFaq({ items, lang }: { items: FaqItem[]; lang: Locale }) {
       className="mx-auto max-w-[min(760px,var(--landing-page-max))] px-(--landing-page-x) py-20"
     >
       <div className="mb-10">
-        <p className="mb-3 text-sm font-bold tracking-widest uppercase text-muted">
-          {lang === "sw" ? "Maswali" : "Questions"}
-        </p>
         <h2 className="font-display text-[clamp(1.6rem,3.2vw,2.5rem)] font-bold tracking-normal leading-tight text-foreground">
-          {lang === "sw"
-            ? "Majibu ya mambo unayoweza kujiuliza."
-            : "Still deciding? Start with these."}
+          {lang === "sw" ? "Maswali ya kawaida" : "Common questions"}
         </h2>
       </div>
 

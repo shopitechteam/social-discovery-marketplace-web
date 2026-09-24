@@ -55,30 +55,6 @@
       }
     }
   },
-  "howItWorks": {
-    "sectionLabel": "How it works",
-    "eyebrow": "From photo to published",
-    "headline": "Four steps, and your item is in front of nearby buyers.",
-    "intro": "Create a free account, add your photos, let Shopi Agent draft the words, then publish. Your listing enters the local feed straight away.",
-    "steps": {
-      "1": {
-        "title": "Create your free account",
-        "body": "You don't need a registered business, a website or a verified phone number to sell here. Sign up with Google, an email address, or Apple on an iPhone."
-      },
-      "2": {
-        "title": "Add photos or a video",
-        "body": "Shoot the item on your phone, or import a video you already made on TikTok. Clear media is what makes a buyer stop scrolling and open your listing."
-      },
-      "3": {
-        "title": "Let Shopi Agent write it",
-        "body": "Upload a photo and Shopi Agent drafts the title, description, category and specifications. You read it over and change anything you want before it goes live."
-      },
-      "4": {
-        "title": "Publish and reply to buyers",
-        "body": "Set your price in shillings, mark it negotiable if you like, and publish. Nearby buyers see it in the feed and message you inside Shopi, where you agree the price and the pickup directly."
-      }
-    }
-  },
   "audience": {
     "sectionLabel": "Who is Shopi for?",
     "headline": "For the people already buying and selling in Kenya every day.",
@@ -95,14 +71,8 @@
       "cta": "Start selling free"
     }
   },
-  "testimonials": {
-    "sectionLabel": "Who posts on Shopi",
-    "headline": "Sound like you? You already have everything you need."
-  },
   "socialProof": {
-    "eyebrow": "Selling on Shopi right now",
-    "headline": "Don't take our word for it. Here's what's live today.",
-    "intro": "Real sellers, real stock, live listings. Every item has a price, a location and a seller you can message.",
+    "headline": "People are already selling on Shopi.",
     "featured": "Featured seller",
     "verified": "Verified seller",
     "listings": "live listings",
@@ -117,12 +87,9 @@
     "seeAll": "See all {count} listings"
   },
   "download": {
-    "sectionLabel": "Start selling",
-    "headline": "Post it today. Let nearby buyers come to you.",
-    "body": "Take a photo, let Shopi Agent write the listing, and publish. It's free, there's no commission, and the buyer pays you directly.",
-    "webCta": "Post your first item — free",
-    "secondaryCta": "Open For You first",
-    "reassurance": "Free to post · 0% commission · No business registration needed"
+    "headline": "Have something to sell?",
+    "body": "Post it free.",
+    "cta": "Sell for Free"
   },
   "footer": {
     "tagline": "Kenya's local marketplace feed. Post it free, message the seller, agree directly.",
@@ -184,93 +151,59 @@
     "hero": {
       "eyebrow": "Kenya's free social marketplace",
       "headline": "Sell it with one photo. Keep every shilling.",
-      "subheadline": "Take one photo and Shopi Agent writes the listing. Nearby buyers find it in the feed and message you directly — no listing fees, no commission.",
-      "ctaPost": "Post your first item — free",
-      "ctaPostShort": "Post an item",
-      "ctaFeed": "Browse what's near you",
+      "subheadline": "Take a photo. Set your price. Post.",
+      "ctaPost": "Sell for Free",
+      "ctaPostShort": "Sell for Free",
+      "ctaFeed": "Browse Shopi",
       "ctaFeedShort": "Open For You",
       "ctaFeedLoggedIn": "Go to For You",
-      "reassurance": "Free to post · 0% commission · No business registration needed",
-      "figures": {
-        "commission": "commission on your sale",
-        "photo": "photo becomes a full listing",
-        "counties": "counties, nearby buyers first"
-      }
+      "reassurance": "Free to post · 0% commission · No business registration needed"
     },
     "pillars": {
-      "eyebrow": "Why sell here",
-      "headline": "Your item gets found without paying to be seen.",
-      "intro": "On Shopi, people scroll a local feed like a social app. Your post reaches nearby buyers even before they search, and every message comes straight to you.",
-      "feed": {
-        "title": "Get found by people who weren't searching",
-        "tagline": "Buyers come across your item while they scroll, not only when they type the exact words."
-      },
-      "chat": {
-        "title": "Every buyer talks to you, not a middleman",
-        "tagline": "No cart, no checkout, no broker in between. You answer, you negotiate, you agree the pickup."
-      },
-      "sell": {
-        "title": "Skip the writing — Shopi Agent drafts it",
-        "tagline": "Upload a photo and get a title, description and specifications to edit, instead of a blank form."
-      }
-    },
-    "stats": {
-      "eyebrow": "What it costs you",
-      "headline": "The price you agree is the price you keep.",
-      "intro": "Shopi does not process payments, hold money or arrange delivery. The buyer pays you directly, and all of it stays with you.",
-      "zero": {
-        "figure": "KES 0",
-        "label": "Commission and listing fees",
-        "body": "Sell a sofa for KES 45,000 and you keep KES 45,000. Posting is free, and nothing comes off the sale."
-      },
-      "counties": {
-        "figure": "47",
-        "label": "Counties, nearby buyers first",
-        "body": "Your post reaches the people closest to you first, whether you're in Nairobi, Mombasa, Kisumu, Nakuru, Meru or anywhere in between."
-      },
-      "chat": {
-        "figure": "1",
-        "label": "Chat, from first question to done deal",
-        "body": "Buyers message you inside Shopi. Answer questions, agree the price and set the pickup in one thread you can scroll back through."
-      }
+      "heading": "Why Shopi",
+      "free": "Free to post",
+      "commission": "0% commission",
+      "local": "Buy and sell near you",
+      "chat": "Message directly"
     },
     "dives": {
+      "sell": {
+        "eyebrow": "Sell",
+        "title": "Sell in a few taps.",
+        "body": "Photo. Price. Post.",
+        "note": "No business registration needed.",
+        "cta": "Sell on Shopi"
+      },
       "feed": {
-        "eyebrow": "For buyers",
-        "title": "Find what you didn't know you were looking for.",
-        "body": "Scroll and spot the sofa, phone or car you might never search for. The feed learns what you open and shows nearby listings first.",
-        "bullets": [
-          "Nearby listings appear first, from your neighbourhood outward",
-          "Real photos, videos, prices and locations from local sellers",
-          "Tell Shopi Agent what you want in plain words instead of building filters"
-        ],
-        "ctaPrimary": "Browse what's near you",
-        "ctaSecondary": "See how it works"
+        "eyebrow": "Buy",
+        "title": "Find things near you.",
+        "body": "Scroll. Discover. Message.",
+        "note": "Nearby first. All 47 counties.",
+        "cta": "Browse Shopi"
       },
       "chat": {
-        "eyebrow": "Direct chat",
-        "title": "Deal with the person, not a checkout.",
-        "body": "Message the seller inside Shopi. Price, payment and pickup stay between the two of you, so there is nothing to deduct and nobody to wait on.",
-        "bullets": [
-          "One tap from the listing to a real conversation",
-          "Ask for more photos, negotiate, and choose where to meet",
-          "The chat stays inside Shopi, so you keep a record of what was agreed"
-        ],
-        "ctaPrimary": "Browse what's near you",
-        "ctaSecondary": "Browse nearby"
-      },
-      "sell": {
-        "eyebrow": "Shopi Agent",
-        "title": "One photo. A finished listing.",
-        "body": "Upload a photo and Shopi Agent drafts the title, description, category and specifications. Nothing publishes until you review it.",
-        "bullets": [
-          "Photo in, complete draft listing out",
-          "Edit any word before it goes live — nothing is posted automatically",
-          "Import a video you already made on TikTok instead of shooting again"
-        ],
-        "ctaPrimary": "Post your first item — free",
-        "ctaSecondary": "See what Shopi Agent does"
+        "eyebrow": "Chat",
+        "title": "Talk directly.",
+        "body": "Message the seller. Agree the deal.",
+        "note": "No checkout. No commission."
       }
+    },
+    "agent": {
+      "eyebrow": "Shopi Agent",
+      "title": "One photo. Shopi helps with the rest.",
+      "body": "Add a photo and Shopi helps create your listing.",
+      "cta": "More about Shopi Agent"
+    },
+    "categories": {
+      "heading": "Browse by category",
+      "phones": "Phones",
+      "cars": "Cars",
+      "fashion": "Fashion",
+      "furniture": "Furniture",
+      "property": "Property",
+      "beauty": "Beauty",
+      "farm": "Farm",
+      "electronics": "Electronics"
     },
     "welcomeBack": {
       "message": "Welcome back, {name}!",

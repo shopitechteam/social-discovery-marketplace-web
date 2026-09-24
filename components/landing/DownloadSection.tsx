@@ -15,39 +15,24 @@ export function DownloadSection({
     >
       <div className="relative overflow-hidden rounded-lg border border-border bg-surface px-6 py-[clamp(2.5rem,6vw,4.5rem)]">
         <div className="relative z-1">
-          <p className="mb-4 text-sm font-bold tracking-widest uppercase text-primary">
-            {dict.download.sectionLabel}
-          </p>
           <h2 className="mx-auto mb-4 max-w-160 font-display text-[clamp(1.9rem,4.5vw,3.25rem)] font-bold tracking-normal leading-[1.12] text-foreground">
             {dict.download.headline}
           </h2>
-          <p className="landing-subcopy mx-auto mb-9 max-w-130">
+          <p className="mx-auto mb-9 max-w-130 text-lg font-medium text-muted md:text-xl">
             {dict.download.body}
           </p>
 
-          {/* Closing CTA points at the post flow, not the feed. Someone who
-              has read the whole page is the most likely person on the site to
-              actually publish something; sending them to a no-account browse
-              spends that intent on nothing. */}
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <Link
-              href={`/${lang}/upload`}
-              className="btn-primary inline-flex items-center gap-2 px-9 py-4 text-md font-semibold no-underline"
-            >
-              {dict.download.webCta.replace(/\s*→\s*$/, "")}
-              <span aria-hidden> →</span>
-            </Link>
-            <Link
-              href={`/${lang}/for-you`}
-              className="inline-flex items-center rounded-full border border-border bg-elevated px-7 py-4 text-md font-semibold text-foreground no-underline hover:bg-subtle"
-            >
-              {dict.download.secondaryCta}
-            </Link>
-          </div>
-
-          <p className="mt-5 text-sm text-muted">
-            {dict.download.reassurance}
-          </p>
+          {/* One CTA, and it points at the post flow, not the feed. Someone
+              who has read the whole page is the most likely person on the
+              site to actually publish something; the feed is one tap away in
+              the nav. */}
+          <Link
+            href={`/${lang}/upload`}
+            className="btn-primary inline-flex items-center gap-2 px-9 py-4 text-md font-semibold no-underline"
+          >
+            {dict.download.cta}
+            <span aria-hidden> →</span>
+          </Link>
         </div>
       </div>
     </section>

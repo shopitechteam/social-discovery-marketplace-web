@@ -11,54 +11,40 @@ import type { Locale } from "@/i18n/config";
  */
 export type FaqItem = { q: string; a: string };
 
+// The homepage set is kept to the questions a first-time visitor actually has,
+// in plain English. Everything else lives in EXTRA_FAQ and renders on /faq.
 export const HOME_FAQ_EN: FaqItem[] = [
   {
     q: "What is Shopi?",
-    a: "Shopi is a free online marketplace in Kenya where people discover, buy and sell locally. Browse a personalized feed of nearby products, chat directly with buyers and sellers, or use Shopi Agent to make buying and selling faster and easier. Posting is free and there is no commission.",
-  },
-  {
-    q: "What is Shopi Agent?",
-    a: "Shopi Agent is your AI buying and selling assistant. It can turn a photo into a complete listing by generating titles, descriptions, categories and product details. It can also help buyers find products by understanding natural conversations instead of relying on exact search terms.",
-  },
-  {
-    q: "Does Shopi handle payments or delivery?",
-    a: "No. Shopi does not process payments, arrange delivery or take commission. Buyers and sellers agree directly on the price, payment method and delivery or pickup that works for them.",
-  },
-  {
-    q: "How is Shopi different from other marketplaces?",
-    a: "Shopi combines a personalized social feed with AI-powered assistance. Instead of only searching or filling long forms, you can discover products naturally, use Shopi Agent to create listings or find products, and connect directly with nearby buyers and sellers.",
-  },
-  {
-    q: "Is Shopi an alternative to Jiji or PigiaMe?",
-    a: "Yes. Shopi is a free Kenyan marketplace you can use instead of, or alongside, classifieds sites like Jiji and PigiaMe. Listing is free with no commission, buyers near you find your post in a local feed, and they message you directly. Shopi is independent and not affiliated with either site.",
-  },
-  {
-    q: "How does Shopi personalize my feed?",
-    a: "Your feed learns from what you view, save and message about. The more you use Shopi, the better it becomes at showing nearby products and categories that match your interests.",
-  },
-  {
-    q: "What can I buy and sell on Shopi?",
-    a: "Almost anything that can be bought and sold locally in Kenya, including cars, phones, electronics, fashion, furniture, home items, farm produce, livestock and much more.",
-  },
-  {
-    q: "How do I create a Shopi account?",
-    a: "Sign up with Google, with an email address and password, or with Apple on an Apple device. Joining is free, and you do not need a registered business, a website or a verified phone number to start selling.",
-  },
-  {
-    q: "How do I post something for sale?",
-    a: "Sign in and tap Create, then add photos or a video of the item. Write the listing yourself, or upload a photo and let Shopi Agent generate the title, description, category and specifications for you to review and edit. Add your price in Kenyan Shillings, a category and your location, then publish. Posting is free and the listing appears in the local feed immediately.",
-  },
-  {
-    q: "How do buyers and sellers communicate?",
-    a: "Every listing includes built-in messaging so buyers and sellers can chat directly, ask questions, negotiate and agree on payment and delivery without leaving Shopi.",
+    a: "Shopi is a free marketplace in Kenya. Post things you want to sell, find things for sale near you, and message buyers and sellers directly. Posting is free and there is no commission.",
   },
   {
     q: "Is Shopi free to use?",
-    a: "Yes. It's free to browse, free to post and Shopi takes 0% commission on your sales. You keep every shilling you earn.",
+    a: "Yes. It's free to browse and free to post, and Shopi takes 0% commission on your sales. You keep every shilling.",
+  },
+  {
+    q: "How do I post something for sale?",
+    a: "Sign in and tap Create. Add photos or a video, set your price in KES, add your location and post. You can write the listing yourself, or let Shopi Agent write it from your photo and edit it before it goes live. Your listing shows in the feed straight away.",
+  },
+  {
+    q: "Does Shopi handle payments or delivery?",
+    a: "No. Shopi does not take payments, hold money, arrange delivery or take commission. The buyer and seller agree the price, payment and pickup or delivery directly.",
+  },
+  {
+    q: "What can I buy and sell on Shopi?",
+    a: "Almost anything sold locally in Kenya: phones, electronics, cars, fashion, furniture, land and houses, beauty products, farm produce, livestock and more.",
+  },
+  {
+    q: "What is Shopi Agent?",
+    a: "Shopi Agent is Shopi's AI helper for posting. Add a photo and it writes the title, description, category and details, then you check and edit them. It can also help buyers find things when they describe what they want in their own words.",
+  },
+  {
+    q: "Is Shopi an alternative to Jiji or PigiaMe?",
+    a: "Yes. You can use Shopi instead of, or alongside, Jiji and PigiaMe. Posting is free with no commission, buyers near you see your item in the feed, and they message you directly. Shopi is independent and not linked to either site.",
   },
   {
     q: "Does Shopi work across Kenya?",
-    a: "Yes. Shopi is built for local discovery across all 47 counties. Nearby listings are prioritized so you can find products close to you, while still being able to discover listings from other parts of Kenya.",
+    a: "Yes, in all 47 counties. You see listings near you first, and you can still find things from other parts of Kenya.",
   },
 ];
 
@@ -67,47 +53,35 @@ export const HOME_FAQ: Record<Locale, FaqItem[]> = {
   sw: [
     {
       q: "Shopi ni nini?",
-      a: "Shopi ni soko la kijamii la bure nchini Kenya ambapo unaweza kugundua, kununua na kuuza bidhaa karibu nawe. Vinjari feed iliyobinafsishwa ya bidhaa za karibu, wasiliana moja kwa moja na wanunuzi au wauzaji, au tumia Shopi Agent kufanya kununua na kuuza kuwa rahisi zaidi.",
-    },
-    {
-      q: "Shopi Agent ni nini?",
-      a: "Shopi Agent ni msaidizi wako wa AI wa kununua na kuuza. Inaweza kubadilisha picha kuwa tangazo kamili kwa kutengeneza kichwa, maelezo, kategoria na taarifa za bidhaa. Pia huwasaidia wanunuzi kupata bidhaa kwa kuelewa wanachotafuta kupitia mazungumzo ya kawaida.",
-    },
-    {
-      q: "Je, Shopi inashughulikia malipo au usafirishaji?",
-      a: "Hapana. Shopi haichakati malipo, haipangi usafirishaji wala haichukui commission. Mnunuzi na muuzaji hukubaliana moja kwa moja kuhusu bei, njia ya malipo na jinsi ya kuchukua au kusafirisha bidhaa.",
-    },
-    {
-      q: "Shopi ni tofauti vipi na masoko mengine mtandaoni?",
-      a: "Shopi inaunganisha feed ya kijamii na Shopi Agent. Badala ya kutegemea utafutaji pekee au kujaza fomu ndefu, unaweza kugundua bidhaa kwa urahisi, kutumia Shopi Agent kuunda tangazo au kutafuta bidhaa, na kuwasiliana moja kwa moja na watu walio karibu nawe.",
-    },
-    {
-      q: "Shopi hupangaje feed yangu?",
-      a: "Feed yako hujifunza kutokana na bidhaa unazofungua, kuhifadhi na kutuma ujumbe kuzihusu. Kadri unavyoendelea kutumia Shopi, ndivyo inavyoonyesha bidhaa za karibu zinazolingana zaidi na mambo unayopenda.",
-    },
-    {
-      q: "Ninaweza kununua na kuuza nini kwenye Shopi?",
-      a: "Unaweza kununua au kuuza karibu kila kitu kinachouzwa nchini Kenya, ikiwemo magari, simu, vifaa vya elektroniki, nguo, samani, bidhaa za nyumbani, mazao, mifugo na bidhaa nyingine nyingi.",
-    },
-    {
-      q: "Je, Shopi inafanya kazi kote Kenya?",
-      a: "Ndiyo. Shopi imejengwa kwa biashara za karibu katika kaunti zote 47 nchini Kenya. Bidhaa zilizo karibu nawe hupewa kipaumbele, lakini bado unaweza kugundua na kuwasiliana na wauzaji kutoka maeneo mengine nchini.",
-    },
-    {
-      q: "Ninafunguaje akaunti ya Shopi?",
-      a: "Nenda shopi.co.ke, gusa Sign in, kisha ujisajili kwa Google, Apple au barua pepe na nenosiri. Ni bure kujiunga na huhitaji biashara iliyosajiliwa ili kuanza kutumia Shopi.",
-    },
-    {
-      q: "Ninawezaje kuweka bidhaa ya kuuza kwenye Shopi?",
-      a: "Unaweza kutengeneza tangazo mwenyewe au kutumia Shopi Agent ikuongoze. Pakia picha au video, au zungumza na Shopi Agent, ambayo itakutengenezea kichwa, maelezo, kategoria na taarifa nyingine za bidhaa. Kuchapisha ni bure kabisa.",
-    },
-    {
-      q: "Wanunuzi na wauzaji huwasilianaje kwenye Shopi?",
-      a: "Kupitia mfumo wa chat uliopo ndani ya Shopi. Fungua tangazo na ugonge Message ili kuzungumza moja kwa moja na muuzaji au mnunuzi, kujadiliana bei na kukubaliana kuhusu malipo na usafirishaji bila kutoka kwenye Shopi.",
+      a: "Shopi ni soko la bure nchini Kenya. Post vitu unavyotaka kuuza, pata vitu vinavyouzwa karibu nawe, na uongee moja kwa moja na wanunuzi na wauzaji. Kupost ni bure na hakuna commission.",
     },
     {
       q: "Je, kutumia Shopi ni bure?",
-      a: "Ndiyo. Ni bure kuvinjari bidhaa, ni bure kuweka matangazo, na Shopi haichukui commission yoyote kwenye mauzo yako. Unabaki na kila shilingi unayopata.",
+      a: "Ndiyo. Ni bure kuvinjari na bure kupost, na Shopi haichukui commission yoyote kwenye mauzo yako. Kila shilingi ni yako.",
+    },
+    {
+      q: "Ninawezaje kuweka bidhaa ya kuuza kwenye Shopi?",
+      a: "Ingia kisha ugonge Create. Weka picha au video, bei kwa KES na eneo lako, kisha post. Unaweza kuandika tangazo mwenyewe, au Shopi Agent ikuandikie kutoka kwa picha yako na uhariri kabla halijachapishwa. Tangazo lako linaonekana kwenye feed papo hapo.",
+    },
+    {
+      q: "Je, Shopi inashughulikia malipo au usafirishaji?",
+      a: "Hapana. Shopi haipokei malipo, haishiki pesa, haipangi usafirishaji wala haichukui commission. Mnunuzi na muuzaji hukubaliana moja kwa moja kuhusu bei, malipo na jinsi ya kuchukua au kusafirisha bidhaa.",
+    },
+    {
+      q: "Ninaweza kununua na kuuza nini kwenye Shopi?",
+      a: "Karibu kila kitu kinachouzwa Kenya: simu, elektroniki, magari, nguo, fanicha, ardhi na nyumba, bidhaa za urembo, mazao, mifugo na mengine mengi.",
+    },
+    {
+      q: "Shopi Agent ni nini?",
+      a: "Shopi Agent ni msaidizi wa AI wa Shopi wa kupost. Weka picha na itaandika kichwa, maelezo, kategoria na taarifa za bidhaa, kisha wewe unakagua na kubadilisha. Pia inaweza kuwasaidia wanunuzi kupata bidhaa wanapoeleza wanachotaka kwa maneno yao.",
+    },
+    {
+      q: "Je, Shopi ni mbadala wa Jiji au PigiaMe?",
+      a: "Ndiyo. Unaweza kutumia Shopi badala ya, au pamoja na, Jiji na PigiaMe. Kupost ni bure bila commission, wanunuzi wa karibu wanaona bidhaa yako kwenye feed, na wanakutumia ujumbe moja kwa moja. Shopi ni huru na haina uhusiano na tovuti hizo.",
+    },
+    {
+      q: "Je, Shopi inafanya kazi kote Kenya?",
+      a: "Ndiyo, katika kaunti zote 47. Unaona matangazo ya karibu kwanza, na bado unaweza kupata bidhaa kutoka sehemu nyingine za Kenya.",
     },
   ],
 };
@@ -126,6 +100,15 @@ export const EXTRA_FAQ: Record<Locale, FaqItem[]> = {
     {
       q: "How do I create an account on Shopi?",
       a: "Sign up with Google, with an email address and password, or with Apple on Apple devices. You do not need a registered business, a website or a verified phone number to join.",
+    },
+    // Moved off the homepage when its FAQ was cut to first-visit questions.
+    {
+      q: "How do buyers and sellers communicate?",
+      a: "Every listing has a Message button. Buyers and sellers chat inside Shopi to ask questions, agree the price and plan pickup or delivery.",
+    },
+    {
+      q: "How does Shopi personalize my feed?",
+      a: "Your feed learns from what you open, save and message about, and shows you more of what you like, with nearby listings first.",
     },
     {
       q: "Is it safe to buy and sell on Shopi?",
@@ -225,6 +208,14 @@ export const EXTRA_FAQ: Record<Locale, FaqItem[]> = {
     {
       q: "Ninawezaje kufungua akaunti kwenye Shopi?",
       a: "Jisajili kwa Google, kwa barua pepe na nenosiri, au kwa Apple kwenye vifaa vya Apple. Huhitaji biashara iliyosajiliwa, tovuti wala nambari ya simu iliyothibitishwa.",
+    },
+    {
+      q: "Wanunuzi na wauzaji huwasilianaje kwenye Shopi?",
+      a: "Kila tangazo lina kitufe cha Message. Wanunuzi na wauzaji huongea ndani ya Shopi ili kuuliza maswali, kukubaliana bei na kupanga jinsi ya kuchukua au kusafirisha bidhaa.",
+    },
+    {
+      q: "Shopi hupangaje feed yangu?",
+      a: "Feed yako hujifunza kutokana na unachofungua, kuhifadhi na kutuma ujumbe kukihusu, kisha inakuonyesha zaidi ya unachopenda, ukianza na matangazo ya karibu.",
     },
     {
       q: "Je, ni salama kununua na kuuza kwenye Shopi?",
