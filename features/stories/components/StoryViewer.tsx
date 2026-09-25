@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useFragment } from "@apollo/client/react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -25,6 +26,7 @@ import { storyUserName } from "../lib/storyUser";
 import { IMAGE_STORY_MS, MAX_STORY_VIDEO_SECONDS } from "../constants";
 import { StoryAvatar } from "./StoryAvatar";
 import { StoryViewersSheet } from "./StoryViewersSheet";
+import { StoryViewCountFragmentDoc } from "@/types/__generated__/graphql";
 
 interface Props {
   lang: string;
@@ -160,6 +162,14 @@ export function StoryViewer({
   const isVideo = story?.media.mediaType === "VIDEO" && !!story.media.muxPlaybackId;
   const isOwn = !!ring && !!viewerUserId && ring.user.id === viewerUserId;
   const paused = held || manualPause || sheet !== null || hidden || deleting;
+
+  // Live from the cache, not the snapshot the viewer opened with: views that
+  // arrive over the socket move "Seen by" while you're watching.
+  const { data: liveViews } = useFragment({
+    fragment: StoryViewCountFragmentDoc,
+    from: story && isOwn ? `Story:${story.id}` : null,
+  });
+  const viewCount = liveViews?.viewCount ?? story?.viewCount ?? 0;
   const storyKey = story ? `${story.id}:${pos.replay}` : "";
 
   // ── Navigation ──────────────────────────────────────────────────────────
@@ -605,7 +615,7 @@ export function StoryViewer({
               className="pointer-events-auto flex items-center gap-1.5 rounded-full bg-black/35 px-3 py-1.5 text-sm font-semibold text-white backdrop-blur-sm"
             >
               <Eye size={16} />
-              {story.viewCount > 0 ? `Seen by ${story.viewCount}` : "No views yet"}
+              {viewCount > 0 ? `Seen by ${viewCount}` : "No views yet"}
             </button>
           )}
         </div>

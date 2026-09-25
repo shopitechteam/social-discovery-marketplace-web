@@ -7,51 +7,46 @@ import { useSocket } from "@/hooks/useSocket";
 import {
   WS_EVENTS,
   type StoryFailedPayload,
+  type StoryPublishedPayload,
   type StoryReadyPayload,
 } from "@/lib/socket";
-import { SyncStoryDocument } from "@/types/__generated__/graphql";
+import { NotifyStoryUploadedDocument } from "@/types/__generated__/graphql";
 import { resetStoryUpload, useStoryUploadStore } from "../store/storyUpload";
 
-/** Quick checks while a short video is likely just about done… */
-const FAST_POLL_MS = 2_000;
-/** …then easier on Mux for a long encode. */
-const SLOW_POLL_MS = 4_000;
-const SLOW_AFTER_MS = 30_000;
 /** Past this, stop showing progress; the story still appears when it's done. */
 const GIVE_UP_MS = 3 * 60_000;
 
 /**
- * Ends a post's "processing" phase as soon as the story is live.
+ * Ends a post's "processing" phase the moment the story is live — without
+ * polling.
  *
- * It asks the API directly (syncStory), which for a video checks Mux there and
- * then and publishes the moment the encode is done — so the wait is Mux's, not
- * a webhook's or a queue's. The socket's story:ready / story:failed still land
- * first when they can.
+ * One call when the upload finishes tells the API to start watching (and
+ * answers at once for a photo, which is live by then). From there the server
+ * announces the outcome over the socket: story:published to every tray,
+ * including this one, or story:failed. The only other call is a single
+ * reconcile if the socket dropped while waiting, since it may have missed
+ * the announcement.
  */
 export function useStoryUploadWatcher(refetchFeed: () => Promise<unknown>) {
   const phase = useStoryUploadStore((s) => s.phase);
   const storyId = useStoryUploadStore((s) => s.storyId);
   const { on } = useSocket();
-  const [syncStory] = useMutation(SyncStoryDocument);
+  const [notifyUploaded] = useMutation(NotifyStoryUploadedDocument);
 
   const refetchRef = useRef(refetchFeed);
-  const syncRef = useRef(syncStory);
+  const notifyRef = useRef(notifyUploaded);
   useEffect(() => {
     refetchRef.current = refetchFeed;
-    syncRef.current = syncStory;
-  }, [refetchFeed, syncStory]);
+    notifyRef.current = notifyUploaded;
+  }, [refetchFeed, notifyUploaded]);
 
   useEffect(() => {
     if (phase !== "processing" || !storyId) return;
     let settled = false;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const startedAt = Date.now();
 
-    const live = async () => {
+    const live = () => {
       if (settled) return;
       settled = true;
-      clearTimeout(timer);
-      await refetchRef.current().catch(() => undefined);
       resetStoryUpload();
       toast.success("Your story is live");
     };
@@ -59,50 +54,69 @@ export function useStoryUploadWatcher(refetchFeed: () => Promise<unknown>) {
     const failed = (reason?: string) => {
       if (settled) return;
       settled = true;
-      clearTimeout(timer);
       resetStoryUpload();
       toast.error("Couldn't post your story", {
         description: reason || "The file couldn't be processed. Try another one.",
       });
     };
 
-    const check = async () => {
-      if (settled) return;
-      if (Date.now() - startedAt > GIVE_UP_MS) {
-        settled = true;
-        resetStoryUpload();
-        toast("Your story is still processing", {
-          description: "It will appear here as soon as it's ready.",
-        });
-        return;
-      }
+    const reconcile = async () => {
       try {
-        const { data } = await syncRef.current({ variables: { storyId } });
-        if (data?.syncStory === "READY") return void live();
-        if (data?.syncStory === "FAILED") return failed();
+        const { data } = await notifyRef.current({ variables: { storyId } });
+        if (settled) return;
+        if (data?.notifyStoryUploaded === "READY") {
+          // Its broadcast may have gone out before we were listening (a photo
+          // is live before the upload call even returns) — make sure the tray
+          // has it, then finish.
+          await refetchRef.current().catch(() => {});
+          live();
+        } else if (data?.notifyStoryUploaded === "FAILED") {
+          failed();
+        }
       } catch {
-        // A blip — keep checking.
+        // The socket or the give-up timer settles it.
       }
-      if (settled) return;
-      const elapsed = Date.now() - startedAt;
-      timer = setTimeout(check, elapsed < SLOW_AFTER_MS ? FAST_POLL_MS : SLOW_POLL_MS);
     };
 
+    const offPublished = on<StoryPublishedPayload>(WS_EVENTS.STORY_PUBLISHED, (p) => {
+      if (p.story.id === storyId) live();
+    });
     const offReady = on<StoryReadyPayload>(WS_EVENTS.STORY_READY, (p) => {
-      if (p.storyId === storyId) void live();
+      if (p.storyId === storyId) live();
     });
     const offFailed = on<StoryFailedPayload>(WS_EVENTS.STORY_FAILED, (p) => {
       if (p.storyId === storyId) failed(p.reason);
     });
 
-    // First check right away: a photo is already live.
-    void check();
+    let dropped = false;
+    const offDisconnect = on("disconnect", () => {
+      dropped = true;
+    });
+    const offConnect = on("connect", () => {
+      if (!dropped) return;
+      dropped = false;
+      void reconcile();
+    });
+
+    const giveUp = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      resetStoryUpload();
+      toast("Your story is still processing", {
+        description: "It will appear here as soon as it's ready.",
+      });
+    }, GIVE_UP_MS);
+
+    void reconcile();
 
     return () => {
       settled = true;
-      clearTimeout(timer);
+      clearTimeout(giveUp);
+      offPublished();
       offReady();
       offFailed();
+      offDisconnect();
+      offConnect();
     };
   }, [phase, storyId, on]);
 }

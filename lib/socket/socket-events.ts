@@ -14,6 +14,11 @@ export const WS_EVENTS = {
   CONTENT_PUBLISH_UPDATED: 'content:publish:updated',
   STORY_READY:  'story:ready',
   STORY_FAILED: 'story:failed',
+  /** Someone opened one of your stories for the first time (creator only). */
+  STORY_VIEWED: 'story:viewed',
+  /** Broadcast to every client's story tray. */
+  STORY_PUBLISHED: 'story:published',
+  STORY_DELETED: 'story:deleted',
   DM_MESSAGE_CREATED: 'dm:message:created',
   DM_MESSAGE_UPDATED: 'dm:message:updated',
   DM_CONVERSATION_UPDATED: 'dm:conversation:updated',
@@ -73,6 +78,48 @@ export interface StoryReadyPayload {
 export interface StoryFailedPayload {
   storyId: string;
   reason: string;
+}
+
+/** Public creator fields — the StoryCreatorFields fragment's shape. */
+export interface StoryCreatorPayload {
+  id: string;
+  username: string | null;
+  profile: { firstName: string | null; lastName: string | null; avatar: string | null } | null;
+}
+
+/** A published story — the StoryFields fragment's shape, minus per-viewer state. */
+export interface StoryPayload {
+  id: string;
+  caption: string | null;
+  expiresAt: string;
+  createdAt: string;
+  viewCount: number;
+  media: {
+    mediaType: 'IMAGE' | 'VIDEO';
+    imageUrl: string | null;
+    thumbnailUrl: string | null;
+    muxPlaybackId: string | null;
+    muxThumbnailUrl: string | null;
+    duration: number | null;
+    processingStatus: string;
+  };
+}
+
+export interface StoryPublishedPayload {
+  story: StoryPayload;
+  creator: StoryCreatorPayload;
+}
+
+export interface StoryDeletedPayload {
+  storyId: string;
+  creatorId: string;
+}
+
+export interface StoryViewedPayload {
+  storyId: string;
+  viewCount: number;
+  viewedAt: string;
+  viewer: StoryCreatorPayload;
 }
 
 export interface TiktokImportUpdatedPayload {

@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useAuthStore } from "@/stores/auth";
 import { useStoriesFeed, type TrayRing } from "../hooks/useStoriesFeed";
 import { useStoryUploadWatcher } from "../hooks/useStoryUploadWatcher";
+import { useStoriesRealtime } from "../hooks/useStoriesRealtime";
 import { postStory, useStoryUploadStore } from "../store/storyUpload";
 import { storyUserName } from "../lib/storyUser";
 import { storyThumbnail } from "../lib/storyMedia";
@@ -111,6 +112,7 @@ export function StoriesBar({ lang, variant = "mobile" }: Props) {
   const client = useApolloClient();
   const user = useAuthStore((s) => s.user);
   const { rings, loading, isAuthed, userId, refetch, markSeen, deleteStory } = useStoriesFeed();
+  useStoriesRealtime(refetch);
   useStoryUploadWatcher(refetch);
 
   const uploadPhase = useStoryUploadStore((s) => s.phase);

@@ -20,6 +20,12 @@ fragment StoryFields on Story {
   }
 }
 
+# Read live by the viewer: "Seen by N" moves as views arrive over the socket.
+fragment StoryViewCount on Story {
+  id
+  viewCount
+}
+
 fragment StoryCreatorFields on User {
   id
   username
@@ -74,8 +80,10 @@ mutation CreateStory($input: CreateStoryInput!) {
   }
 }
 
-mutation SyncStory($storyId: String!) {
-  syncStory(storyId: $storyId)
+# Once, when an upload finishes. The story going live is announced over the
+# socket (story:published), so nothing polls.
+mutation NotifyStoryUploaded($storyId: String!) {
+  notifyStoryUploaded(storyId: $storyId)
 }
 
 mutation RequestStoryVideoUpload($caption: String) {
