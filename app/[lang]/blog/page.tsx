@@ -17,8 +17,9 @@ import { breadcrumbSchema, collectionPageSchema, jsonLd } from "@/lib/structured
 
 type Props = { params: Promise<{ lang: string }> };
 
-// Rebuilt with the articles; hourly keeps scheduled articles appearing on time.
-export const revalidate = 3600;
+// Rebuilt with the articles; daily picks up scheduled articles within a day of
+// their publish date (a deploy publishes them immediately).
+export const revalidate = 86400;
 
 const TITLE = "Price Guides and Buying Tips for Kenya";
 const DESCRIPTION =

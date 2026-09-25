@@ -87,9 +87,14 @@ export const { getClient, query, PreloadQuery } = registerApolloClient(() => {
     link: new HttpLink({
       uri: GRAPHQL_URL,
       fetchOptions: {
-        // Default: revalidate every 30s for RSC fetches.
-        // Override per-call: query(MY_QUERY, { context: { fetchOptions: { next: { revalidate: 0 } } } })
-        next: { revalidate: 30 },
+        // Default: hourly, matching the `revalidate` the ISR pages declare.
+        // The shortest fetch revalidate in a route sets how often the WHOLE
+        // route regenerates, so this default used to be the real interval:
+        // at 30s, every "hourly" listing, profile and SEO landing page was
+        // rebuilt every 30 seconds, burning Vercel ISR writes and function
+        // invocations for no visible gain. Pages needing fresher data opt in:
+        // query(MY_QUERY, { context: { fetchOptions: { next: { revalidate: 30 } } } })
+        next: { revalidate: 3600 },
       },
     }),
   });

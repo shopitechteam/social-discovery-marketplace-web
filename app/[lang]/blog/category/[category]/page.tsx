@@ -23,8 +23,9 @@ import {
 
 type Props = { params: Promise<{ lang: string; category: string }> };
 
-// Rebuilt with the articles; hourly keeps scheduled articles appearing on time.
-export const revalidate = 3600;
+// Rebuilt with the articles; daily picks up scheduled articles within a day of
+// their publish date (a deploy publishes them immediately).
+export const revalidate = 86400;
 
 // Only categories with a live article get a hub: an empty hub is a thin page.
 export function generateStaticParams() {

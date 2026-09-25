@@ -130,10 +130,15 @@ export const SOCIAL_PROOF_REVALIDATE_SECONDS = 60;
 /**
  * Best-effort: the homepage must render when the API is unreachable, so any
  * failure yields an empty list, and an empty list hides the section.
+ *
+ * `revalidate` also caps how often the calling route regenerates (the
+ * shortest fetch wins), so callers that don't need minute-fresh data — the
+ * sitemap — pass a longer one.
  */
 export async function fetchSocialProofSellers(
   limit = 6,
   listingsPerSeller = 8,
+  revalidate = SOCIAL_PROOF_REVALIDATE_SECONDS,
 ): Promise<SocialProofSeller[]> {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   if (!apiUrl) return [];
@@ -146,7 +151,7 @@ export async function fetchSocialProofSellers(
         query: SOCIAL_PROOF_SELLERS,
         variables: { limit, listingsPerSeller },
       }),
-      next: { revalidate: SOCIAL_PROOF_REVALIDATE_SECONDS, tags: ["social-proof"] },
+      next: { revalidate, tags: ["social-proof"] },
     });
     if (!response.ok) return [];
 
