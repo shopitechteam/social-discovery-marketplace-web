@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { UserRound } from "lucide-react";
 import { avatarGradient } from "@/lib/avatar";
+import { ringSegments, SEEN_RING_COLOR, UNSEEN_RING_COLOR } from "../lib/storyRing";
 
 /**
  * - stories:    WhatsApp-style ring, one arc per story (see `seen`) — pink
@@ -18,8 +19,6 @@ const STROKE = 2.5;
 const GAP = 3;
 /** Space between two story arcs, along the ring (px). */
 const SEGMENT_GAP = 4;
-/** A watched story's arc — quiet, but still counts. */
-const SEEN_COLOR = "rgb(var(--color-text-muted) / 0.4)";
 
 interface Props {
   /** Used for the fallback gradient when there's no photo. */
@@ -59,7 +58,7 @@ export function StoryAvatar({
   const radius = (size - STROKE) / 2;
   const circumference = 2 * Math.PI * radius;
   const inner = size - 2 * (STROKE + GAP);
-  const brand = "rgb(var(--brand-primary))";
+  const brand = UNSEEN_RING_COLOR;
   // A dead URL (an expired social-login avatar, a story whose media was just
   // removed) falls through to the next candidate instead of showing a broken
   // image in the tray.
@@ -83,27 +82,19 @@ export function StoryAvatar({
           aria-hidden
         >
           {state === "stories" &&
-            seen.map((watched, i) => {
-              // One arc per story, clockwise from 12 o'clock in the order they
-              // play, with a gap between each. A single story is a whole ring.
-              const count = seen.length;
-              const gap = count > 1 ? Math.min(SEGMENT_GAP, (circumference / count) * 0.3) : 0;
-              const arc = circumference / count - gap;
-              const start = -90 + (360 / count) * i + ((gap / 2) / circumference) * 360;
-              return (
-                <circle
-                  key={i}
-                  cx={center}
-                  cy={center}
-                  r={radius}
-                  fill="none"
-                  stroke={watched ? SEEN_COLOR : brand}
-                  strokeWidth={STROKE}
-                  strokeDasharray={count > 1 ? `${arc} ${circumference}` : undefined}
-                  transform={count > 1 ? `rotate(${start} ${center} ${center})` : undefined}
-                />
-              );
-            })}
+            ringSegments(seen.length, circumference, SEGMENT_GAP).map(({ arc, rotation }, i) => (
+              <circle
+                key={i}
+                cx={center}
+                cy={center}
+                r={radius}
+                fill="none"
+                stroke={seen[i] ? SEEN_RING_COLOR : brand}
+                strokeWidth={STROKE}
+                strokeDasharray={`${arc} ${circumference}`}
+                transform={`rotate(${rotation} ${center} ${center})`}
+              />
+            ))}
           {state === "uploading" && (
             <>
               <circle

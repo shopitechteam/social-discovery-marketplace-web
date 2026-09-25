@@ -26,6 +26,7 @@ import { useAuthStore } from "@/stores/auth";
 import { trackSellerEvent } from "@/lib/seller-analytics";
 import { Skeleton } from "@/components/ui/skeleton";
 import { appendUnique } from "../lib/appendUnique";
+import { CreatorStoryAvatar } from "@/features/stories/components/CreatorStoryAvatar";
 
 function formatCompact(value: number | null | undefined) {
   if (value == null) return "0";
@@ -223,25 +224,37 @@ export function CreatorProfileView({
 
           <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
             <div className="flex min-w-0 items-start gap-4">
-              <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full border border-border bg-main sm:h-24 sm:w-24">
-                {avatar ? (
-                  <Image
-                    src={avatar}
-                    alt={displayName}
-                    fill
-                    sizes="96px"
-                    className="object-cover"
-                    placeholder="blur"
-                    blurDataURL={SHIMMER_AVATAR}
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center">
-                    <span className="select-none text-xl font-black text-elevated">
-                      {initials}
-                    </span>
-                  </div>
-                )}
-              </div>
+              {/* Any live story rings the avatar (pink new, grey watched) and
+                  a tap opens it — there's no profile to send the tap to here. */}
+              <CreatorStoryAvatar
+                userId={user.id}
+                lang={lang}
+                name={displayName}
+                mode="any"
+                ringClassName="-inset-[6px]"
+                ringThickness={3.4}
+                className="shrink-0 rounded-full"
+              >
+                <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full border border-border bg-main sm:h-24 sm:w-24">
+                  {avatar ? (
+                    <Image
+                      src={avatar}
+                      alt={displayName}
+                      fill
+                      sizes="96px"
+                      className="object-cover"
+                      placeholder="blur"
+                      blurDataURL={SHIMMER_AVATAR}
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center">
+                      <span className="select-none text-xl font-black text-elevated">
+                        {initials}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </CreatorStoryAvatar>
 
               <div className="min-w-0 flex-1 pt-0.5">
                 <div className="flex min-w-0 flex-wrap items-center gap-2">

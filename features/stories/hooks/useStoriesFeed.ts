@@ -1,25 +1,20 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useState,
-  useSyncExternalStore,
-} from "react";
-import { useApolloClient, useMutation, useQuery } from "@apollo/client/react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { useApolloClient, useQuery } from "@apollo/client/react";
 import { useAuthStore } from "@/stores/auth";
 import {
-  DeleteStoryDocument,
   StoriesFeedDocument,
-  ViewStoryDocument,
+  type StoriesFeedQuery,
   type StoryCreatorFieldsFragment,
   type StoryFieldsFragment,
 } from "@/types/__generated__/graphql";
-import { markStorySeen, useSeenStories } from "../lib/seenStories";
+import { useSeenStories } from "../lib/seenStories";
 import { loadSavedStoriesFeed, saveStoriesFeed } from "../lib/storiesFeedCache";
-import { withStoryRemoved } from "../lib/storiesFeedUpdates";
+import { useAuthHydrated } from "../lib/useAuthHydrated";
+import { storyExpiry, useStoryActions } from "./useStoryActions";
+
+export { storyExpiry };
 
 export type StoryUser = StoryCreatorFieldsFragment;
 
@@ -42,27 +37,26 @@ export function openingStoryIndex(ring: TrayRing): number {
   return i === -1 ? 0 : i;
 }
 
-export function storyExpiry(story: StoryFieldsFragment): number {
-  const t = Date.parse(String(story.expiresAt));
-  return Number.isNaN(t) ? Date.now() + 86_400_000 : t;
-}
-
-/** Views already sent this session, so re-opening a ring doesn't re-send them. */
-const reportedViews = new Set<string>();
-
 /**
- * Auth lives in localStorage, which the server can't read. Holding the query
- * until the store has hydrated means the server HTML and the first client
- * render agree (both show the skeleton), and the one request that goes out
- * carries the viewer's token — so their own ring and seen state are right from
- * the first paint.
+ * A cached ring as this viewer sees it: live stories only, each marked seen if
+ * the server or this device says so. Null once nothing in it is live.
  */
-function useAuthHydrated(): boolean {
-  return useSyncExternalStore(
-    (onChange) => useAuthStore.persist.onFinishHydration(onChange),
-    () => useAuthStore.persist.hasHydrated(),
-    () => false,
-  );
+export function toTrayRing(
+  ring: StoriesFeedQuery["storiesFeed"][number],
+  seenLocally: Readonly<Record<string, number>>,
+  viewerId: string | null,
+  now: number,
+): TrayRing | null {
+  const stories = ring.stories
+    .filter((story) => storyExpiry(story) > now)
+    .map((story) => ({ ...story, seen: story.isViewed || story.id in seenLocally }));
+  if (stories.length === 0) return null;
+  return {
+    user: ring.user,
+    stories,
+    hasUnseen: stories.some((s) => !s.seen),
+    isOwn: !!viewerId && ring.user.id === viewerId,
+  };
 }
 
 /**
@@ -122,26 +116,13 @@ export function useStoriesFeed() {
     return () => clearTimeout(timer);
   }, [data, now]);
 
-  const [viewStory] = useMutation(ViewStoryDocument);
-  const [deleteStoryMutation] = useMutation(DeleteStoryDocument);
-
+  const { markSeen, deleteStory } = useStoryActions();
   const seenLocally = useSeenStories();
 
   const rings = useMemo<TrayRing[]>(() => {
     const built = (data?.storiesFeed ?? []).flatMap((ring) => {
-      const stories = ring.stories
-        .filter((story) => storyExpiry(story) > now)
-        .map((story) => ({
-          ...story,
-          seen: story.isViewed || story.id in seenLocally,
-        }));
-      if (stories.length === 0) return [];
-      return {
-        user: ring.user,
-        stories,
-        hasUnseen: stories.some((s) => !s.seen),
-        isOwn: !!userId && ring.user.id === userId,
-      };
+      const tray = toTrayRing(ring, seenLocally, userId, now);
+      return tray ? [tray] : [];
     });
     // Own ring, then unseen, then seen. The server already ranks within each
     // group (people you follow, then newest); a stable sort keeps that, and
@@ -150,32 +131,6 @@ export function useStoriesFeed() {
     const rank = (r: TrayRing) => (r.isOwn ? 0 : r.hasUnseen ? 1 : 2);
     return built.sort((a, b) => rank(a) - rank(b));
   }, [data, seenLocally, userId, now]);
-
-  const markSeen = useCallback(
-    (story: StoryItem) => {
-      markStorySeen(story.id, storyExpiry(story));
-      if (!isAuthed || story.isViewed || reportedViews.has(story.id)) return;
-      reportedViews.add(story.id);
-      viewStory({ variables: { storyId: story.id } }).catch(() => {
-        // Seen locally regardless; let a later open retry.
-        reportedViews.delete(story.id);
-      });
-    },
-    [isAuthed, viewStory],
-  );
-
-  // Out of the tray the moment the server agrees — the story:deleted
-  // broadcast then reaches everyone else.
-  const deleteStory = useCallback(
-    async (storyId: string) => {
-      const { error } = await deleteStoryMutation({ variables: { storyId } });
-      if (error) throw error;
-      client.cache.updateQuery({ query: StoriesFeedDocument }, (current) =>
-        current ? withStoryRemoved(current, storyId) : undefined,
-      );
-    },
-    [deleteStoryMutation, client],
-  );
 
   return {
     rings,

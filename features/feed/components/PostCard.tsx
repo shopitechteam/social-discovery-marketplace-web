@@ -70,6 +70,7 @@ import { toast } from "sonner";
 import { absoluteContentUrl, contentPath, videoPath } from "@/lib/content-url";
 import { rememberScrollBeforeNavigation } from "@/components/layout/RouteScrollRestoration";
 import { profileHref } from "@/lib/profile-url";
+import { CreatorStoryAvatar } from "@/features/stories/components/CreatorStoryAvatar";
 
 const CommentsDrawer = dynamic(() =>
   import("./CommentsDrawer").then((mod) => mod.CommentsDrawer),
@@ -1378,9 +1379,17 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
     >
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 px-4 pt-3.5 pb-2.5 max-[360px]:gap-2 max-[360px]:px-3">
-        <button
-          className="shrink-0 lg:cursor-pointer"
-          onClick={openCreatorProfile}
+        {/* Unwatched story → pink ring, and the tap opens it (Facebook /
+            TikTok). Otherwise the tap goes to the profile, as before. */}
+        <CreatorStoryAvatar
+          userId={creator?.id}
+          lang={lang}
+          name={creatorName || "Seller"}
+          mode="unseen"
+          onNoStory={openCreatorProfile}
+          ringClassName="-inset-[5px]"
+          ringThickness={4.5}
+          className="shrink-0 rounded-full lg:cursor-pointer"
         >
           <Avatar
             creatorId={post.creatorId}
@@ -1389,7 +1398,7 @@ function PostCardImpl({ post, lang, priority, onMessage }: Props) {
             lastName={creator?.profile?.lastName}
             isVerified={creator?.isVerified}
           />
-        </button>
+        </CreatorStoryAvatar>
 
         {/* Name / location / time stack */}
         <div className="flex-1 min-w-0">
