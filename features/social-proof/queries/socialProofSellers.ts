@@ -118,14 +118,13 @@ export function withCoversFirst(listings: SocialProofListing[]): SocialProofList
 }
 
 /**
- * How long a fetched list is reused. Kept short on purpose: featuring a seller
- * in the admin should show on the homepage within about a minute, and with a
- * longer window an admin sees their change "not working". The query is one
- * indexed lookup of a handful of users, so a minute costs almost nothing. The
- * homepage's `revalidate` must not be longer than this, or the page cache
- * holds the old section anyway.
+ * How long a fetched list is reused: daily. At current traffic a fresher
+ * homepage isn't worth a regeneration every minute, so featuring or
+ * unfeaturing a seller in the admin reaches the homepage within 24 hours (or
+ * on the next deploy). This fetch is the homepage's only one, so it sets how
+ * often the homepage regenerates — keep the homepage's `revalidate` equal.
  */
-export const SOCIAL_PROOF_REVALIDATE_SECONDS = 60;
+export const SOCIAL_PROOF_REVALIDATE_SECONDS = 86400;
 
 /**
  * Best-effort: the homepage must render when the API is unreachable, so any

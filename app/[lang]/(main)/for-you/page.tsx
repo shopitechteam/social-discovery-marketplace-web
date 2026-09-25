@@ -11,6 +11,11 @@ import { FeedSkeleton } from "@/features/feed/components/FeedSkeleton";
 import { AuthenticatedFeedPage } from "@/features/feed/components/AuthenticatedFeedPage";
 import { FEED_PAGE_SIZE } from "@/features/feed/constants";
 
+// New posts should reach the anonymous feed within seconds, so the feed opts
+// out of the Apollo client's hourly default. The page is dynamic (it reads
+// cookies), so this only sets how long the data cache is shared.
+const FEED_CACHE = { fetchOptions: { next: { revalidate: 30 } } };
+
 // The app serves every page under /[lang]; a canonical without the locale
 // would point at a redirect. Self-referencing canonical + hreflang alternates
 // keep engines from treating /en/for-you and /sw/for-you as duplicates.
@@ -79,17 +84,18 @@ export default async function FeedPageRoute({
   // to be fetched and rendered on the client.
   //
   // Awaiting the same query here gives the server real items to render. It is
-  // not an extra round trip in practice: it shares the HttpLink's Next data
-  // cache (revalidate: 30) with the PreloadQuery below, so the cost is
-  // amortised across visitors rather than paid per request. A failure degrades
-  // to the old behaviour (skeleton + client fetch) rather than breaking the
-  // route — the feed's error boundary covers the rest.
+  // not an extra round trip in practice: it shares the Next data cache
+  // (FEED_CACHE) with the PreloadQuery below, so the cost is amortised across
+  // visitors rather than paid per request. A failure degrades to the old
+  // behaviour (skeleton + client fetch) rather than breaking the route — the
+  // feed's error boundary covers the rest.
   let initialItems: ContentCardFieldsFragment[] = [];
   if (!cookieStore.has("shopi-auth-hint")) {
     try {
       const { data } = await query({
         query: ForYouFeedDocument,
         variables: { limit: FEED_PAGE_SIZE },
+        context: FEED_CACHE,
       });
       initialItems = (data?.forYouFeed?.items ??
         []) as ContentCardFieldsFragment[];
@@ -116,6 +122,7 @@ export default async function FeedPageRoute({
     <PreloadQuery
       query={ForYouFeedDocument}
       variables={{ limit: FEED_PAGE_SIZE }}
+      context={FEED_CACHE}
     >
       {feed}
     </PreloadQuery>

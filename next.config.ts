@@ -259,6 +259,20 @@ const nextConfig: NextConfig = {
     // Restrict the quality values the optimizer will honor; 75 is the default
     // used across the app. 45/55 are reserved for small decorative imagery.
     qualities: [45, 55, 75, 82],
+    // Vercel bills every distinct width × quality × format of an image as its
+    // own transformation, so fewer width buckets means fewer transformations
+    // and more cache hits shared between devices. Phones (~95% of traffic)
+    // land on 828 (2x) or 1200 (3x). Nothing above 1920: uploaded photos are
+    // at most 1200px (the API's R2 "original" variant) and the optimizer never
+    // upscales, so 2048/3840 only produced duplicate copies of the same pixels.
+    deviceSizes: [640, 828, 1200, 1920],
+    imageSizes: [64, 128, 256, 384],
+    // Keep optimized copies for 31 days instead of Next's 4-hour default, so an
+    // image is re-transformed monthly rather than several times a day. R2
+    // uploads already send a 1-year immutable Cache-Control (the larger value
+    // wins); this mainly covers Mux thumbnails, TikTok covers and Google
+    // avatars, whose URLs change when the image does.
+    minimumCacheTTL: 2678400,
     remotePatterns: [
       {
         protocol: "https",

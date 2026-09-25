@@ -29,11 +29,11 @@ import {
   jsonLd,
 } from "@/lib/structured-data";
 
-// The featured-sellers section is admin-controlled, so the page regenerates
-// every minute: a seller featured in the admin appears without a deploy and
-// without waiting out a long cache. Keep in step with
-// SOCIAL_PROOF_REVALIDATE_SECONDS (a literal is required here by Next).
-export const revalidate = 60;
+// Daily: the page is static copy plus the admin-controlled featured-sellers
+// section, so a seller featured in the admin appears within 24 hours (or on
+// the next deploy). Keep in step with SOCIAL_PROOF_REVALIDATE_SECONDS (a
+// literal is required here by Next).
+export const revalidate = 86400;
 
 const HOME_META: Record<
   Locale,

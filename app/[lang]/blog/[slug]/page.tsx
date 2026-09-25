@@ -43,10 +43,10 @@ import {
 
 type Props = { params: Promise<{ lang: string; slug: string }> };
 
-// Hourly, including articles with live listings: their listing fetch is set
+// Daily, including articles with live listings: their listing fetch is set
 // to the same interval (features/blog/queries/articleListings.ts), overriding
-// the Apollo client's 30-second default that would otherwise win.
-export const revalidate = 3600;
+// the Apollo client's hourly default that would otherwise win.
+export const revalidate = 86400;
 
 // Drafts render locally (noindexed) so writers can preview them.
 const PREVIEW_DRAFTS = process.env.NODE_ENV !== "production";

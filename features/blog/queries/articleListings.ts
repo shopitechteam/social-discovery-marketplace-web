@@ -60,12 +60,13 @@ const PER_SOURCE = 50;
 
 /**
  * How often an article's listings (and so its live prices and "Checked"
- * date) refresh. Hourly rather than the Apollo client's 30-second default:
- * asking prices don't move minute to minute, and each refresh is several
- * feed calls per article. Because this is the page's only fetch, it also
- * sets how often the article page itself regenerates.
+ * date) refresh. Daily: asking prices don't move hour to hour, each refresh
+ * is several feed calls per article, and at current traffic an hourly rebuild
+ * is mostly paying for regenerations nobody sees. Because this is the page's
+ * only fetch, it also sets how often the article page itself regenerates, so
+ * keep it equal to the page's `revalidate`.
  */
-const LISTINGS_REVALIDATE_SECONDS = 3600;
+const LISTINGS_REVALIDATE_SECONDS = 86400;
 
 export type ArticleListingsResult =
   | {
