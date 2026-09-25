@@ -228,7 +228,9 @@ function createClient() {
       refreshAccessToken()
         .then((newToken) => {
           if (!newToken) {
-            useAuthStore.getState().clearAuth();
+            // The helper already signed out if the session was rejected. A
+            // failed attempt (offline, server down) keeps the session so the
+            // next request can refresh again.
             observer.error(error);
             return;
           }

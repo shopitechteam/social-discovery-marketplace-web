@@ -5,12 +5,28 @@
  *
  * Used by both the Apollo error link (GraphQL UNAUTHENTICATED → retry) and the
  * Socket.IO client (handshake denied for an expired JWT → refresh → reconnect),
- * so a burst of expired requests triggers exactly one refresh call.
+ * so a burst of expired requests triggers exactly one refresh call — in this
+ * tab and across tabs.
+ *
+ * This is the only place that decides a session is over: it signs the user
+ * out when the API rejects the refresh token, and never for a failed attempt
+ * (offline, server down, rate limited), which a later request will retry.
  */
 
 import type { RefreshTokenMutation } from "@/types/__generated__/graphql";
 import { useAuthStore } from "@/stores/auth";
-import { getSuspendedAccountMessage } from "@/lib/apollo/suspended-account";
+
+// What the API answers when the session itself is over: logged out elsewhere,
+// password changed, expired, or the account suspended.
+const SESSION_REJECTED_CODES = new Set(["UNAUTHORIZED", "UNAUTHENTICATED", "FORBIDDEN"]);
+
+function isSessionRejected(errors: unknown[] | undefined): boolean {
+  return (errors ?? []).some((error) =>
+    SESSION_REJECTED_CODES.has(
+      (error as { extensions?: { code?: string } })?.extensions?.code ?? "",
+    ),
+  );
+}
 
 // Tracks an in-flight refresh so concurrent callers share a single request
 let refreshPromise: Promise<string | null> | null = null;
@@ -46,9 +62,7 @@ async function doRefresh(refreshToken: string): Promise<string | null> {
     };
 
     if (json.errors || !json.data?.refreshToken) {
-      if (getSuspendedAccountMessage({ errors: json.errors ?? [] })) {
-        useAuthStore.getState().clearAuth();
-      }
+      if (isSessionRejected(json.errors)) useAuthStore.getState().clearAuth();
       return null;
     }
 
@@ -67,19 +81,40 @@ async function doRefresh(refreshToken: string): Promise<string | null> {
 }
 
 /**
+ * Runs `fn` holding a lock shared by every open tab, so two tabs never spend
+ * the same refresh token at once. Browsers without Web Locks just run it.
+ */
+async function withCrossTabLock<T>(fn: () => Promise<T>): Promise<T> {
+  if (typeof navigator === "undefined" || !navigator.locks) return fn();
+  return navigator.locks.request("shopi-auth-refresh", () => fn());
+}
+
+async function refreshUnlessAnotherTabDid(staleRefreshToken: string): Promise<string | null> {
+  // Another tab may have refreshed while this one waited for the lock — use
+  // its tokens rather than spending the old refresh token again.
+  await useAuthStore.persist.rehydrate();
+  const { accessToken, refreshToken } = useAuthStore.getState();
+  if (!refreshToken) return null;
+  if (refreshToken !== staleRefreshToken && accessToken) return accessToken;
+  return doRefresh(refreshToken);
+}
+
+/**
  * Refresh the access token using the stored refresh token and write the new
  * session into the auth store. Resolves with the fresh access token, or null
- * when there is no refresh token or the refresh failed — callers decide
- * whether a null result should clear the session.
+ * when there is none — in which case the store is already signed out if the
+ * session was rejected, and left alone if the refresh merely failed.
  */
 export function refreshAccessToken(): Promise<string | null> {
   const { refreshToken } = useAuthStore.getState();
   if (!refreshToken) return Promise.resolve(null);
 
   if (!refreshPromise) {
-    refreshPromise = doRefresh(refreshToken).finally(() => {
-      refreshPromise = null;
-    });
+    refreshPromise = withCrossTabLock(() => refreshUnlessAnotherTabDid(refreshToken)).finally(
+      () => {
+        refreshPromise = null;
+      },
+    );
   }
   return refreshPromise;
 }

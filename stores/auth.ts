@@ -73,3 +73,14 @@ export const useAuthStore = create<AuthState>()(
     },
   ),
 );
+
+// Keep every open tab on the latest tokens. Refresh tokens rotate, so a tab
+// still holding an old one would eventually be refused — and could write the
+// old one back over the new one on its next store update.
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (event) => {
+    if (event.key === "shopi-auth" || event.key === null) {
+      void useAuthStore.persist.rehydrate();
+    }
+  });
+}
