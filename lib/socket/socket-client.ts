@@ -103,10 +103,10 @@ export function getSocket(): Socket {
     void (async () => {
       const { accessToken, refreshToken, clearAuth } = useAuthStore.getState();
       if (accessToken) {
-        const fresh = refreshToken ? await refreshAccessToken() : null;
-        // Unrecoverable session (refresh also rejected) → drop it and fall
-        // back to a guest connection, mirroring the Apollo error link.
-        if (!fresh) clearAuth();
+        // A rejected refresh signs out inside the helper (→ guest connection);
+        // a failed one keeps the session and the reconnect retries it.
+        if (refreshToken) await refreshAccessToken();
+        else clearAuth();
       }
       scheduleReconnect();
     })();
