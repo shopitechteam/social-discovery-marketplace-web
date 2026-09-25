@@ -415,9 +415,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const [recentListings, featuredSellers] = await Promise.all([
     fetchRecentListings(),
-    // Hourly like the sitemap's other fetches. The 60s homepage default would
-    // otherwise make the whole sitemap regenerate every minute.
-    fetchSocialProofSellers(12, 0, 3600),
+    fetchSocialProofSellers(12, 0),
   ]);
   const featuredListings = await fetchFeaturedSellerListings(
     featuredSellers.map((seller) => seller.id),

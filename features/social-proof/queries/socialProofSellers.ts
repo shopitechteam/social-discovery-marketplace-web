@@ -118,27 +118,21 @@ export function withCoversFirst(listings: SocialProofListing[]): SocialProofList
 }
 
 /**
- * How long a fetched list is reused. Kept short on purpose: featuring a seller
- * in the admin should show on the homepage within about a minute, and with a
- * longer window an admin sees their change "not working". The query is one
- * indexed lookup of a handful of users, so a minute costs almost nothing. The
- * homepage's `revalidate` must not be longer than this, or the page cache
- * holds the old section anyway.
+ * How long a fetched list is reused: daily. At current traffic a fresher
+ * homepage isn't worth a regeneration every minute, so featuring or
+ * unfeaturing a seller in the admin reaches the homepage within 24 hours (or
+ * on the next deploy). This fetch is the homepage's only one, so it sets how
+ * often the homepage regenerates — keep the homepage's `revalidate` equal.
  */
-export const SOCIAL_PROOF_REVALIDATE_SECONDS = 60;
+export const SOCIAL_PROOF_REVALIDATE_SECONDS = 86400;
 
 /**
  * Best-effort: the homepage must render when the API is unreachable, so any
  * failure yields an empty list, and an empty list hides the section.
- *
- * `revalidate` also caps how often the calling route regenerates (the
- * shortest fetch wins), so callers that don't need minute-fresh data — the
- * sitemap — pass a longer one.
  */
 export async function fetchSocialProofSellers(
   limit = 6,
   listingsPerSeller = 8,
-  revalidate = SOCIAL_PROOF_REVALIDATE_SECONDS,
 ): Promise<SocialProofSeller[]> {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   if (!apiUrl) return [];
@@ -151,7 +145,7 @@ export async function fetchSocialProofSellers(
         query: SOCIAL_PROOF_SELLERS,
         variables: { limit, listingsPerSeller },
       }),
-      next: { revalidate, tags: ["social-proof"] },
+      next: { revalidate: SOCIAL_PROOF_REVALIDATE_SECONDS, tags: ["social-proof"] },
     });
     if (!response.ok) return [];
 
