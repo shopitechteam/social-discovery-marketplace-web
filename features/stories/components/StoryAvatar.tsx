@@ -6,25 +6,34 @@ import { UserRound } from "lucide-react";
 import { avatarGradient } from "@/lib/avatar";
 
 /**
- * - unseen:     Shopi-coloured ring — something new to watch
- * - seen:       no ring — everything here has been watched
+ * - stories:    WhatsApp-style ring, one arc per story (see `seen`) — pink
+ *               for a story not yet watched, grey once it has been
  * - none:       no ring — no story (e.g. "Your story" before posting)
  * - uploading:  ring fills as the file uploads
  * - processing: spinning arc while the server finishes it
  */
-export type StoryRingState = "unseen" | "seen" | "none" | "uploading" | "processing";
+export type StoryRingState = "stories" | "none" | "uploading" | "processing";
 
 const STROKE = 2.5;
 const GAP = 3;
+/** Space between two story arcs, along the ring (px). */
+const SEGMENT_GAP = 4;
+/** A watched story's arc — quiet, but still counts. */
+const SEEN_COLOR = "rgb(var(--color-text-muted) / 0.4)";
 
 interface Props {
   /** Used for the fallback gradient when there's no photo. */
   id: string;
+  /** What fills the circle — in the tray, a still of the story itself. */
   src?: string | null;
+  /** Tried when `src` is missing or fails to load — the person's own photo. */
+  fallbackSrc?: string | null;
   name: string;
   /** Outer diameter in px, ring included. Seen and unseen are the same size. */
   size: number;
   state: StoryRingState;
+  /** With `stories`: one flag per story, oldest first — has it been watched? */
+  seen?: readonly boolean[];
   /** 0–1, while uploading. */
   progress?: number;
   /**
@@ -38,9 +47,11 @@ interface Props {
 export function StoryAvatar({
   id,
   src,
+  fallbackSrc,
   name,
   size,
   state,
+  seen = [],
   progress = 0,
   fallback = "initial",
 }: Props) {
@@ -49,13 +60,17 @@ export function StoryAvatar({
   const circumference = 2 * Math.PI * radius;
   const inner = size - 2 * (STROKE + GAP);
   const brand = "rgb(var(--brand-primary))";
-  // Social-login avatars expire; a dead URL falls back like a missing one
-  // instead of showing a broken image in the tray.
-  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  // A dead URL (an expired social-login avatar, a story whose media was just
+  // removed) falls through to the next candidate instead of showing a broken
+  // image in the tray.
+  const [failed, setFailed] = useState<readonly string[]>([]);
+  const photo = [src, fallbackSrc].find(
+    (candidate): candidate is string => !!candidate && !failed.includes(candidate),
+  );
 
   return (
     <span className="relative block shrink-0" style={{ width: size, height: size }}>
-      {state !== "seen" && state !== "none" && (
+      {state !== "none" && (
         <svg
           className={
             state === "processing"
@@ -67,9 +82,28 @@ export function StoryAvatar({
           viewBox={`0 0 ${size} ${size}`}
           aria-hidden
         >
-          {state === "unseen" && (
-            <circle cx={center} cy={center} r={radius} fill="none" stroke={brand} strokeWidth={STROKE} />
-          )}
+          {state === "stories" &&
+            seen.map((watched, i) => {
+              // One arc per story, clockwise from 12 o'clock in the order they
+              // play, with a gap between each. A single story is a whole ring.
+              const count = seen.length;
+              const gap = count > 1 ? Math.min(SEGMENT_GAP, (circumference / count) * 0.3) : 0;
+              const arc = circumference / count - gap;
+              const start = -90 + (360 / count) * i + ((gap / 2) / circumference) * 360;
+              return (
+                <circle
+                  key={i}
+                  cx={center}
+                  cy={center}
+                  r={radius}
+                  fill="none"
+                  stroke={watched ? SEEN_COLOR : brand}
+                  strokeWidth={STROKE}
+                  strokeDasharray={count > 1 ? `${arc} ${circumference}` : undefined}
+                  transform={count > 1 ? `rotate(${start} ${center} ${center})` : undefined}
+                />
+              );
+            })}
           {state === "uploading" && (
             <>
               <circle
@@ -114,16 +148,17 @@ export function StoryAvatar({
         className="absolute overflow-hidden rounded-full bg-surface"
         style={{ inset: STROKE + GAP }}
       >
-        {src && src !== failedSrc ? (
+        {photo ? (
           <Image
-            src={src}
+            key={photo}
+            src={photo}
             alt=""
             fill
             sizes={`${Math.ceil(inner)}px`}
             className="object-cover"
-            onError={() => setFailedSrc(src)}
-            // Blob previews of a photo being posted can't go through the optimizer.
-            unoptimized={src.startsWith("blob:")}
+            onError={() => setFailed((list) => [...list, photo])}
+            // Local previews of a story being posted can't go through the optimizer.
+            unoptimized={photo.startsWith("blob:")}
           />
         ) : fallback === "person" ? (
           <span className="flex h-full w-full items-center justify-center text-muted" aria-hidden>

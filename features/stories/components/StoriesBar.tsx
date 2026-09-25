@@ -11,6 +11,7 @@ import { useStoriesFeed, type TrayRing } from "../hooks/useStoriesFeed";
 import { useStoryUploadWatcher } from "../hooks/useStoryUploadWatcher";
 import { postStory, useStoryUploadStore } from "../store/storyUpload";
 import { storyUserName } from "../lib/storyUser";
+import { storyThumbnail } from "../lib/storyMedia";
 import { StoryAvatar, type StoryRingState } from "./StoryAvatar";
 import { MAX_STORY_IMAGE_BYTES, MAX_STORY_VIDEO_BYTES } from "../constants";
 
@@ -23,6 +24,20 @@ const StoryComposer = dynamic(() => import("./StoryComposer").then((m) => m.Stor
 });
 
 const AVATAR_SIZE = 66;
+
+/** "3 updates, 2 new" — what the segmented ring shows, for screen readers. */
+function storyCountLabel(ring: TrayRing): string {
+  const total = ring.stories.length;
+  const unseen = ring.stories.filter((s) => !s.seen).length;
+  const updates = `${total} ${total === 1 ? "update" : "updates"}`;
+  return unseen > 0 ? `${updates}, ${unseen} new` : updates;
+}
+
+/** A ring's circle shows its newest story, as WhatsApp Status does. */
+function latestThumbnail(ring: TrayRing): string | null {
+  const latest = ring.stories[ring.stories.length - 1];
+  return latest ? storyThumbnail(latest) : null;
+}
 
 interface Props {
   lang: string;
@@ -151,9 +166,7 @@ export function StoriesBar({ lang, variant = "mobile" }: Props) {
       : uploadPhase === "processing"
         ? "processing"
         : ownRing
-          ? ownRing.hasUnseen
-            ? "unseen"
-            : "seen"
+          ? "stories"
           : "none";
   const posting = uploadPhase !== "idle";
 
@@ -161,7 +174,7 @@ export function StoriesBar({ lang, variant = "mobile" }: Props) {
     <TrayItem
       label={posting ? "Posting…" : isAuthed ? "Your story" : "Add story"}
       labelMuted={!ownRing || posting}
-      ariaLabel={ownRing ? "View your story" : "Add to your story"}
+      ariaLabel={ownRing ? `View your story, ${storyCountLabel(ownRing)}` : "Add to your story"}
       onClick={ownRing && !posting ? () => openRing(ownRing) : pickFile}
       badge={
         // With a live story the avatar opens it, so this is the way to add
@@ -180,10 +193,14 @@ export function StoriesBar({ lang, variant = "mobile" }: Props) {
     >
       <StoryAvatar
         id={userId ?? "guest"}
-        src={uploadPreview ?? user?.profile?.avatar}
+        // While posting, the photo or a frame of the video being posted; then
+        // your latest story; with none, your own photo.
+        src={uploadPreview ?? (ownRing ? latestThumbnail(ownRing) : null)}
+        fallbackSrc={user?.profile?.avatar}
         name={user?.profile?.firstName ?? "You"}
         size={AVATAR_SIZE}
         state={ownState}
+        seen={ownRing?.stories.map((s) => s.seen)}
         progress={uploadProgress}
         fallback="person"
       />
@@ -232,15 +249,17 @@ export function StoriesBar({ lang, variant = "mobile" }: Props) {
               <TrayItem
                 key={ring.user.id}
                 label={name}
-                ariaLabel={`${name}'s story${ring.hasUnseen ? ", new" : ""}`}
+                ariaLabel={`${name}'s story, ${storyCountLabel(ring)}`}
                 onClick={() => openRing(ring)}
               >
                 <StoryAvatar
                   id={ring.user.id}
-                  src={ring.user.profile?.avatar}
+                  src={latestThumbnail(ring)}
+                  fallbackSrc={ring.user.profile?.avatar}
                   name={name}
                   size={AVATAR_SIZE}
-                  state={ring.hasUnseen ? "unseen" : "seen"}
+                  state="stories"
+                  seen={ring.stories.map((s) => s.seen)}
                 />
               </TrayItem>
             );

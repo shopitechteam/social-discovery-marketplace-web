@@ -8,6 +8,7 @@ import {
   RequestStoryImageUploadDocument,
   RequestStoryVideoUploadDocument,
 } from "@/types/__generated__/graphql";
+import { captureVideoFrames } from "@/features/create/utils/captureVideoFrames";
 import { prepareStoryImage } from "../lib/prepareStoryImage";
 
 type Client = ReturnType<typeof useApolloClient>;
@@ -44,6 +45,25 @@ export function resetStoryUpload() {
   const { previewUrl, set } = useStoryUploadStore.getState();
   if (previewUrl) URL.revokeObjectURL(previewUrl);
   set({ phase: "idle", progress: 0, storyId: null, previewUrl: null });
+}
+
+/** Identifies the post in flight, so a late frame can't land on the next one. */
+let postToken = 0;
+
+/**
+ * Give "Your story" a still of the video being posted, like the photo path
+ * gets for free. Grabbed locally in the background — the upload never waits
+ * on it, and a video the browser can't decode just keeps the plain avatar.
+ */
+async function showVideoFrame(file: File, token: number) {
+  try {
+    const [frame] = await captureVideoFrames(file, { fractions: [0.1], maxDimension: 240 });
+    const { phase, previewUrl, set } = useStoryUploadStore.getState();
+    if (!frame || token !== postToken || phase === "idle" || previewUrl) return;
+    set({ previewUrl: URL.createObjectURL(frame) });
+  } catch {
+    // No preview — the progress ring still shows.
+  }
 }
 
 /**
@@ -90,6 +110,7 @@ export async function postStory(client: Client, file: File, caption: string): Pr
     storyId: null,
     previewUrl: isVideo ? null : URL.createObjectURL(file),
   });
+  if (isVideo) void showVideoFrame(file, ++postToken);
   const onProgress = (progress: number) => useStoryUploadStore.getState().set({ progress });
 
   try {
