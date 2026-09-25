@@ -11,7 +11,6 @@ import {
 import {
   ForYouFeedDocument,
   FollowingFeedDocument,
-  TrendingContentDocument,
   LocalFeedDocument,
 } from "@/types/__generated__/graphql";
 import {
@@ -248,13 +247,4 @@ export function useNearbyFeed(
     hasMore: pageInfo?.hasNextPage ?? false,
     loadMore,
   };
-}
-
-export function useTrending(county?: string) {
-  const { data, loading } = useQuery(TrendingContentDocument, {
-    variables: { county },
-    fetchPolicy: "cache-and-network",
-    nextFetchPolicy: "cache-first",
-  });
-  return { items: data?.trendingContent ?? [], loading };
 }

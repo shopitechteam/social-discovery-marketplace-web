@@ -1,293 +1,320 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
-import Image from "next/image";
-import { useStoriesFeed, type StoryRing } from "../hooks/useStoriesFeed";
-import { useStoryUpload } from "../hooks/useStoryUpload";
-import { StoryViewer } from "./StoryViewer";
+import { useCallback, useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
+import { usePathname, useRouter } from "next/navigation";
+import { useApolloClient } from "@apollo/client/react";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { toast } from "sonner";
 import { useAuthStore } from "@/stores/auth";
+import { useStoriesFeed, type TrayRing } from "../hooks/useStoriesFeed";
+import { useStoryUploadWatcher } from "../hooks/useStoryUploadWatcher";
+import { postStory, useStoryUploadStore } from "../store/storyUpload";
+import { storyUserName } from "../lib/storyUser";
+import { StoryAvatar, type StoryRingState } from "./StoryAvatar";
+import { MAX_STORY_IMAGE_BYTES, MAX_STORY_VIDEO_BYTES } from "../constants";
+
+// Only needed once someone taps — keep them out of the feed's first load.
+const StoryViewer = dynamic(() => import("./StoryViewer").then((m) => m.StoryViewer), {
+  ssr: false,
+});
+const StoryComposer = dynamic(() => import("./StoryComposer").then((m) => m.StoryComposer), {
+  ssr: false,
+});
+
+const AVATAR_SIZE = 66;
 
 interface Props {
   lang: string;
+  /**
+   * mobile:  full-bleed strip at the top of the phone feed
+   * desktop: a card at the top of the feed column, with scroll arrows
+   */
+  variant?: "mobile" | "desktop";
 }
 
-// ── Upload sheet ──────────────────────────────────────────────────────────────
+// ── Tray item ────────────────────────────────────────────────────────────────
 
-function UploadSheet({
-  onSelect,
-  onClose,
+function TrayItem({
+  label,
+  labelMuted,
+  onClick,
+  ariaLabel,
+  children,
+  badge,
 }: {
-  onSelect: (file: File) => void;
-  onClose: () => void;
+  label: string;
+  labelMuted?: boolean;
+  onClick: () => void;
+  ariaLabel: string;
+  children: React.ReactNode;
+  badge?: React.ReactNode;
 }) {
-  const imageRef = useRef<HTMLInputElement>(null);
-  const videoRef = useRef<HTMLInputElement>(null);
+  return (
+    <li className="relative w-18 shrink-0">
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label={ariaLabel}
+        className="flex w-full flex-col items-center gap-1.5 rounded-xl outline-none transition-transform duration-150 [-webkit-tap-highlight-color:transparent] focus-visible:ring-2 focus-visible:ring-primary/50 active:scale-95"
+      >
+        {children}
+        <span
+          className={`block w-full truncate text-center text-xs leading-tight ${
+            labelMuted ? "text-muted" : "text-default"
+          }`}
+        >
+          {label}
+        </span>
+      </button>
+      {badge}
+    </li>
+  );
+}
 
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) onSelect(file);
-    e.target.value = "";
-    onClose();
-  };
-
+function TraySkeleton() {
   return (
     <>
-      <div className="fixed inset-0 z-[60] bg-black/50" onClick={onClose} />
-      <div className="fixed bottom-0 left-0 right-0 z-[61] bg-background rounded-t-2xl px-4 pt-4 pb-8">
-        <div className="w-10 h-1 bg-muted-foreground/30 rounded-full mx-auto mb-5" />
-        <h3 className="text-sm font-semibold text-default mb-4 text-center">
-          Add to your story
-        </h3>
-        <div className="flex gap-3">
-          <button
-            onClick={() => imageRef.current?.click()}
-            className="flex-1 flex flex-col items-center gap-2 py-4 rounded-xl bg-surface border border-border/60 active:scale-95 transition-transform"
-          >
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="2">
-                <rect x="3" y="3" width="18" height="18" rx="2" />
-                <circle cx="8.5" cy="8.5" r="1.5" />
-                <path d="m21 15-5-5L5 21" />
-              </svg>
-            </div>
-            <span className="text-xs text-default font-medium">Photo</span>
-          </button>
-          <button
-            onClick={() => videoRef.current?.click()}
-            className="flex-1 flex flex-col items-center gap-2 py-4 rounded-xl bg-surface border border-border/60 active:scale-95 transition-transform"
-          >
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="2">
-                <polygon points="23 7 16 12 23 17 23 7" />
-                <rect x="1" y="5" width="15" height="14" rx="2" />
-              </svg>
-            </div>
-            <span className="text-xs text-default font-medium">Video</span>
-          </button>
-        </div>
-        <input ref={imageRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
-        <input ref={videoRef} type="file" accept="video/*" className="hidden" onChange={handleFile} />
-      </div>
+      {Array.from({ length: 7 }).map((_, i) => (
+        <li key={i} className="flex w-18 shrink-0 flex-col items-center gap-1.5" aria-hidden>
+          <span
+            className="block animate-pulse rounded-full bg-black/10 dark:bg-white/10"
+            style={{ width: AVATAR_SIZE, height: AVATAR_SIZE }}
+          />
+          <span className="block h-3 w-12 animate-pulse rounded-full bg-black/10 dark:bg-white/10" />
+        </li>
+      ))}
     </>
   );
 }
 
-// ── Add-story card (9:14 aspect) ──────────────────────────────────────────────
+// ── StoriesBar ───────────────────────────────────────────────────────────────
 
-function AddStoryCard({
-  user,
-  isUploading,
-  onClick,
-}: {
-  user: { profile?: { firstName?: string | null; lastName?: string | null; avatar?: string | null } | null } | null;
-  isUploading: boolean;
-  onClick: () => void;
-}) {
-  const avatar = user?.profile?.avatar;
-  const initial = user?.profile?.firstName?.[0]?.toUpperCase() ?? "+";
-
-  return (
-    <button
-      onClick={onClick}
-      className="relative flex-none w-[72px] rounded-2xl overflow-hidden border-2 border-dashed border-primary/50 bg-surface active:scale-95 transition-transform"
-      style={{ aspectRatio: "9/14" }}
-      aria-label="Add story"
-    >
-      {avatar ? (
-        <Image src={avatar} alt="You" fill className="object-cover opacity-40" />
-      ) : (
-        <div className="absolute inset-0 bg-primary/5" />
-      )}
-      <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5">
-        {isUploading ? (
-          <div className="w-7 h-7 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-        ) : (
-          <>
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <path d="M7 1v12M1 7h12" stroke="white" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            </div>
-            <span className="text-xs font-semibold text-primary leading-none">
-              {initial !== "+" ? initial : ""}
-            </span>
-          </>
-        )}
-      </div>
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-1 pt-4 pb-1.5">
-        <p className="text-white text-xs font-medium text-center truncate leading-tight">
-          {isUploading ? "Uploading…" : "Add story"}
-        </p>
-      </div>
-    </button>
-  );
-}
-
-// ── Story card (9:14) ─────────────────────────────────────────────────────────
-
-function StoryCard({ ring, onClick }: { ring: StoryRing; onClick: () => void }) {
-  const firstStory = ring.stories[0];
-  const thumb =
-    firstStory?.media.thumbnailUrl ??
-    firstStory?.media.imageUrl ??
-    (firstStory?.media.muxPlaybackId
-      ? `https://image.mux.com/${firstStory.media.muxPlaybackId}/thumbnail.jpg?time=0&width=200&fit_mode=smartcrop`
-      : null);
-  const name = ring.user.profile?.firstName ?? "User";
-  const avatar = ring.user.profile?.avatar;
-  const isVideo = firstStory?.media.mediaType === "VIDEO";
-  const count = ring.stories.length;
-
-  return (
-    <button
-      onClick={onClick}
-      className="relative flex-none w-[72px] rounded-2xl overflow-hidden active:scale-95 transition-transform"
-      style={{ aspectRatio: "9/14" }}
-      aria-label={`${name}'s story`}
-    >
-      {thumb ? (
-        <Image src={thumb} alt={name} fill className="object-cover" sizes="72px" unoptimized={thumb.includes(".gif")} />
-      ) : (
-        <div className="absolute inset-0 bg-neutral-800" />
-      )}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
-      {ring.hasUnviewed && (
-        <div className="absolute inset-0 rounded-2xl ring-[2.5px] ring-primary ring-inset pointer-events-none" />
-      )}
-      <div className="absolute top-1.5 left-0 right-0 flex flex-col items-center gap-1 pointer-events-none">
-        <div className={`w-8 h-8 rounded-full overflow-hidden ring-2 ${ring.hasUnviewed ? "ring-primary" : "ring-white/40"} ring-offset-1 ring-offset-black/60`}>
-          {avatar ? (
-            <Image src={avatar} alt={name} width={32} height={32} className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full bg-primary/80 flex items-center justify-center text-white text-xs font-bold">{name[0]}</div>
-          )}
-        </div>
-      </div>
-      {isVideo && (
-        <div className="absolute top-1.5 right-1.5 pointer-events-none">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="white" opacity={0.8}><path d="M8 5v14l11-7z" /></svg>
-        </div>
-      )}
-      {count > 1 && (
-        <div className="absolute top-1.5 left-1.5 bg-black/50 rounded-full px-1 py-0.5 pointer-events-none">
-          <span className="text-white text-xs font-bold">{count}</span>
-        </div>
-      )}
-      <div className="absolute bottom-0 left-0 right-0 px-1 pb-1.5 pointer-events-none">
-        <p className="text-white text-xs font-semibold text-center truncate leading-tight">{name}</p>
-      </div>
-    </button>
-  );
-}
-
-// ── StoriesBar ────────────────────────────────────────────────────────────────
-
-export function StoriesBar({ lang: _lang }: Props) {
-  const { rings, loading, refetch, markViewed } = useStoriesFeed();
-  const { uploadImage, uploadVideo, status: uploadStatus } = useStoryUpload();
-
+export function StoriesBar({ lang, variant = "mobile" }: Props) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const client = useApolloClient();
   const user = useAuthStore((s) => s.user);
-  const isAuthed = !!user;
+  const { rings, loading, isAuthed, userId, refetch, markSeen, deleteStory } = useStoriesFeed();
+  useStoryUploadWatcher(refetch);
 
-  const [viewerOpen, setViewerOpen] = useState(false);
-  const [viewerRingIdx, setViewerRingIdx] = useState(0);
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const uploadPhase = useStoryUploadStore((s) => s.phase);
+  const uploadProgress = useStoryUploadStore((s) => s.progress);
+  const uploadPreview = useStoryUploadStore((s) => s.previewUrl);
 
-  const isUploading = uploadStatus === "uploading" || uploadStatus === "processing";
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [composerFile, setComposerFile] = useState<File | null>(null);
+  // The viewer gets a snapshot: the tray re-sorts as rings turn seen, and the
+  // sequence being watched must not reshuffle underneath it.
+  const [viewer, setViewer] = useState<{ rings: TrayRing[]; index: number } | null>(null);
 
-  const ownRing = rings.find((r) => r.user.id === user?.id);
-  const otherRings = rings.filter((r) => r.user.id !== user?.id);
+  const ownRing = rings.find((r) => r.isOwn) ?? null;
+  const otherRings = rings.filter((r) => !r.isOwn);
 
-  const openViewer = useCallback((idx: number) => {
-    setViewerRingIdx(idx);
-    setViewerOpen(true);
-  }, []);
-
-  const handleFileSelected = async (file: File) => {
-    if (file.type.startsWith("video/")) {
-      await uploadVideo(file);
-    } else {
-      await uploadImage(file);
+  const pickFile = useCallback(() => {
+    if (!isAuthed) {
+      router.push(`/${lang}/auth/login?returnTo=${encodeURIComponent(pathname)}`);
+      return;
     }
-    refetch();
+    if (useStoryUploadStore.getState().phase !== "idle") {
+      toast("Your story is still posting");
+      return;
+    }
+    fileRef.current?.click();
+  }, [isAuthed, lang, pathname, router]);
+
+  const onFilePicked = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const isVideo = file.type.startsWith("video/");
+    if (!isVideo && !file.type.startsWith("image/")) {
+      toast.error("Pick a photo or a video");
+      return;
+    }
+    if (file.size > (isVideo ? MAX_STORY_VIDEO_BYTES : MAX_STORY_IMAGE_BYTES)) {
+      toast.error(isVideo ? "That video is too large (max 500 MB)" : "That photo is too large (max 25 MB)");
+      return;
+    }
+    setComposerFile(file);
   };
 
-  // Loading skeleton
-  if (loading && rings.length === 0) {
-    return (
-      <section className="py-3 border-b border-border/30">
-        <div className="flex items-center gap-2.5 px-4 mb-2">
-          <div className="w-3 h-3 rounded bg-surface animate-pulse" />
-          <div className="w-16 h-3 rounded bg-surface animate-pulse" />
-        </div>
-        <div className="flex gap-2 px-4 overflow-hidden">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="flex-none w-[72px] rounded-2xl bg-surface animate-pulse" style={{ aspectRatio: "9/14" }} />
-          ))}
-        </div>
-      </section>
-    );
-  }
+  const openRing = (ring: TrayRing) => {
+    if (ring.isOwn) setViewer({ rings: [ring], index: 0 });
+    else setViewer({ rings: otherRings, index: otherRings.indexOf(ring) });
+  };
 
-  // No stories and not authed → hide entirely (TrendingStrip renders below)
-  if (!isAuthed && rings.length === 0) return null;
+  // ── Own item ────────────────────────────────────────────────────────────
+  const ownState: StoryRingState =
+    uploadPhase === "uploading"
+      ? "uploading"
+      : uploadPhase === "processing"
+        ? "processing"
+        : ownRing
+          ? ownRing.hasUnseen
+            ? "unseen"
+            : "seen"
+          : "none";
+  const posting = uploadPhase !== "idle";
 
-  // Authed but no stories and no rings → just show the add button
-  return (
-    <>
-      <section className="pt-3 pb-1 border-b border-border/30">
-        <div className="flex items-center justify-between px-4 mb-2.5">
-          <h2 className="text-sm font-bold text-default flex items-center gap-1.5">
-            <span>📖</span> Stories
-          </h2>
-          {rings.length > 0 && (
-            <span className="text-xs text-muted-foreground">{rings.length} active</span>
-          )}
-        </div>
+  const ownItem = (
+    <TrayItem
+      label={posting ? "Posting…" : isAuthed ? "Your story" : "Add story"}
+      labelMuted={!ownRing || posting}
+      ariaLabel={ownRing ? "View your story" : "Add to your story"}
+      onClick={ownRing && !posting ? () => openRing(ownRing) : pickFile}
+      badge={
+        // With a live story the avatar opens it, so this is the way to add
+        // another (Instagram's "+"). Hidden while a post is in flight.
+        !posting && (
+          <button
+            type="button"
+            onClick={pickFile}
+            aria-label="Add to your story"
+            className="absolute left-1/2 top-11.5 ml-3 flex size-5.5 items-center justify-center rounded-full border-2 border-elevated bg-primary text-white"
+          >
+            <Plus size={13} strokeWidth={3} />
+          </button>
+        )
+      }
+    >
+      <StoryAvatar
+        id={userId ?? "guest"}
+        src={uploadPreview ?? user?.profile?.avatar}
+        name={user?.profile?.firstName ?? "You"}
+        size={AVATAR_SIZE}
+        state={ownState}
+        progress={uploadProgress}
+        fallback="person"
+      />
+    </TrayItem>
+  );
 
-        <div
-          className="flex gap-2 px-4 overflow-x-auto scrollbar-none pb-0.5"
-          style={{ scrollSnapType: "x mandatory" }}
-        >
-          {/* Add story — always visible for authed users */}
-          {isAuthed && (
-            <div style={{ scrollSnapAlign: "start" }}>
-              <AddStoryCard user={user} isUploading={isUploading} onClick={() => setSheetOpen(true)} />
-            </div>
-          )}
+  // ── Desktop scroll arrows ───────────────────────────────────────────────
+  const scrollerRef = useRef<HTMLUListElement>(null);
+  const [canScroll, setCanScroll] = useState({ left: false, right: false });
+  const updateArrows = useCallback(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    setCanScroll({
+      left: el.scrollLeft > 4,
+      right: el.scrollLeft + el.clientWidth < el.scrollWidth - 4,
+    });
+  }, []);
+  useEffect(() => {
+    if (variant !== "desktop") return;
+    const el = scrollerRef.current;
+    if (!el) return;
+    updateArrows();
+    const observer = new ResizeObserver(updateArrows);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [variant, updateArrows, rings.length, loading]);
+  const scrollBy = (dir: 1 | -1) => {
+    const el = scrollerRef.current;
+    if (el) el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: "smooth" });
+  };
 
-          {/* Own story ring */}
-          {ownRing && (
-            <div style={{ scrollSnapAlign: "start" }}>
-              <StoryCard ring={ownRing} onClick={() => openViewer(rings.findIndex((r) => r.user.id === user?.id))} />
-            </div>
-          )}
-
-          {/* Other rings */}
+  const list = (
+    <ul
+      ref={scrollerRef}
+      onScroll={variant === "desktop" ? updateArrows : undefined}
+      className="flex list-none gap-2.5 overflow-x-auto scrollbar-none m-0 p-0"
+    >
+      {loading ? (
+        <TraySkeleton />
+      ) : (
+        <>
+          {ownItem}
           {otherRings.map((ring) => {
-            const globalIdx = rings.findIndex((r) => r.user.id === ring.user.id);
+            const name = storyUserName(ring.user);
             return (
-              <div key={ring.user.id} style={{ scrollSnapAlign: "start" }}>
-                <StoryCard ring={ring} onClick={() => openViewer(globalIdx)} />
-              </div>
+              <TrayItem
+                key={ring.user.id}
+                label={name}
+                ariaLabel={`${name}'s story${ring.hasUnseen ? ", new" : ""}`}
+                onClick={() => openRing(ring)}
+              >
+                <StoryAvatar
+                  id={ring.user.id}
+                  src={ring.user.profile?.avatar}
+                  name={name}
+                  size={AVATAR_SIZE}
+                  state={ring.hasUnseen ? "unseen" : "seen"}
+                />
+              </TrayItem>
             );
           })}
-        </div>
-      </section>
+        </>
+      )}
+    </ul>
+  );
 
-      {/* Story viewer */}
-      {viewerOpen && rings.length > 0 && (
+  return (
+    <>
+      {variant === "mobile" ? (
+        <section aria-label="Stories" className="border-b border-default bg-elevated px-3 pb-2.5 pt-3">
+          {list}
+        </section>
+      ) : (
+        <section
+          aria-label="Stories"
+          className="group/stories relative mb-4 rounded-xl border border-border bg-elevated px-4 py-4 shadow-sm shadow-black/3"
+        >
+          {list}
+          {canScroll.left && (
+            <button
+              type="button"
+              onClick={() => scrollBy(-1)}
+              aria-label="Scroll stories left"
+              className="absolute left-2 top-11.25 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-elevated text-default shadow-md ring-1 ring-black/5 transition-opacity hover:bg-surface"
+            >
+              <ChevronLeft size={18} />
+            </button>
+          )}
+          {canScroll.right && (
+            <button
+              type="button"
+              onClick={() => scrollBy(1)}
+              aria-label="Scroll stories right"
+              className="absolute right-2 top-11.25 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-elevated text-default shadow-md ring-1 ring-black/5 transition-opacity hover:bg-surface"
+            >
+              <ChevronRight size={18} />
+            </button>
+          )}
+        </section>
+      )}
+
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*,video/*"
+        className="hidden"
+        onChange={onFilePicked}
+      />
+
+      {viewer && (
         <StoryViewer
-          rings={rings}
-          initialRingIndex={viewerRingIdx}
-          onClose={() => setViewerOpen(false)}
-          onMarkViewed={markViewed}
+          lang={lang}
+          rings={viewer.rings}
+          initialRingIndex={viewer.index}
+          viewerUserId={userId}
+          onClose={() => setViewer(null)}
+          onSeen={markSeen}
+          onDelete={deleteStory}
         />
       )}
 
-      {/* Upload sheet */}
-      {sheetOpen && (
-        <UploadSheet onSelect={handleFileSelected} onClose={() => setSheetOpen(false)} />
+      {composerFile && (
+        <StoryComposer
+          file={composerFile}
+          onClose={() => setComposerFile(null)}
+          onShare={(caption) => {
+            const file = composerFile;
+            setComposerFile(null);
+            void postStory(client, file, caption);
+          }}
+        />
       )}
     </>
   );

@@ -5,8 +5,8 @@ import { usePathname } from "next/navigation";
 import {
   House,
   MessageCircle,
-  Plus,
   Search,
+  SquarePlus,
   User,
   type LucideIcon,
 } from "lucide-react";
@@ -43,8 +43,8 @@ const tabs: Tab[] = [
   {
     key: "upload",
     path: "upload",
-    label: "Post",
-    icon: Plus,
+    label: "Sell",
+    icon: SquarePlus,
   },
   {
     key: "notifications",
@@ -61,7 +61,7 @@ const tabs: Tab[] = [
 ];
 
 /** One size and one weight for every tab icon — active differs by colour. */
-const ICON_SIZE = 25;
+const ICON_SIZE = 24;
 const STROKE_INACTIVE = 1.85;
 const STROKE_ACTIVE = 2.15;
 
@@ -104,25 +104,10 @@ export function BottomNav({ lang = "en" }: { lang: string }) {
         {tabs.map((tab) => {
           const href = tabHrefs[tab.key] ?? `/${lang}/${tab.path}`;
           const Icon = tab.icon;
-
-          // Center Post button — one flat brand-coloured squircle. It used to
-          // carry a two-stop gradient and a 16px coloured glow, which is what
-          // made the bar read as decorated rather than clean. A solid block of
-          // the brand colour is louder than the glow ever was, because nothing
-          // around it competes.
-          if (tab.key === "upload") {
-            return (
-              <Link
-                key={tab.key}
-                href={href}
-                className="flex h-9.5 w-14 shrink-0 items-center justify-center rounded-[13px] text-white [-webkit-tap-highlight-color:transparent] active:opacity-90"
-                style={{ backgroundColor: "rgb(var(--brand-primary))" }}
-                aria-label="Create post"
-              >
-                <Icon size={21} strokeWidth={2.6} />
-              </Link>
-            );
-          }
+          // Sell sits in the row like any other tab — same icon weight, same
+          // label, no coloured block — but it's an action, not a tab: it has
+          // no screen to return to, so it stays out of scroll restoration.
+          const isUpload = tab.key === "upload";
 
           // Active if the pathname segment after lang matches this tab's path
           const isActive =
@@ -139,10 +124,10 @@ export function BottomNav({ lang = "en" }: { lang: string }) {
             <Link
               key={tab.key}
               href={href}
-              scroll={false}
+              scroll={isUpload ? undefined : false}
               // A tab: returns to where it was left, and re-tapping it while
               // on it scrolls to the top (lib/scrollRestoration.ts).
-              data-nav-tab={tab.key}
+              data-nav-tab={isUpload ? undefined : tab.key}
               className={`flex min-h-11 flex-1 select-none flex-col items-center justify-center gap-0.5 py-1 transition-colors duration-150 [-webkit-tap-highlight-color:transparent] ${
                 isActive ? "text-primary" : "text-muted"
               }`}
@@ -167,7 +152,7 @@ export function BottomNav({ lang = "en" }: { lang: string }) {
                 ) : null}
               </span>
               <p
-                className={`text-xs leading-none ${
+                className={`text-[11px] leading-none ${
                   isActive
                     ? "font-semibold tracking-[0.01em]"
                     : "font-normal tracking-normal"

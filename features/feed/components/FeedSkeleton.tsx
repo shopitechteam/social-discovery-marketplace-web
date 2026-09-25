@@ -73,38 +73,39 @@ export function FeedCardsSkeleton() {
   );
 }
 
+/**
+ * The mobile stories tray while the page loads. Must match StoriesBar's
+ * mobile markup (padding, 72px items, 66px circles, label row) so nothing
+ * shifts when the real tray takes over.
+ */
+function StoriesTraySkeleton() {
+  return (
+    <section className="border-b border-default bg-elevated px-3 pb-2.5 pt-3" aria-hidden>
+      <div className="flex gap-2.5 overflow-hidden">
+        {[...Array(7)].map((_, i) => (
+          <div key={i} className="flex w-18 shrink-0 flex-col items-center gap-1.5">
+            <Skeleton className="size-16.5 rounded-full" />
+            <Skeleton className="h-3 w-12 rounded-full" />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export function FeedSkeleton() {
   return (
     <div>
-      {/* ── Mobile skeleton — trending strip on top + full-width cards ── */}
+      {/* ── Mobile skeleton — stories tray on top + full-width cards ── */}
       <div className="md:hidden">
-        {/* Trending strip skeleton — must match TrendingStrip's real markup so
-            the initial-load skeleton doesn't shift when content swaps in:
-            same header row, mx-4 scroll spacing, and w-28 / 9:14 portrait cards. */}
-        <section className="pt-2 pb-1">
-          <div className="flex items-center justify-between px-4 mb-2.5">
-            <h2 className="text-sm font-bold text-default flex items-center gap-1.5">
-              <span>🔥</span> Trending
-            </h2>
-            <Skeleton className="h-3 w-16 rounded-full" />
-          </div>
-          <div className="flex gap-2.5 mx-4 overflow-hidden pb-0.5" aria-hidden>
-            {[...Array(5)].map((_, i) => (
-              <Skeleton
-                key={i}
-                className="flex-none w-28 rounded-xl"
-                style={{ aspectRatio: "9/14" }}
-              />
-            ))}
-          </div>
-        </section>
-
+        <StoriesTraySkeleton />
         <FeedCardsSkeleton />
       </div>
 
       {/* ── Desktop skeleton — mirrors DesktopFeed's frame exactly (same
           container, grid and column widths) so nothing jumps when the real
-          feed mounts: tabs + card column, trending in the RIGHT rail on xl. */}
+          feed mounts: tabs + stories + card column, sellers in the RIGHT rail
+          on xl. */}
       <div className="hidden min-h-svh bg-app md:block" aria-hidden>
         <div className="mx-auto w-full max-w-[1680px] px-4 pt-4 md:px-6 md:pt-6 xl:px-8">
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,360px)] xl:items-start">
@@ -113,6 +114,16 @@ export function FeedSkeleton() {
               <div className="mb-4 flex items-center gap-8 px-1 pb-2 pt-2">
                 {[...Array(3)].map((_, i) => (
                   <Skeleton key={i} className="h-4 w-16 rounded-full" />
+                ))}
+              </div>
+
+              {/* Stories card — StoriesBar's desktop variant */}
+              <div className="mb-4 flex gap-2.5 overflow-hidden rounded-xl border border-border bg-elevated p-4">
+                {[...Array(8)].map((_, i) => (
+                  <div key={i} className="flex w-18 shrink-0 flex-col items-center gap-1.5">
+                    <Skeleton className="size-16.5 rounded-full" />
+                    <Skeleton className="h-3 w-12 rounded-full" />
+                  </div>
                 ))}
               </div>
 
@@ -128,30 +139,22 @@ export function FeedSkeleton() {
               </div>
             </div>
 
-            {/* Right rail — sell CTA + trending list, xl and up only */}
+            {/* Right rail — sellers to follow, xl and up only */}
             <aside className="sticky top-5 hidden self-start xl:block">
-              <div className="flex flex-col gap-4">
-                <Skeleton className="h-[132px] w-full rounded-2xl" />
-
-                <section className="rounded-2xl border border-default bg-elevated p-4">
-                  <div className="mb-3 flex items-center justify-between px-1">
-                    <Skeleton className="h-4 w-28 rounded-full" />
-                    <Skeleton className="h-5 w-12 rounded-full" />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    {[...Array(6)].map((_, i) => (
-                      <div key={i} className="flex items-center gap-3 p-2">
-                        <Skeleton className="h-4 w-5 shrink-0 rounded" />
-                        <Skeleton className="h-9 w-9 shrink-0 rounded-xl" />
-                        <div className="flex-1 space-y-2">
-                          <Skeleton className="h-3 w-3/4 rounded-full" />
-                          <Skeleton className="h-2.5 w-1/2 rounded-full" />
-                        </div>
+              <section className="rounded-2xl border border-default bg-elevated p-4">
+                <Skeleton className="mb-3 ml-1 h-4 w-32 rounded-full" />
+                <div className="flex flex-col gap-3">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-3 w-2/3 rounded-full" />
+                        <Skeleton className="h-2.5 w-1/2 rounded-full" />
                       </div>
-                    ))}
-                  </div>
-                </section>
-              </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
             </aside>
           </div>
         </div>

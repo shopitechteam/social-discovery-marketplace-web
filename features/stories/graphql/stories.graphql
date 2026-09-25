@@ -4,6 +4,7 @@ fragment StoryMediaFields on StoryMedia {
   thumbnailUrl
   muxPlaybackId
   muxThumbnailUrl
+  duration
   processingStatus
 }
 
@@ -12,6 +13,7 @@ fragment StoryFields on Story {
   caption
   expiresAt
   viewCount
+  isViewed
   createdAt
   media {
     ...StoryMediaFields
@@ -20,6 +22,7 @@ fragment StoryFields on Story {
 
 fragment StoryCreatorFields on User {
   id
+  username
   profile {
     firstName
     lastName
@@ -44,10 +47,35 @@ query StoriesFeed {
   }
 }
 
+query StoryViewers($storyId: String!, $after: String) {
+  storyViewers(storyId: $storyId, after: $after, limit: 30) {
+    totalCount
+    hasMore
+    nextCursor
+    viewers {
+      viewedAt
+      user {
+        ...StoryCreatorFields
+      }
+    }
+  }
+}
+
+mutation RequestStoryImageUpload($mimeType: String) {
+  requestStoryImageUpload(mimeType: $mimeType) {
+    uploadUrl
+    tempKey
+  }
+}
+
 mutation CreateStory($input: CreateStoryInput!) {
   createStory(input: $input) {
-    ...StoryFields
+    id
   }
+}
+
+mutation SyncStory($storyId: String!) {
+  syncStory(storyId: $storyId)
 }
 
 mutation RequestStoryVideoUpload($caption: String) {

@@ -17,7 +17,8 @@ import { useAuthStore } from "@/stores/auth";
 import { FeedPaginationSkeleton, PostCardSkeleton } from "./FeedSkeleton";
 import { LocationPermissionBanner } from "./LocationPermissionBanner";
 import { PostCard } from "./PostCard";
-import { DesktopTrendingRail } from "./DesktopTrendingRail";
+import { DesktopFeedRail } from "./DesktopFeedRail";
+import { StoriesBar } from "@/features/stories/components/StoriesBar";
 import { SHOW_ASK_SHOPI } from "@/features/feed/utils/askShopiAvailability";
 import {
   captureScrollPosition,
@@ -317,6 +318,7 @@ export default function DesktopFeed({
           </div>
 
           <div className={tab === "for-you" ? undefined : "hidden"}>
+            <StoriesBar lang={lang} variant="desktop" />
             <ForYouColumn lang={lang} />
           </div>
           {openedTabs.has("following") ? (
@@ -340,7 +342,7 @@ export default function DesktopFeed({
         </section>
 
         <aside className="sticky top-[calc(var(--desktop-top-nav-height,68px)+1.25rem)] hidden max-h-[calc(100svh-var(--desktop-top-nav-height,68px)-2.5rem)] overflow-y-auto xl:block">
-          <DesktopTrendingRail lang={lang} />
+          <DesktopFeedRail lang={lang} />
         </aside>
       </div>
     </div>

@@ -12,9 +12,8 @@ import {
   FeedCardsSkeleton,
   FeedPaginationSkeleton,
 } from "./FeedSkeleton";
-import { TrendingStrip } from "./TrendingStrip";
 import { LocationPermissionBanner } from "./LocationPermissionBanner";
-//import { StoriesBar } from "@/features/stories/components/StoriesBar";
+import { StoriesBar } from "@/features/stories/components/StoriesBar";
 import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
 import { memo, Suspense } from "react";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
@@ -163,18 +162,13 @@ function LiveFeedCards({ lang, active }: { lang: string; active: boolean }) {
 function FeedGrid({ lang, active = true, initialItems }: Props) {
   return (
     <div className="pb-safe-area-inset-bottom pb-6 min-h-svh">
-      {/* ── Stories bar ──────────────────────────────────────────────── */}
-      {/* <StoriesBar lang={lang} /> */}
-
-      {/* ── Trending strip ────────────────────────────────────────────── */}
+      {/* ── Stories tray ──────────────────────────────────────────────── */}
       {/* Deliberately OUTSIDE the boundary below: it reads with useQuery (not
-          useSuspenseQuery), so it never suspends and renders null until its
-          data arrives — identically in both branches. Keeping it here means the
-          swap from server snapshot to live feed cannot move anything above the
-          cards, which is what would have shown up as layout shift. */}
-      <div className="pt-2 pb-1">
-        <TrendingStrip lang={lang} />
-      </div>
+          useSuspenseQuery), so it never suspends, and it always renders at one
+          height — skeleton, "Your story" alone, or a full tray. Keeping it here
+          means the swap from server snapshot to live feed cannot move anything
+          above the cards, which is what would have shown up as layout shift. */}
+      <StoriesBar lang={lang} />
 
       {/* ── Location permission nudge ────────────────────────────────── */}
       <LocationPermissionBanner />

@@ -166,12 +166,6 @@ query VideoFeed(
   }
 }
 
-query TrendingContent($county: String) {
-  trendingContent(county: $county) {
-    ...ContentCardFields
-  }
-}
-
 query GetContent($id: String!) {
   content(id: $id) {
     ...ContentCardFields

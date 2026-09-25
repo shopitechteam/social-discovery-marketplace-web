@@ -70,6 +70,11 @@ export interface StoryReadyPayload {
   muxPlaybackId?: string;
 }
 
+export interface StoryFailedPayload {
+  storyId: string;
+  reason: string;
+}
+
 export interface TiktokImportUpdatedPayload {
   downloadId: string;
   status: 'COMPLETED' | 'FAILED' | 'UPLOADING' | 'PROCESSING';

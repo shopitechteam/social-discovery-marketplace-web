@@ -1,25 +1,20 @@
 "use client";
 
 /**
- * DesktopTrendingRail — vertical trending list for the desktop right rail.
- * Reuses the same `useTrending` data as the mobile TrendingStrip, but lays the
- * items out as a tappable vertical list better suited to a sidebar.
+ * DesktopFeedRail — the desktop feed's right rail: sellers to follow.
+ *
+ * It used to lead with a trending list; stories took over that job at the top
+ * of the feed (see StoriesBar).
  */
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { gql, type TypedDocumentNode } from "@apollo/client";
 import { useQuery } from "@apollo/client/react";
-import { Flame } from "lucide-react";
-import { useTrending } from "../hooks/useFeed";
 import { useFollow } from "../hooks/useFollow";
-import { fmtCompact as fmt } from "@/lib/format";
 import { idInitials } from "@/lib/avatar";
 import { useAuthStore } from "@/stores/auth";
-import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
-import { contentPath } from "@/lib/content-url";
 import { profileHref } from "@/lib/profile-url";
 
 type SellerToFollow = {
@@ -70,76 +65,6 @@ const SELLERS_TO_FOLLOW: TypedDocumentNode<
     }
   }
 `;
-
-function TrendingRow({
-  post,
-  lang,
-  rank,
-}: {
-  post: ContentCardFieldsFragment;
-  lang: string;
-  rank: number;
-}) {
-  const router = useRouter();
-
-  const media = post.media?.[0];
-  const playbackId = media?.muxMeta?.playbackId ?? null;
-
-  const thumb =
-    media?.thumbnailUrl ??
-    (playbackId
-      ? `https://image.mux.com/${playbackId}/thumbnail.jpg?time=0&width=200&fit_mode=smartcrop`
-      : (media?.r2Variants?.find((v) => v.variant === "thumb")?.url ??
-        media?.r2Variants?.[0]?.url ??
-        media?.imageUrl ??
-        null));
-
-  const isHot = (post.ranking?.trendingScore ?? 0) > 5;
-
-  return (
-    <button
-      onClick={() => router.push(contentPath(lang, post), { scroll: false })}
-      className="group flex w-full items-center gap-3 rounded-xl p-2 text-left transition-colors hover:bg-surface"
-    >
-      {/* Rank */}
-      <span className="w-5 shrink-0 text-center text-sm font-black text-muted-foreground">
-        {rank}
-      </span>
-
-      {/* Thumbnail */}
-      <div
-        className="relative shrink-0 overflow-hidden rounded-xl bg-surface"
-        style={{ width: 36, height: 36 }}
-      >
-        {thumb ? (
-          <Image
-            src={thumb}
-            alt={post.title}
-            fill
-            sizes="36px"
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
-            unoptimized={thumb.endsWith(".gif")}
-          />
-        ) : null}
-        {isHot && (
-          <span className="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full bg-primary" />
-        )}
-      </div>
-
-      {/* Text */}
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold leading-snug text-default">
-          {post.title}
-        </p>
-        <p className="mt-0.5 truncate text-xs text-muted-foreground">
-          {(post.stats?.views ?? 0) > 0
-            ? `${fmt(post.stats!.views!)} views`
-            : "Trending now"}
-        </p>
-      </div>
-    </button>
-  );
-}
 
 function SellerToFollowRow({
   seller,
@@ -207,14 +132,7 @@ function SellerToFollowRow({
   );
 }
 
-export function DesktopTrendingRail({
-  lang,
-  county,
-}: {
-  lang: string;
-  county?: string;
-}) {
-  const { items, loading } = useTrending(county);
+export function DesktopFeedRail({ lang }: { lang: string }) {
   const [authHydrated, setAuthHydrated] = useState(false);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated());
   const { data: sellersData, loading: sellersLoading } = useQuery(
@@ -239,11 +157,6 @@ export function DesktopTrendingRail({
     return unsubscribe;
   }, [authHydrated]);
 
-  // Show the skeleton until we actually have items, not only while `loading` is
-  // true: with cache-and-network the loading flag can flip to false a beat
-  // before the list populates, leaving the rail blank. Gating on emptiness keeps
-  // the placeholder visible across that gap so the rail never renders empty.
-  const showSkeleton = loading && items.length === 0;
   const sellers =
     sellersData?.sellersToFollow.filter(
       (seller): seller is SellerToFollow => typeof seller.id === "string",
@@ -251,54 +164,6 @@ export function DesktopTrendingRail({
 
   return (
     <div className="flex min-h-full flex-col gap-4">
-      <section className="rounded-2xl border border-default bg-elevated p-4">
-        <div className="mb-3 flex items-center justify-between px-1">
-          <h2 className="flex items-center gap-1.5 text-base font-black text-default">
-            <Flame className="h-4 w-4 text-primary" fill="currentColor" />
-            Trending now
-          </h2>
-          <span className="rounded-full bg-surface px-2 py-1 text-[11px] font-semibold text-muted">
-            {county ?? "Today"}
-          </span>
-        </div>
-
-        {showSkeleton ? (
-          <div className="flex flex-col gap-2">
-            {[...Array(12)].map((_, i) => (
-              <div
-                key={i}
-                className="flex animate-pulse items-center gap-3 p-2"
-              >
-                <div className="h-4 w-5 shrink-0 rounded bg-black/10 dark:bg-white/10" />
-                <div
-                  className="shrink-0 rounded-xl bg-black/10 dark:bg-white/10"
-                  style={{ width: 36, height: 36 }}
-                />
-                <div className="flex-1 space-y-2">
-                  <div className="h-3 w-3/4 rounded-full bg-black/10 dark:bg-white/10" />
-                  <div className="h-2.5 w-1/2 rounded-full bg-black/10 dark:bg-white/10" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : items.length === 0 ? (
-          <p className="px-1 py-4 text-sm text-muted-foreground">
-            Nothing trending yet.
-          </p>
-        ) : (
-          <div className="flex flex-col gap-0.5">
-            {items.slice(0, 12).map((post, i) => (
-              <TrendingRow
-                key={post.id}
-                post={post}
-                lang={lang}
-                rank={i + 1}
-              />
-            ))}
-          </div>
-        )}
-      </section>
-
       <section className="rounded-2xl border border-default bg-elevated p-4">
         <h2 className="mb-3 px-1 text-base font-black text-default">
           Sellers to follow
