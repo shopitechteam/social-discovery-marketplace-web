@@ -44,11 +44,11 @@ export function useStoryUploadWatcher(refetchFeed: () => Promise<unknown>) {
     if (phase !== "processing" || !storyId) return;
     let settled = false;
 
+    // No toast: the story appearing on "Your story" is the confirmation.
     const live = () => {
       if (settled) return;
       settled = true;
       resetStoryUpload();
-      toast.success("Your story is live");
     };
 
     const failed = (reason?: string) => {

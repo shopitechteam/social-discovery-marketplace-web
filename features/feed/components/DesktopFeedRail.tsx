@@ -132,13 +132,16 @@ function SellerToFollowRow({
   );
 }
 
+/** How many sellers the desktop rail suggests. The API allows up to 20. */
+export const SELLERS_TO_FOLLOW_COUNT = 10;
+
 export function DesktopFeedRail({ lang }: { lang: string }) {
   const [authHydrated, setAuthHydrated] = useState(false);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated());
   const { data: sellersData, loading: sellersLoading } = useQuery(
     SELLERS_TO_FOLLOW,
     {
-      variables: { limit: 3 },
+      variables: { limit: SELLERS_TO_FOLLOW_COUNT },
       skip: !authHydrated || !isAuthenticated,
       fetchPolicy: "cache-and-network",
     },
@@ -169,9 +172,11 @@ export function DesktopFeedRail({ lang }: { lang: string }) {
           Sellers to follow
         </h2>
 
-        {!authHydrated || sellersLoading ? (
+        {/* Placeholder only until there's something to show: cache-and-network
+            keeps `loading` true while it revalidates cached sellers. */}
+        {!authHydrated || (sellersLoading && sellers.length === 0) ? (
           <div className="flex flex-col gap-3">
-            {[...Array(3)].map((_, i) => (
+            {[...Array(SELLERS_TO_FOLLOW_COUNT)].map((_, i) => (
               <div key={i} className="flex animate-pulse items-center gap-3">
                 <div className="h-9 w-9 rounded-full bg-black/10 dark:bg-white/10" />
                 <div className="flex-1 space-y-2">

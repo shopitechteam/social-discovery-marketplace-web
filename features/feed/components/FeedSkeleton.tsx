@@ -144,7 +144,7 @@ export function FeedSkeleton() {
               <section className="rounded-2xl border border-default bg-elevated p-4">
                 <Skeleton className="mb-3 ml-1 h-4 w-32 rounded-full" />
                 <div className="flex flex-col gap-3">
-                  {[...Array(3)].map((_, i) => (
+                  {[...Array(10)].map((_, i) => (
                     <div key={i} className="flex items-center gap-3">
                       <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
                       <div className="flex-1 space-y-2">
