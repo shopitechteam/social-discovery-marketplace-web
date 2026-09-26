@@ -9,6 +9,7 @@ import {
   ChevronRight,
   Eye,
   FileEdit,
+  Gift,
   KeyRound,
   LayoutGrid,
   LogOut,
@@ -54,13 +55,14 @@ import { cn } from "@/lib/utils";
  */
 
 /** Sections that open inside the profile page rather than on their own route. */
-export type ProfileSection = "posts" | "drafts" | "saved" | "analytics";
+export type ProfileSection = "posts" | "drafts" | "saved" | "analytics" | "invite";
 
 export const PROFILE_SECTION_LABELS: Record<ProfileSection, string> = {
   posts: "My posts",
   drafts: "Drafts",
   saved: "Saved",
   analytics: "Analytics",
+  invite: "Invite & earn",
 };
 
 type Icon = ComponentType<{ className?: string; strokeWidth?: number }>;
@@ -98,6 +100,7 @@ function MenuRow({
   icon: RowIcon,
   label,
   meta,
+  badge,
   active,
   danger,
   href,
@@ -109,6 +112,8 @@ function MenuRow({
   label: string;
   /** Small muted value before the chevron, like a count. */
   meta?: string;
+  /** A short highlighted tag before the chevron, e.g. "New". */
+  badge?: string;
   /**
    * The section open beside the menu. Coloured on desktop only: on a phone the
    * menu is its own screen with nothing open beside it, so marking a row there
@@ -149,6 +154,11 @@ function MenuRow({
       {meta ? (
         <span className="shrink-0 text-[13px] tabular-nums text-muted md:text-sm">
           {meta}
+        </span>
+      ) : null}
+      {badge ? (
+        <span className="shrink-0 rounded-full bg-primary px-2 py-0.5 text-[11px] font-bold text-white">
+          {badge}
         </span>
       ) : null}
       {control ?? (
@@ -220,11 +230,17 @@ export function ProfileMenu({
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const section = (key: ProfileSection, icon: Icon, meta?: string) => (
+  const section = (
+    key: ProfileSection,
+    icon: Icon,
+    meta?: string,
+    badge?: string,
+  ) => (
     <MenuRow
       icon={icon}
       label={PROFILE_SECTION_LABELS[key]}
       meta={meta}
+      badge={badge}
       active={active === key}
       onClick={() => onSelect(key)}
     />
@@ -232,6 +248,10 @@ export function ProfileMenu({
 
   return (
     <nav aria-label="Profile menu" className="flex flex-col gap-6 md:gap-7">
+      {/* First, so it is on screen the moment the profile opens: bringing in
+          sellers is the one thing here that pays. */}
+      <MenuGroup title="Earn">{section("invite", Gift, undefined, "New")}</MenuGroup>
+
       <MenuGroup title="Your content">
         {section("posts", LayoutGrid, formatCount(user.postCount))}
         {section("drafts", FileEdit)}

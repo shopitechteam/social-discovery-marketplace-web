@@ -15,6 +15,7 @@ import {
 import { useAuthStore } from "@/stores/auth";
 import { trackSignup, trackAuthSuccess } from "@/lib/analytics";
 import { attributionInput } from "@/lib/attribution";
+import { clearReferral, referralCodeInput } from "@/lib/referral";
 import {
   authDestination,
   navigateAfterAuth,
@@ -93,6 +94,8 @@ export function RegisterForm({ from, lang, footer }: RegisterFormProps) {
             // First-touch source, replayed from the visitor's first page load.
             // Persisted server-side only if this call creates the account.
             attribution: attributionInput("register"),
+            // The invite link this visitor arrived through, if any.
+            referralCode: referralCodeInput(),
           },
         },
       });
@@ -125,6 +128,7 @@ export function RegisterForm({ from, lang, footer }: RegisterFormProps) {
       // Normal registration success
       if ("accessToken" in payload) {
         trackSignup("email");
+        clearReferral();
         setAuth(payload);
         navigateAfterAuth(router, authDestination(from, lang));
       }

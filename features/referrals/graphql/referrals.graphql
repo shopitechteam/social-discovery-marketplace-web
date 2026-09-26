@@ -1,0 +1,77 @@
+fragment ReferralPersonFields on ReferralPerson {
+  id
+  displayName
+  username
+  avatar
+}
+
+fragment ReferralProgramFields on ReferralProgram {
+  code
+  link
+  terms {
+    rewardKes
+    sellersPerReward
+    minListings
+    claimWindowDays
+  }
+  joinedCount
+  qualifiedCount
+  pendingCount
+  progressCount
+  earnedKes
+  paidKes
+  pendingPayoutKes
+  payoutPhone
+  payoutPhoneIsFallback
+  canClaimCode
+  claimDeadline
+  invitedBy {
+    ...ReferralPersonFields
+  }
+  referrals {
+    id
+    status
+    listingCount
+    joinedAt
+    qualifiedAt
+    seller {
+      ...ReferralPersonFields
+    }
+  }
+  rewards {
+    id
+    amountKes
+    status
+    earnedAt
+    paidAt
+    mpesaReference
+  }
+}
+
+query MyReferralProgram {
+  myReferralProgram {
+    ...ReferralProgramFields
+  }
+}
+
+mutation SetReferralPayoutPhone($phone: String!) {
+  setReferralPayoutPhone(phone: $phone) {
+    ...ReferralProgramFields
+  }
+}
+
+mutation ClaimReferralCode($code: String!) {
+  claimReferralCode(code: $code) {
+    ...ReferralProgramFields
+  }
+}
+
+query ReferralInvite($code: String!) {
+  referralInvite(code: $code) {
+    code
+    minListings
+    inviter {
+      ...ReferralPersonFields
+    }
+  }
+}
