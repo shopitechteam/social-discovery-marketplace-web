@@ -9,6 +9,7 @@ import { LandingFooter } from "@/components/landing/LandingFooter";
 import { LandingNav } from "@/components/landing/LandingNav";
 import { MarketplaceCategoriesSection } from "@/components/landing/MarketplaceCategoriesSection";
 import { MobileActionBar } from "@/components/landing/MobileActionBar";
+import { BackToTopButton } from "@/components/layout/BackToTopButton";
 import { ShopiAgentSection } from "@/components/landing/ShopiAgentSection";
 import { WelcomeBackBanner } from "@/components/landing/WelcomeBackBanner";
 //import { SupportChat } from "@/components/landing/SupportChat";
@@ -218,6 +219,7 @@ export default async function Rootpage({ params }: PageProps<"/[lang]">) {
       <LandingFooter dict={dict} lang={lang} />
       <WelcomeBackBanner dict={dict} lang={lang} />
       <MobileActionBar dict={dict} lang={lang} />
+      <BackToTopButton variant="landing" />
       {/* Landing-only floating video greeter; dismissible for the session. */}
       {/* <VideoBubble /> */}
       {/* <SupportChat dict={dict} /> */}

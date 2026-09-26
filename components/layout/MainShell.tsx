@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { type ReactNode } from "react";
 import { BottomNav, shouldHideBottomNav } from "@/components/layout/BottomNav";
+import { BackToTopButton } from "@/components/layout/BackToTopButton";
 import { usePreloadInbox } from "@/features/notifications/hooks/usePreloadInbox";
 import { useUiStore } from "@/stores/ui";
 
@@ -22,6 +23,9 @@ export function MainShell({
   const isImmersiveCreate =
     pathname.includes("/upload/create") ||
     pathname.includes("/upload/tiktok");
+  // The long, scrolling lists: the feed and Explore (desktop's "Browse").
+  const hasBackToTop =
+    pathname.startsWith(`/${lang}/for-you`) || pathname.startsWith(`/${lang}/explore`);
   usePreloadInbox();
 
   return (
@@ -51,6 +55,9 @@ export function MainShell({
       </div>
 
       <BottomNav lang={lang} />
+      {/* Away while a screen owns the bottom of the viewport (Ask Shopi's
+          input, full-screen flows) — the same signal that hides the nav. */}
+      {hasBackToTop && <BackToTopButton hidden={bottomNavHidden} />}
     </>
   );
 }
