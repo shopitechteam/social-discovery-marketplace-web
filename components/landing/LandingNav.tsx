@@ -1,336 +1,51 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import { useThemeStore } from "@/stores/theme";
-import { useAuthSession } from "@/hooks/useAuthSession";
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
-//import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import type { Dictionary } from "@/i18n/getDictionary";
+import { useState } from "react";
+import { Menu, X, ArrowUpRight } from "lucide-react";
 import type { Locale } from "@/i18n/config";
 import { ShopiLogo } from "@/features/auth/components/AuthIcons";
-import { Menu, Moon, Sun, X } from "lucide-react";
+import { useAuthSession } from "@/hooks/useAuthSession";
 
-/**
- * A nav entry is either an in-page section ("section", scroll-spied and
- * smooth-scrolled) or a real route ("route", a plain <Link>).
- *
- * The nav used to be three section anchors. Sitelinks — the vertical list of
- * sub-pages Google can show under the brand result — are built from prominent
- * internal links to *distinct pages*, so a nav made only of hashes gave it
- * nothing to choose from. Routes here are the highest-prominence internal
- * links on the site; the footer covers the long tail.
- */
-type NavLink = { label: string; href: string; kind: "section" | "route" };
-
-/** Section ids the nav scroll-spies. Kept module-level so the observer effect
- *  doesn't depend on the per-render NAV_LINKS array. */
-const SECTION_IDS = ["how-it-works"];
-
-export function LandingNav({
-  dict,
-  lang = "en",
-}: {
-  dict?: Dictionary;
-  lang?: Locale;
-}) {
-  const { resolvedTheme, toggleTheme } = useThemeStore();
-  const { isAuthenticated, user } = useAuthSession();
-  const [scrolled, setScrolled] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [activeHash, setActiveHash] = useState("");
-  const [hydrated, setHydrated] = useState(false);
-  const homeBase = `/${lang}`;
-  const sectionHref = (hash: string) => `${homeBase}/${hash}`;
-
-  // Three indexable destinations + one in-page section.
-  //
-  // Shopi Agent points at /shopi-agent rather than straight at /upload: that
-  // page's own CTA continues into the post flow, so the funnel is unchanged,
-  // but unlike /upload (robots-disallowed) it can actually be indexed and
-  // surfaced as a sitelink. Signing up is deliberately absent — /auth/ is
-  // robots-disallowed, and the Sign in link and "Start selling" CTA to its
-  // right already cover it.
-  const NAV_LINKS: NavLink[] = [
-    { label: "For You", href: `${homeBase}/for-you`, kind: "route" },
-    { label: "Shopi Agent", href: `${homeBase}/shopi-agent`, kind: "route" },
-    { label: "Sell in Kenya", href: `${homeBase}/sell-in-kenya`, kind: "route" },
-    {
-      label: dict?.nav.howItWorks ?? "How It Works",
-      href: "#how-it-works",
-      kind: "section",
-    },
+export function LandingNav({ lang }: { lang: Locale }) {
+  const [open, setOpen] = useState(false);
+  const { hydrated, isAuthenticated } = useAuthSession();
+  const sw = lang === "sw";
+  const accountHref = isAuthenticated ? "/en/for-you" : "/en/auth/login";
+  const accountLabel = isAuthenticated
+    ? (sw ? "Nenda For You" : "Go to For You")
+    : (sw ? "Ingia" : "Sign in");
+  const links = [
+    { href: "#how-it-works", label: sw ? "Jinsi inavyofanya kazi" : "How it works" },
+    { href: "/en/shopi-agent", label: "Shopi Agent" },
+    { href: "/en/for-you", label: sw ? "Angalia bidhaa" : "Browse" },
   ];
 
-  useEffect(() => {
-    void setHydrated(true);
-
-    const onScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", onScroll, { passive: true });
-
-    // Only in-page sections get scroll-spied; route links are never "active".
-    const sectionIds = SECTION_IDS;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            setActiveHash(`#${entry.target.id}`);
-          }
-        }
-      },
-      { rootMargin: "-20% 0px -60% 0px", threshold: 0 },
-    );
-    sectionIds.forEach((id) => {
-      const el = document.getElementById(id);
-      if (el) observer.observe(el);
-    });
-
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      observer.disconnect();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (menuOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [menuOpen]);
-
-  function handleHashLink(
-    e: React.MouseEvent<HTMLAnchorElement>,
-    hash: string,
-  ) {
-    setMenuOpen(false);
-    const id = hash.replace("#", "");
-
-    // If the target section is on the current page, just scroll to it.
-    // (The landing page lives at /[lang], e.g. "/en", so a "/" check fails.)
-    const el = document.getElementById(id);
-    if (el) {
-      e.preventDefault();
-      // Clear the fixed header: 56px on phones, 76px from md up.
-      const header = window.matchMedia("(min-width: 768px)").matches ? 76 : 56;
-      const top = el.getBoundingClientRect().top + window.scrollY - header - 8;
-      window.scrollTo({ top, behavior: "smooth" });
-      return;
-    }
-  }
-
   return (
-    <>
-      <nav
-        className={`fixed top-0 right-0 left-0 z-50 h-14 border-b md:h-19 bg-[rgb(var(--color-bg)/0.95)] px-4 backdrop-blur-[18px] transition-[background-color,border-color] duration-250 lg:px-30 ${
-          scrolled ? "border-border" : "border-transparent"
-        }`}
-      >
-        {/* Inner container — same width as the page content so the logo
-            lines up with the hero headline, Tolstoy-style */}
-        <div className="mx-auto flex h-full max-w-(--landing-page-max) items-center justify-between">
-          {/* Left cluster — logo + section links, Tolstoy-style */}
-          <div className="flex items-center gap-10">
-            <Link
-              href={homeBase}
-              className="flex items-center gap-2 no-underline"
-            >
-              {/* 36px on phones, 52px (the old height={72}) from md up. */}
-              <ShopiLogo className="h-9 w-auto md:h-13" />
-            </Link>
-
-            {/* Desktop nav links */}
-            <div className="hidden items-center gap-7 text-sm font-medium text-muted md:flex">
-              {NAV_LINKS.map(({ label, href, kind }) => {
-                const isActive = kind === "section" && activeHash === href;
-                const className = `whitespace-nowrap transition-colors duration-150 hover:text-foreground ${
-                  isActive
-                    ? "font-bold text-foreground underline decoration-2 underline-offset-8"
-                    : "text-muted no-underline"
-                }`;
-
-                return kind === "route" ? (
-                  <Link key={label} href={href} className={className}>
-                    {label}
-                  </Link>
-                ) : (
-                  <a
-                    key={label}
-                    href={sectionHref(href)}
-                    onClick={(e) => handleHashLink(e, href)}
-                    className={className}
-                  >
-                    {label}
-                  </a>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Right actions */}
-          <div className="flex items-center gap-[0.65rem]">
-            {/* Sign in — quiet text link */}
-            {/* Theme toggle */}
-            <div className="h-10 w-10 md:h-9 md:w-9">
-              {hydrated && (
-                <button
-                  onClick={toggleTheme}
-                  aria-label="Toggle theme"
-                  className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-border bg-elevated text-foreground md:h-9 md:w-9"
-                >
-                  {resolvedTheme === "dark" ? (
-                    <Sun size={17} />
-                  ) : (
-                    <Moon size={17} />
-                  )}
-                </button>
-              )}
-            </div>
-
-            {/* Sign in (guests) / avatar → profile (signed in) */}
-            {isAuthenticated ? (
-              <Link
-                href={`${homeBase}/profile`}
-                aria-label="Your profile"
-                className="hidden h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-border bg-elevated no-underline md:inline-flex"
-              >
-                {user?.profile?.avatar ? (
-                  <Image
-                    src={user.profile.avatar}
-                    alt=""
-                    width={36}
-                    height={36}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <span className="text-sm font-bold text-foreground">
-                    {(user?.profile?.firstName?.[0] ?? "?").toUpperCase()}
-                  </span>
-                )}
-              </Link>
-            ) : (
-              <Link
-                href={`${homeBase}/auth/login`}
-                className="hidden px-3 py-2 text-sm font-medium whitespace-nowrap text-muted no-underline md:inline-flex"
-              >
-                {dict?.auth.login.submit ?? "Sign in"}
-              </Link>
-            )}
-
-            {/* Desktop CTA pair — quiet feed link, solid post CTA.
-                Posting is the action the site is short of, and it is the only
-                one of the two that requires an account, so it gets the filled
-                button on every screen. */}
-            <Link
-              href={`${homeBase}/for-you`}
-              className="hidden items-center rounded-full border border-border bg-elevated px-[1.1rem] py-2 text-sm font-semibold whitespace-nowrap text-foreground no-underline md:inline-flex"
-            >
-              {isAuthenticated
-                ? (dict?.landing.hero.ctaFeedLoggedIn ??
-                  "Go to For You")
-                : (dict?.landing.hero.ctaFeed ?? "Browse Shopi")}
-            </Link>
-            <Link
-              href={`${homeBase}/upload`}
-              className="hidden items-center rounded-full bg-primary px-[1.1rem] py-2 text-sm font-semibold whitespace-nowrap text-white no-underline md:inline-flex"
-            >
-              {dict?.landing.hero.ctaPostShort ?? "Sell for Free"}
-            </Link>
-
-            {/* Language switcher */}
-            {/* <LanguageSwitcher current={lang} /> */}
-
-            {/* Hamburger — mobile only */}
-            <button
-              aria-label={menuOpen ? "Close menu" : "Open menu"}
-              onClick={() => setMenuOpen((v) => !v)}
-              className="flex h-10 w-10 shrink-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-full border border-border bg-elevated p-0 md:hidden"
-            >
-              {menuOpen ? <X size={18} /> : <Menu size={18} />}
-            </button>
-          </div>
+    <header className="relative z-20 bg-white text-[#172226]">
+      <nav aria-label={sw ? "Menyu kuu" : "Main navigation"} className="mx-auto flex h-18 max-w-7xl items-center justify-between gap-4 px-5 md:h-22 md:px-8">
+        <Link href={`/${lang}`} aria-label="Shopi home" className="flex items-center gap-2 no-underline">
+          <ShopiLogo className="h-9 w-9" />
+          <span className="text-xl font-bold text-[#172226]">Shopi</span>
+        </Link>
+        <div className="hidden items-center gap-8 md:flex">
+          {links.map((item) => <Link key={item.href} href={item.href} className="text-sm font-medium text-[#273237] no-underline hover:text-primary">{item.label}</Link>)}
         </div>
+        <div className="hidden items-center gap-3 md:flex">
+          {hydrated && <Link href={accountHref} className="rounded-full border border-[#172226] px-5 py-2.5 text-sm font-semibold text-[#172226] no-underline">{accountLabel}</Link>}
+          <Link href="/en/upload" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white no-underline hover:opacity-90">{sw ? "Weka tangazo" : "Create a post"}<ArrowUpRight size={17} aria-hidden /></Link>
+        </div>
+        <button type="button" className="inline-flex size-11 items-center justify-center rounded-full border border-[#d8dfe0] md:hidden" aria-label={open ? (sw ? "Funga menyu" : "Close menu") : (sw ? "Fungua menyu" : "Open menu")} aria-expanded={open} onClick={() => setOpen(!open)}>
+          {open ? <X size={21} /> : <Menu size={21} />}
+        </button>
       </nav>
-
-      {/* Mobile menu overlay */}
-      {menuOpen && (
-        <div className="fixed top-14 right-0 bottom-0 left-0 z-49 md:top-19 flex flex-col overflow-y-auto bg-[rgb(var(--color-bg)/0.97)] px-(--landing-page-x) py-5 backdrop-blur-[18px]">
-          {NAV_LINKS.map(({ label, href, kind }) => {
-            const className = `border-b border-border py-[0.65rem] text-[0.85rem] text-foreground ${
-              kind === "section" && activeHash === href
-                ? "font-bold underline decoration-2 underline-offset-4"
-                : "font-semibold no-underline"
-            }`;
-
-            return kind === "route" ? (
-              <Link
-                key={label}
-                href={href}
-                onClick={() => setMenuOpen(false)}
-                className={className}
-              >
-                {label}
-              </Link>
-            ) : (
-              <a
-                key={label}
-                href={sectionHref(href)}
-                onClick={(e) => handleHashLink(e, href)}
-                className={className}
-              >
-                {label}
-              </a>
-            );
-          })}
-
-          {isAuthenticated && (
-            <Link
-              href={`${homeBase}/profile`}
-              onClick={() => setMenuOpen(false)}
-              className="border-b border-border py-[0.65rem] text-[0.85rem] font-semibold text-foreground no-underline"
-            >
-              Your profile
-            </Link>
-          )}
-
-          {/* Primary CTA → post, secondary → feed.
-              The old primary went to the feed under the line "No account
-              needed to start looking", which is true but talks people out of
-              the one step this page exists to produce. */}
-          <div className="mt-5 flex flex-col gap-3">
-            <Link
-              href={`${homeBase}/upload`}
-              onClick={() => setMenuOpen(false)}
-              className="flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-[0.85rem] text-[0.9rem] font-bold text-white no-underline"
-            >
-              {isAuthenticated
-                ? (dict?.landing.hero.ctaPostShort ?? "Sell for Free")
-                : (dict?.landing.hero.ctaPost ?? "Sell for Free")}
-              <span aria-hidden>→</span>
-            </Link>
-            <Link
-              href={`${homeBase}/for-you`}
-              onClick={() => setMenuOpen(false)}
-              className="flex items-center justify-center gap-2 rounded-full border border-border bg-elevated px-5 py-[0.85rem] text-[0.9rem] font-bold text-foreground no-underline"
-            >
-              {isAuthenticated
-                ? (dict?.landing.hero.ctaFeedLoggedIn ??
-                  "Go to For You")
-                : (dict?.landing.hero.ctaFeed ?? "Browse Shopi")}
-            </Link>
-            {!isAuthenticated && (
-              <p className="text-center text-[0.78rem] text-muted">
-                {dict?.landing.hero.reassurance ??
-                  "Free to post · 0% commission · No business registration needed"}
-              </p>
-            )}
-          </div>
+      {open && <div className="absolute inset-x-0 top-full border-t border-[#e5e9e9] bg-white px-5 py-4 shadow-lg md:hidden">
+        {links.map((item) => <Link key={item.href} href={item.href} onClick={() => setOpen(false)} className="block border-b border-[#e5e9e9] py-3 font-medium text-[#172226] no-underline">{item.label}</Link>)}
+        <div className="mt-5 flex gap-3">
+          {hydrated && <Link href={accountHref} onClick={() => setOpen(false)} className="flex-1 rounded-full border border-[#172226] px-4 py-3 text-center text-sm font-semibold text-[#172226] no-underline">{accountLabel}</Link>}
+          <Link href="/en/upload" className="flex-1 rounded-full bg-primary px-4 py-3 text-center text-sm font-semibold text-white no-underline">{sw ? "Weka tangazo" : "Create a post"}</Link>
         </div>
-      )}
-    </>
+      </div>}
+    </header>
   );
 }

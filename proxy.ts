@@ -88,8 +88,13 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(redirectUrl, 308);
   }
 
-  // Signed-in users should enter the app, not the marketing homepage.
-  if (hasSession && barePath === "/") {
+  // Signed-in users enter the app by default. The logo can explicitly open
+  // the public homepage without changing that default.
+  if (
+    hasSession &&
+    barePath === "/" &&
+    request.nextUrl.searchParams.get("view") !== "home"
+  ) {
     const locale = pathnameLocale ?? defaultLocale;
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = `/${locale}/for-you`;
