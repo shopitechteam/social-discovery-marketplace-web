@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { Loader2, LocateFixed } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
-  DEFAULT_RADIUS_KM,
-  DISTANCE_STOPS_KM,
+  DISTANCE_MAX_KM,
+  DISTANCE_MIN_KM,
   useDiscoverFiltersStore,
   type DiscoverContentType,
 } from "@/stores/discoverFilters";
@@ -151,6 +151,27 @@ export function ContentTypeSegments({ compact = false }: { compact?: boolean }) 
 type LocateState = "idle" | "locating" | "denied" | "unavailable";
 
 /**
+ * The slider runs on a logarithmic scale: 1–10 km fills the left half of the
+ * track and 10–100 km the right, so short distances — where the difference
+ * between 3 and 5 km matters — get as much room under the thumb as long ones.
+ * On a linear 1–100 track they would share its first tenth. The thumb moves
+ * through SLIDER_STEPS fine positions (smooth, no snapping); the radius is the
+ * position rounded to a whole km, so every km from 1 to 100 is reachable.
+ */
+const SLIDER_STEPS = 1000;
+const RANGE_RATIO = Math.log(DISTANCE_MAX_KM / DISTANCE_MIN_KM);
+
+function kmAt(position: number): number {
+  const km = DISTANCE_MIN_KM * Math.exp((position / SLIDER_STEPS) * RANGE_RATIO);
+  return Math.min(DISTANCE_MAX_KM, Math.max(DISTANCE_MIN_KM, Math.round(km)));
+}
+
+function positionOf(km: number): number {
+  const clamped = Math.min(DISTANCE_MAX_KM, Math.max(DISTANCE_MIN_KM, km));
+  return Math.round((Math.log(clamped / DISTANCE_MIN_KM) / RANGE_RATIO) * SLIDER_STEPS);
+}
+
+/**
  * "Near me" with a radius. The first tap asks the browser for the viewer's
  * position; after that the slider picks how far out to look. The position is
  * held in memory only — it never goes into the URL, so a shared link can't
@@ -163,14 +184,54 @@ export function DistanceFilter({ compact = false }: { compact?: boolean }) {
   const setRadiusKm = useDiscoverFiltersStore((s) => s.setRadiusKm);
   const [locate, setLocate] = useState<LocateState>("idle");
 
-  const stopIndex = Math.max(
-    0,
-    DISTANCE_STOPS_KM.findIndex((stop) => stop >= radiusKm),
+  // The thumb's own position, kept locally so dragging is smooth; the store
+  // (which the queries read) only gets the rounded km once the thumb rests.
+  const [position, setPosition] = useState(() => positionOf(radiusKm));
+  const committedKm = useRef(radiusKm);
+  const commitTimer = useRef<number | null>(null);
+  const draftKm = kmAt(position);
+
+  // An outside change (Clear, the other surface) moves the thumb — but not our
+  // own commit, which would snap it back to the rounded km mid-drag.
+  useEffect(() => {
+    if (radiusKm === committedKm.current) return;
+    committedKm.current = radiusKm;
+    setPosition(positionOf(radiusKm));
+  }, [radiusKm]);
+
+  useEffect(
+    () => () => {
+      if (commitTimer.current) window.clearTimeout(commitTimer.current);
+    },
+    [],
   );
-  const [draftIndex, updateIndex] = useDebouncedDraft(stopIndex, (index) =>
-    setRadiusKm(DISTANCE_STOPS_KM[index] ?? DEFAULT_RADIUS_KM),
-  );
-  const draftKm = DISTANCE_STOPS_KM[draftIndex] ?? DEFAULT_RADIUS_KM;
+
+  function moveTo(next: number) {
+    const clamped = Math.min(SLIDER_STEPS, Math.max(0, next));
+    setPosition(clamped);
+    if (commitTimer.current) window.clearTimeout(commitTimer.current);
+    commitTimer.current = window.setTimeout(() => {
+      const km = kmAt(clamped);
+      committedKm.current = km;
+      setRadiusKm(km);
+    }, COMMIT_DELAY_MS);
+  }
+
+  /** Arrow keys step one whole km (PageUp/PageDown ten), not one fine position. */
+  function onKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    const steps: Record<string, number> = {
+      ArrowRight: 1,
+      ArrowUp: 1,
+      ArrowLeft: -1,
+      ArrowDown: -1,
+      PageUp: 10,
+      PageDown: -10,
+    };
+    const delta = steps[event.key];
+    if (delta === undefined) return;
+    event.preventDefault();
+    moveTo(positionOf(draftKm + delta));
+  }
 
   function requestLocation() {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -240,17 +301,20 @@ export function DistanceFilter({ compact = false }: { compact?: boolean }) {
       <input
         type="range"
         min={0}
-        max={DISTANCE_STOPS_KM.length - 1}
+        max={SLIDER_STEPS}
         step={1}
-        value={draftIndex}
-        onChange={(event) => updateIndex(Number(event.target.value))}
+        value={position}
+        onChange={(event) => moveTo(Number(event.target.value))}
+        onKeyDown={onKeyDown}
         aria-label="Distance from you"
         aria-valuetext={`${draftKm} km`}
         className="w-full accent-primary"
       />
-      <div className={cn("flex justify-between text-muted", compact ? "text-[10px]" : "text-[11px]")}>
-        <span>{DISTANCE_STOPS_KM[0]} km</span>
-        <span>{DISTANCE_STOPS_KM[DISTANCE_STOPS_KM.length - 1]} km</span>
+      {/* 10 km sits exactly mid-track on the log scale. */}
+      <div className={cn("relative flex justify-between text-muted", compact ? "text-[10px]" : "text-[11px]")}>
+        <span>{DISTANCE_MIN_KM} km</span>
+        <span className="absolute left-1/2 -translate-x-1/2">10 km</span>
+        <span>{DISTANCE_MAX_KM} km</span>
       </div>
     </div>
   );
