@@ -14,7 +14,8 @@ export interface NotificationItem {
     | "POST_REJECTED"
     | "POST_BOOSTED"
     | "NEW_POST"
-    | "TEAM_MESSAGE";
+    | "TEAM_MESSAGE"
+    | "REFERRAL";
   title: string;
   body: string;
   actorCount: number;

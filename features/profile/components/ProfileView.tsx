@@ -17,6 +17,7 @@ import { ManagedPostsGrid } from "./ManagedPostsGrid";
 import { DraftsGrid } from "./DraftsGrid";
 import { AnalyticsPanel } from "./AnalyticsPanel";
 import { TiktokImportPanel } from "./TiktokImportPanel";
+import { InviteEarnPanel } from "@/features/referrals/components/InviteEarnPanel";
 import { cn } from "@/lib/utils";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import {
@@ -400,6 +401,8 @@ export function ProfileView({ lang }: Props) {
           )}
 
           {shownTab === "drafts" && <DraftsGrid lang={lang} />}
+
+          {shownTab === "invite" && <InviteEarnPanel />}
 
           {shownTab === "analytics" && (
             <>

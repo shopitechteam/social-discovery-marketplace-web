@@ -7,6 +7,7 @@ import {
   Bell,
   Bookmark,
   CheckCheck,
+  Gift,
   Loader2,
   Megaphone,
   MessageSquareText,
@@ -158,6 +159,11 @@ export function NotificationList({
                   <div className="relative h-10 w-10 shrink-0">
                     {notification.type === "TEAM_MESSAGE" ? (
                       <TeamAvatar size={40} />
+                    ) : notification.type === "REFERRAL" && !actor ? (
+                      // Rewards have no person behind them — the gift is the news.
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[linear-gradient(135deg,rgb(var(--brand-primary)),rgb(var(--brand-secondary)))] text-white">
+                        <Gift size={18} strokeWidth={2} />
+                      </div>
                     ) : actor?.avatar ? (
                       <Image
                         src={actor.avatar}
@@ -184,6 +190,8 @@ export function NotificationList({
                         <Store size={11} />
                       ) : notification.type === "TEAM_MESSAGE" ? (
                         <MessageSquareText size={11} />
+                      ) : notification.type === "REFERRAL" ? (
+                        <Gift size={11} />
                       ) : (
                         <UserPlus size={11} />
                       )}
