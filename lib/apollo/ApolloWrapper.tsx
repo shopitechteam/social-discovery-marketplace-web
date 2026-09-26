@@ -331,6 +331,13 @@ function createClient() {
                 "minPrice",
                 "maxPrice",
                 "negotiableOnly",
+                // Every filter must key the entry. When these were missing, a
+                // distance/spec/recency search reused the unfiltered facets.
+                "specs",
+                "latitude",
+                "longitude",
+                "radiusKm",
+                "postedWithinDays",
               ],
               merge: true,
             },
@@ -350,6 +357,14 @@ function createClient() {
                 "minPrice",
                 "maxPrice",
                 "negotiableOnly",
+                // Missing filters here made a filtered feed share — and show —
+                // the unfiltered list, while the uncached result count was
+                // right: "Show 2 results" over a full grid.
+                "specs",
+                "latitude",
+                "longitude",
+                "radiusKm",
+                "postedWithinDays",
                 "sort",
               ],
               merge: mergeFeedPage,

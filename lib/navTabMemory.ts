@@ -43,6 +43,23 @@ function tabOf(pathname: string): RememberedNavTab | null {
   }
 }
 
+/**
+ * Explore returns with its search, sort and price, but not its category:
+ * category (and the subcategory and spec filters that belong to it) is chosen
+ * inside the filters, so a remembered one comes back invisible — the tab would
+ * reopen quietly scoped to, say, Electronics. It always opens on all
+ * categories.
+ */
+const EXPLORE_FORGETS = ["category", "subcategory", "spec"];
+
+function tabSearch(tab: RememberedNavTab, search: string): string {
+  if (tab !== "explore" || !search) return search;
+  const params = new URLSearchParams(search);
+  for (const key of EXPLORE_FORGETS) params.delete(key);
+  const qs = params.toString();
+  return qs ? `?${qs}` : "";
+}
+
 let remembered: Remembered | null = null;
 const listeners = new Set<() => void>();
 
@@ -71,7 +88,7 @@ export function rememberNavTabUrl(): void {
   const tab = tabOf(pathname);
   if (!tab) return;
 
-  const href = `${pathname}${search}`;
+  const href = `${pathname}${tabSearch(tab, search)}`;
   const current = load();
   if (current[tab] === href) return;
 
