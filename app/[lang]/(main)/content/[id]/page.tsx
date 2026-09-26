@@ -287,7 +287,7 @@ export default async function ContentDetailPage({ params }: Props) {
                       name: sellerName(post) ?? `@${post.creator.username}`,
                       url: `${siteConfig.url}${profileHref(lang, post.creator)}`,
                     }
-                  : { name: "Explore", url: `${siteConfig.url}/${lang}/explore` },
+                  : { name: "Browse", url: `${siteConfig.url}/${lang}/explore` },
                 { name: post.title, url: canonical },
               ]),
             ),

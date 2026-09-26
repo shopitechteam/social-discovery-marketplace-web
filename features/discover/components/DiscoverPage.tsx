@@ -1051,19 +1051,19 @@ function FilterFieldList({
         ) : null}
       </div>
 
-      <div className="flex shrink-0 gap-3 border-t border-border px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3">
+      <div className="flex shrink-0 gap-2.5 border-t border-border px-4 pb-[calc(env(safe-area-inset-bottom)+10px)] pt-2.5">
         <button
           type="button"
           onClick={onClear}
           disabled={!canClear}
-          className="h-12 flex-1 rounded-xl border border-border text-sm font-semibold text-main transition-opacity active:opacity-70 disabled:opacity-40"
+          className="h-10 shrink-0 rounded-lg border border-border px-5 text-[13px] font-semibold text-main transition-opacity active:opacity-70 disabled:opacity-40"
         >
           Clear
         </button>
         <button
           type="button"
           onClick={onClose}
-          className="h-12 flex-1 rounded-xl bg-primary text-sm font-semibold text-white transition-opacity active:opacity-80"
+          className="h-10 flex-1 rounded-lg bg-primary text-[13px] font-semibold text-white transition-opacity active:opacity-80"
         >
           {resultLabel}
         </button>

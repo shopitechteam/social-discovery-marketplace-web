@@ -142,7 +142,7 @@
   },
   "routes": {
     "feed": "For You",
-    "explore": "Explore",
+    "explore": "Browse",
     "notifications": "Inbox",
     "profile": "My Profile",
     "upload": "Create a Listing"
