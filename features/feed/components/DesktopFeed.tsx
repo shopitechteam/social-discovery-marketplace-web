@@ -19,7 +19,6 @@ import { LocationPermissionBanner } from "./LocationPermissionBanner";
 import { PostCard } from "./PostCard";
 import { DesktopFeedRail } from "./DesktopFeedRail";
 import { StoriesBar } from "@/features/stories/components/StoriesBar";
-import { SHOW_ASK_SHOPI } from "@/features/feed/utils/askShopiAvailability";
 import {
   captureScrollPosition,
   restoreScrollPosition,
@@ -28,13 +27,12 @@ import {
 import { rememberNavTabUrl } from "@/lib/navTabMemory";
 import type { ContentCardFieldsFragment } from "@/types/__generated__/graphql";
 
-type Tab = "for-you" | "following" | "nearby" | "ask-shopi";
+type Tab = "for-you" | "following" | "nearby";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "for-you", label: "For You" },
   { id: "following", label: "Following" },
   { id: "nearby", label: "Nearby" },
-  ...(SHOW_ASK_SHOPI ? [{ id: "ask-shopi" as const, label: "Ask Shopi" }] : []),
 ];
 
 // `loading` gives each its own Suspense boundary (see FeedPage): without it the
@@ -44,16 +42,11 @@ const DesktopNearbyColumn = dynamic(
   () => import("./DesktopNearbyColumn").then((mod) => mod.DesktopNearbyColumn),
   { loading: () => <ColumnSkeleton /> },
 );
-const AskShopiGrid = dynamic(
-  () => import("./AskShopiGrid").then((mod) => mod.AskShopiGrid),
-  { loading: () => <ColumnSkeleton /> },
-);
 
 const isTab = (v: string | null): v is Tab =>
   v === "for-you" ||
   v === "following" ||
-  v === "nearby" ||
-  (SHOW_ASK_SHOPI && v === "ask-shopi");
+  v === "nearby";
 
 const isDesktopViewport = () =>
   typeof window !== "undefined" &&
@@ -336,11 +329,6 @@ export default function DesktopFeed({
                 lang={lang}
                 active={visible && tab === "nearby"}
               />
-            </div>
-          ) : null}
-          {SHOW_ASK_SHOPI && openedTabs.has("ask-shopi") ? (
-            <div className={tab === "ask-shopi" ? undefined : "hidden"}>
-              <AskShopiGrid lang={lang} active={tab === "ask-shopi"} />
             </div>
           ) : null}
         </section>

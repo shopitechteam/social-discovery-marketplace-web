@@ -81,6 +81,8 @@ const MAX_TEXTAREA_HEIGHT = 120;
 interface Props {
   lang: string;
   active?: boolean;
+  /** Shown as a close button when Ask Shopi opens over another screen (Browse). */
+  onClose?: () => void;
 }
 
 function createConversation(): AskShopiConversation {
@@ -199,7 +201,7 @@ function stripMediaForStorage(conversation: AskShopiConversation): AskShopiConve
   };
 }
 
-export function AskShopiGrid({ lang, active = true }: Props) {
+export function AskShopiGrid({ lang, active = true, onClose }: Props) {
   const { hydrated: authHydrated, isAuthenticated } = useAuthSession();
   const [conversations, setConversations] = useState<AskShopiConversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -500,6 +502,16 @@ export function AskShopiGrid({ lang, active = true }: Props) {
     <div className="flex min-h-svh flex-col bg-surface">
       <div className="sticky top-0 z-10 border-b border-default bg-app/95 backdrop-blur">
         <div className="mx-auto flex w-full max-w-[920px] items-center gap-2 px-3 py-2.5 sm:px-5">
+          {onClose ? (
+            <button
+              type="button"
+              onClick={onClose}
+              className="grid h-9 w-9 place-items-center rounded-full text-default active:bg-surface"
+              aria-label="Close Ask Shopi"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={() => setHistoryOpen(true)}
@@ -691,7 +703,14 @@ function ConversationHistorySheet({
 }) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="left" className="flex w-[86vw] max-w-sm flex-col bg-app p-0">
+      {/* Above the full-screen Ask Shopi overlay on Browse (z-90). At the
+          default z-50 the panel opened behind it, invisible, while its modal
+          lock still swallowed every tap and focus — the screen froze. */}
+      <SheetContent
+        side="left"
+        className="z-100 flex w-[86vw] max-w-sm flex-col bg-app p-0"
+        overlayClassName="z-100"
+      >
         <SheetHeader className="border-b border-default px-4 py-4 text-left">
           <SheetTitle>Ask Shopi</SheetTitle>
           <SheetDescription>Previous buying conversations</SheetDescription>

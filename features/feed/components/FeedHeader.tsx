@@ -1,8 +1,6 @@
 "use client";
 
-import { SHOW_ASK_SHOPI } from "@/features/feed/utils/askShopiAvailability";
-
-type Tab = "for-you" | "following" | "nearby" | "ask-shopi";
+type Tab = "for-you" | "following" | "nearby";
 
 interface Props {
   activeTab: Tab;
@@ -14,9 +12,6 @@ export function FeedHeader({ activeTab, onTabChange }: Props) {
     { id: "for-you", label: "For You" },
     { id: "following", label: "Following" },
     { id: "nearby", label: "Nearby" },
-    ...(SHOW_ASK_SHOPI
-      ? [{ id: "ask-shopi" as const, label: "Ask Shopi" }]
-      : []),
   ];
 
   return (
