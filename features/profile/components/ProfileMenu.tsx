@@ -31,6 +31,7 @@ import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { Switch } from "@/components/ui/switch";
 import { usePushNotifications } from "@/features/messaging/hooks/usePushNotifications";
 import { useLogout } from "@/features/auth/hooks/useLogout";
+import { disableGoogleAutoSelect } from "@/features/auth/lib/googleIdentity";
 import { useMutation } from "@apollo/client/react";
 import {
   DeleteMyAccountDocument,
@@ -388,6 +389,9 @@ function DeleteAccountDialog({
       await deleteAccount({ variables: { password: null } });
       // Straight out, not through the logout mutation — the account is gone and
       // a full reload is the only way to be sure nothing cached survives.
+      // And no Google auto sign-in on the way out, which would try to sign a
+      // deleted account straight back in.
+      disableGoogleAutoSelect();
       useAuthStore.getState().clearAuth();
       window.location.href = `/${lang}/for-you`;
     } catch (caught) {

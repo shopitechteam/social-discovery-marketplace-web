@@ -139,22 +139,37 @@ export function FeedSkeleton() {
               </div>
             </div>
 
-            {/* Right rail — sellers to follow, xl and up only */}
+            {/* Right rail — sellers to follow, then trending; xl and up only.
+                Mirrors DesktopFeedRail's two cards and row sizes. */}
             <aside className="sticky top-5 hidden self-start xl:block">
-              <section className="rounded-2xl border border-default bg-elevated p-4">
-                <Skeleton className="mb-3 ml-1 h-4 w-32 rounded-full" />
-                <div className="flex flex-col gap-3">
-                  {[...Array(10)].map((_, i) => (
-                    <div key={i} className="flex items-center gap-3">
-                      <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
+              <div className="flex flex-col gap-4">
+                <section className="rounded-2xl border border-default bg-elevated px-3 pb-3 pt-4">
+                  <Skeleton className="mb-2 ml-2 h-4 w-32 rounded-full" />
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} className="flex items-center gap-3 px-2 py-2.5">
+                      <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
                       <div className="flex-1 space-y-2">
                         <Skeleton className="h-3 w-2/3 rounded-full" />
                         <Skeleton className="h-2.5 w-1/2 rounded-full" />
                       </div>
+                      <Skeleton className="h-7 w-22 shrink-0 rounded-full" />
                     </div>
                   ))}
-                </div>
-              </section>
+                </section>
+                <section className="rounded-2xl border border-default bg-elevated px-3 pb-3 pt-4">
+                  <Skeleton className="mb-2 ml-2 h-4 w-28 rounded-full" />
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} className="flex items-center gap-3 px-2 py-2">
+                      <Skeleton className="h-3.5 w-4 shrink-0 rounded-full" />
+                      <Skeleton className="h-11 w-11 shrink-0 rounded-[10px]" />
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-3 w-3/4 rounded-full" />
+                        <Skeleton className="h-2.5 w-1/2 rounded-full" />
+                      </div>
+                    </div>
+                  ))}
+                </section>
+              </div>
             </aside>
           </div>
         </div>

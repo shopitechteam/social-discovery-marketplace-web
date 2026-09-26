@@ -284,8 +284,12 @@ export default function DesktopFeed({
           `lg:max-w-[1560px]` and `lg:px-8`) — without a cap, the fixed
           380/400px right rail just slides further from the feed column as
           the viewport widens past a laptop screen, and the feed itself
-          pressed flush against the sidebar with zero gutter. */}
-      <div className="mx-auto grid w-full grid-cols-1 gap-7 px-4 py-0 lg:max-w-[1560px] lg:px-8 xl:grid-cols-[minmax(720px,1fr)_380px] 2xl:grid-cols-[minmax(840px,1fr)_400px] xl:items-start">
+          pressed flush against the sidebar with zero gutter.
+          The feed column flexes (minmax(0,1fr)) instead of demanding 720–840px:
+          beside the 304px side menu those minimums pushed the rail past the
+          window on every screen narrower than ~1900px (cut off, with a sideways
+          scroll). At 1280px the feed is still ~540px — wider than Instagram's. */}
+      <div className="mx-auto grid w-full grid-cols-1 gap-7 px-4 py-0 lg:max-w-[1560px] lg:px-8 xl:grid-cols-[minmax(0,1fr)_340px] 2xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start">
         <section className="min-w-0">
           <div className="sticky top-(--desktop-top-nav-height,68px) z-20 -mx-2 mb-4 bg-app/92 px-2 py-3 backdrop-blur">
             {/* Equal-width subtabs across the whole column, not a pill group.

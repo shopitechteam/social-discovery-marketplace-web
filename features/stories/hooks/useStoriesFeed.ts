@@ -11,7 +11,7 @@ import {
 } from "@/types/__generated__/graphql";
 import { useSeenStories } from "../lib/seenStories";
 import { loadSavedStoriesFeed, saveStoriesFeed } from "../lib/storiesFeedCache";
-import { useAuthHydrated } from "../lib/useAuthHydrated";
+import { useAuthHydrated } from "@/lib/auth/useAuthHydrated";
 import { storyExpiry, useStoryActions } from "./useStoryActions";
 
 export { storyExpiry };

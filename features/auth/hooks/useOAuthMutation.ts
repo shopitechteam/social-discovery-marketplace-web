@@ -17,20 +17,18 @@ import {
   authDestination,
   navigateAfterAuth,
 } from "@/features/auth/lib/postAuthNavigate";
+import {
+  allowGoogleAutoSelect,
+  initializeGoogleIdentity,
+  loadGoogleIdentity,
+  promptOneTap,
+  registerCredentialHandler,
+} from "@/features/auth/lib/googleIdentity";
 
-// Auth pages render the Google button once for their mobile layout and once
-// for their desktop layout — both always mounted, only CSS-toggled by
-// breakpoint — so two identical hook instances each call
-// `google.accounts.id.initialize()` on the same page. That's a page-global
-// singleton in GIS: it logs "only the last initialized instance will be
-// used," and worse, only that last instance's credential callback ever runs.
-// If GIS happened to wire itself to the CSS-hidden copy, the visible
-// button's loading/error state never updates on click — indistinguishable
-// from nothing happening.
-//
-// Fix: whichever instance's initialize() call GIS ends up using, broadcast
-// its loading/error outcome to every currently-mounted button on the page
-// (registered/unregistered per mount below), not just the one that owns it.
+// Auth screens mount their Google button more than once (layout copies,
+// CSS-toggled by breakpoint). Google answers only one handler (see
+// lib/googleIdentity), so its loading/error outcome is broadcast to every
+// mounted button — whichever copy is the visible one shows it.
 const googleUiSubscribers = new Set<{
   setLoading: (value: boolean) => void;
   onError: (message: string) => void;
@@ -50,7 +48,13 @@ export function useOAuthMutation(
   /** Which auth screen the user was on. Recorded as attribution context and
    *  used to label returning-user events; new-vs-returning itself now comes
    *  from the server's `isNewUser`, not from guessing at this. */
-  surface: "register" | "welcome" | "login" | "unknown" = "unknown",
+  surface: "register" | "welcome" | "login" | "one_tap" | "unknown" = "unknown",
+  /**
+   * Sign in where the user already is (Google One Tap on the feed) instead of
+   * navigating to the post-auth destination. Viewer-scoped queries refetch on
+   * their own (RefetchOnAuthChange).
+   */
+  { stayOnPage = false }: { stayOnPage?: boolean } = {},
 ) {
   // AttributionInput.surface is a free-text hint; "unknown" carries nothing.
   const surfaceForInput = surface === "unknown" ? undefined : surface;
@@ -121,7 +125,7 @@ export function useOAuthMutation(
       if (data.loginWithGoogle.isNewUser) trackSignup("google");
       else trackAuthSuccess("google", surface);
       setAuth(data.loginWithGoogle as Parameters<typeof setAuth>[0]);
-      goToDestination();
+      if (!stayOnPage) goToDestination();
       return null;
     } catch (err) {
       return extractError(err);
@@ -167,127 +171,82 @@ export function useOAuthMutation(
   }
 
   // ── Google Identity Services ───────────────────────────────────────────────
-  // Installed PWAs are stricter about popup blockers. The old approach rendered
-  // a hidden GIS button after a Shopi click, then called `.click()` on it. That
-  // loses the trusted user gesture while the SDK is loading. Render Google's
-  // button directly instead, so the user's tap opens the GIS popup itself.
-  const renderGoogleButton = useCallback(
-    async (
+  // Google's own button, shown as Google draws it, is the tap target. It must
+  // stay visible: Google ignores clicks on its button when it can't see it
+  // (clickjacking protection), so the old invisible button under a
+  // Shopi-styled one did nothing in browsers that report visibility. GIS is
+  // set up once per page in lib/googleIdentity; this registers the screen's
+  // credential handler, renders one button, and starts One Tap (auto sign-in
+  // for returning users). Returns its cleanup at once — not after the script
+  // loads — so a button that unmounts mid-load leaves nothing registered.
+  const mountGoogleButton = useCallback(
+    (
       container: HTMLElement,
-      onError: (message: string) => void,
-    ): Promise<() => void> => {
+      {
+        onError,
+        onReady,
+        text,
+        dark,
+      }: {
+        onError: (message: string) => void;
+        onReady: () => void;
+        text: "signin_with" | "signup_with" | "continue_with";
+        dark: boolean;
+      },
+    ): (() => void) => {
       const subscriber = { setLoading, onError };
       googleUiSubscribers.add(subscriber);
-      const unsubscribe = () => googleUiSubscribers.delete(subscriber);
+      const unregister = registerCredentialHandler(async (response) => {
+        if (!response.credential) {
+          broadcastGoogleError(response.error ?? "Google sign-in cancelled.");
+          return;
+        }
+        broadcastGoogleLoading(true);
+        const error = await loginWithGoogle(response.credential);
+        broadcastGoogleLoading(false);
+        if (error) broadcastGoogleError(error);
+        else allowGoogleAutoSelect();
+      });
+      let cancelled = false;
+      const cleanup = () => {
+        cancelled = true;
+        googleUiSubscribers.delete(subscriber);
+        unregister();
+      };
 
       const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
       if (!googleClientId) {
         onError("Google client ID not configured.");
-        return unsubscribe;
+        return cleanup;
       }
 
-      type GIS = {
-        accounts: {
-          id: {
-            initialize: (config: object) => void;
-            renderButton: (element: HTMLElement, options: object) => void;
-          };
-        };
-      };
-
-      const googleLoadError =
-        "Google sign-in is not available in this in-app browser. Use email below, or open Shopi in your browser and try Google again.";
-
-      const getGoogle = (): Promise<GIS> =>
-        new Promise((resolve, reject) => {
-          const existing = (window as unknown as { google?: GIS }).google;
-          if (existing) {
-            resolve(existing);
-            return;
+      void (async () => {
+        try {
+          const id = await loadGoogleIdentity();
+          if (cancelled) return;
+          initializeGoogleIdentity(id, googleClientId);
+          container.replaceChildren();
+          id.renderButton(container, {
+            type: "standard",
+            theme: dark ? "filled_black" : "outline",
+            size: "large",
+            text,
+            // Pill, like the auth screens' other buttons.
+            shape: "pill",
+            logo_alignment: "center",
+            // Full width of the form; Google caps its button at 400px.
+            width: Math.min(400, Math.max(200, Math.floor(container.getBoundingClientRect().width))),
+          });
+          onReady();
+          promptOneTap(id);
+        } catch (error) {
+          if (!cancelled) {
+            onError(error instanceof Error ? error.message : "Google sign-in failed to load.");
           }
+        }
+      })();
 
-          const selector = 'script[src="https://accounts.google.com/gsi/client"]';
-          const failedScript = document.querySelector<HTMLScriptElement>(
-            `${selector}[data-shopi-load-state="error"]`,
-          );
-          failedScript?.remove();
-
-          const script =
-            document.querySelector<HTMLScriptElement>(selector) ??
-            document.createElement("script");
-          let settled = false;
-          const resolveGoogle = () => {
-            if (settled) return;
-            const google = (window as unknown as { google?: GIS }).google;
-            if (google) {
-              settled = true;
-              script.dataset.shopiLoadState = "loaded";
-              window.clearTimeout(timeoutId);
-              resolve(google);
-            } else {
-              settled = true;
-              script.dataset.shopiLoadState = "error";
-              window.clearTimeout(timeoutId);
-              reject(new Error(googleLoadError));
-            }
-          };
-          const rejectGoogle = () => {
-            if (settled) return;
-            settled = true;
-            script.dataset.shopiLoadState = "error";
-            window.clearTimeout(timeoutId);
-            reject(new Error(googleLoadError));
-          };
-          const timeoutId = window.setTimeout(rejectGoogle, 8000);
-
-          if (!script.parentNode) {
-            script.src = "https://accounts.google.com/gsi/client";
-            script.async = true;
-            script.defer = true;
-            script.addEventListener("load", resolveGoogle, { once: true });
-            script.addEventListener("error", rejectGoogle, { once: true });
-            document.head.appendChild(script);
-          } else {
-            script.addEventListener("load", resolveGoogle, { once: true });
-            script.addEventListener("error", rejectGoogle, { once: true });
-          }
-
-        });
-
-      try {
-        const google = await getGoogle();
-        container.replaceChildren();
-        google.accounts.id.initialize({
-          client_id: googleClientId,
-          callback: async (response: { credential?: string; error?: string }) => {
-            if (!response.credential) {
-              broadcastGoogleError(response.error ?? "Google sign-in cancelled.");
-              return;
-            }
-            broadcastGoogleLoading(true);
-            const error = await loginWithGoogle(response.credential);
-            broadcastGoogleLoading(false);
-            if (error) broadcastGoogleError(error);
-          },
-          ux_mode: "popup",
-          cancel_on_tap_outside: true,
-          use_fedcm_for_button: true,
-        });
-        google.accounts.id.renderButton(container, {
-          type: "standard",
-          // Google's outline theme supplies the expected white surface in
-          // light mode; the Shopi wrapper provides the visible outer border.
-          theme: "outline",
-          size: "large",
-          text: "continue_with",
-          shape: "pill",
-          logo_alignment: "left",
-          width: Math.max(260, Math.floor(container.getBoundingClientRect().width)),
-        });
-      } catch (error) {
-        onError(error instanceof Error ? error.message : "Google sign-in failed to load.");
-      }
-      return unsubscribe;
+      return cleanup;
     },
     // loginWithGoogle closes over the current locale/destination.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -403,7 +362,7 @@ export function useOAuthMutation(
     loginWithGoogle,
     loginWithApple,
     loginWithFacebook,
-    renderGoogleButton,
+    mountGoogleButton,
     triggerApple,
     triggerFacebook,
     loading: loading || mutationLoading,

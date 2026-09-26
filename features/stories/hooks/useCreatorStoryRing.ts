@@ -5,7 +5,7 @@ import { useQuery } from "@apollo/client/react";
 import { useAuthStore } from "@/stores/auth";
 import { StoriesFeedDocument } from "@/types/__generated__/graphql";
 import { useSeenStories } from "../lib/seenStories";
-import { useAuthHydrated } from "../lib/useAuthHydrated";
+import { useAuthHydrated } from "@/lib/auth/useAuthHydrated";
 import { toTrayRing, type TrayRing } from "./useStoriesFeed";
 
 /**

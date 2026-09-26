@@ -10,6 +10,7 @@ import {
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { FeedHeader } from "./FeedHeader";
+import { GoogleOneTap } from "@/features/auth/components/GoogleOneTap";
 import FeedGrid from "./FeedGrid";
 import { FeedCardsSkeleton, FeedSkeleton } from "./FeedSkeleton";
 import { useUiStore } from "@/stores/ui";
@@ -187,6 +188,10 @@ export function FeedPage({ lang, visible = true, initialItems }: Props) {
 
   return (
     <div>
+      {/* Google One Tap for logged-out visitors — only while the feed is the
+          screen being shown (FeedPage stays mounted behind other routes). */}
+      <GoogleOneTap lang={lang} active={visible} />
+
       {/* ── Desktop: loaded only on a desktop viewport. Until the media query
           resolves, desktop viewports see the desktop-shaped skeleton (inside
           `hidden md:block` so it never shows on phones) instead of a blank

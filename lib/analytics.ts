@@ -32,7 +32,7 @@ export function trackSignup(method: AuthMethod) {
  */
 export function trackAuthSuccess(
   method: AuthMethod,
-  surface: "register" | "welcome" | "login" | "unknown",
+  surface: "register" | "welcome" | "login" | "one_tap" | "unknown",
 ) {
   try {
     track("auth_success", { method, surface, ...attributionProps() });

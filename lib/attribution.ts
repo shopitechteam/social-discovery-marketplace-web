@@ -265,7 +265,7 @@ export function getAttribution(): Attribution | null {
  * from the request's own Referer header.
  */
 export function attributionInput(
-  surface?: "register" | "welcome" | "login",
+  surface?: "register" | "welcome" | "login" | "one_tap",
 ): AttributionInput | undefined {
   const a = getAttribution();
   if (!a) return undefined;

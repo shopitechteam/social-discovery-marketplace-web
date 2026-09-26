@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTheme } from "next-themes";
 import { useOAuthMutation } from "@/features/auth/hooks/useOAuthMutation";
-import { GoogleIcon } from "./AuthIcons";
 
 interface Props {
   lang: string;
@@ -13,68 +13,96 @@ interface Props {
   surface?: "register" | "welcome" | "login";
 }
 
+/** Google's own wording for the button, matched to this screen's verb. */
+function googleButtonText(verb: string): "signin_with" | "signup_with" | "continue_with" {
+  if (/^sign\s*in/i.test(verb)) return "signin_with";
+  if (/^sign\s*up/i.test(verb)) return "signup_with";
+  return "continue_with";
+}
+
+/**
+ * "Sign in with Google", drawn by Google.
+ *
+ * It used to be Google's button made invisible under a Shopi-styled one.
+ * Google deliberately ignores clicks on its button when it isn't visible
+ * (clickjacking protection) — in browsers that can report that, tapping the
+ * styled button did nothing at all, which is why Google sign-in "sometimes
+ * didn't fire". The visible official button is also what Google's branding
+ * rules ask for.
+ */
 export function SocialButtons({
   lang,
   from,
   verb = "Continue",
   surface = "welcome",
 }: Props) {
-  const { renderGoogleButton, loading } = useOAuthMutation(lang, from, surface);
+  const { mountGoogleButton, loading } = useOAuthMutation(lang, from, surface);
+  const { resolvedTheme } = useTheme();
+  const dark = resolvedTheme === "dark";
+  const text = googleButtonText(verb);
   const [error, setError] = useState<string | null>(null);
   const [googleReady, setGoogleReady] = useState(false);
+  /** Bumped by "Try again" to mount the button afresh after a failed load. */
+  const [attempt, setAttempt] = useState(0);
   const googleButtonRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const container = googleButtonRef.current;
     if (!container) return;
-    setError(null);
-    setGoogleReady(false);
-    let cancelled = false;
-    let unsubscribe: (() => void) | undefined;
-    void renderGoogleButton(container, setError).then((unsub) => {
-      unsubscribe = unsub;
-      if (!cancelled) setGoogleReady(container.childNodes.length > 0);
+    const unmount = mountGoogleButton(container, {
+      text,
+      dark,
+      onError: setError,
+      onReady: () => {
+        setError(null);
+        setGoogleReady(true);
+      },
     });
-    // Auth pages mount this component twice at once (a mobile copy and a
-    // desktop copy, CSS-toggled) — unsubscribing on unmount keeps this
-    // instance's loading/error state from being written to after it's gone.
     return () => {
-      cancelled = true;
-      unsubscribe?.();
+      unmount();
+      setGoogleReady(false);
     };
-  }, [renderGoogleButton]);
+    // Re-drawn when the theme flips, so the button matches it.
+  }, [mountGoogleButton, attempt, text, dark]);
+
+  const failedToLoad = !!error && !googleReady;
 
   return (
     <div className="flex flex-col gap-3">
       {error && (
-        <p className="rounded-xl border border-error/20 bg-error/10 px-3 py-2 text-center text-xs font-medium text-error">
-          {error}
-        </p>
+        <div className="rounded-xl border border-error/20 bg-error/10 px-3 py-2 text-center text-xs font-medium text-error">
+          <p>{error}</p>
+          {failedToLoad && (
+            <button
+              type="button"
+              onClick={() => {
+                setError(null);
+                setAttempt((n) => n + 1);
+              }}
+              className="mt-1 font-bold underline underline-offset-2"
+            >
+              Try again
+            </button>
+          )}
+        </div>
       )}
 
-      {/* The real GIS button remains the click target; the visible layer gives
-          Shopi a clean, consistent button without breaking popup trust.
-          Until Google's script has actually rendered its button into
-          googleButtonRef, that overlay div is empty — but it still sits on
-          top (z-20) and was still catching clicks, which silently swallowed
-          the tap with no popup and no feedback. Disable pointer events on
-          the whole control for that window, same as the post-click `loading`
-          state, so an early click does nothing visible rather than nothing
-          at all. */}
+      {/* The same pill Google draws, as a placeholder while its script loads,
+          so the form doesn't jump when the button appears. Inert while a
+          sign-in is completing. */}
       <div
         aria-busy={loading || !googleReady}
-        className={`relative flex h-12 w-full items-center justify-center overflow-hidden rounded-xl border border-border bg-app shadow-sm transition-colors duration-200 ${loading || !googleReady ? "pointer-events-none opacity-60" : "hover:border-primary/35 hover:bg-surface"}`}
+        className={`relative flex min-h-11 w-full items-center justify-center ${loading ? "pointer-events-none opacity-60" : ""}`}
       >
-        {!googleReady ? (
-          <div className="absolute inset-0 animate-pulse bg-[rgb(var(--color-bg-subtle)/0.5)]" />
-        ) : null}
-        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center gap-3 px-4 text-base font-semibold text-default">
-          <GoogleIcon />
-          <span>{verb} with Google</span>
-        </div>
+        {!googleReady && !failedToLoad && (
+          <div
+            className="absolute inset-x-0 top-1/2 mx-auto h-10 max-w-100 -translate-y-1/2 animate-pulse rounded-full border border-border bg-[rgb(var(--color-bg-subtle)/0.5)]"
+            aria-hidden
+          />
+        )}
         <div
           ref={googleButtonRef}
-          className="absolute inset-0 z-20 flex items-center justify-center overflow-hidden rounded-xl opacity-0"
+          className="relative flex w-full items-center justify-center"
         />
       </div>
     </div>
