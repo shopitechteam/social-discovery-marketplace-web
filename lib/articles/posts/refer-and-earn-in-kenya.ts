@@ -6,7 +6,7 @@ import type { Article } from "../types.ts";
  *
  * Every number here mirrors the programme terms in
  * shopi-social-commerce-api/src/modules/referral/referral.constants.ts:
- * KSh 200, 5 sellers, 5 listings, a 14-day window to type a code in. Change
+ * KSh 200 per seller, 5 listings, a 14-day window to type a code in. Change
  * them there and they change in the app at once — this article has to be
  * edited by hand (and so does how-to-make-money-online-in-kenya-without-investment.ts).
  */
@@ -17,9 +17,9 @@ export const article: Article = {
   title: "Refer and Earn in Kenya: Get Paid on M-Pesa for Inviting Sellers",
   seoTitle: "Refer and Earn in Kenya: Get Paid on M-Pesa",
   seoDescription:
-    "Refer and earn in Kenya with Shopi: get KSh 200 on M-Pesa for every 5 sellers you invite who each post 5 listings. Free to join. Rules and tips inside.",
+    "Refer and earn in Kenya with Shopi: invite a seller, and when they post 5 listings you get KSh 200 on M-Pesa. Free to join, no limit. Rules and tips.",
   excerpt:
-    "Shopi's Invite & earn is a free way to refer and earn in Kenya: share your invite link, and every time 5 sellers you invited each post 5 real listings, you get KSh 200 on M-Pesa. There is no fee to join and no limit on how many rewards you can earn.",
+    "Shopi's Invite & earn is a free way to refer and earn in Kenya: share your invite link, and for every seller who joins with it and posts 5 real listings, you get KSh 200 on M-Pesa. There is no fee to join and no limit on how many sellers you can invite.",
   primaryKeyword: "refer and earn in Kenya",
   keywords: [
     "referral programs in Kenya",
@@ -46,16 +46,16 @@ export const article: Article = {
           type: "list",
           ordered: true,
           items: [
-            "**Open Invite & earn.** Sign in, go to your profile and tap **Invite & earn**. You'll see your personal invite link, a short invite code and a tracker showing how many sellers you have.",
+            "**Open Invite & earn.** Sign in, go to your profile and tap **Invite & earn**. You'll see your personal invite link, a short invite code and how much you've earned so far.",
             "**Share your link.** Tap **Invite on WhatsApp** to send it straight to a chat or your status, or copy the link to share anywhere else.",
             "**Your friend signs up with the link** and starts posting what they have to sell. Posting is free for them, and Shopi takes no commission on their sales.",
-            "**They qualify at 5 listings.** Once a seller you invited has 5 real listings live on Shopi, they count toward your next reward. Your tracker fills in with their photo.",
-            "**Every 5 qualified sellers earns you KSh 200 on M-Pesa.** The Shopi team sends it to your number and you get a notification with the M-Pesa transaction code.",
+            "**They post 5 listings.** You can watch each seller's progress — 2 of 5, 3 of 5 — in your **Your sellers** list.",
+            "**You earn KSh 200 on M-Pesa.** The moment a seller you invited has 5 real listings live on Shopi, you've earned KSh 200 for them. The Shopi team sends it to your number and you get a notification with the M-Pesa transaction code.",
           ],
         },
         {
           type: "p",
-          text: "Rewards repeat. Five qualified sellers earn KSh 200, ten earn KSh 400, fifteen earn KSh 600 — there is no cap. The tracker resets to zero after each completed group of five, so you always know exactly how many more sellers you need.",
+          text: "Every seller earns you a separate reward, and there is no cap. One qualified seller earns KSh 200, three earn KSh 600, ten earn KSh 2,000. You don't have to wait for anyone else — each seller pays out on their own as soon as they reach 5 listings.",
         },
       ],
     },
@@ -80,7 +80,7 @@ export const article: Article = {
           type: "callout",
           tone: "warning",
           title: "Every reward is checked before it's paid",
-          text: "Accounts you create for yourself, listings copied from other sellers, or items nobody is actually selling don't count. If a seller is rejected after review, they stop counting toward your next reward — they don't cost you anything already paid.",
+          text: "Accounts you create for yourself, listings copied from other sellers, or items nobody is actually selling don't count. If a seller is rejected after review, the reward for that seller is withdrawn if it hasn't been paid yet — your other sellers' rewards aren't affected.",
         },
         {
           type: "p",
@@ -99,7 +99,7 @@ export const article: Article = {
         {
           type: "list",
           items: [
-            "When your fifth qualified seller comes in, you get a notification that you've earned KSh 200, and the reward shows as **On its way**.",
+            "When a seller you invited posts their fifth listing, you get a notification that you've earned KSh 200, and the reward shows as **On its way**.",
             "The Shopi team reviews the sellers behind it and sends the money to your M-Pesa number.",
             "Once it's sent, you get a second notification with the M-Pesa transaction code, and the reward shows as **Paid** in your rewards list.",
           ],
@@ -178,7 +178,7 @@ export const article: Article = {
         {
           type: "callout",
           tone: "tip",
-          text: "Helping people sell is a way to earn in its own right. Many Kenyans take a small commission for listing and selling items for relatives and neighbours — and every one of those sellers who joins with your link counts toward your reward too. More ideas are in our guide to [how to make money online in Kenya without investment](/blog/how-to-make-money-online-in-kenya-without-investment).",
+          text: "Helping people sell is a way to earn in its own right. Many Kenyans take a small commission for listing and selling items for relatives and neighbours — and every one of those sellers who joins with your link and posts 5 listings earns you KSh 200 too. More ideas are in our guide to [how to make money online in Kenya without investment](/blog/how-to-make-money-online-in-kenya-without-investment).",
         },
       ],
     },
@@ -213,7 +213,7 @@ export const article: Article = {
       blocks: [
         {
           type: "p",
-          text: "To be straightforward: KSh 200 for every five sellers is a thank-you, not a salary. The people who get the most from Shopi sell things themselves and use Invite & earn on top — every seller they help onto Shopi is someone they might buy from, sell to or partner with later.",
+          text: "To be straightforward: KSh 200 per seller is a thank-you, not a salary. The people who get the most from Shopi sell things themselves and use Invite & earn on top — every seller they help onto Shopi is someone they might buy from, sell to or partner with later.",
         },
         {
           type: "p",
@@ -229,7 +229,7 @@ export const article: Article = {
     },
     {
       q: "How much can I earn from Shopi referrals?",
-      a: "KSh 200 for every 5 qualified sellers, with no limit. Ten qualified sellers earn KSh 400, fifteen earn KSh 600, and so on.",
+      a: "KSh 200 for every seller you invite who posts 5 listings, with no limit. Three qualified sellers earn KSh 600, ten earn KSh 2,000, and so on.",
     },
     {
       q: "Does my friend need to buy anything for me to earn?",
@@ -245,7 +245,7 @@ export const article: Article = {
     },
     {
       q: "When do I get paid?",
-      a: "When your fifth qualified seller comes in, the reward shows as On its way. The Shopi team reviews it and sends KSh 200 to your M-Pesa, and you're notified with the transaction code when it's sent.",
+      a: "As soon as a seller you invited has 5 live listings, the reward shows as On its way. The Shopi team reviews the seller and sends KSh 200 to your M-Pesa, and you're notified with the transaction code when it's sent.",
     },
   ],
   marketplaceLinks: [

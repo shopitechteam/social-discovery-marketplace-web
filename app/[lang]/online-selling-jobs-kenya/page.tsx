@@ -244,7 +244,7 @@ export default async function OnlineSellingJobsKenyaPage({ params }: Props) {
               {
                 href: "/blog/refer-and-earn-in-kenya",
                 title: "Refer and earn in Kenya",
-                body: "Get KSh 200 on M-Pesa for every 5 sellers you invite who each post 5 listings.",
+                body: "Invite a seller, and when they post 5 listings you get KSh 200 on M-Pesa.",
               },
             ].map(({ href, title, body }) => (
               <Link

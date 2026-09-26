@@ -180,7 +180,7 @@ export const article: Article = {
         },
         {
           type: "p",
-          text: "Shopi's Invite & earn pays **KSh 200 on M-Pesa for every 5 sellers** who join through your invite link and each post 5 real listings. It's free, there's no limit on how many rewards you can earn, and it fits neatly with selling for others: the people you help list their things are exactly the sellers who count. The full rules are in our guide to [refer and earn in Kenya](/blog/refer-and-earn-in-kenya).",
+          text: "Shopi's Invite & earn pays **KSh 200 on M-Pesa for every seller** who joins through your invite link and posts 5 real listings. It's free, there's no limit on how many sellers you can invite, and it fits neatly with selling for others: the people you help list their things are exactly the sellers who count. The full rules are in our guide to [refer and earn in Kenya](/blog/refer-and-earn-in-kenya).",
         },
       ],
     },
