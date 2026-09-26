@@ -105,8 +105,7 @@ export function SideNav({ lang = "en" }: { lang: string }) {
               whatever the wordmark happened to measure, which is what put it
               out of line with the column below. */}
           <Link
-            href={`/${lang}`}
-            scroll={false}
+            href={`/${lang}?view=home`}
             className="flex h-full w-(--side-nav-width,280px) shrink-0 items-center px-6"
             aria-label="Shopi home"
           >

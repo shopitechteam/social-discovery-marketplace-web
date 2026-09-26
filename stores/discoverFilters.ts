@@ -38,8 +38,9 @@ export type DiscoverSpecFacet = {
 /** Centre of the distance filter — the viewer's position when they asked. */
 export type DiscoverNearby = { latitude: number; longitude: number };
 
-/** Radius stops the distance slider moves between, in km. */
-export const DISTANCE_STOPS_KM = [1, 2, 5, 10, 20, 30, 50, 100] as const;
+/** Distance filter range, in whole km. */
+export const DISTANCE_MIN_KM = 1;
+export const DISTANCE_MAX_KM = 100;
 export const DEFAULT_RADIUS_KM = 10;
 
 type DiscoverFilterState = {

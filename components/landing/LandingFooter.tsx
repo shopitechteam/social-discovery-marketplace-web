@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { HomeLanguageSelect } from "./HomeLanguageSelect";
 //import { siteConfig } from "@/config/site";
 import type { Dictionary } from "@/i18n/getDictionary";
 import { ShopiLogo } from "@/features/auth/components/AuthIcons";
@@ -7,10 +8,92 @@ import { COUNTIES } from "@/lib/counties";
 export function LandingFooter({
   dict,
   lang = "en",
+  homeOnly = false,
 }: {
   dict?: Dictionary;
   lang?: string;
+  homeOnly?: boolean;
 }) {
+  if (homeOnly) {
+    const sw = lang === "sw";
+    const label = (en: string, kiswahili: string) => sw ? kiswahili : en;
+    const homeLinks = [
+      {
+        heading: label("Product", "Bidhaa"),
+        links: [
+          { label: label("Features", "Faida"), href: `/${lang}#features` },
+          { label: label("How it works", "Jinsi inavyofanya kazi"), href: `/${lang}#how-it-works` },
+          { label: label("The feed", "Bidhaa zinazouzwa"), href: "/en/for-you" },
+          { label: "Shopi Agent", href: "/en/shopi-agent" },
+          { label: label("Sell on Shopi", "Uza kwenye Shopi"), href: "/en/upload" },
+          { label: label("TikTok video downloader", "Pakua video za TikTok"), href: "/en/tiktok-downloader" },
+        ],
+      },
+      {
+        heading: label("Marketplace", "Soko"),
+        links: [
+          { label: label("Open For You", "Angalia For You"), href: "/en/for-you" },
+          { label: label("Explore listings", "Vinjari matangazo"), href: "/en/explore" },
+          { label: label("Search", "Tafuta"), href: "/en/search" },
+          { label: label("Sell in Kenya", "Uza Kenya"), href: "/en/sell-in-kenya" },
+          { label: label("Sell a car", "Uza gari"), href: "/en/sell-car-kenya" },
+          { label: label("Property", "Ardhi na nyumba"), href: "/en/property-for-sale-kenya" },
+          { label: label("Beauty & cosmetics", "Urembo"), href: "/en/beauty-cosmetics-kenya" },
+          { label: label("Phones & electronics", "Simu na vifaa vya elektroniki"), href: "/en/phones-electronics-kenya" },
+          { label: label("Start selling", "Anza kuuza"), href: "/en/upload" },
+        ],
+      },
+      {
+        heading: label("Counties", "Kaunti"),
+        links: COUNTIES.slice(0, 6).map((county) => ({ label: county.name, href: `/en/marketplace/${county.slug}` })),
+      },
+      {
+        heading: label("Company", "Kampuni"),
+        links: [
+          { label: label("About", "Kutuhusu"), href: "/en/about" },
+          { label: label("FAQ", "Maswali"), href: "/en/faq" },
+          { label: label("Compare marketplaces", "Linganisha masoko"), href: "/en/marketplace-alternatives-kenya" },
+          { label: "Jiji alternative", href: "/en/jiji-alternative-kenya" },
+          { label: "PigiaMe alternative", href: "/en/pigiame-alternative-kenya" },
+          { label: "Blog", href: "/en/blog" },
+          { label: label("Online selling jobs", "Kazi za kuuza mtandaoni"), href: "/en/online-selling-jobs-kenya" },
+        ],
+      },
+      {
+        heading: label("Legal", "Sheria"),
+        links: [
+          { label: label("Privacy Policy", "Sera ya faragha"), href: "/en/privacy" },
+          { label: label("Terms of Service", "Masharti ya huduma"), href: "/en/terms" },
+          { label: label("Cookie Policy", "Sera ya kuki"), href: "/en/cookies" },
+          { label: label("Community Guidelines", "Kanuni za jamii"), href: "/en/community-guidelines" },
+          { label: label("Prohibited Items", "Bidhaa zilizopigwa marufuku"), href: "/en/prohibited-items" },
+          { label: label("Safety Centre", "Kituo cha usalama"), href: "/en/safety-centre" },
+          { label: label("Contact", "Wasiliana nasi"), href: "/en/contact" },
+        ],
+      },
+    ];
+    return (
+      <footer className="bg-[#112126] text-white">
+        <div className="mx-auto max-w-7xl px-5 py-12 md:px-8 md:py-18">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-10 border-b border-white/20 pb-12 sm:grid-cols-3 lg:grid-cols-[1.6fr_repeat(5,minmax(0,1fr))] lg:gap-7">
+            <div className="col-span-2 sm:col-span-3 lg:col-span-1">
+              <Link href={`/${lang}`} className="inline-flex items-center gap-2 text-white no-underline"><ShopiLogo className="h-9 w-9" /><span className="text-xl font-bold">Shopi</span></Link>
+              <p className="mt-4 max-w-xs text-sm leading-relaxed text-white/75">{sw ? "Gundua, nunua na uuze karibu nawe kwa msaada wa Shopi Agent." : "Discover, buy and sell locally with help from Shopi Agent."}</p>
+              <Link href="/en/upload" className="mt-6 inline-flex rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white no-underline">{sw ? "Weka tangazo" : "Create a post"}</Link>
+              <a href="https://x.com/shopiapp" target="_blank" rel="noopener noreferrer" className="mt-6 block w-fit text-sm text-white/75 hover:text-white">Shopi on X</a>
+            </div>
+            {homeLinks.map(({ heading, links }) => <div key={heading} className="min-w-0">
+              <h3 className="mb-4 text-sm font-semibold text-white">{heading}</h3>
+              <ul className="m-0 flex list-none flex-col gap-3 p-0">
+                {links.map((item) => <li key={item.href + item.label}><Link href={item.href} className="text-sm leading-snug text-white/75 no-underline hover:text-white">{item.label}</Link></li>)}
+              </ul>
+            </div>)}
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-5 pt-7 text-sm text-white/70"><span>© {new Date().getFullYear()} Shopi · {sw ? "Imetengenezwa Kenya" : "Made in Kenya"}</span><HomeLanguageSelect current={sw ? "sw" : "en"} /></div>
+        </div>
+      </footer>
+    );
+  }
   return (
     // Self-contained landing shell: pages that render the footer outside the
     // landing wrapper still get the same inset and --landing-page-* values.

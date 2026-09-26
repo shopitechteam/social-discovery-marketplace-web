@@ -10,6 +10,7 @@ import {
   useState,
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import { gql, NetworkStatus, type TypedDocumentNode } from "@apollo/client";
 import { useQuery } from "@apollo/client/react";
 import {
@@ -20,6 +21,7 @@ import {
   Check,
   Search,
   SlidersHorizontal,
+  Sparkles,
   X,
 } from "lucide-react";
 import {
@@ -40,6 +42,8 @@ import {
   type DiscoverContentType,
 } from "@/stores/discoverFilters";
 import { useSearchStore } from "@/stores/search";
+import { useUiStore } from "@/stores/ui";
+import { SHOW_ASK_SHOPI } from "@/features/feed/utils/askShopiAvailability";
 import type {
   ContentCardFieldsFragment,
   ContentType,
@@ -55,6 +59,19 @@ import {
 import { useInfiniteScroll } from "@/features/feed/hooks/useInfiniteScroll";
 import { usePaginationGuard } from "@/features/feed/hooks/useFeed";
 import { DISCOVERY_CATEGORIES, type CategoryFacet } from "../categories";
+
+/**
+ * Ask Shopi, the buyer agent: describe what you want (or send a photo) and it
+ * finds listings. Loaded only when opened, and only in public development
+ * builds — the flag is a build-time constant, so production bundles leave it
+ * out entirely.
+ */
+const AskShopiGrid = SHOW_ASK_SHOPI
+  ? dynamic(
+      () => import("@/features/feed/components/AskShopiGrid").then((mod) => mod.AskShopiGrid),
+      { ssr: false },
+    )
+  : null;
 
 type DiscoverySort =
   | "RELEVANCE"
@@ -1051,19 +1068,19 @@ function FilterFieldList({
         ) : null}
       </div>
 
-      <div className="flex shrink-0 gap-3 border-t border-border px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3">
+      <div className="flex shrink-0 gap-2.5 border-t border-border px-4 pb-[calc(env(safe-area-inset-bottom)+10px)] pt-2.5">
         <button
           type="button"
           onClick={onClear}
           disabled={!canClear}
-          className="h-12 flex-1 rounded-xl border border-border text-sm font-semibold text-main transition-opacity active:opacity-70 disabled:opacity-40"
+          className="h-10 shrink-0 rounded-lg border border-border px-5 text-[13px] font-semibold text-main transition-opacity active:opacity-70 disabled:opacity-40"
         >
           Clear
         </button>
         <button
           type="button"
           onClick={onClose}
-          className="h-12 flex-1 rounded-xl bg-primary text-sm font-semibold text-white transition-opacity active:opacity-80"
+          className="h-10 flex-1 rounded-lg bg-primary text-[13px] font-semibold text-white transition-opacity active:opacity-80"
         >
           {resultLabel}
         </button>
@@ -1336,6 +1353,9 @@ export function DiscoverPage({ lang }: { lang: string }) {
   const [filterOpen, setFilterOpen] = useState(false);
   // An option list open inside the mobile filter drawer (Category, Make…).
   const [picker, setPicker] = useState<FilterPicker | null>(null);
+  // Ask Shopi, opened full screen over Browse from the search bar.
+  const [askOpen, setAskOpen] = useState(false);
+  const setBottomNavHidden = useUiStore((s) => s.setBottomNavHidden);
   // Spec filters (Make: Toyota…), distance and recency live in the shared
   // store so the desktop sidebar edits the same state as the mobile drawer.
   const specs = useDiscoverFiltersStore((s) => s.specs);
@@ -1674,7 +1694,11 @@ export function DiscoverPage({ lang }: { lang: string }) {
     "All Kenya";
   const locationDepth = locationSheetDepth(locationStep);
   const overlayDepth =
-    (sortOpen ? 1 : 0) + (filterOpen ? 1 : 0) + (picker ? 1 : 0) + locationDepth;
+    (sortOpen ? 1 : 0) +
+    (filterOpen ? 1 : 0) +
+    (picker ? 1 : 0) +
+    (askOpen ? 1 : 0) +
+    locationDepth;
   // Count only what lives inside the filter sheet (location + price + negotiable);
   // category and sort have their own controls outside the sheet.
   const hasLocation = Boolean(
@@ -1734,6 +1758,10 @@ export function DiscoverPage({ lang }: { lang: string }) {
   }, [setSearchDraft]);
 
   const closeTopOverlayState = useCallback(() => {
+    if (askOpen) {
+      setAskOpen(false);
+      return;
+    }
     if (locationStep === "ward") {
       setLocationStep("subcounty");
       return;
@@ -1755,7 +1783,7 @@ export function DiscoverPage({ lang }: { lang: string }) {
       return;
     }
     if (sortOpen) setSortOpen(false);
-  }, [filterOpen, locationStep, picker, sortOpen]);
+  }, [askOpen, filterOpen, locationStep, picker, sortOpen]);
 
   const closeTopOverlayStateRef = useRef(closeTopOverlayState);
 
@@ -1826,6 +1854,35 @@ export function DiscoverPage({ lang }: { lang: string }) {
     setLocationSearch("");
     requestHistoryClose(depth);
   }, [filterOpen, locationStep, picker, requestHistoryClose]);
+
+  const openAsk = useCallback(() => {
+    setSortOpen(false);
+    setAskOpen(true);
+  }, []);
+
+  const closeAsk = useCallback(() => {
+    if (!askOpen) return;
+    setAskOpen(false);
+    requestHistoryClose();
+  }, [askOpen, requestHistoryClose]);
+
+  // The chat's message box owns the bottom of the screen while it's open.
+  useEffect(() => {
+    if (!askOpen) return;
+    setBottomNavHidden(true);
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      // Esc belongs to whatever sits on top: with the chat's history panel
+      // open, it closes the panel, not the whole chat.
+      if (document.querySelector('[role="dialog"][data-state="open"]')) return;
+      closeAsk();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      setBottomNavHidden(false);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [askOpen, closeAsk, setBottomNavHidden]);
 
   const openPicker = useCallback((next: FilterPicker) => {
     setPicker(next);
@@ -2130,6 +2187,17 @@ export function DiscoverPage({ lang }: { lang: string }) {
                     aria-label="Clear search"
                   >
                     <X size={16} />
+                  </button>
+                ) : SHOW_ASK_SHOPI ? (
+                  // Ask Shopi is another way to search — describe it or send a
+                  // photo — so it lives in the search field, not the filters.
+                  <button
+                    type="button"
+                    onClick={openAsk}
+                    className="-my-1 -mr-1.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-primary active:bg-primary/10"
+                    aria-label="Ask Shopi — describe what you want"
+                  >
+                    <Sparkles size={17} />
                   </button>
                 ) : null}
               </div>
@@ -2594,6 +2662,17 @@ export function DiscoverPage({ lang }: { lang: string }) {
           </>
         );
       })()}
+
+      {AskShopiGrid && askOpen ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Ask Shopi"
+          className="fixed inset-0 z-90 overflow-y-auto overscroll-contain bg-surface"
+        >
+          <AskShopiGrid lang={lang} active onClose={closeAsk} />
+        </div>
+      ) : null}
 
       <Drawer
         open={sortOpen}

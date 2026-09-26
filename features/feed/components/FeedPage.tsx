@@ -13,8 +13,6 @@ import { FeedHeader } from "./FeedHeader";
 import { GoogleOneTap } from "@/features/auth/components/GoogleOneTap";
 import FeedGrid from "./FeedGrid";
 import { FeedCardsSkeleton, FeedSkeleton } from "./FeedSkeleton";
-import { useUiStore } from "@/stores/ui";
-import { SHOW_ASK_SHOPI } from "@/features/feed/utils/askShopiAvailability";
 import {
   captureScrollPosition,
   restoreScrollPosition,
@@ -36,10 +34,6 @@ const NearbyGrid = dynamic(
   () => import("./NearbyGrid").then((mod) => mod.NearbyGrid),
   { loading: () => <FeedCardsSkeleton /> },
 );
-const AskShopiGrid = dynamic(
-  () => import("./AskShopiGrid").then((mod) => mod.AskShopiGrid),
-  { loading: () => <FeedCardsSkeleton /> },
-);
 const DesktopFeed = dynamic(() => import("./DesktopFeed"), {
   // Show the desktop-shaped skeleton while the chunk downloads, so the
   // dashboard frame (tabs, column, right rail) is stable from the first paint.
@@ -54,13 +48,12 @@ interface Props {
   initialItems?: ContentCardFieldsFragment[];
 }
 
-type Tab = "for-you" | "following" | "nearby" | "ask-shopi";
+type Tab = "for-you" | "following" | "nearby";
 
 const isTab = (v: string | null): v is Tab =>
   v === "for-you" ||
   v === "following" ||
-  v === "nearby" ||
-  (SHOW_ASK_SHOPI && v === "ask-shopi");
+  v === "nearby";
 
 const DESKTOP_QUERY = "(min-width: 768px)";
 
@@ -104,7 +97,6 @@ function mirrorTabToUrl(tab: Tab) {
 
 export function FeedPage({ lang, visible = true, initialItems }: Props) {
   const searchParams = useSearchParams();
-  const setBottomNavHidden = useUiStore((s) => s.setBottomNavHidden);
   // Only mount the feed tree that can actually be displayed. CSS-hidden client
   // components still execute, query, observe layout, and download all of their
   // dependencies; mounting both variants made mobile load the desktop Mux/HLS
@@ -139,13 +131,6 @@ export function FeedPage({ lang, visible = true, initialItems }: Props) {
   // restored on return.
   const prevTab = useRef<Tab>(initialTab);
 
-  // Ask Shopi owns the bottom edge of the mobile viewport, so remove both the
-  // fixed nav and the space MainShell reserves for it while this tab is active.
-  // `visible` prevents a persistently mounted feed from affecting other routes.
-  useLayoutEffect(() => {
-    setBottomNavHidden(visible && tab === "ask-shopi");
-    return () => setBottomNavHidden(false);
-  }, [setBottomNavHidden, tab, visible]);
 
   // Restore the incoming tab's scroll AFTER the show/hide classes apply but
   // before paint, so there's no flash at the wrong offset. Layout effects run
@@ -249,11 +234,6 @@ export function FeedPage({ lang, visible = true, initialItems }: Props) {
             ) : null}
 
             {/* Ask Shopi — conversational buyer search. Mounts on first open. */}
-            {SHOW_ASK_SHOPI && openedTabs.has("ask-shopi") ? (
-              <div className={tab === "ask-shopi" ? undefined : "hidden"}>
-                <AskShopiGrid lang={lang} active={visible && tab === "ask-shopi"} />
-              </div>
-            ) : null}
           </div>
         </div>
       ) : null}

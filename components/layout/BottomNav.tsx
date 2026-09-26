@@ -37,7 +37,9 @@ const tabs: Tab[] = [
   {
     key: "explore",
     path: "explore",
-    label: "Explore",
+    // "Browse" says what the tab is for; desktop's top nav already calls it
+    // that. The route stays /explore.
+    label: "Browse",
     icon: Search,
   },
   {
