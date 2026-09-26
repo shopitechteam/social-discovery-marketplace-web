@@ -8,6 +8,7 @@ import {
   Sofa,
   Store,
   Tag,
+  Wallet,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -26,6 +27,7 @@ const CATEGORY_ICONS: Record<string, LucideIcon> = {
   electronics: Gamepad2,
   home: Sofa,
   selling: Tag,
+  earn: Wallet,
   shopi: Store,
 };
 

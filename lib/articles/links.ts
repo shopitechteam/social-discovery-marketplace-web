@@ -41,6 +41,9 @@ const STATIC_PATHS = new Set<string>([
   "/online-selling-jobs-kenya",
   "/phones-electronics-kenya",
   "/pigiame-alternative-kenya",
+  // The viewer's own profile. Private, but a CTA may point at it (e.g.
+  // /profile?tab=invite): signed-out readers are sent to sign in and back.
+  "/profile",
   "/prohibited-items",
   "/property-for-sale-kenya",
   "/safety-centre",

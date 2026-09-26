@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 import dayjs from "dayjs";
 import { useMutation, useQuery } from "@apollo/client/react";
@@ -12,7 +13,6 @@ import {
   Loader2,
   Share2,
   Smartphone,
-  UserPlus,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -27,12 +27,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 /**
- * "Invite & earn" — the referrer's side of the seller referral programme.
+ * "Invite & earn" — the referrer's side of the seller referral programme:
+ * invite a seller, and when they post 5 listings you earn KSh 200.
  *
- * Built around one number: how many of the next five sellers are already in.
- * The progress tracker leads, sharing sits right under it (the only action
- * that moves the number), and the details — each invited seller's listing
- * count, payouts, the rules — follow for whoever wants them.
+ * The terms and the totals lead, sharing sits right under them (the only
+ * action that earns anything), and the details — each invited seller's
+ * listing count, payouts, the rules — follow for whoever wants them.
  *
  * Every amount and threshold comes from `terms` on the server, so the copy
  * here can never promise a reward the programme does not pay.
@@ -85,7 +85,7 @@ function displayLink(link: string) {
   return link.replace(/^https?:\/\//, "").replace(/^www\./, "");
 }
 
-export function InviteEarnPanel() {
+export function InviteEarnPanel({ lang }: { lang: string }) {
   const { data, loading, error, refetch } = useQuery(MyReferralProgramDocument, {
     fetchPolicy: "cache-and-network",
   });
@@ -114,9 +114,8 @@ export function InviteEarnPanel() {
     <section className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-5 sm:px-6 md:py-6">
       <ProgressCard program={program} />
       <ShareBlock program={program} />
-      {(program.earnedKes > 0 || program.joinedCount > 0) && <EarningsRow program={program} />}
       <PayoutPhone program={program} />
-      <HowItWorks program={program} />
+      <HowItWorks program={program} lang={lang} />
       <InvitedSellers program={program} />
       {program.rewards.length > 0 && <RewardHistory program={program} />}
       {program.invitedBy && <InvitedByNote inviter={program.invitedBy} program={program} />}
@@ -128,78 +127,33 @@ export function InviteEarnPanel() {
 // ── Progress ─────────────────────────────────────────────────────────────────
 
 function ProgressCard({ program }: { program: Program }) {
-  const { terms, progressCount } = program;
-  const remaining = terms.sellersPerReward - progressCount;
-
-  // The sellers counting toward the next reward, newest first — whose faces
-  // fill the slots. The server settles rewards on the oldest, so these are the
-  // most recent qualifiers.
-  const counting = program.referrals
-    .filter((referral) => referral.status === "QUALIFIED")
-    .sort((a, b) => day(b.qualifiedAt).valueOf() - day(a.qualifiedAt).valueOf())
-    .slice(0, progressCount)
-    .map((referral) => referral.seller);
+  const { terms } = program;
+  const stats = [
+    { label: "Invited", value: String(program.joinedCount) },
+    { label: "Qualified", value: String(program.qualifiedCount) },
+    { label: "Earned", value: kes(program.earnedKes) },
+  ];
 
   return (
     <div className="rounded-3xl bg-primary p-5 text-white">
-      <div>
-        <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-white/85">
-          <Gift className="h-3.5 w-3.5" strokeWidth={2.2} aria-hidden />
-          Invite & earn
-        </p>
-        <h2 className="mt-2 text-[26px] font-black leading-tight">
-          Earn {kes(terms.rewardKes)}
-        </h2>
-        <p className="mt-1 text-sm leading-snug text-white/90">
-          for every {terms.sellersPerReward} sellers you bring to Shopi who post{" "}
-          {terms.minListings} listings.
-        </p>
+      <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-white/85">
+        <Gift className="h-3.5 w-3.5" strokeWidth={2.2} aria-hidden />
+        Invite & earn
+      </p>
+      <h2 className="mt-2 text-[26px] font-black leading-tight">Earn {kes(terms.rewardKes)}</h2>
+      <p className="mt-1 text-sm leading-snug text-white/90">
+        for every seller you invite who posts {terms.minListings} listings.
+      </p>
 
-        <div className="mt-5 flex items-center gap-2" aria-hidden>
-          {Array.from({ length: terms.sellersPerReward }, (_, index) => {
-            const seller = counting[index];
-            return seller ? (
-              <SlotAvatar key={seller.id} person={seller} />
-            ) : (
-              <span
-                key={`empty-${index}`}
-                className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-dashed border-white/55 text-white/70"
-              >
-                <UserPlus className="h-4.5 w-4.5" strokeWidth={2} />
-              </span>
-            );
-          })}
-        </div>
-
-        <p className="mt-3 text-sm font-semibold" aria-live="polite">
-          <span className="text-lg font-black tabular-nums">{progressCount}</span>
-          <span className="text-white/85"> / {terms.sellersPerReward} sellers</span>
-          <span className="font-medium text-white/85">
-            {" "}
-            · {remaining === 1 ? "1 more to go" : `${remaining} more to go`}
-          </span>
-        </p>
-        {program.pendingCount > 0 && (
-          <p className="mt-1 text-xs text-white/85">
-            {program.pendingCount === 1
-              ? "1 seller has joined and is still posting."
-              : `${program.pendingCount} sellers have joined and are still posting.`}
-          </p>
-        )}
-      </div>
+      <dl className="mt-5 grid grid-cols-3 gap-2 border-t border-white/25 pt-4">
+        {stats.map((stat) => (
+          <div key={stat.label} className="min-w-0">
+            <dt className="text-xs text-white/80">{stat.label}</dt>
+            <dd className="mt-0.5 truncate text-lg font-black tabular-nums">{stat.value}</dd>
+          </div>
+        ))}
+      </dl>
     </div>
-  );
-}
-
-function SlotAvatar({ person }: { person: Person }) {
-  return person.avatar ? (
-    <span className="relative h-11 w-11 overflow-hidden rounded-full ring-2 ring-white">
-      <Image src={person.avatar} alt="" fill sizes="44px" className="object-cover" />
-    </span>
-  ) : (
-    <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-sm font-black text-primary ring-2 ring-white">
-      {initials(person.displayName)}
-    </span>
   );
 }
 
@@ -292,24 +246,6 @@ function ShareBlock({ program }: { program: Program }) {
 
 // ── Earnings & payout ────────────────────────────────────────────────────────
 
-function EarningsRow({ program }: { program: Program }) {
-  const tiles = [
-    { label: "Earned", value: kes(program.earnedKes) },
-    { label: "Paid out", value: kes(program.paidKes) },
-    { label: "On its way", value: kes(program.pendingPayoutKes) },
-  ];
-  return (
-    <div className="grid grid-cols-3 gap-2">
-      {tiles.map((tile) => (
-        <div key={tile.label} className="rounded-2xl border border-border bg-elevated px-3 py-3">
-          <p className="text-xs text-muted">{tile.label}</p>
-          <p className="mt-0.5 truncate text-base font-black tabular-nums text-main">{tile.value}</p>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function PayoutPhone({ program }: { program: Program }) {
   const [editing, setEditing] = useState(false);
   const [phone, setPhone] = useState("");
@@ -396,12 +332,12 @@ function PayoutPhone({ program }: { program: Program }) {
 
 // ── Rules ────────────────────────────────────────────────────────────────────
 
-function HowItWorks({ program }: { program: Program }) {
+function HowItWorks({ program, lang }: { program: Program; lang: string }) {
   const { terms } = program;
   const steps = [
     "Share your link with people who have things to sell.",
     `They sign up with your link and post ${terms.minListings} listings.`,
-    `Every ${terms.sellersPerReward} sellers who do earns you ${kes(terms.rewardKes)} on M\u2011Pesa.`,
+    `You get ${kes(terms.rewardKes)} on M\u2011Pesa for each seller who does.`,
   ];
   return (
     <div>
@@ -418,7 +354,10 @@ function HowItWorks({ program }: { program: Program }) {
       </ol>
       <p className="mt-3 text-xs leading-relaxed text-muted">
         Only new Shopi accounts count, and only real listings. We check each seller before
-        paying, so fake accounts or listings won’t earn a reward.
+        paying, so fake accounts or listings won’t earn a reward.{" "}
+        <Link href={`/${lang}/blog/refer-and-earn-in-kenya`} className="text-main underline underline-offset-2">
+          Full rules and tips
+        </Link>
       </p>
     </div>
   );
@@ -539,7 +478,13 @@ function PersonAvatar({ person, size = 40 }: { person: Person; size?: number }) 
 function RewardHistory({ program }: { program: Program }) {
   return (
     <div>
-      <h3 className="text-[15px] font-semibold text-main">Rewards</h3>
+      <div className="flex items-baseline justify-between gap-3">
+        <h3 className="text-[15px] font-semibold text-main">Rewards</h3>
+        <p className="text-xs text-muted">
+          {kes(program.paidKes)} paid
+          {program.pendingPayoutKes > 0 ? ` · ${kes(program.pendingPayoutKes)} on its way` : ""}
+        </p>
+      </div>
       <ul className="mt-2">
         {program.rewards.map((reward) => (
           <li key={reward.id} className="flex items-center gap-3 py-2.5">
@@ -547,19 +492,39 @@ function RewardHistory({ program }: { program: Program }) {
               <Gift className="h-5 w-5" strokeWidth={1.8} aria-hidden />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-main">{kes(reward.amountKes)}</p>
-              <p className="truncate text-xs text-muted">
-                {reward.status === "PAID"
-                  ? `Paid ${day(reward.paidAt).format("D MMM YYYY")}${reward.mpesaReference ? ` · M-Pesa ${reward.mpesaReference}` : ""}`
-                  : reward.status === "CANCELLED"
-                    ? "Withdrawn — a seller behind it didn’t qualify"
-                    : `Earned ${day(reward.earnedAt).format("D MMM YYYY")}`}
+              <p className="truncate text-sm font-semibold text-main">
+                {kes(reward.amountKes)}
+                {reward.seller && (
+                  <span className="font-normal text-muted"> · for {reward.seller.displayName}</span>
+                )}
               </p>
+              {reward.status === "PAID" ? (
+                <>
+                  <p className="text-xs text-muted">Paid {day(reward.paidAt).format("D MMM YYYY")}</p>
+                  {reward.mpesaReference && (
+                    // Its own line so the full code shows — it's what people match
+                    // against their M-Pesa messages.
+                    <p className="break-all text-xs text-muted">
+                      M-Pesa <span className="font-mono font-semibold text-main">{reward.mpesaReference}</span>
+                    </p>
+                  )}
+                </>
+              ) : (
+                <p className="truncate text-xs text-muted">
+                  {reward.status === "CANCELLED"
+                    ? "Withdrawn — this seller didn’t qualify"
+                    : `Earned ${day(reward.earnedAt).format("D MMM YYYY")}`}
+                </p>
+              )}
             </div>
             <span
               className={cn(
                 "shrink-0 text-xs font-semibold",
-                reward.status === "CANCELLED" ? "text-muted" : "text-main",
+                reward.status === "PAID"
+                  ? "rounded-full bg-[rgb(var(--color-success)/0.14)] px-2.5 py-1 text-success"
+                  : reward.status === "CANCELLED"
+                    ? "text-muted"
+                    : "text-main",
               )}
             >
               {reward.status === "PAID" ? "Paid" : reward.status === "CANCELLED" ? "Withdrawn" : "On its way"}

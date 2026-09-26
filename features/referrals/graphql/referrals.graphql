@@ -10,14 +10,12 @@ fragment ReferralProgramFields on ReferralProgram {
   link
   terms {
     rewardKes
-    sellersPerReward
     minListings
     claimWindowDays
   }
   joinedCount
   qualifiedCount
   pendingCount
-  progressCount
   earnedKes
   paidKes
   pendingPayoutKes
@@ -45,6 +43,9 @@ fragment ReferralProgramFields on ReferralProgram {
     earnedAt
     paidAt
     mpesaReference
+    seller {
+      ...ReferralPersonFields
+    }
   }
 }
 

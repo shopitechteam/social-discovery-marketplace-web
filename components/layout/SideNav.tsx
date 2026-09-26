@@ -24,6 +24,11 @@ import { DISCOVERY_CATEGORIES } from "@/features/discover/categories";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { useDiscoverFiltersStore } from "@/stores/discoverFilters";
+import {
+  DistanceFilter,
+  POSTED_WITHIN_OPTIONS,
+  PriceRangeFields,
+} from "@/features/discover/components/DiscoverFilterControls";
 import { useSearchStore } from "@/stores/search";
 import { useThemeStore } from "@/stores/theme";
 import { useNavTabHref } from "@/lib/navTabMemory";
@@ -536,13 +541,19 @@ function DiscoverSidebarFilters() {
   const maxPrice = useDiscoverFiltersStore((s) => s.maxPrice);
   const negotiableOnly = useDiscoverFiltersStore((s) => s.negotiableOnly);
   const subcategories = useDiscoverFiltersStore((s) => s.subcategories);
+  const specFacets = useDiscoverFiltersStore((s) => s.specFacets);
+  const specs = useDiscoverFiltersStore((s) => s.specs);
+  const setSpec = useDiscoverFiltersStore((s) => s.setSpec);
+  const nearby = useDiscoverFiltersStore((s) => s.nearby);
+  const postedWithinDays = useDiscoverFiltersStore((s) => s.postedWithinDays);
+  const setPostedWithinDays = useDiscoverFiltersStore(
+    (s) => s.setPostedWithinDays,
+  );
   const setSelectedSubcategory = useDiscoverFiltersStore(
     (s) => s.setSelectedSubcategory,
   );
   const setSelectedType = useDiscoverFiltersStore((s) => s.setSelectedType);
   const setSort = useDiscoverFiltersStore((s) => s.setSort);
-  const setMinPrice = useDiscoverFiltersStore((s) => s.setMinPrice);
-  const setMaxPrice = useDiscoverFiltersStore((s) => s.setMaxPrice);
   const setNegotiableOnly = useDiscoverFiltersStore(
     (s) => s.setNegotiableOnly,
   );
@@ -567,8 +578,20 @@ function DiscoverSidebarFilters() {
       minPrice ||
       maxPrice ||
       negotiableOnly ||
+      nearby ||
+      postedWithinDays ||
+      specs.length > 0 ||
       sort !== "RELEVANCE",
   );
+  const specValue = (key: string) =>
+    specs.find((spec) => spec.key === key)?.value?.toLowerCase();
+  const optionClass = (active: boolean) =>
+    [
+      "flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-xs transition-colors",
+      active
+        ? "bg-primary/10 font-black text-primary"
+        : "font-semibold text-muted hover:bg-surface hover:text-main",
+    ].join(" ");
 
   return (
     <div className="mt-4 border-t border-border pt-4">
@@ -638,6 +661,16 @@ function DiscoverSidebarFilters() {
                 Clear location
               </button>
             ) : null}
+          </div>
+        </details>
+
+        <details open={Boolean(nearby)} className="group py-3">
+          <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-black text-main">
+            Distance
+            <ChevronDown className="h-4 w-4 text-muted transition-transform group-open:rotate-180" />
+          </summary>
+          <div className="mt-2">
+            <DistanceFilter compact />
           </div>
         </details>
 
@@ -712,30 +745,74 @@ function DiscoverSidebarFilters() {
           </details>
         ) : null}
 
+        {/* Spec fields for the chosen category — Make, Model, Year… — from
+            what its listings actually carry. */}
+        {specFacets.map((facet) => {
+          const current = specValue(facet.key);
+          return (
+            <details key={facet.key} open={Boolean(current)} className="group py-3">
+              <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-black text-main">
+                {facet.label}
+                <ChevronDown className="h-4 w-4 text-muted transition-transform group-open:rotate-180" />
+              </summary>
+              <div className="mt-2 max-h-64 space-y-1 overflow-y-auto">
+                <button
+                  type="button"
+                  onClick={() => setSpec(facet.key, null)}
+                  className={optionClass(!current)}
+                >
+                  Any
+                  {!current ? <Check className="h-3.5 w-3.5" /> : null}
+                </button>
+                {facet.values.map((item) => {
+                  const active = current === item.value.toLowerCase();
+                  return (
+                    <button
+                      key={item.value}
+                      type="button"
+                      onClick={() => setSpec(facet.key, active ? null : item.value)}
+                      className={optionClass(active)}
+                    >
+                      <span className="truncate">{item.value}</span>
+                      <span className="shrink-0 text-[11px] text-muted">{item.count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </details>
+          );
+        })}
+
         <details className="group py-3">
           <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-black text-main">
             Price
             <ChevronDown className="h-4 w-4 text-muted transition-transform group-open:rotate-180" />
           </summary>
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            <input
-              type="number"
-              min={0}
-              inputMode="numeric"
-              placeholder="Min"
-              value={minPrice}
-              onChange={(event) => setMinPrice(event.target.value)}
-              className="h-9 min-w-0 rounded-lg border border-border bg-transparent px-2 text-xs font-semibold outline-none focus:border-primary"
-            />
-            <input
-              type="number"
-              min={0}
-              inputMode="numeric"
-              placeholder="Max"
-              value={maxPrice}
-              onChange={(event) => setMaxPrice(event.target.value)}
-              className="h-9 min-w-0 rounded-lg border border-border bg-transparent px-2 text-xs font-semibold outline-none focus:border-primary"
-            />
+          <div className="mt-2">
+            <PriceRangeFields compact />
+          </div>
+        </details>
+
+        <details open={Boolean(postedWithinDays)} className="group py-3">
+          <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-black text-main">
+            Posted
+            <ChevronDown className="h-4 w-4 text-muted transition-transform group-open:rotate-180" />
+          </summary>
+          <div className="mt-2 space-y-1">
+            {POSTED_WITHIN_OPTIONS.map((option) => {
+              const active = postedWithinDays === option.value;
+              return (
+                <button
+                  key={option.label}
+                  type="button"
+                  onClick={() => setPostedWithinDays(option.value)}
+                  className={optionClass(active)}
+                >
+                  {option.label}
+                  {active ? <Check className="h-3.5 w-3.5" /> : null}
+                </button>
+              );
+            })}
           </div>
         </details>
 

@@ -96,6 +96,20 @@ export const CATEGORIES: ArticleCategory[] = [
     order: 6,
   },
   {
+    slug: "earn",
+    name: "Earn online",
+    title: "Make Money Online in Kenya",
+    description:
+      "Honest ways to make money online in Kenya without investment: selling, reselling, freelancing and referral rewards paid on M-Pesa.",
+    intro:
+      "Practical ways to earn from your phone in Kenya, what each one really pays, and the scams to walk away from.",
+    marketplace: [
+      { kind: "hub", path: "/sell-in-kenya" },
+      { kind: "page", path: "/online-selling-jobs-kenya", label: "Online selling jobs in Kenya" },
+    ],
+    order: 7,
+  },
+  {
     slug: "shopi",
     name: "Inside Shopi",
     title: "Inside Shopi: News and Insights",
@@ -106,7 +120,7 @@ export const CATEGORIES: ArticleCategory[] = [
       { kind: "page", path: "/shopi-agent", label: "Shopi Agent" },
       { kind: "hub", path: "/buy-and-sell-in-kenya" },
     ],
-    order: 7,
+    order: 8,
   },
 ];
 

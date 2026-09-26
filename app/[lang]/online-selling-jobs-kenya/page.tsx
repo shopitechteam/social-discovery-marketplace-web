@@ -230,6 +230,35 @@ export default async function OnlineSellingJobsKenyaPage({ params }: Props) {
           </ol>
         </section>
 
+        <section className="mx-auto max-w-190 px-5 pb-16">
+          <h2 className="mb-6 font-display text-[clamp(1.35rem,2.6vw,1.9rem)] font-bold tracking-normal text-foreground">
+            More ways to earn
+          </h2>
+          <div className="grid gap-4 md:grid-cols-2">
+            {[
+              {
+                href: "/blog/how-to-make-money-online-in-kenya-without-investment",
+                title: "How to make money online in Kenya without investment",
+                body: "Selling what you own, selling for others, product videos, freelancing — and the scams to avoid.",
+              },
+              {
+                href: "/blog/refer-and-earn-in-kenya",
+                title: "Refer and earn in Kenya",
+                body: "Invite a seller, and when they post 5 listings you get KSh 200 on M-Pesa.",
+              },
+            ].map(({ href, title, body }) => (
+              <Link
+                key={href}
+                href={`/${safeLang}${href}`}
+                className="rounded-lg border border-border bg-elevated p-5 no-underline transition-colors hover:border-primary/40"
+              >
+                <h3 className="font-semibold text-foreground">{title}</h3>
+                <p className="mt-2 text-[0.92rem] leading-[1.65] text-muted">{body}</p>
+              </Link>
+            ))}
+          </div>
+        </section>
+
         <section className="bg-surface px-5 py-16">
           <div className="mx-auto max-w-170">
             <div className="mb-7 flex items-center gap-3">
