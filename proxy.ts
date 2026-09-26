@@ -103,7 +103,9 @@ export function proxy(request: NextRequest) {
 
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = `/${locale}/auth/auth-welcome`;
-    loginUrl.search = `?from=${encodeURIComponent(pathname)}`;
+    // Keep the query: /profile?tab=invite should come back to the invite
+    // section after sign-in, not to the bare profile.
+    loginUrl.search = `?from=${encodeURIComponent(`${pathname}${request.nextUrl.search}`)}`;
     return NextResponse.redirect(loginUrl);
   }
 

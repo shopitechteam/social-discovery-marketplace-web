@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 import dayjs from "dayjs";
 import { useMutation, useQuery } from "@apollo/client/react";
@@ -85,7 +86,7 @@ function displayLink(link: string) {
   return link.replace(/^https?:\/\//, "").replace(/^www\./, "");
 }
 
-export function InviteEarnPanel() {
+export function InviteEarnPanel({ lang }: { lang: string }) {
   const { data, loading, error, refetch } = useQuery(MyReferralProgramDocument, {
     fetchPolicy: "cache-and-network",
   });
@@ -116,7 +117,7 @@ export function InviteEarnPanel() {
       <ShareBlock program={program} />
       {(program.earnedKes > 0 || program.joinedCount > 0) && <EarningsRow program={program} />}
       <PayoutPhone program={program} />
-      <HowItWorks program={program} />
+      <HowItWorks program={program} lang={lang} />
       <InvitedSellers program={program} />
       {program.rewards.length > 0 && <RewardHistory program={program} />}
       {program.invitedBy && <InvitedByNote inviter={program.invitedBy} program={program} />}
@@ -396,7 +397,7 @@ function PayoutPhone({ program }: { program: Program }) {
 
 // ── Rules ────────────────────────────────────────────────────────────────────
 
-function HowItWorks({ program }: { program: Program }) {
+function HowItWorks({ program, lang }: { program: Program; lang: string }) {
   const { terms } = program;
   const steps = [
     "Share your link with people who have things to sell.",
@@ -418,7 +419,10 @@ function HowItWorks({ program }: { program: Program }) {
       </ol>
       <p className="mt-3 text-xs leading-relaxed text-muted">
         Only new Shopi accounts count, and only real listings. We check each seller before
-        paying, so fake accounts or listings won’t earn a reward.
+        paying, so fake accounts or listings won’t earn a reward.{" "}
+        <Link href={`/${lang}/blog/refer-and-earn-in-kenya`} className="text-main underline underline-offset-2">
+          Full rules and tips
+        </Link>
       </p>
     </div>
   );

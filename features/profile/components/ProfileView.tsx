@@ -402,7 +402,7 @@ export function ProfileView({ lang }: Props) {
 
           {shownTab === "drafts" && <DraftsGrid lang={lang} />}
 
-          {shownTab === "invite" && <InviteEarnPanel />}
+          {shownTab === "invite" && <InviteEarnPanel lang={lang} />}
 
           {shownTab === "analytics" && (
             <>

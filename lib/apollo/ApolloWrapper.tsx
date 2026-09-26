@@ -1,9 +1,11 @@
 "use client";
 
+import { OperationTypeNode } from "graphql";
 import { ApolloLink, HttpLink, Observable } from "@apollo/client";
-import { CombinedGraphQLErrors } from "@apollo/client/errors";
+import { CombinedGraphQLErrors, ServerError } from "@apollo/client/errors";
 import { ErrorLink } from "@apollo/client/link/error";
 import { SetContextLink } from "@apollo/client/link/context";
+import { RetryLink } from "@apollo/client/link/retry";
 import {
   ApolloClient,
   ApolloNextAppProvider,
@@ -255,8 +257,31 @@ function createClient() {
     });
   });
 
+  // Retry requests that never got a GraphQL answer — the API restarting (a
+  // dev save or a deploy drops it for several seconds), a dropped connection,
+  // or a proxy 502/503/504 in front of it. Without this every query in flight
+  // during that window surfaced straight to the UI as an error.
+  //
+  // Queries only: a mutation that failed mid-flight may already have run on
+  // the server, and replaying it could double-post or double-charge.
+  // GraphQL errors arrive as results, not link errors, so they never reach here.
+  const retryLink = new RetryLink({
+    // ~0.5s, 1s, 2s, then every 4s (±25%) — about 20s in total. A local API
+    // restart measured 7–11s, so this rides one out with room to spare.
+    delay: (attempt) =>
+      Math.min(4_000, 500 * 2 ** (attempt - 1)) * (0.75 + Math.random() / 2),
+    attempts: {
+      max: 8,
+      retryIf: (error, operation) =>
+        operation.operationType === OperationTypeNode.QUERY &&
+        (!ServerError.is(error) || [502, 503, 504].includes(error.statusCode)),
+    },
+  });
+
   return new ApolloClient({
-    link: ApolloLink.from([refreshLink, authLink, httpLink]),
+    // retryLink sits before authLink so each retry picks up a freshly
+    // refreshed token.
+    link: ApolloLink.from([refreshLink, retryLink, authLink, httpLink]),
 
     cache: new InMemoryCache({
       typePolicies: {
