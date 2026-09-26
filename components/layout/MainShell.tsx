@@ -23,9 +23,9 @@ export function MainShell({
   const isImmersiveCreate =
     pathname.includes("/upload/create") ||
     pathname.includes("/upload/tiktok");
-  // The long, scrolling lists: the feed and Explore (desktop's "Browse").
-  const hasBackToTop =
-    pathname.startsWith(`/${lang}/for-you`) || pathname.startsWith(`/${lang}/explore`);
+  // Explore (desktop's "Browse"). Not the For You feed — re-tapping its nav
+  // tab already scrolls it to the top.
+  const hasBackToTop = pathname.startsWith(`/${lang}/explore`);
   usePreloadInbox();
 
   return (

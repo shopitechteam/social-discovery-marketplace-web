@@ -7,9 +7,8 @@ import { ArrowUp } from "lucide-react";
  * A "Back to top" pill that appears once the page has scrolled past one
  * screen, and takes you back to the top on tap.
  *
- * - app:     feed and Explore/Browse. On phones it sits bottom-right just
- *            above the bottom nav; on desktop it's centred, clear of the feed's
- *            right rail.
+ * - app:     Explore/Browse. On phones it sits bottom-right just above the
+ *            bottom nav; on desktop it's centred at the bottom.
  * - landing: the home page. Bottom-right at every size, above the phone action
  *            bar and clear of the centred "welcome back" pill.
  *
