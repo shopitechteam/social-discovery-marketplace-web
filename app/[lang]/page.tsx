@@ -16,6 +16,7 @@ const COPY = {
     heroTitle: "Buy and sell anything in Kenya",
     heroBody: "Discover products nearby. Shopi Agent finds matches, drafts your post from a photo, and suggests a price.",
     cta: "Create a post",
+    browse: "Browse listings",
     free: "Free to post",
     commission: "No commission",
     direct: "Talk to buyers directly",
@@ -40,6 +41,7 @@ const COPY = {
     heroTitle: "Nunua na uuze chochote Kenya",
     heroBody: "Gundua bidhaa karibu nawe. Shopi Agent hutafuta bidhaa, hukusaidia kuandika tangazo kwa picha na hupendekeza bei.",
     cta: "Weka tangazo",
+    browse: "Vinjari matangazo",
     free: "Kuweka tangazo ni bure",
     commission: "Hakuna kamisheni",
     direct: "Ongea na wanunuzi moja kwa moja",
@@ -89,7 +91,10 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
           <div className="relative z-10 w-full max-w-7xl px-6 py-10 text-white md:mx-auto md:px-12 md:py-16">
             <h1 id="home-title" className="max-w-3xl font-display text-[2rem] font-semibold leading-[1.1] md:text-[clamp(2.75rem,4.5vw,4.25rem)]">{t.heroTitle}</h1>
             <p className="mt-4 max-w-xl text-base leading-snug md:mt-5 md:text-lg">{t.heroBody}</p>
-            <Link href="/en/upload" className="mt-6 inline-flex min-h-12 items-center gap-3 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white no-underline hover:opacity-90 md:mt-8">{t.cta}<ArrowUpRight size={18} aria-hidden /></Link>
+            <div className="mt-6 flex flex-wrap gap-3 md:mt-8">
+              <Link href="/en/upload" className="inline-flex min-h-12 items-center gap-3 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white no-underline hover:opacity-90">{t.cta}<ArrowUpRight size={18} aria-hidden /></Link>
+              <Link href="/en/explore" className="inline-flex min-h-12 items-center gap-3 rounded-full border border-white/70 bg-white/10 px-6 py-3 text-sm font-semibold text-white no-underline backdrop-blur-sm hover:bg-white/20">{t.browse}<ArrowUpRight size={18} aria-hidden /></Link>
+            </div>
           </div>
         </div>
       </section>
