@@ -15,6 +15,7 @@ import {
 } from "@/types/__generated__/graphql";
 import type { VisibilityMode } from "@/types/__generated__/graphql";
 import { getMediaPreviewSrc } from "@/features/create/utils/mediaPreview";
+import { trackPostPublished } from "@/lib/analytics";
 import {
   awaitDraftAutosaves,
   blockDraftAutosave,
@@ -275,6 +276,7 @@ export function StepOptions({ lang, embedded = false }: StepOptionsProps) {
       const contentId = pubData.publishDraft.id as string;
       didPublish = true;
       setPublished(true);
+      trackPostPublished("create");
 
       // 4. Optional TikTok cross-post
       if (postOnTiktok && contentId) {

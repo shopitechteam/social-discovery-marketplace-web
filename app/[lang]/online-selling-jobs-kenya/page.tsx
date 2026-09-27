@@ -35,7 +35,7 @@ const faq = [
   },
   {
     q: "Is Shopi hiring right now?",
-    a: "Shopi is not collecting public job applications on this page. If you want to earn through Shopi today, the best path is to create an account, post something useful, and start selling directly to buyers.",
+    a: "Shopi is not collecting public job applications on this page. You can earn through Shopi today in two ways: sell directly to buyers, or invite sellers you know. When a seller you invite posts 5 listings, you get KSh 200 on M-Pesa.",
   },
 ];
 
@@ -124,12 +124,15 @@ export default async function OnlineSellingJobsKenyaPage({ params }: Props) {
                 Start selling free
               </Link>
               <Link
-                href={`/${safeLang}/shopi-agent`}
+                href={`/${safeLang}/profile?tab=invite`}
                 className="rounded-full border border-border px-6 py-3 text-sm font-bold text-foreground no-underline"
               >
-                Try Shopi Agent
+                Earn KSh 200 per seller you invite
               </Link>
             </div>
+            <p className="mt-3 text-sm text-muted">
+              Paid on M-Pesa once a seller you invite posts 5 listings.
+            </p>
           </div>
         </section>
 

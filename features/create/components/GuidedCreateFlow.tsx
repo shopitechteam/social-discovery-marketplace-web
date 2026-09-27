@@ -71,6 +71,7 @@ import {
 } from "@/components/ui/dialog";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { useSocket } from "@/hooks/useSocket";
+import { trackPostPublished } from "@/lib/analytics";
 import {
   WS_EVENTS,
   type AgentStreamDeltaPayload,
@@ -1242,6 +1243,7 @@ export function GuidedCreateFlow({ lang }: { lang: string }) {
       }
 
       const contentId = response.data.publishDraft.id;
+      trackPostPublished("create");
       reset();
       setPublishedContentId(contentId);
     } catch (error) {

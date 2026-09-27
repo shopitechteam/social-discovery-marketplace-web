@@ -10,6 +10,7 @@ import { useCreateStore } from "@/stores/create";
 import { PublishDraftDocument } from "@/types/__generated__/graphql";
 import { gql } from "@apollo/client";
 import { invalidatePublishedContentCache } from "@/lib/apollo/feedCache";
+import { trackPostPublished } from "@/lib/analytics";
 import {
   awaitDraftAutosaves,
   blockDraftAutosave,
@@ -172,6 +173,7 @@ export function StepReady({ lang }: StepReadyProps) {
         const contentId = data.publishDraft.id as string;
         didPublish = true;
         setPublished(true);
+        trackPostPublished("create");
 
         if (postOnTiktok && contentId) {
           // Await so we can show the reconnect banner before auto-redirect

@@ -13,6 +13,7 @@ import {
   type DraftFieldsFragment,
 } from "@/types/__generated__/graphql";
 import { useCreateStore } from "@/stores/create";
+import { trackPostPublished } from "@/lib/analytics";
 
 interface Props {
   lang: string;
@@ -66,6 +67,7 @@ export function DraftsGrid({ lang }: Props) {
       if (error || !res?.publishDraft) {
         throw new Error(error?.message ?? "Could not publish");
       }
+      trackPostPublished("drafts");
       toast.success("Posted! Your content is live.");
       await refetch();
     } catch (err) {

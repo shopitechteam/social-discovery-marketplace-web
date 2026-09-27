@@ -6,6 +6,7 @@ import { isValidLocale, locales } from "@/i18n/config";
 import "../globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import { AttributionTracker } from "@/components/layout/AttributionTracker";
+import { MetaPixel } from "@/components/layout/MetaPixel";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
@@ -80,6 +81,7 @@ export default async function LangLayout({
       {children}
       <Analytics />
       <AttributionTracker />
+      <MetaPixel />
     </AppDocument>
   );
 }

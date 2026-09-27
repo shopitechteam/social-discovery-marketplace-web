@@ -10,6 +10,7 @@ import {
   Eye,
   FileEdit,
   Gift,
+  Globe,
   KeyRound,
   LayoutGrid,
   LogOut,
@@ -55,7 +56,12 @@ import { cn } from "@/lib/utils";
  */
 
 /** Sections that open inside the profile page rather than on their own route. */
-export type ProfileSection = "posts" | "drafts" | "saved" | "analytics" | "invite";
+export type ProfileSection =
+  | "posts"
+  | "drafts"
+  | "saved"
+  | "analytics"
+  | "invite";
 
 export const PROFILE_SECTION_LABELS: Record<ProfileSection, string> = {
   posts: "My posts",
@@ -84,7 +90,9 @@ function MenuGroup({
   return (
     <section>
       {title ? (
-        <h3 className="mb-0.5 text-[15px] font-semibold text-main md:text-base">{title}</h3>
+        <h3 className="mb-0.5 text-[15px] font-semibold text-main md:text-base">
+          {title}
+        </h3>
       ) : null}
       <div>{children}</div>
     </section>
@@ -187,7 +195,10 @@ function MenuRow({
 
   if (href) {
     return (
-      <Link href={href} className={cn(rowClass, "hover:opacity-75 active:opacity-50")}>
+      <Link
+        href={href}
+        className={cn(rowClass, "hover:opacity-75 active:opacity-50")}
+      >
         {body}
       </Link>
     );
@@ -250,7 +261,9 @@ export function ProfileMenu({
     <nav aria-label="Profile menu" className="flex flex-col gap-6 md:gap-7">
       {/* First, so it is on screen the moment the profile opens: bringing in
           sellers is the one thing here that pays. */}
-      <MenuGroup title="Earn">{section("invite", Gift, undefined, "New")}</MenuGroup>
+      <MenuGroup title="Earn">
+        {section("invite", Gift, undefined, "New")}
+      </MenuGroup>
 
       <MenuGroup title="Your content">
         {section("posts", LayoutGrid, formatCount(user.postCount))}
@@ -320,10 +333,19 @@ export function ProfileMenu({
           label="Rate us"
           href={settingsSubPageHref(lang, "/profile/rate")}
         />
+        {/* Signed-in visitors to "/" are sent to the feed; ?view=home opts out,
+          the same link the desktop SideNav logo uses. On a phone this is the
+          only way back to the public homepage. */}
+
+        <MenuRow
+          icon={Globe}
+          label="Shopi homepage"
+          href={`/${lang}?view=home`}
+        />
       </MenuGroup>
 
-      {/* Destructive rows sit apart at the bottom rather than tinted inline
-          among the rest — the separation is what keeps a thumb off them. */}
+      {/* Destructive rows sit apart in their own group rather than tinted
+          inline among the rest — the separation is what keeps a thumb off them. */}
       <MenuGroup>
         <MenuRow
           icon={LogOut}
