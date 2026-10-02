@@ -68,7 +68,8 @@ export function DraftsGrid({ lang }: Props) {
         throw new Error(error?.message ?? "Could not publish");
       }
       trackPostPublished("drafts");
-      toast.success("Posted! Your content is live.");
+      // New posts wait for admin review before they reach the feed.
+      toast.success("Posted! It’ll show on the feed once it’s approved.");
       await refetch();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not publish");

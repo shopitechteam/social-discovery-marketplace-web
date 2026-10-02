@@ -16,9 +16,9 @@ export function CreateSuccessScreen({ children }: { children: ReactNode }) {
               Posted! 🎉
             </h2>
             <p className="text-base text-muted">
-              It’s been submitted and is going through a quick automated review
-              to make sure it meets our guidelines. It’ll show up on the feed as
-              soon as it’s approved.
+              It’s been submitted and is waiting for a quick review by the Shopi
+              team to make sure it meets our guidelines. It’ll show up on the
+              feed as soon as it’s approved.
             </p>
           </div>
 
