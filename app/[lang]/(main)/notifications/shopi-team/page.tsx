@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { privatePageMetadata } from "@/lib/metadata";
 import { TeamThreadScreen } from "@/features/team-messages/components/TeamThreadScreen";
 
@@ -10,5 +11,10 @@ export default async function ShopiTeamThreadPage({
   params: Promise<{ lang: string }>;
 }) {
   const { lang } = await params;
-  return <TeamThreadScreen lang={lang} />;
+  // The screen reads useSearchParams() to know where back should go.
+  return (
+    <Suspense fallback={null}>
+      <TeamThreadScreen lang={lang} />
+    </Suspense>
+  );
 }

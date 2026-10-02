@@ -8,7 +8,13 @@ import {
   ReferralInviteDocument,
   type ReferralInviteQuery,
 } from "@/types/__generated__/graphql";
+import { InviteLanding } from "@/features/referrals/components/InviteLanding";
 import { InviteLandingPaused } from "@/features/referrals/components/InviteLandingPaused";
+import {
+  REFERRALS_PAUSED,
+  REFERRALS_PAUSED_BODY,
+  REFERRALS_PAUSED_TITLE,
+} from "@/features/referrals/paused";
 
 /**
  * Where an invite link lands: shopi.co.ke/invite/K7M2QX (the proxy adds the
@@ -41,12 +47,17 @@ const getInvite = cache(async (rawCode: string): Promise<Invite | null> => {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { code } = await params;
-  const invite = await getInvite(code);
-  const title = invite
-    ? `${invite.inviter.displayName} invited you to sell on Shopi`
-    : "You’re invited to sell on Shopi";
-  const description =
-    "Post what you’re selling for free. No commission — buyers message you directly.";
+  // Paused: the title and description are what WhatsApp prints under the link,
+  // so they say so too — and the inviter is not looked up at all.
+  const invite = REFERRALS_PAUSED ? null : await getInvite(code);
+  const title = REFERRALS_PAUSED
+    ? REFERRALS_PAUSED_TITLE
+    : invite
+      ? `${invite.inviter.displayName} invited you to sell on Shopi`
+      : "You’re invited to sell on Shopi";
+  const description = REFERRALS_PAUSED
+    ? REFERRALS_PAUSED_BODY
+    : "Post what you’re selling for free. No commission — buyers message you directly.";
   return {
     title,
     description,
@@ -61,6 +72,9 @@ export default async function InvitePage({ params }: Props) {
   if (!isValidLocale(lang)) notFound();
 
   const invite = await getInvite(code);
-  // Referral rewards are paused; InviteLanding is the live version.
-  return <InviteLandingPaused lang={lang} invite={invite} />;
+  return REFERRALS_PAUSED ? (
+    <InviteLandingPaused lang={lang} invite={invite} />
+  ) : (
+    <InviteLanding lang={lang} invite={invite} />
+  );
 }

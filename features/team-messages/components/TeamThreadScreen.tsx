@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { ArrowLeft, BadgeCheck, Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
@@ -11,6 +11,7 @@ import { useAuthStore } from "@/stores/auth";
 import { useSocket } from "@/hooks/useSocket";
 import { WS_EVENTS } from "@/lib/socket/socket-events";
 import { linkifyParts, shortTime } from "@/features/messaging/lib/helpers";
+import { profileReturnHref } from "@/features/profile/lib/settingsReturn";
 import {
   MARK_TEAM_THREAD_READ,
   MY_TEAM_MESSAGES,
@@ -21,6 +22,7 @@ import { TeamAvatar } from "./TeamAvatar";
 
 const PAGE_SIZE = 50;
 const MAX_BODY = 4000;
+const MAX_TEXTAREA_HEIGHT = 160;
 
 function MessageText({ text, mine }: { text: string; mine: boolean }) {
   return (
@@ -65,16 +67,25 @@ function TeamBubble({ message }: { message: TeamMessage }) {
 
 /**
  * The member's conversation with the Shopi team (/notifications/shopi-team):
- * surveys, check-ins and announcements from admins, with a reply box.
+ * surveys, check-ins and announcements from admins, and support questions the
+ * member asks themselves. The reply box is always there, so a member can write
+ * first; the team answers in this same thread.
  */
 export function TeamThreadScreen({ lang }: { lang: string }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated());
   const { on } = useSocket();
   const [draft, setDraft] = useState("");
   const [loadingOlder, setLoadingOlder] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const stickToBottom = useRef(true);
+
+  // Opened from the profile menu's "Contact support" row (`?from=settings`),
+  // back returns there; otherwise to the inbox this thread is pinned in.
+  const from = searchParams.get("from");
+  const backHref = from ? profileReturnHref(lang, from) : `/${lang}/notifications`;
 
   const { data, loading, refetch, fetchMore } = useQuery(MY_TEAM_MESSAGES, {
     variables: { limit: PAGE_SIZE },
@@ -84,7 +95,10 @@ export function TeamThreadScreen({ lang }: { lang: string }) {
   const [markRead] = useMutation(MARK_TEAM_THREAD_READ, {
     refetchQueries: ["MyTeamThread", "MyNotificationsInbox", "MyUnreadNotificationCountInbox"],
   });
-  const [sendReply, { loading: sending }] = useMutation(SEND_TEAM_REPLY);
+  // A first message opens the thread, which is what makes its inbox row appear.
+  const [sendReply, { loading: sending }] = useMutation(SEND_TEAM_REPLY, {
+    refetchQueries: ["MyTeamThread"],
+  });
 
   const page = (data as { myTeamMessages?: TeamMessagePage } | undefined)?.myTeamMessages;
   const messages = useMemo(() => page?.items ?? [], [page?.items]);
@@ -107,6 +121,15 @@ export function TeamThreadScreen({ lang }: { lang: string }) {
     const el = scrollRef.current;
     if (el && stickToBottom.current) el.scrollTop = el.scrollHeight;
   }, [messages.length]);
+
+  // One line by default, growing with the message (capped) — the same as the
+  // marketplace chat Composer.
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, MAX_TEXTAREA_HEIGHT)}px`;
+  }, [draft]);
 
   const loadOlder = useCallback(async () => {
     if (!page?.hasMore || !page.nextCursor || loadingOlder) return;
@@ -136,7 +159,7 @@ export function TeamThreadScreen({ lang }: { lang: string }) {
       stickToBottom.current = true;
       await refetch();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't send your reply");
+      toast.error(err instanceof Error ? err.message : "Couldn't send your message");
     }
   }
 
@@ -148,9 +171,9 @@ export function TeamThreadScreen({ lang }: { lang: string }) {
       >
         <button
           type="button"
-          onClick={() => router.push(`/${lang}/notifications`)}
+          onClick={() => router.push(backHref)}
           className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-subtle"
-          aria-label="Back to inbox"
+          aria-label="Back"
         >
           <ArrowLeft size={20} />
         </button>
@@ -160,7 +183,7 @@ export function TeamThreadScreen({ lang }: { lang: string }) {
             {TEAM_DISPLAY_NAME}
             <BadgeCheck size={16} className="text-primary" aria-label="Official" />
           </p>
-          <p className="truncate text-xs text-muted">Official messages from Shopi</p>
+          <p className="truncate text-xs text-muted">Support and updates from Shopi</p>
         </div>
       </header>
 
@@ -186,10 +209,12 @@ export function TeamThreadScreen({ lang }: { lang: string }) {
             <Skeleton key={i} className={`h-16 w-2/3 rounded-2xl ${i % 2 ? "ml-auto" : ""}`} />
           ))
         ) : messages.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
+          <div className="flex h-full flex-col items-center justify-center px-6 text-center">
             <TeamAvatar size={56} />
-            <p className="text-sm text-muted">
-              Messages from the Shopi team will appear here.
+            <h2 className="mt-4 text-base font-semibold text-main">How can we help?</h2>
+            <p className="mt-1 max-w-xs text-sm leading-snug text-muted">
+              Ask about your account, a listing or a payment, or tell us anything you
+              want Shopi to know. We reply right here.
             </p>
           </div>
         ) : (
@@ -197,12 +222,13 @@ export function TeamThreadScreen({ lang }: { lang: string }) {
         )}
       </div>
 
-      {messages.length > 0 ? (
+      {isAuthenticated && !(loading && messages.length === 0) ? (
         <div
           className="flex items-end gap-2 border-t px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:px-5"
           style={{ borderColor: "rgb(var(--color-border))" }}
         >
           <textarea
+            ref={textareaRef}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
@@ -211,7 +237,10 @@ export function TeamThreadScreen({ lang }: { lang: string }) {
                 void handleSend();
               }
             }}
-            placeholder="Reply to the Shopi team…"
+            placeholder={
+              messages.length > 0 ? "Message the Shopi team…" : "Write your message to Shopi support…"
+            }
+            aria-label="Message to the Shopi team"
             rows={1}
             maxLength={MAX_BODY}
             className="max-h-40 flex-1 resize-none rounded-2xl border bg-transparent px-4 py-3 text-sm outline-none focus:ring-1 focus:ring-gray-700"
@@ -223,7 +252,7 @@ export function TeamThreadScreen({ lang }: { lang: string }) {
             className="h-9 w-9 shrink-0 rounded-full"
             onClick={() => void handleSend()}
             disabled={!draft.trim() || sending}
-            aria-label="Send reply"
+            aria-label="Send message"
           >
             {sending ? (
               <Loader2 className="animate-spin text-white" size={18} />

@@ -4,17 +4,20 @@ import { ReferralInviteDocument } from "@/types/__generated__/graphql";
 import { siteConfig } from "@/config/site";
 import { normalizeReferralCode } from "@/lib/referral";
 import { ogImageDataUri, ogJpegResponse } from "@/lib/og-image";
+import { REFERRALS_PAUSED, REFERRALS_PAUSED_TITLE } from "@/features/referrals/paused";
 
 /**
  * The card WhatsApp shows under a shared invite link. It is the first thing an
  * invited seller sees, so it carries the inviter's face and name — "a friend
  * invited you" gets tapped where a generic Shopi card gets scrolled past.
+ *
+ * While referrals are paused it carries no inviter, just the paused headline.
  */
 
 // Node runtime so we can reuse the Apollo `query` helper.
 export const runtime = "nodejs";
 export const revalidate = 3600;
-export const alt = "You're invited to sell on Shopi";
+export const alt = REFERRALS_PAUSED ? REFERRALS_PAUSED_TITLE : "You're invited to sell on Shopi";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/jpeg";
 
@@ -30,7 +33,7 @@ export default async function InviteOgImage({
 
   let name: string | null = null;
   let avatarUrl: string | null | undefined;
-  if (code) {
+  if (code && !REFERRALS_PAUSED) {
     try {
       const { data } = await query({ query: ReferralInviteDocument, variables: { code } });
       name = data?.referralInvite?.inviter.displayName ?? null;
@@ -43,9 +46,11 @@ export default async function InviteOgImage({
   // Avatars are .webp and satori has no webp decoder — see lib/og-image.
   const avatar = await ogImageDataUri([avatarUrl], { width: 220, height: 220 });
   const initials = (name ?? "Shopi").replace(/^@/, "").slice(0, 2).toUpperCase();
-  const headline = name
-    ? `${name.length > 26 ? `${name.slice(0, 26)}…` : name} invited you to sell on Shopi`
-    : "You're invited to sell on Shopi";
+  const headline = REFERRALS_PAUSED
+    ? REFERRALS_PAUSED_TITLE
+    : name
+      ? `${name.length > 26 ? `${name.slice(0, 26)}…` : name} invited you to sell on Shopi`
+      : "You're invited to sell on Shopi";
 
   const rendered = new ImageResponse(
     (

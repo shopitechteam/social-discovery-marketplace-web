@@ -13,6 +13,7 @@ import {
   KeyRound,
   LayoutGrid,
   LogOut,
+  MessageCircleQuestionMark,
   Moon,
   ShieldCheck,
   Star,
@@ -42,6 +43,8 @@ import { useAuthStore } from "@/stores/auth";
 import { settingsSubPageHref } from "../lib/settingsReturn";
 import { cn } from "@/lib/utils";
 import { ReferralPausedBanner } from "@/features/referrals/components/ReferralPausedBanner";
+import { useTeamThread } from "@/features/team-messages/hooks/useTeamThread";
+import { TEAM_THREAD_PATH } from "@/features/team-messages/types";
 
 /**
  * The profile's menu: one grouped list holding everything the profile offers,
@@ -233,6 +236,9 @@ export function ProfileMenu({
   onSelect: (section: ProfileSection) => void;
 }) {
   const push = usePushNotifications(lang);
+  // Unanswered team replies show on the support row, so an answer isn't missed.
+  const { thread: teamThread } = useTeamThread();
+  const supportUnread = teamThread?.unreadCount ?? 0;
   const { logout, loading: loggingOut } = useLogout(lang);
   // Accounts from Google or Apple have no password to change, and the server
   // rejects the mutation for them, so the row would only lead to an error.
@@ -325,6 +331,14 @@ export function ProfileMenu({
       </MenuGroup>
 
       <MenuGroup title="Support">
+        {/* The member's Shopi team thread: questions go to the admin team
+            inbox, and the answer comes back in the same thread. */}
+        <MenuRow
+          icon={MessageCircleQuestionMark}
+          label="Contact support"
+          badge={supportUnread > 0 ? String(supportUnread) : undefined}
+          href={settingsSubPageHref(lang, TEAM_THREAD_PATH)}
+        />
         <MenuRow
           icon={ShieldCheck}
           label="Safety centre"

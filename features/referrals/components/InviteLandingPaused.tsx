@@ -1,13 +1,13 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect } from "react";
-import { Check, Gift, PlusCircle } from "lucide-react";
+import { Check, PlusCircle } from "lucide-react";
 import type { ReferralInviteQuery } from "@/types/__generated__/graphql";
 import { Logo } from "@/components/ui/Logo";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { captureReferral } from "@/lib/referral";
+import { REFERRALS_PAUSED_BODY, REFERRALS_PAUSED_TITLE } from "../paused";
 import { ReferralPausedBanner } from "./ReferralPausedBanner";
 
 type Invite = NonNullable<ReferralInviteQuery["referralInvite"]>;
@@ -19,9 +19,9 @@ const PERKS = [
 ];
 
 /**
- * InviteLanding while referral rewards are paused: the same page, with copy
- * that says so. Swap it back for InviteLanding in app/[lang]/invite/[code]/page.tsx
- * when rewards resume.
+ * InviteLanding while referral rewards are paused (see REFERRALS_PAUSED). It
+ * says referrals are paused rather than "X invited you", and still hands the
+ * visitor on to sell, since posting is unaffected.
  *
  * The code is still captured on signup, so a referral made now is on record.
  */
@@ -54,41 +54,24 @@ export function InviteLandingPaused({ lang, invite }: { lang: string; invite: In
       <div className="relative flex flex-1 flex-col justify-center py-8">
         {signedIn ? (
           <SignedIn lang={lang} />
-        ) : invite ? (
-          <>
-            <InviterAvatar invite={invite} />
-            <h1 className="mt-6 text-[28px] font-black leading-[1.15] text-main">
-              {invite.inviter.displayName} invited you to sell on Shopi
-            </h1>
-            <p className="mt-2 text-base leading-snug text-muted">
-              Post what you’re selling and reach buyers near you.
-            </p>
-          </>
         ) : (
           <>
-            <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-soft text-primary">
-              <Gift className="h-8 w-8" strokeWidth={1.8} aria-hidden />
-            </span>
-            <h1 className="mt-6 text-[28px] font-black leading-[1.15] text-main">
-              This invite link isn’t active
+            <h1 className="text-[28px] font-black leading-[1.15] text-main">
+              {REFERRALS_PAUSED_TITLE}
             </h1>
-            <p className="mt-2 text-base leading-snug text-muted">
-              You can still start selling on Shopi — it only takes a minute.
-            </p>
-          </>
-        )}
+            <p className="mt-2 text-base leading-snug text-muted">{REFERRALS_PAUSED_BODY}</p>
 
-        {!signedIn && (
-          <ul className="mt-7 flex flex-col gap-3">
-            {PERKS.map((perk) => (
-              <li key={perk} className="flex items-center gap-3 text-[15px] font-medium text-main">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--color-success)/0.14)] text-success">
-                  <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden />
-                </span>
-                {perk}
-              </li>
-            ))}
-          </ul>
+            <ul className="mt-7 flex flex-col gap-3">
+              {PERKS.map((perk) => (
+                <li key={perk} className="flex items-center gap-3 text-[15px] font-medium text-main">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--color-success)/0.14)] text-success">
+                    <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden />
+                  </span>
+                  {perk}
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </div>
 
@@ -106,50 +89,16 @@ export function InviteLandingPaused({ lang, invite }: { lang: string; invite: In
           >
             Look around first
           </Link>
-          {invite && (
-            <p className="text-center text-xs leading-relaxed text-muted">
-              Referral paused. Shopi referral rewards are on hold while we review content.
-            </p>
-          )}
         </div>
       )}
     </main>
   );
 }
 
-function InviterAvatar({ invite }: { invite: Invite }) {
-  const { inviter } = invite;
-  const initials =
-    inviter.displayName
-      .replace(/^@/, "")
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase())
-      .join("") || "S";
-
-  return (
-    <div className="relative h-22 w-22">
-      <span className="absolute inset-0 rounded-full bg-[linear-gradient(135deg,rgb(var(--brand-primary)),rgb(var(--brand-secondary)))] p-0.75">
-        <span className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-app">
-          {inviter.avatar ? (
-            <Image src={inviter.avatar} alt="" fill sizes="88px" className="object-cover" />
-          ) : (
-            <span className="text-2xl font-black text-primary">{initials}</span>
-          )}
-        </span>
-      </span>
-    </div>
-  );
-}
-
 function SignedIn({ lang }: { lang: string }) {
   return (
     <>
-      <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-soft text-primary">
-        <Gift className="h-8 w-8" strokeWidth={1.8} aria-hidden />
-      </span>
-      <h1 className="mt-6 text-[28px] font-black leading-[1.15] text-main">
+      <h1 className="text-[28px] font-black leading-[1.15] text-main">
         You’re already on Shopi
       </h1>
       <p className="mt-2 text-base leading-snug text-muted">
