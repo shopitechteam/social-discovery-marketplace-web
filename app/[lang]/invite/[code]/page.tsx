@@ -8,7 +8,7 @@ import {
   ReferralInviteDocument,
   type ReferralInviteQuery,
 } from "@/types/__generated__/graphql";
-import { InviteLanding } from "@/features/referrals/components/InviteLanding";
+import { InviteLandingPaused } from "@/features/referrals/components/InviteLandingPaused";
 
 /**
  * Where an invite link lands: shopi.co.ke/invite/K7M2QX (the proxy adds the
@@ -61,5 +61,6 @@ export default async function InvitePage({ params }: Props) {
   if (!isValidLocale(lang)) notFound();
 
   const invite = await getInvite(code);
-  return <InviteLanding lang={lang} invite={invite} />;
+  // Referral rewards are paused; InviteLanding is the live version.
+  return <InviteLandingPaused lang={lang} invite={invite} />;
 }

@@ -246,7 +246,8 @@ function ShareBlock({ program }: { program: Program }) {
 
 // ── Earnings & payout ────────────────────────────────────────────────────────
 
-function PayoutPhone({ program }: { program: Program }) {
+// Exported for ReferralPausedPanel: payouts still go out while sharing is paused.
+export function PayoutPhone({ program }: { program: Program }) {
   const [editing, setEditing] = useState(false);
   const [phone, setPhone] = useState("");
   const [savePhone, { loading }] = useMutation(SetReferralPayoutPhoneDocument, {

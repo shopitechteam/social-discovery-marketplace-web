@@ -9,7 +9,6 @@ import {
   ChevronRight,
   Eye,
   FileEdit,
-  Gift,
   Globe,
   KeyRound,
   LayoutGrid,
@@ -42,6 +41,7 @@ import {
 import { useAuthStore } from "@/stores/auth";
 import { settingsSubPageHref } from "../lib/settingsReturn";
 import { cn } from "@/lib/utils";
+import { ReferralPausedBanner } from "@/features/referrals/components/ReferralPausedBanner";
 
 /**
  * The profile's menu: one grouped list holding everything the profile offers,
@@ -68,7 +68,7 @@ export const PROFILE_SECTION_LABELS: Record<ProfileSection, string> = {
   drafts: "Drafts",
   saved: "Saved",
   analytics: "Analytics",
-  invite: "Invite & earn",
+  invite: "Referrals",
 };
 
 type Icon = ComponentType<{ className?: string; strokeWidth?: number }>;
@@ -259,11 +259,13 @@ export function ProfileMenu({
 
   return (
     <nav aria-label="Profile menu" className="flex flex-col gap-6 md:gap-7">
-      {/* First, so it is on screen the moment the profile opens: bringing in
-          sellers is the one thing here that pays. */}
-      <MenuGroup title="Earn">
-        {section("invite", Gift, undefined, "New")}
-      </MenuGroup>
+      {/* Stands in for the "Earn" group while referral rewards are paused, and
+          still opens the section where referrers see what they are owed. */}
+      <ReferralPausedBanner
+        compact
+        onOpen={() => onSelect("invite")}
+        active={active === "invite"}
+      />
 
       <MenuGroup title="Your content">
         {section("posts", LayoutGrid, formatCount(user.postCount))}

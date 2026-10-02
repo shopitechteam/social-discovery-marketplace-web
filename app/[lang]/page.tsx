@@ -4,7 +4,6 @@ import Link from "next/link";
 import {
   ArrowUpRight,
   Camera,
-  Gift,
   MessageCircle,
   Wallet,
 } from "lucide-react";
@@ -30,8 +29,8 @@ const COPY = {
     heroBody:
       "Discover products nearby. Shopi Agent finds matches, drafts your post from a photo, and suggests a price.",
     cta: "Create a post",
-    heroEarn: "Invite & earn KSh 200",
-    heroEarnNote: "Paid on M-Pesa when a seller you invite posts 5 listings.",
+    heroPost: "Create a post",
+    heroPostNote: "Posting is free. Add a photo, price and location, then chat with buyers directly.",
     browse: "Browse listings",
     free: "Free to post",
     commission: "No commission",
@@ -43,17 +42,17 @@ const COPY = {
     agentBody:
       "Shopi Agent can draft your listing and suggest a price from a photo. Buyers can describe what they want to find matches.",
     agentLink: "More about Shopi Agent",
-    earnEyebrow: "Invite & earn",
-    earnTitle: "Invite a seller. Get KSh\u00a0200.",
-    earnBody:
-      "Know someone who sells? Send them your invite link. When they join Shopi and post 5 listings, we send KSh\u00a0200 to your M-Pesa.",
-    earnSteps: [
-      "Share your invite link",
-      "They post 5 listings",
-      "You get KSh\u00a0200 on M-Pesa",
+    postEyebrow: "Sell on Shopi",
+    postTitle: "Post something people can buy today.",
+    postBody:
+      "Take one clear photo, add the price and location, and Shopi helps buyers nearby discover what you are selling. There is no posting fee and no commission.",
+    postSteps: [
+      "Upload a photo",
+      "Add price and location",
+      "Chat directly with buyers",
     ],
-    earnCta: "Start inviting",
-    earnLink: "How it works",
+    postCta: "Create a post",
+    postLink: "Browse listings",
     closingTitle: "Ready to sell something?",
     closingBody: "Sign in, create a post and start hearing from buyers.",
     questions: "Good to know",
@@ -84,9 +83,9 @@ const COPY = {
     heroBody:
       "Gundua bidhaa karibu nawe. Shopi Agent hutafuta bidhaa, hukusaidia kuandika tangazo kwa picha na hupendekeza bei.",
     cta: "Weka tangazo",
-    heroEarn: "Alika upate KSh 200",
-    heroEarnNote:
-      "Tunalipa kwa M-Pesa muuzaji uliyemwalika akiweka matangazo 5.",
+    heroPost: "Weka tangazo",
+    heroPostNote:
+      "Kuweka tangazo ni bure. Ongeza picha, bei na eneo, kisha ongea na wanunuzi moja kwa moja.",
     browse: "Vinjari matangazo",
     free: "Kuweka tangazo ni bure",
     commission: "Hakuna kamisheni",
@@ -98,17 +97,17 @@ const COPY = {
     agentBody:
       "Shopi Agent inaweza kukuandikia tangazo na kupendekeza bei kutokana na picha. Wanunuzi wanaweza kueleza wanachotafuta ili wapate bidhaa zinazofaa.",
     agentLink: "Zaidi kuhusu Shopi Agent",
-    earnEyebrow: "Alika upate",
-    earnTitle: "Alika muuzaji. Pata KSh\u00a0200.",
-    earnBody:
-      "Unamjua mtu anayeuza? Mtumie kiungo chako cha mwaliko. Akijiunga na Shopi na kuweka matangazo 5, tunakutumia KSh\u00a0200 kwa M-Pesa.",
-    earnSteps: [
-      "Tuma kiungo chako cha mwaliko",
-      "Anaweka matangazo 5",
-      "Unapata KSh\u00a0200 kwa M-Pesa",
+    postEyebrow: "Uza kwenye Shopi",
+    postTitle: "Weka bidhaa ambayo mtu anaweza kununua leo.",
+    postBody:
+      "Piga picha iliyo wazi, ongeza bei na eneo, kisha Shopi iwasaidie wanunuzi wa karibu kupata unachouza. Hakuna malipo ya kuweka tangazo wala kamisheni.",
+    postSteps: [
+      "Pakia picha",
+      "Ongeza bei na eneo",
+      "Ongea na wanunuzi moja kwa moja",
     ],
-    earnCta: "Anza kualika",
-    earnLink: "Jinsi inavyofanya kazi",
+    postCta: "Weka tangazo",
+    postLink: "Vinjari matangazo",
     closingTitle: "Uko tayari kuuza?",
     closingBody:
       "Ingia, weka tangazo na uanze kupata ujumbe kutoka kwa wanunuzi.",
@@ -220,10 +219,10 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
               </p>
               <div className="mx-auto mt-7 flex w-full max-w-sm flex-col gap-3 md:mx-0 md:mt-8 md:max-w-none md:flex-row md:flex-wrap">
                 <Link
-                  href="/en/profile?tab=invite"
+                  href="/en/upload"
                   className="inline-flex min-h-12 items-center justify-center gap-3 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white no-underline hover:opacity-90"
                 >
-                  {t.heroEarn}
+                  {t.heroPost}
                   <ArrowUpRight size={18} aria-hidden />
                 </Link>
                 <Link
@@ -234,7 +233,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
                   <ArrowUpRight size={18} aria-hidden />
                 </Link>
               </div>
-              <p className="mt-3 text-balance text-sm text-white/75">{t.heroEarnNote}</p>
+              <p className="mt-3 text-balance text-sm text-white/75">{t.heroPostNote}</p>
             </div>
           </div>
         </section>
@@ -329,43 +328,43 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
         </section>
 
         <section
-          id="earn"
-          aria-labelledby="earn-title"
+          id="post"
+          aria-labelledby="post-title"
           className="px-4 pt-16 md:px-8 md:pt-24"
         >
           <div className="mx-auto grid max-w-7xl gap-8 rounded-md bg-[#18282a] px-6 py-10 text-white md:grid-cols-[1.1fr_0.9fr] md:items-center md:gap-16 md:px-12 md:py-16">
             <div>
               <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-white/80">
-                <Gift className="size-4 text-primary" aria-hidden />
-                {t.earnEyebrow}
+                <Camera className="size-4 text-primary" aria-hidden />
+                {t.postEyebrow}
               </p>
               <h2
-                id="earn-title"
+                id="post-title"
                 className="font-display text-[2rem] font-semibold leading-tight md:text-[3.25rem]"
               >
-                {t.earnTitle}
+                {t.postTitle}
               </h2>
               <p className="mt-5 max-w-lg text-base leading-relaxed text-white/80 md:text-lg">
-                {t.earnBody}
+                {t.postBody}
               </p>
               <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-4">
                 <Link
-                  href="/en/profile?tab=invite"
+                  href="/en/upload"
                   className="inline-flex min-h-12 items-center gap-3 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white no-underline hover:opacity-90"
                 >
-                  {t.earnCta}
+                  {t.postCta}
                   <ArrowUpRight size={18} aria-hidden />
                 </Link>
                 <Link
-                  href="/en/blog/refer-and-earn-in-kenya"
+                  href="/en/explore"
                   className="font-semibold text-white underline underline-offset-4"
                 >
-                  {t.earnLink}
+                  {t.postLink}
                 </Link>
               </div>
             </div>
             <ol className="grid gap-3 p-0">
-              {t.earnSteps.map((step, i) => (
+              {t.postSteps.map((step, i) => (
                 <li
                   key={step}
                   className="flex items-center gap-4 rounded-md border border-white/15 bg-white/5 px-5 py-4 text-base font-semibold"
